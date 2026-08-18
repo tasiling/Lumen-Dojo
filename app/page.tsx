@@ -1,286 +1,471 @@
 "use client";
 
-// 居所(雛形 home()的等價實作)。回返中心:不顯示 KPI、逾期與完成率,只留下
-// 可接續的事與回家的路。
-//
-// 擁有者裁決(2026-08-01):P1 主控台拆兩層——「今日待辦」邏輯歸居所首頁本身
-// (今天要做什麼是居所的職責),行事曆與完成度儀表(數字儀表,居所明令禁止顯示)
-// 移到居所底下的子頁「看整月」(/overview),想看才點進去。
-//
-// 生活痕跡的居所兩區(補充裁決04/05,2026-08-05,實作順序第5項):原本「接續
-// 中的事」是 entries.filter(privacy!=="私人").slice(-3)——純前端記憶體,重整
-// 頁面就消失,不是真的接續。改成上區(最近的痕跡,最多5張,7天沒動靜即淡去,
-// 不刪除只是從這裡消失)+ 下區(留著的:累積層/永久層或已標記過頻率強度,不
-// 限張數,免淡)兩個區塊,背後是 DB-19 生活痕跡庫(見 lib/trace/rules.ts、
-// GET /api/traces/home)。私人項目的保護從「居所讀取端過濾」搬到「建立時就
-// 不寫進 Notion」(lib/dojo/store.tsx addEntry())——DB-19 沒有 privacy 欄位,
-// 只能在建立那一刻擋,不能在讀取那一刻擋。
-//
-// 下區預設收合/展開(補充裁決05 §五)尚未經擁有者正式拍板,目前用我方回報過
-// 的建議選項A(比照全站既有 <details>/<summary>、預設收合、標題不帶數字)。
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useDojo } from "@/lib/dojo/store";
-import { SPACES, GUANGXING, type GuangxingKey, type SpaceKey } from "@/lib/dojo/constants";
+import { useEffect, useMemo, useState } from "react";
+import {
+  DAILY_TASK_CATEGORIES,
+  addCalendarDays,
+  completedBingoLines,
+  emptyDailyRecord,
+  mondayOf,
+  taipeiTodayISO,
+  type DailyRecord,
+  type DailyTaskCategory,
+  type WeeklyBoard,
+} from "@/lib/dojo/formal";
+import { SPACES, type SpaceKey } from "@/lib/dojo/constants";
 
-// 生活痕跡的居所兩區(補充裁決04/05):取代原本純前端記憶體的
-// entries.filter(...).slice(-3)——那組資料重整頁面就消失,不是真的「接續」。
-// 這裡改讀 GET /api/traces/home,背後是 DB-19 生活痕跡庫。
-type TraceCard = { id: string; 標題: string; 內容?: string; space: SpaceKey | null };
+const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
+const EVENING_FIELDS = {
+  light: ["highlight"],
+  medium: ["highlight", "block"],
+  deep: ["highlight", "block", "insight", "nextAction"],
+} as const;
 
-type TodayTask = {
-  type: "明細" | "場次";
-  id: string;
-  標題: string;
-  所屬Session?: string | null;
-  項目用途?: string | null;
-  當場主題?: string;
-};
+const EVENING_LABELS = {
+  highlight: ["今天的一束光", "今天值得留下的片刻"],
+  block: ["卡住的地方", "哪裡消耗了你？"],
+  insight: ["看見了什麼", "今天多明白了一點什麼？"],
+  nextAction: ["下一步", "要帶往明天的一個小動作"],
+} as const;
 
-// 居所「回到哪裡」(收光三選項與居所接續規格 v1.0 §二;行光牌與收光系統・
-// 地基實作 v2.0/補充裁決01 追加「標記已處理」):兩個來源依序取用,最多 3
-// 張——不依賴使用者一定要做過收光(§0.3),沒收光的日子這裡照樣能有內容
-// (來自 Source B1)。零張時這個區塊要整個不顯示,不能出現空狀態文字,所以
-// 不用既有的 loadingTasks/tasksError 那套(那套本身就會在零筆時顯示文字)。
-type ContinuationCard =
-  | { source: "carry"; id: string; text: string }
-  | { source: "b1"; text: string; detailId: string; sessionId: string | null };
-
-function GuangxingTodayStrip() {
-  const { entries } = useDojo();
-  const counts: Partial<Record<GuangxingKey, number>> = {};
-  for (const e of entries) {
-    if (e.guangxing) counts[e.guangxing] = (counts[e.guangxing] ?? 0) + 1;
-  }
-  return (
-    <>
-      {(Object.entries(GUANGXING) as [GuangxingKey, (typeof GUANGXING)[GuangxingKey]][]).map(([k, v]) => (
-        <span
-          key={k}
-          className="tag"
-          style={counts[k] ? { background: "#eee1c8", borderColor: "var(--gold)", color: "var(--ink)" } : undefined}
-        >
-          {v[0]}
-          {counts[k] ? ` ·${counts[k]}` : ""}
-        </span>
-      ))}
-    </>
-  );
+function formatToday(dateISO: string) {
+  return new Intl.DateTimeFormat("zh-TW", {
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date(`${dateISO}T12:00:00+08:00`));
 }
 
-export default function HomePage() {
-  const router = useRouter();
-  const [today, setToday] = useState<string | null>(null);
-  const [todayTasks, setTodayTasks] = useState<TodayTask[]>([]);
-  const [loadingTasks, setLoadingTasks] = useState(false);
-  const [tasksError, setTasksError] = useState<string | null>(null);
-  const [continuationCards, setContinuationCards] = useState<ContinuationCard[]>([]);
-  const [resolvingId, setResolvingId] = useState<string | null>(null);
-  const [recentTraces, setRecentTraces] = useState<TraceCard[]>([]);
-  const [persistentTraces, setPersistentTraces] = useState<TraceCard[]>([]);
+async function readResponse<T>(response: Response): Promise<T> {
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((json as { error?: string }).error ?? `操作失敗（${response.status}）`);
+  return json as T;
+}
 
-  // 補充裁決04/05:居所兩區改讀 DB-19,不再是 entries.slice(-3) 那種重整就
-  // 消失的前端記憶體資料。查詢失敗靜默(比照這個頁面既有的 continuationCards
-  // 慣例)——兩區「零筆時整區不顯示」本身就涵蓋了「查詢失敗」這個情況,不需要
-  // 另外顯示錯誤訊息。
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/traces/home")
-      .then((r) => r.json())
-      .then((json) => {
-        if (!cancelled) {
-          setRecentTraces(json.recent ?? []);
-          setPersistentTraces(json.persistent ?? []);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // 回看(補充裁決04「什麼算動靜」表):點卡片才算,不是撈出來顯示就算——
-  // 重新計時 7 天、回看次數 +1(達門檻自動升級 traceLevel,補充裁決05 第4
-  // 項)。安靜地發生,不回饋任何數字/確認訊息(§1.2 不顯示倒數的同一個精神:
-  // 淡去要安靜,回看也不需要用視覺提示打斷)。
-  function viewTrace(id: string) {
-    fetch(`/api/traces/${id}/view`, { method: "PATCH" }).catch(() => {});
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/closing/continuations")
-      .then((r) => r.json())
-      .then((json) => {
-        if (!cancelled) setContinuationCards(json.cards ?? []);
-      })
-      .catch(() => {
-        // 靜默失敗:這個區塊本來就是「有才顯示」,查詢失敗等同沒有卡片,不彈錯誤。
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // 「標記已處理」(補充裁決01§一之3):按下才算消化掉,不是打開卡片就算。
-  // 成功後直接把這張卡從畫面上拿掉,不用整批重新打 API——伺服器那邊已經
-  // 寫入 carryResolvedAt,下次真的重新整理頁面時也不會再撈到它。
-  async function resolveCard(id: string) {
-    setResolvingId(id);
-    try {
-      const res = await fetch(`/api/closing/${id}/resolve`, { method: "PATCH" });
-      if (res.ok) {
-        setContinuationCards((prev) => prev.filter((c) => !(c.source === "carry" && c.id === id)));
-      }
-    } finally {
-      setResolvingId(null);
-    }
-  }
+export default function TodayPage() {
+  const date = useMemo(() => taipeiTodayISO(), []);
+  const weekStart = useMemo(() => mondayOf(date), [date]);
+  const [record, setRecord] = useState<DailyRecord>(() => emptyDailyRecord(date));
+  const [board, setBoard] = useState<WeeklyBoard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [logText, setLogText] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoadingTasks(true);
-      setTasksError(null);
+      setLoading(true);
+      setError(null);
       try {
-        const r = await fetch("/api/dashboard");
-        if (!r.ok) throw new Error(`載入失敗(${r.status})`);
-        const json = await r.json();
+        const [dailyResponse, boardResponse] = await Promise.all([
+          fetch(`/api/dojo/daily?date=${date}`, { cache: "no-store" }),
+          fetch(`/api/dojo/bingo?week=${weekStart}`, { cache: "no-store" }),
+        ]);
+        const dailyJson = await readResponse<{ record: DailyRecord }>(dailyResponse);
+        const boardJson = await readResponse<{ board: WeeklyBoard }>(boardResponse);
         if (!cancelled) {
-          setToday(json.today ?? null);
-          setTodayTasks(json.todayTasks ?? []);
+          setRecord(dailyJson.record);
+          setBoard(boardJson.board);
         }
-      } catch (e) {
-        if (!cancelled) setTasksError(e instanceof Error ? e.message : String(e));
+      } catch (caught) {
+        if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
       } finally {
-        if (!cancelled) setLoadingTasks(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    load();
+    void load();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [date, weekStart]);
+
+  async function persist(next: DailyRecord, message?: string) {
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/dojo/daily", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, record: next }),
+      });
+      const json = await readResponse<{ record: DailyRecord }>(response);
+      setRecord(json.record);
+      if (message) setNotice(message);
+      return json.record;
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+      throw caught;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function updateTask(category: DailyTaskCategory, patch: Partial<DailyRecord["tasks"][DailyTaskCategory]>) {
+    setRecord((current) => ({
+      ...current,
+      tasks: { ...current.tasks, [category]: { ...current.tasks[category], ...patch } },
+    }));
+  }
+
+  async function toggleTask(category: DailyTaskCategory) {
+    const task = record.tasks[category];
+    if (!task.text.trim()) return;
+    const completed = !task.completed;
+    const next: DailyRecord = {
+      ...record,
+      tasks: {
+        ...record.tasks,
+        [category]: {
+          ...task,
+          completed,
+          completedAt: completed ? new Date().toISOString() : null,
+        },
+      },
+    };
+    try {
+      await persist(next);
+      const response = await fetch("/api/dojo/flow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "complete-task", date, category, completed, result: next.tasks[category].result }),
+      });
+      const json = await readResponse<{ daily: DailyRecord; board: WeeklyBoard | null }>(response);
+      setRecord(json.daily);
+      if (json.board) setBoard(json.board);
+      setNotice(completed ? "已記下完成時間，週盤也已同步。" : "已改回進行中，週盤也已同步。");
+    } catch {
+      // persist() 已將錯誤放到頁面上。
+    }
+  }
+
+  async function addLog() {
+    const text = logText.trim();
+    if (!text) return;
+    const now = new Date();
+    const time = new Intl.DateTimeFormat("zh-TW", {
+      timeZone: "Asia/Taipei",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(now);
+    const next = {
+      ...record,
+      daytime: {
+        ...record.daytime,
+        logs: [...record.daytime.logs, { id: crypto.randomUUID(), time, text, createdAt: now.toISOString() }],
+      },
+    };
+    setLogText("");
+    try {
+      await persist(next, "白天追蹤已存下來。");
+    } catch {
+      setLogText(text);
+    }
+  }
+
+  async function removeLog(id: string) {
+    const next = {
+      ...record,
+      daytime: { ...record.daytime, logs: record.daytime.logs.filter((log) => log.id !== id) },
+    };
+    try {
+      await persist(next);
+    } catch {
+      // persist() 已顯示錯誤。
+    }
+  }
+
+  async function saveEvening() {
+    if (!record.evening.depth) {
+      setError("請先選擇今晚要用輕、適中或深入復盤。");
+      return;
+    }
+    if (!record.evening.disposition) {
+      setError("請選擇帶回、寫下今天或暫且放下。");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const existingResponse = await fetch("/api/closing/today", { cache: "no-store" });
+      const existingJson = await readResponse<{ existing: unknown }>(existingResponse);
+      if (existingJson.existing) {
+        const replace = window.confirm("今天已經收過光。要用這次的晚間復盤取代原本紀錄嗎？");
+        if (!replace) {
+          setSaving(false);
+          return;
+        }
+      }
+
+      const next = {
+        ...record,
+        evening: { ...record.evening, closedAt: new Date().toISOString() },
+      };
+      const saved = await persist(next);
+      const closingResponse = await fetch("/api/closing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          choice: saved.evening.disposition,
+          note: saved.evening.nextAction,
+          carryToDate: saved.evening.disposition === "carry" ? addCalendarDays(date, 1) : undefined,
+        }),
+      });
+      await readResponse(closingResponse);
+      setNotice("晚間復盤已收進今天，之後可在回看找到。");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const taskDone = TASK_ORDER.filter((category) => record.tasks[category].completed).length;
+  const boardDone = board?.cells.filter((cell) => cell.index !== 12 && cell.completed).length ?? 0;
 
   return (
-    <section className="screen">
-      <div className="hero">
-        <div className="eyebrow">居所 · 回返中心</div>
-        <h2>今天的你,想去哪裡?</h2>
-        <p>這裡不顯示 KPI、逾期與完成率;只留下可接續的事與回家的路。</p>
-        <div style={{ marginTop: 10 }}>
-          <GuangxingTodayStrip />
+    <section className="screen today-screen">
+      <div className="hero today-hero">
+        <div className="eyebrow">今天 · {formatToday(date)}</div>
+        <h1>把光放回今天</h1>
+        <p>晨間定向、白天留下動靜，晚上再把一天收回來。</p>
+        <div className="today-summary">
+          <span>三件事 {taskDone}/3</span>
+          <Link href="/bingo">週盤 {boardDone}/24 · {board ? completedBingoLines(board) : 0} 連線</Link>
         </div>
       </div>
 
-      <div className="toolbar">
-        <h3 style={{ margin: 0 }}>今天要做的事{today ? `(${today})` : ""}</h3>
-        <Link href="/overview" className="tag" style={{ color: "var(--gold)", borderColor: "var(--gold)" }}>
-          看整月 →
-        </Link>
-      </div>
-      {loadingTasks && <p className="lead">載入中…</p>}
-      {tasksError && <p className="lead" style={{ color: "var(--danger)" }}>{tasksError}</p>}
-      {!loadingTasks && !tasksError && todayTasks.length === 0 && <div className="empty">今天沒有到期的任務。</div>}
-      {todayTasks.map((t) => (
-        <button
-          key={t.id}
-          className="item dw"
-          onClick={() => t.所屬Session && router.push(`/sessions?sessionId=${t.所屬Session}`)}
-        >
-          <span className="status">
-            <span className="dot" />
-            {t.type}
-          </span>
-          <b>{t.標題}</b>
-          <small>{t.項目用途 || t.當場主題 || ""}</small>
-        </button>
-      ))}
+      {loading && <div className="empty">正在讀取今天…</div>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      {notice && <p className="save-notice" role="status">{notice}</p>}
 
-      {continuationCards.length > 0 && (
+      {!loading && (
         <>
-          <h3>回到哪裡</h3>
-          {continuationCards.map((c) =>
-            c.source === "b1" ? (
-              <button key={c.detailId} className="item dw" onClick={() => router.push(`/sanko?detailId=${c.detailId}`)}>
-                <span className="status">
-                  <span className="dot" />
-                  日上三更
-                </span>
-                <b>{c.text}</b>
-              </button>
-            ) : (
-              <div key={c.id} className="item cl">
-                <span className="status">
-                  <span className="dot" />
-                  帶回
-                </span>
-                <b>{c.text}</b>
-                <button
-                  style={{ marginTop: 6 }}
-                  disabled={resolvingId === c.id}
-                  onClick={() => resolveCard(c.id)}
-                >
-                  {resolvingId === c.id ? "處理中…" : "標記已處理"}
-                </button>
+          <section className="ritual-card morning-card">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">晨間啟動</span>
+                <h2>先看見此刻</h2>
               </div>
-            )
-          )}
+              {record.morning.startedAt && <span className="saved-mark">已啟動</span>}
+            </div>
+
+            <label>現在的狀態</label>
+            <div className="segmented three">
+              {(["低", "穩", "亮"] as const).map((state) => (
+                <button
+                  key={state}
+                  className={record.morning.state === state ? "on" : ""}
+                  onClick={() => setRecord({ ...record, morning: { ...record.morning, state } })}
+                >
+                  {state}
+                </button>
+              ))}
+            </div>
+
+            <label htmlFor="morning-intention">今天想把光放在哪裡？</label>
+            <textarea
+              id="morning-intention"
+              className="field"
+              value={record.morning.intention}
+              onChange={(event) => setRecord({ ...record, morning: { ...record.morning, intention: event.target.value } })}
+              placeholder="一句今天的方向即可"
+            />
+            <button
+              className="primary"
+              disabled={saving}
+              onClick={() => void persist({
+                ...record,
+                morning: { ...record.morning, startedAt: record.morning.startedAt ?? new Date().toISOString() },
+              }, "晨間啟動已存下來。")}
+            >
+              {saving ? "儲存中…" : "儲存晨間啟動"}
+            </button>
+          </section>
+
+          <section className="ritual-card">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">今日三件事</span>
+                <h2>重要、喜歡、照顧自己</h2>
+              </div>
+              <Link href="/bingo" className="text-link">從週盤帶入</Link>
+            </div>
+
+            <div className="daily-task-list">
+              {TASK_ORDER.map((category) => {
+                const task = record.tasks[category];
+                const meta = DAILY_TASK_CATEGORIES[category];
+                return (
+                  <div key={category} className={`daily-task ${task.completed ? "done" : ""}`}>
+                    <button
+                      className={`task-check ${task.completed ? "on" : ""}`}
+                      onClick={() => void toggleTask(category)}
+                      disabled={!task.text.trim() || saving}
+                      aria-label={task.completed ? `將${meta.label}改回未完成` : `完成${meta.label}`}
+                    >
+                      {task.completed ? "✓" : ""}
+                    </button>
+                    <div className="task-body">
+                      <label htmlFor={`task-${category}`}>{meta.label}</label>
+                      <input
+                        id={`task-${category}`}
+                        className="field"
+                        value={task.text}
+                        onChange={(event) => updateTask(category, {
+                          text: event.target.value,
+                          origin: task.origin && event.target.value !== task.text ? null : task.origin,
+                        })}
+                        placeholder={meta.prompt}
+                      />
+                      {task.origin && <small>來自本週週盤第 {task.origin.cellIndex + 1} 格</small>}
+                      {task.completed && (
+                        <textarea
+                          className="field compact"
+                          value={task.result}
+                          onChange={(event) => updateTask(category, { result: event.target.value })}
+                          placeholder="完成後留下結果或感受（選填）"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <button className="primary" disabled={saving} onClick={() => void persist(record, "今日三件事已更新。") }>
+              {saving ? "儲存中…" : "儲存今日三件事"}
+            </button>
+          </section>
+
+          <section className="ritual-card daytime-card">
+            <span className="eyebrow">白天追蹤</span>
+            <h2>留下正在發生的事</h2>
+            <div className="quick-log">
+              <input
+                className="field"
+                value={logText}
+                onChange={(event) => setLogText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void addLog();
+                  }
+                }}
+                placeholder="一句進度、感受或轉折"
+              />
+              <button onClick={() => void addLog()} disabled={!logText.trim() || saving}>記下</button>
+            </div>
+            {record.daytime.logs.length > 0 && (
+              <div className="day-log-list">
+                {record.daytime.logs.map((log) => (
+                  <div className="day-log" key={log.id}>
+                    <time>{log.time}</time>
+                    <span>{log.text}</span>
+                    <button onClick={() => void removeLog(log.id)} aria-label={`刪除「${log.text}」`}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <label htmlFor="day-note">日間札記</label>
+            <textarea
+              id="day-note"
+              className="field journal-field"
+              value={record.daytime.note}
+              onChange={(event) => setRecord({ ...record, daytime: { ...record.daytime, note: event.target.value } })}
+              placeholder="自由寫下今天，不需要整理成結論。"
+            />
+            <button className="primary" disabled={saving} onClick={() => void persist(record, "日間札記已存下來。") }>
+              {saving ? "儲存中…" : "儲存日間札記"}
+            </button>
+          </section>
+
+          <section className="ritual-card evening-card">
+            <span className="eyebrow">晚間收光</span>
+            <h2>用今天需要的深度回看</h2>
+            <div className="segmented three">
+              {([
+                ["light", "輕"],
+                ["medium", "適中"],
+                ["deep", "深入"],
+              ] as const).map(([depth, label]) => (
+                <button
+                  key={depth}
+                  className={record.evening.depth === depth ? "on" : ""}
+                  onClick={() => setRecord({ ...record, evening: { ...record.evening, depth } })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {record.evening.depth && EVENING_FIELDS[record.evening.depth].map((field) => {
+              const [label, placeholder] = EVENING_LABELS[field];
+              return (
+                <div key={field}>
+                  <label htmlFor={`evening-${field}`}>{label}</label>
+                  <textarea
+                    id={`evening-${field}`}
+                    className="field"
+                    value={record.evening[field]}
+                    onChange={(event) => setRecord({
+                      ...record,
+                      evening: { ...record.evening, [field]: event.target.value },
+                    })}
+                    placeholder={placeholder}
+                  />
+                </div>
+              );
+            })}
+
+            <label>今天怎麼結束？</label>
+            <div className="closing-choice-grid">
+              {([
+                ["carry", "帶回明天", "把下一步放到明天的接續入口"],
+                ["journal", "寫下今天", "留下復盤，不建立待辦"],
+                ["pause", "暫且放下", "今天到此，不留下接續"],
+              ] as const).map(([choice, label, description]) => (
+                <button
+                  key={choice}
+                  className={record.evening.disposition === choice ? "on" : ""}
+                  onClick={() => setRecord({ ...record, evening: { ...record.evening, disposition: choice } })}
+                >
+                  <b>{label}</b>
+                  <small>{description}</small>
+                </button>
+              ))}
+            </div>
+            <button className="primary" disabled={saving} onClick={() => void saveEvening()}>
+              {saving ? "收光中…" : record.evening.closedAt ? "更新今晚復盤" : "完成今晚收光"}
+            </button>
+          </section>
+
+          <section className="spaces-shortcut">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">六個場域</span>
+                <h2>需要時再走進去</h2>
+              </div>
+              <Link href="/map" className="text-link">完整場域圖</Link>
+            </div>
+            <div className="grid">
+              {(Object.entries(SPACES) as [SpaceKey, (typeof SPACES)[SpaceKey]][]).map(([key, value]) => (
+                <Link key={key} href={`/${key}`} className={`space-link ${value[1]}`}>
+                  <span className="dot" />
+                  <b>{value[0]}</b>
+                  <small>{value[2]}</small>
+                </Link>
+              ))}
+            </div>
+          </section>
         </>
       )}
-
-      {recentTraces.length > 0 && (
-        <>
-          <h3>最近的痕跡</h3>
-          {recentTraces.map((t) => (
-            <TraceCardItem key={t.id} trace={t} onView={viewTrace} />
-          ))}
-        </>
-      )}
-
-      {persistentTraces.length > 0 && (
-        // 下區「可摺疊」(補充裁決04 §2.2),標題不帶數字(補充裁決05 §五仍待
-        // 裁決「預設展開還是收合」——這裡先用我方回報過的建議選項A:比照全站
-        // 既有的 <details>/<summary>、預設收合、標題維持中性文字不帶提示。
-        // 這個預設值本身尚未經過擁有者正式拍板,交付時已標明,之後若要改成
-        // 選項B(預設展開)或選項C(加提示點)都只是這裡的區域性調整。
-        <details className="item dw" style={{ marginTop: 10 }}>
-          <summary style={{ cursor: "pointer", fontWeight: 600 }}>留著的</summary>
-          <div style={{ marginTop: 8 }}>
-            {persistentTraces.map((t) => (
-              <TraceCardItem key={t.id} trace={t} onView={viewTrace} />
-            ))}
-          </div>
-        </details>
-      )}
-
-      <h3>六個場域</h3>
-      <div className="grid">
-        {Object.entries(SPACES).map(([k, v]) => (
-          <button key={k} className={`space ${v[1]}`} onClick={() => router.push(`/${k}`)}>
-            <span className="dot" />
-            <b>{v[0]}</b>
-            <small>{v[2]}</small>
-          </button>
-        ))}
-      </div>
-
-      <div className="note">測試重點:居所是否只保留「回返」與「接續」,不取代各場域的完整功能。</div>
     </section>
-  );
-}
-
-// 痕跡卡片(上區/下區共用)。點卡片本身就是「回看」——不額外加一顆「查看」
-// 按鈕,卡片內容本身就是可以看的東西。刻意不顯示頻率/強度、不顯示任何時間
-// /天數(§1.2 不顯示倒數),文字只有標題與內容,中性描述(§2.3)。
-function TraceCardItem({ trace, onView }: { trace: TraceCard; onView: (id: string) => void }) {
-  const colorKey = trace.space ? SPACES[trace.space]?.[1] ?? "dw" : "dw";
-  return (
-    <button className={`item ${colorKey}`} style={{ textAlign: "left" }} onClick={() => onView(trace.id)}>
-      <b>{trace.標題}</b>
-      {trace.內容 && <small>{trace.內容}</small>}
-    </button>
   );
 }

@@ -17,6 +17,7 @@ import {
   readUrl,
 } from "./properties";
 import { JOURNAL_QUESTIONS, type JournalQuestionKey } from "@/lib/journal/notionFormat";
+import { FORMAL_STATE_TITLE_PREFIXES } from "@/lib/dojo/formal";
 import type { SpaceKey, SourceType, TraceLevel, TraceStatus } from "@/lib/dojo/constants";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -405,7 +406,11 @@ export async function listApprovedKnowledgeEntries() {
 // (見 lib/match.ts),只列清單供參考,擁有者自行判斷排入。
 export async function listAllKnowledgeEntries() {
   const pages = await queryAll(DATA_SOURCES.DB14_知識庫);
-  return pages.map(mapKnowledge);
+  // DB-14 同時承載少量 App JSON 狀態。個人今天／週盤／行程／快速紀錄不是
+  // 內容生產素材，不得進入生產日的知識庫比對候選。
+  return pages
+    .map(mapKnowledge)
+    .filter((entry) => !FORMAL_STATE_TITLE_PREFIXES.some((prefix) => entry.標題.startsWith(prefix)));
 }
 
 // 噗浪・蓋樓台(2026-08-02 擁有者裁決):範本/草稿都存 DB-14,用標題前綴區分,
@@ -434,6 +439,16 @@ export async function findKnowledgeEntryByTitle(title: string) {
     title: { equals: title },
   });
   return pages[0] ? mapKnowledge(pages[0]) : null;
+}
+
+// 行光道場正式版的個人流程資料沿用 DB-14 JSON 紀錄模式,以穩定前綴隔離
+// 每一種資料。查詢端只取指定前綴,不掃描或解碼其他知識庫內容。
+export async function listKnowledgeEntriesByPrefix(prefix: string) {
+  const pages = await queryAll(DATA_SOURCES.DB14_知識庫, {
+    property: "標題",
+    title: { starts_with: prefix },
+  });
+  return pages.map(mapKnowledge);
 }
 
 // 依 id 直接取單一 DB-14 資料列(「標記已處理」按鈕用:前端已經從居所接續
@@ -540,6 +555,13 @@ export async function listPersistentTraces() {
 export async function getTraceEntry(id: string) {
   const p = await withNotionRateLimit(() => notion().pages.retrieve({ page_id: id }));
   return mapTrace(p as NotionPage);
+}
+
+// 正式版「回看」需包含整合前已存在的 DB-19 生活痕跡。這裡只提供資料層
+// 全量讀取,實際顯示時仍排除 traceStatus=隱藏,並與 DB-14 新紀錄去重。
+export async function listAllTraceEntries() {
+  const pages = await queryAll(DATA_SOURCES.DB19_生活痕跡庫);
+  return pages.map(mapTrace);
 }
 
 // --- DB-16 標籤詞庫:P3 比對結果顯示「命中標籤」名稱用 ---

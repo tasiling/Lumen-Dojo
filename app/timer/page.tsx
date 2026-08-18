@@ -36,6 +36,8 @@ export default function TimerPage() {
   const [kind, setKind] = useState(timerConfig.kind);
   const [guangxing, setGuangxing] = useState<GuangxingKey | null>(timerConfig.guangxing);
   const [guangfa, setGuangfa] = useState<GuangfaKey | null>(timerConfig.guangfa);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -70,27 +72,34 @@ export default function TimerPage() {
     });
   }
 
-  function finishTimer() {
+  async function finishTimer() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setRunning(false);
     // 修正:用實際選定的起始秒數計算,不是寫死 25*60。
     const spent = Math.max(1, Math.round((initialSeconds - remainingSeconds) / 60));
-    addEntry({
-      title,
-      space,
-      kind,
-      note: `修行計時 ${spent} 分鐘`,
-      privacy: "私人",
-      guangxing,
-      guangfa,
-      sourceType: SPACE_TO_SOURCE_TYPE[space],
-      traceLevel: "daily",
-      traceStatus: "一般",
-      viewCount: 0,
-    });
-    setRemainingSeconds(initialSeconds);
-    router.push("/practice");
-    alert(`已記下 ${spent} 分鐘的修行時間。`);
+    setSaving(true);
+    setError(null);
+    try {
+      await addEntry({
+        title,
+        space,
+        kind,
+        note: `修行計時 ${spent} 分鐘`,
+        privacy: "私人",
+        guangxing,
+        guangfa,
+        sourceType: SPACE_TO_SOURCE_TYPE[space],
+        traceLevel: "daily",
+        traceStatus: "一般",
+        viewCount: 0,
+      });
+      setRemainingSeconds(initialSeconds);
+      router.push(`/${space}`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -109,7 +118,7 @@ export default function TimerPage() {
           <button className="primary" onClick={toggleTimer}>
             {running ? "暫停" : "開始"}
           </button>
-          <button onClick={finishTimer}>結束並記錄</button>
+          <button onClick={() => void finishTimer()} disabled={saving}>{saving ? "儲存中…" : "結束並記錄"}</button>
         </div>
       </div>
 
@@ -176,9 +185,7 @@ export default function TimerPage() {
         <small>開始前可改;計時結束時會建立一筆有分鐘數的修行紀錄。</small>
       </div>
 
-      <div className="note">
-        正式版要支援暫停、背景計時、通知、手動補登、計時與 Session 關聯,以及不必完成一個番茄鐘也能保存已投入時間。
-      </div>
+      {error && <p className="form-error" role="alert">{error}</p>}
     </section>
   );
 }

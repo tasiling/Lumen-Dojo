@@ -8,6 +8,7 @@ import {
   CARRY_WINDOW_DAYS,
   type ClosingContent,
 } from "@/lib/closing/notionFormat";
+import { taipeiTodayISO } from "@/lib/dojo/formal";
 
 // Notion 是唯一真相來源,讀取一律即時查詢,不吃 Route Handler 快取。
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ function fmtMD(iso: string): string {
 // 不標示過期、不顯示逾期天數、不改變外觀;超過三張時其餘不顯示、不提示還
 // 有幾張;卡片文字中性——呼叫端(app/page.tsx)在零張時要把整區隱藏。
 export async function GET() {
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = taipeiTodayISO();
 
   // 一筆「帶回」紀錄的 Notion 標題是「建立日」,不是 carryToDate——
   // carryToDate 最遠可以是建立日 + 7 天,所以要往前掃 CARRY_WINDOW_DAYS 天

@@ -1,132 +1,267 @@
 "use client";
 
-// 回看(雛形 review()/searchEntries()/filterNen()的等價實作):跨場域回看,
-// 依時間、場域、主題、隱私與光行／光法,而非完成率。
-//
-// 測頻篩選(三方協作規格書 v1.3 §2.3,新增):簡化為淺／中／深三段,不是十七個
-// 狀態按鈕牆——依這段時間投入的深淺篩選片刻,不顯示平均值、不做排名或趨勢圖。
-// 搜尋、光行篩選、光法篩選、測頻篩選四者互不疊加(選了其中一種,其他自動
-// 歸零),沿用雛形原本「各自蓋掉對方」的行為,統一成一個 filter 狀態管理,
-// 不分別維護多個布林/字串變數各自判斷優先序。
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
-import { GUANGXING, GUANGFA, type GuangxingKey, type GuangfaKey } from "@/lib/dojo/constants";
-import { resolveFreqBand, FREQ_BAND_LABELS, type FreqBand } from "@/lib/dojo/hawkins";
-import EntryCard from "../components/EntryCard";
+import {
+  DAILY_TASK_CATEGORIES,
+  type DailyRecord,
+  type DailyTaskCategory,
+} from "@/lib/dojo/formal";
+import {
+  GUANGFA,
+  GUANGXING,
+  SPACES,
+  type DojoEntry,
+  type SpaceKey,
+} from "@/lib/dojo/constants";
+import { formatFreqIntensityLabel, resolveHawkinsLevel } from "@/lib/dojo/hawkins";
 
-type Filter =
-  | { kind: "all" }
-  | { kind: "query"; value: string }
-  | { kind: "guangxing"; value: GuangxingKey }
-  | { kind: "guangfa"; value: GuangfaKey }
-  | { kind: "freq"; value: FreqBand };
+const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
+
+async function readResponse<T>(response: Response): Promise<T> {
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((json as { error?: string }).error ?? `載入失敗（${response.status}）`);
+  return json as T;
+}
+
+function fmtDate(dateISO: string) {
+  return new Intl.DateTimeFormat("zh-TW", { year: "numeric", month: "long", day: "numeric", weekday: "short" })
+    .format(new Date(`${dateISO}T12:00:00+08:00`));
+}
 
 export default function ReviewPage() {
-  const { entries } = useDojo();
-  const [queryText, setQueryText] = useState("");
-  const [filter, setFilter] = useState<Filter>({ kind: "all" });
+  const { entries: editableEntries, openQuickAdd, removeEntry, refreshEntries } = useDojo();
+  const [daily, setDaily] = useState<DailyRecord[]>([]);
+  const [entries, setEntries] = useState<DojoEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"all" | "daily" | "entries">("all");
+  const [space, setSpace] = useState<"all" | SpaceKey>("all");
+  const [dateFilter, setDateFilter] = useState("");
 
-  function onQueryChange(v: string) {
-    setQueryText(v);
-    setFilter(v ? { kind: "query", value: v } : { kind: "all" });
-  }
-  function onGuangxingClick(v: GuangxingKey | null) {
-    setQueryText("");
-    setFilter(v ? { kind: "guangxing", value: v } : { kind: "all" });
-  }
-  function onGuangfaClick(v: GuangfaKey | null) {
-    setQueryText("");
-    setFilter(v ? { kind: "guangfa", value: v } : { kind: "all" });
-  }
-  function onFreqClick(v: FreqBand | null) {
-    setQueryText("");
-    setFilter(v ? { kind: "freq", value: v } : { kind: "all" });
+  useEffect(() => {
+    const date = new URLSearchParams(window.location.search).get("date");
+    if (!date) return;
+    const timer = window.setTimeout(() => setDateFilter(date), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("/api/dojo/review", { cache: "no-store" });
+        const json = await readResponse<{ daily: DailyRecord[]; entries: DojoEntry[] }>(response);
+        if (!cancelled) {
+          setDaily(json.daily ?? []);
+          setEntries(json.entries ?? []);
+        }
+      } catch (caught) {
+        if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const normalizedQuery = query.trim().toLocaleLowerCase("zh-Hant");
+  const visibleDaily = useMemo(() => daily.filter((record) => {
+    if (dateFilter && record.date !== dateFilter) return false;
+    if (!normalizedQuery) return true;
+    const text = [
+      record.morning.intention,
+      record.daytime.note,
+      ...record.daytime.logs.map((log) => log.text),
+      ...TASK_ORDER.map((category) => record.tasks[category].text),
+      record.evening.highlight,
+      record.evening.block,
+      record.evening.insight,
+      record.evening.nextAction,
+    ].join(" ").toLocaleLowerCase("zh-Hant");
+    return text.includes(normalizedQuery);
+  }), [daily, dateFilter, normalizedQuery]);
+
+  const visibleEntries = useMemo(() => entries.filter((entry) => {
+    if (dateFilter && entry.date !== dateFilter) return false;
+    if (space !== "all" && entry.space !== space) return false;
+    if (!normalizedQuery) return true;
+    return `${entry.title} ${entry.note ?? ""} ${entry.kind}`.toLocaleLowerCase("zh-Hant").includes(normalizedQuery);
+  }), [entries, dateFilter, normalizedQuery, space]);
+
+  async function deleteEntry(entry: DojoEntry) {
+    if (entry.id.startsWith("trace:")) return;
+    if (!window.confirm(`要刪除「${entry.title}」嗎？資料會送進 Notion 垃圾桶。`)) return;
+    try {
+      await removeEntry(entry.id);
+      setEntries((current) => current.filter((item) => item.id !== entry.id));
+      await refreshEntries();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
   }
 
-  const list =
-    filter.kind === "query"
-      ? entries.filter((e) => (e.title + (e.note ?? "") + e.kind).toLowerCase().includes(filter.value.toLowerCase()))
-      : filter.kind === "guangxing"
-        ? entries.filter((e) => e.guangxing === filter.value)
-        : filter.kind === "guangfa"
-          ? entries.filter((e) => e.guangfa === filter.value)
-          : filter.kind === "freq"
-            ? entries.filter((e) => e.freq != null && resolveFreqBand(e.freq) === filter.value)
-            : entries;
-
-  const displayed = list.slice().reverse();
-  const emptyMsg =
-    filter.kind === "query"
-      ? "沒有符合的片刻。"
-      : filter.kind === "guangxing"
-        ? "這個光行還沒有紀錄。"
-        : filter.kind === "guangfa"
-          ? "這個光法還沒有紀錄。"
-          : filter.kind === "freq"
-            ? "這個深淺區間還沒有標記過的片刻。"
-            : "還沒有可回看的痕跡。";
+  function viewLegacy(entry: DojoEntry) {
+    if (!entry.id.startsWith("trace:") || !entry.traceId) return;
+    void fetch(`/api/traces/${entry.traceId}/view`, { method: "PATCH" });
+  }
 
   return (
-    <section className="screen">
-      <h1>回看</h1>
-      <p className="lead">跨場域回看:依時間、場域、主題、隱私與光行／光法,而非完成率。</p>
-      <div className="toolbar">
-        <input
-          className="field"
-          style={{ margin: 0 }}
-          placeholder="搜尋留下的片刻"
-          value={queryText}
-          onChange={(e) => onQueryChange(e.target.value)}
-        />
+    <section className="screen review-screen">
+      <div className="section-heading page-heading">
+        <div>
+          <span className="eyebrow">回看</span>
+          <h1>走過的光</h1>
+          <p className="lead">今天的三件事、札記、晚間復盤與六場域痕跡都在這裡。</p>
+        </div>
+        {dateFilter && <button onClick={() => setDateFilter("")}>清除日期</button>}
       </div>
 
-      <div className="row">
-        <button className={filter.kind === "all" ? "on" : ""} onClick={() => onGuangxingClick(null)}>
-          全部
-        </button>
-        {(Object.entries(GUANGXING) as [GuangxingKey, (typeof GUANGXING)[GuangxingKey]][]).map(([k, v]) => (
-          <button
-            key={k}
-            className={filter.kind === "guangxing" && filter.value === k ? "on" : ""}
-            onClick={() => onGuangxingClick(k)}
-          >
-            {v[0]}
-          </button>
-        ))}
+      <input className="field search-field" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜尋任務、札記或痕跡" />
+
+      <div className="segmented three">
+        <button className={mode === "all" ? "on" : ""} onClick={() => setMode("all")}>全部</button>
+        <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>每日回看</button>
+        <button className={mode === "entries" ? "on" : ""} onClick={() => setMode("entries")}>場域痕跡</button>
       </div>
 
-      <div className="row">
-        <button className={filter.kind === "all" ? "on" : ""} onClick={() => onGuangfaClick(null)}>
-          全部
-        </button>
-        {(Object.entries(GUANGFA) as [GuangfaKey, (typeof GUANGFA)[GuangfaKey]][]).map(([k, v]) => (
-          <button
-            key={k}
-            className={filter.kind === "guangfa" && filter.value === k ? "on" : ""}
-            onClick={() => onGuangfaClick(k)}
-          >
-            {v[0]}
-          </button>
-        ))}
-      </div>
+      {(mode === "all" || mode === "entries") && (
+        <div className="row source-filter">
+          <button className={space === "all" ? "on" : ""} onClick={() => setSpace("all")}>全部場域</button>
+          {(Object.entries(SPACES) as [SpaceKey, (typeof SPACES)[SpaceKey]][]).map(([key, value]) => (
+            <button key={key} className={space === key ? "on" : ""} onClick={() => setSpace(key)}>{value[0]}</button>
+          ))}
+        </div>
+      )}
 
-      <p className="lead" style={{ marginBottom: 4 }}>
-        依測頻區間篩選:這段時間投入得多深,不顯示平均值或排名。
-      </p>
-      <div className="row">
-        <button className={filter.kind === "all" ? "on" : ""} onClick={() => onFreqClick(null)}>
-          全部
-        </button>
-        {(Object.entries(FREQ_BAND_LABELS) as [FreqBand, string][]).map(([k, label]) => (
-          <button key={k} className={filter.kind === "freq" && filter.value === k ? "on" : ""} onClick={() => onFreqClick(k)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {dateFilter && <p className="save-notice">正在查看 {fmtDate(dateFilter)}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      {loading && <div className="empty">正在整理回看…</div>}
 
-      <div id="reviewList">
-        {displayed.length === 0 ? <div className="empty">{emptyMsg}</div> : displayed.map((e) => <EntryCard key={e.id} entry={e} />)}
-      </div>
+      {!loading && (mode === "all" || mode === "daily") && (
+        <div className="review-days">
+          {visibleDaily.map((record) => <DailyReviewCard key={record.date} record={record} />)}
+          {visibleDaily.length === 0 && mode === "daily" && <div className="empty">這個條件下沒有每日回看。</div>}
+        </div>
+      )}
+
+      {!loading && (mode === "all" || mode === "entries") && (
+        <div className="review-entries">
+          {mode === "all" && visibleEntries.length > 0 && <h2 className="review-divider">場域痕跡</h2>}
+          {visibleEntries.map((entry) => (
+            <ReviewEntryCard
+              key={entry.id}
+              entry={entry}
+              editable={editableEntries.some((item) => item.id === entry.id)}
+              onEdit={() => openQuickAdd({ editId: entry.id })}
+              onDelete={() => void deleteEntry(entry)}
+              onView={() => viewLegacy(entry)}
+            />
+          ))}
+          {visibleEntries.length === 0 && mode === "entries" && <div className="empty">這個條件下沒有場域痕跡。</div>}
+        </div>
+      )}
+
+      {!loading && mode === "all" && visibleDaily.length === 0 && visibleEntries.length === 0 && (
+        <div className="empty">還沒有符合條件的內容。</div>
+      )}
     </section>
+  );
+}
+
+function DailyReviewCard({ record }: { record: DailyRecord }) {
+  const completed = TASK_ORDER.filter((category) => record.tasks[category].completed).length;
+  const hasEvening = Boolean(record.evening.closedAt || record.evening.highlight || record.evening.insight);
+  return (
+    <details className="review-day-card" open={false}>
+      <summary>
+        <div>
+          <span className="eyebrow">{fmtDate(record.date)}</span>
+          <b>{record.morning.intention || "這一天沒有留下晨間意圖"}</b>
+        </div>
+        <span>{completed}/3 · {hasEvening ? "已收光" : "未收光"}</span>
+      </summary>
+      <div className="review-day-body">
+        <h3>今日三件事</h3>
+        {TASK_ORDER.map((category) => {
+          const task = record.tasks[category];
+          if (!task.text) return null;
+          return (
+            <div className="review-task" key={category}>
+              <span>{task.completed ? "✓" : "○"}</span>
+              <div>
+                <small>{DAILY_TASK_CATEGORIES[category].label}</small>
+                <b>{task.text}</b>
+                {task.result && <p>{task.result}</p>}
+              </div>
+            </div>
+          );
+        })}
+
+        {record.daytime.logs.length > 0 && (
+          <>
+            <h3>白天追蹤</h3>
+            <div className="timeline">
+              {record.daytime.logs.map((log) => <div className="event" key={log.id}><b>{log.text}</b><small>{log.time}</small></div>)}
+            </div>
+          </>
+        )}
+
+        {record.daytime.note && <><h3>日間札記</h3><p className="review-prose">{record.daytime.note}</p></>}
+
+        {hasEvening && (
+          <>
+            <h3>晚間復盤</h3>
+            <div className="review-reflection">
+              {record.evening.highlight && <p><b>一束光</b>{record.evening.highlight}</p>}
+              {record.evening.block && <p><b>卡住的地方</b>{record.evening.block}</p>}
+              {record.evening.insight && <p><b>看見了什麼</b>{record.evening.insight}</p>}
+              {record.evening.nextAction && <p><b>下一步</b>{record.evening.nextAction}</p>}
+            </div>
+          </>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function ReviewEntryCard({
+  entry,
+  editable,
+  onEdit,
+  onDelete,
+  onView,
+}: {
+  entry: DojoEntry;
+  editable: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onView: () => void;
+}) {
+  const color = SPACES[entry.space][1];
+  const measure = formatFreqIntensityLabel(entry.freq, entry.intensity);
+  const level = entry.freq != null ? resolveHawkinsLevel(entry.freq) : null;
+  return (
+    <article className={`item ${color}`} onClick={onView}>
+      <span className="status"><span className="dot" />{SPACES[entry.space][0]} · {entry.kind}</span>
+      {entry.guangxing && <span className="tag">{GUANGXING[entry.guangxing][0]}</span>}
+      {entry.guangfa && <span className="tag">{GUANGFA[entry.guangfa][0]}</span>}
+      {measure && <span className="tag" style={{ borderColor: level?.color, color: level?.color }}>{measure}</span>}
+      <b>{entry.title}</b>
+      {entry.note && <p className="review-prose compact">{entry.note}</p>}
+      <small>{entry.date || "未標日期"} · {entry.privacy}</small>
+      {editable && (
+        <div className="actions">
+          <button onClick={(event) => { event.stopPropagation(); onEdit(); }}>編輯</button>
+          <button className="danger" onClick={(event) => { event.stopPropagation(); onDelete(); }}>刪除</button>
+        </div>
+      )}
+    </article>
   );
 }

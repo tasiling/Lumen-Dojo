@@ -6,6 +6,7 @@ import {
   normalizeDetailStatus,
   normalizeSessionStatus,
 } from "@/lib/notion/schema";
+import { taipeiTodayISO } from "@/lib/dojo/formal";
 
 // Notion 是唯一真相來源,寫入/刪除可能發生在 App 之外(擁有者直接在 Notion
 // 操作),讀取一律即時查詢,不吃 Next.js 的 Route Handler 快取,避免顯示已經
@@ -23,7 +24,7 @@ function monthRange(yearMonth: string): { start: string; end: string } {
 export async function GET(req: NextRequest) {
   const yearMonth = req.nextUrl.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
   const { start, end } = monthRange(yearMonth);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = taipeiTodayISO();
 
   const [details, slots] = await Promise.all([
     listDetailsInRange(start, end),

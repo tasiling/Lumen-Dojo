@@ -1,6 +1,5 @@
 "use client";
 
-// 探索(雛形 map()的等價實作):道場小地圖,先測導航結構。
 import { useRouter } from "next/navigation";
 import { SPACES } from "@/lib/dojo/constants";
 
@@ -9,7 +8,7 @@ export default function MapPage() {
   return (
     <section className="screen">
       <h1>道場小地圖</h1>
-      <p className="lead">目前先測導航結構;美術素材之後可替換成完整地圖與建築。</p>
+      <p className="lead">六個生活場域，各自保留紀錄、計時與回看的入口。</p>
       <div className="grid">
         {Object.entries(SPACES).map(([k, v]) => (
           <button key={k} className={`space ${v[1]}`} onClick={() => router.push(`/${k}`)}>
@@ -20,8 +19,9 @@ export default function MapPage() {
         ))}
       </div>
       <div className="box dw">
-        <b>居所</b>
-        <small>所有路線都能回到這裡。</small>
+        <b>工作後台</b>
+        <small>日上三更、任務管理、組稿、序列、生產日與快速評分集中在此。</small>
+        <button style={{ marginTop: 10 }} onClick={() => router.push("/backstage")}>進入工作後台 →</button>
       </div>
     </section>
   );

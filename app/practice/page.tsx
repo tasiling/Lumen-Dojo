@@ -50,7 +50,6 @@ export default function PracticePage() {
         {tab === "guangfa" && <GuangfaTab />}
         {tab === "logs" && <LogsTab />}
       </div>
-      <div className="note">測試重點:身、心、靈是否為正確第一層;修行紀錄是否應跨三者統整。</div>
     </section>
   );
 }

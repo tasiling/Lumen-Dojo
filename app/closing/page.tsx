@@ -1,7 +1,7 @@
 "use client";
 
 // 收光(依三方協作規格書 v1.3 §3.5/§3.5.1 從零實作,取代先前四選項的雛形版本)。
-// 擁有者指示:快速評分、提案審核掛進這裡(提案審核屬第三期範圍,尚未建置)。
+// 正式版將快速評分移到工作後台；本頁只處理個人收光與測頻。
 //
 // v1.3 §3.5:收光是「處置決定」,不是心靈語句——三個選項對應三種明確的處置方式,
 // 不是勾選句。原本的「先收納」「不留紀錄」已取消,收納動作移到各場域的痕跡卡片
@@ -59,6 +59,7 @@ import { useDojo } from "@/lib/dojo/store";
 import { SPACES, GUANGXING, GUANGFA, type DojoEntry } from "@/lib/dojo/constants";
 import { carryDateOptions, fmtDateWD, type ClosingChoice } from "@/lib/closing/notionFormat";
 import { JOURNAL_QUESTIONS, type JournalAnswers } from "@/lib/journal/notionFormat";
+import { taipeiTodayISO } from "@/lib/dojo/formal";
 import {
   resolveHawkinsLevel,
   formatFreqIntensityLabel,
@@ -67,7 +68,6 @@ import {
   INTENSITY_MIN,
   INTENSITY_MAX,
 } from "@/lib/dojo/hawkins";
-import ExistingFeatureLinks from "../components/ExistingFeatureLinks";
 
 const CHOICES: { choice: ClosingChoice; label: string; note: string }[] = [
   { choice: "carry", label: "帶回", note: "選一天,建立一個溫和的接續入口。" },
@@ -105,7 +105,8 @@ function fmtCarryOption(iso: string, dayIndex: number): string {
 export default function ClosingPage() {
   const router = useRouter();
   const { entries } = useDojo();
-  const todayEntries = entries.filter((e) => e.date === "今天" || e.date === "剛剛");
+  const todayISO = taipeiTodayISO();
+  const todayEntries = entries.filter((e) => e.date === todayISO);
 
   // 「帶回」是唯一有額外步驟的選項:點下去先展開日期按鈕列(必選)＋一句話
   // 輸入框(可留空),按確定才真的送出;另外兩個選項點下去就直接送出,不需要
@@ -137,7 +138,6 @@ export default function ClosingPage() {
     null
   );
 
-  const todayISO = new Date().toISOString().slice(0, 10);
   const carryOptions = carryDateOptions(todayISO);
 
   useEffect(() => {
@@ -210,7 +210,6 @@ export default function ClosingPage() {
     <section className="screen">
       <h1>收光</h1>
       <p className="lead">今天可以安心結束;沒有未完成警告,也不要求連續打卡。</p>
-      <ExistingFeatureLinks links={[{ label: "快速評分", href: "/feedback" }, { label: "提案審核", href: null }]} />
       <div className="box cl">
         <span className="label">今天回望</span>
         <b>你留下了 {entries.length} 個片刻。</b>
@@ -382,9 +381,6 @@ export default function ClosingPage() {
           {lastSubmitted && feedbackText(lastSubmitted.choice, lastSubmitted.carryToDate)}
         </div>
       )}
-      <div className="note">
-        測試重點:三個處置選項是否足夠;復盤測頻是否讓人有壓力(不測也完全合法,不應該有任何提示要求一定要測)。
-      </div>
     </section>
   );
 }

@@ -10,6 +10,7 @@ import {
   type ClosingContent,
 } from "@/lib/closing/notionFormat";
 import { hasAnyJournalAnswer, type JournalAnswers } from "@/lib/journal/notionFormat";
+import { taipeiTodayISO } from "@/lib/dojo/formal";
 
 // Notion 是唯一真相來源,讀取一律即時查詢,不吃 Route Handler 快取。
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "缺少或不明的必要參數:choice" }, { status: 400 });
   }
 
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = taipeiTodayISO();
 
   // carryToDate 僅 carry 時必填,且一律限定「明天起七日內」——不是排程工具,
   // 不接受任意未來日期(地基實作 v2.0 步驟三)。

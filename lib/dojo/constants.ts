@@ -41,10 +41,9 @@ export const GUANGFA: Record<GuangfaKey, [string, string, string]> = {
 
 export type Privacy = "私人" | "限閱" | "公開";
 
-// 行光牌與收光系統・地基實作(2026-08-04,補充裁決01):四個新欄位,幫收光、
-// 行光牌、知識煉金站在同一組欄位上。委派書提到的存量資料風險(對照 DB-04
-// 加欄位的舊例)經回報確認不適用於 DojoEntry——這裡是純前端記憶體狀態,不
-// 持久化,沒有真的在累積的存量資料,三筆示範資料由這裡直接補齊初始值即可。
+// 行光牌與收光系統・地基實作(2026-08-04,補充裁決01):四個欄位讓收光、
+// 行光牌與知識煉金站共用語意。正式版 DojoEntry 已改存 DB-14 JSON；非私人
+// 紀錄另同步 DB-19 生活痕跡，型別必填可在寫入前擋下欄位遺漏。
 export type SourceType = "practice" | "forage" | "work" | "service" | "archive" | "rest" | "alchemy";
 export type TraceLevel = "daily" | "accumulated" | "permanent";
 // 值域裁決(補充裁決01之2):一般／收納／隱藏。本輪只建欄位、只寫預設值
@@ -66,7 +65,7 @@ export const SPACE_TO_SOURCE_TYPE: Record<SpaceKey, SourceType> = {
 };
 
 export type DojoEntry = {
-  id: number;
+  id: string;
   title: string;
   space: SpaceKey;
   kind: string;
@@ -88,59 +87,10 @@ export type DojoEntry = {
   traceLevel: TraceLevel;
   traceStatus: TraceStatus;
   viewCount: number;
-  // 補充裁決04/05(生活痕跡的淡去規則/持久化):對應 DB-19 生活痕跡庫那一筆的
-  // Notion page id。建立當下是背景非同步寫入,寫入成功前這裡是 undefined;
-  // 私人項目(privacy==="私人")則永遠不會有值——DB-19 沒有 privacy 欄位,
-  // 唯一能維持「居所不顯示私人項目」既有保護的做法是私人項目一開始就不建立
-  // 痕跡紀錄,不是建立了再靠讀取端過濾(見 lib/dojo/store.tsx addEntry())。
+  // 對應 DB-19 生活痕跡庫的 Notion page id。私人項目不建立 DB-19 痕跡，
+  // 只寫入受 ACCESS_KEY 保護的 DB-14 正式紀錄。
   traceId?: string;
+  // DB-14 正式持久化紀錄的時間戳。舊 DB-19 痕跡沒有這兩欄,所以保持選填。
+  createdAt?: string;
+  updatedAt?: string;
 };
-
-// 雛形內建的三筆示範資料,直接沿用。
-export const INITIAL_ENTRIES: DojoEntry[] = [
-  {
-    id: 1,
-    title: "靜坐 10 分鐘",
-    space: "practice",
-    kind: "心／情",
-    privacy: "私人",
-    note: "讓心慢慢安靜下來",
-    date: "今天",
-    guangxing: "ning",
-    guangfa: null,
-    sourceType: "practice",
-    traceLevel: "daily",
-    traceStatus: "一般",
-    viewCount: 0,
-  },
-  {
-    id: 2,
-    title: "我為什麼快完成時會停下來?",
-    space: "forage",
-    kind: "提問",
-    privacy: "私人",
-    note: "可帶往 AI 論道或織光堂",
-    date: "今天",
-    guangxing: null,
-    guangfa: null,
-    sourceType: "forage",
-    traceLevel: "daily",
-    traceStatus: "一般",
-    viewCount: 0,
-  },
-  {
-    id: 3,
-    title: "一則日光草稿",
-    space: "weaving",
-    kind: "草稿",
-    privacy: "私人",
-    note: "下一步:列三個標題",
-    date: "今天",
-    guangxing: "lian",
-    guangfa: null,
-    sourceType: "work",
-    traceLevel: "daily",
-    traceStatus: "一般",
-    viewCount: 0,
-  },
-];

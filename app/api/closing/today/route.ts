@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findKnowledgeEntryByTitle } from "@/lib/notion/queries";
 import { closingRecordTitle, decodeClosingContent } from "@/lib/closing/notionFormat";
+import { taipeiTodayISO } from "@/lib/dojo/formal";
 
 // Notion 是唯一真相來源,讀取一律即時查詢,不吃 Route Handler 快取。
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 // 才能在確認對話框裡說清楚「會失去什麼」。這裡只回傳精簡描述,不回傳整包
 // ClosingContent(呼叫端不需要 sourceType/traceLevel 這些欄位)。
 export async function GET() {
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = taipeiTodayISO();
   const record = await findKnowledgeEntryByTitle(closingRecordTitle(todayISO));
   if (!record) return NextResponse.json({ existing: null });
 

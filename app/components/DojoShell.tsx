@@ -1,56 +1,39 @@
 "use client";
 
-// 行光道場外殼:雛形的頂部列 + 底部五項固定導航 + 快速新增 bottom sheet。
-// 版面結構與互動邏輯沿用雛形(go()/openForm()/saveEntry() 的等價實作),不重新設計。
-// 修掉雛形本身的問題:快速新增表單原本用 <select> 選場域/光行光法/隱私,這裡
-// 全部改成按鈕列(照雛形計時器頁「setMinutes/pickTimerSpace/pickTimerNen」的
-// 按鈕列做法)。
-
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
 import {
-  SPACES,
-  GUANGXING,
   GUANGFA,
+  GUANGXING,
+  SPACES,
   SPACE_TO_SOURCE_TYPE,
-  type SpaceKey,
-  type GuangxingKey,
+  type DojoEntry,
   type GuangfaKey,
+  type GuangxingKey,
   type Privacy,
-  type SourceType,
-  type TraceLevel,
-  type TraceStatus,
+  type SpaceKey,
 } from "@/lib/dojo/constants";
+import { taipeiTodayISO } from "@/lib/dojo/formal";
 import { useBackStack, useBackableState } from "@/lib/dojo/backstack";
-import { PARENT_ROUTE, ROUTE_LABEL, USE_BROWSER_BACK, NO_BACK_BUTTON } from "@/lib/dojo/backroutes";
+import { NO_BACK_BUTTON, PARENT_ROUTE, ROUTE_LABEL, USE_BROWSER_BACK } from "@/lib/dojo/backroutes";
 
-// 雛形 currentSpace():目前所在頁面若是七場域之一就用該場域,否則預設「修習所」。
 function currentSpaceFromPath(pathname: string): SpaceKey {
   const key = pathname.replace(/^\//, "") as SpaceKey;
   return key in SPACES ? key : "practice";
 }
 
-// 頂部返回鍵(擁有者指示:除居所外的所有頁面左上角顯示返回鍵,回到「上一層」
-// 而不是首頁)。若目前有 detail/彈出層開著(depth() > 0),先關掉那一層,和
-// 返回手勢的行為保持一致——不然使用者在 detail 展開時按這顆按鈕,會跳過
-// 「先收合 detail」這一步直接離開整個頁面,體感上比手勢版本少一層。
 function BackButton({ pathname }: { pathname: string }) {
   const router = useRouter();
   const { depth } = useBackStack();
-
   if (NO_BACK_BUTTON.has(pathname)) return null;
 
   const useBrowserBack = USE_BROWSER_BACK.has(pathname);
   const parent = PARENT_ROUTE[pathname] ?? "/";
-  const label = useBrowserBack ? "返回" : (ROUTE_LABEL[parent] ?? "居所");
+  const label = useBrowserBack ? "返回" : (ROUTE_LABEL[parent] ?? "今天");
 
   function handleClick() {
-    if (depth() > 0) {
-      window.history.back();
-      return;
-    }
-    if (useBrowserBack) {
+    if (depth() > 0 || useBrowserBack) {
       router.back();
       return;
     }
@@ -64,25 +47,30 @@ function BackButton({ pathname }: { pathname: string }) {
   );
 }
 
-const NAV_ITEMS: { key: string; icon: string; label: string; href?: string }[] = [
-  { key: "home", icon: "⌂", label: "居所", href: "/" },
-  { key: "map", icon: "⌘", label: "探索", href: "/map" },
+const NAV_ITEMS = [
+  { key: "today", icon: "☀", label: "今天", href: "/" },
+  { key: "calendar", icon: "▦", label: "行事曆", href: "/calendar" },
   { key: "add", icon: "＋", label: "新增" },
+  { key: "bingo", icon: "◇", label: "週盤", href: "/bingo" },
   { key: "review", icon: "◷", label: "回看", href: "/review" },
-  { key: "assistant", icon: "✦", label: "執事", href: "/assistant" },
-];
+] as const;
 
 const PRIVACY_OPTIONS: Privacy[] = ["私人", "限閱", "公開"];
 
 export default function DojoShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { entries, addEntry, updateEntry, modalOpen, modalOptions, openQuickAdd, closeQuickAdd, startTimerFromSpace } =
-    useDojo();
+  const {
+    entries,
+    addEntry,
+    updateEntry,
+    modalOpen,
+    modalOptions,
+    openQuickAdd,
+    closeQuickAdd,
+    startTimerFromSpace,
+  } = useDojo();
 
-  // 快速新增/編輯是全站共用的 bottom sheet(擁有者指示「彈出層的返回」要能關掉
-  // 彈出層而不是離開頁面):打開就推一筆瀏覽器歷史,返回手勢或按鈕關閉時，
-  // 歷史記錄自動同步退回。
   useBackableState(modalOpen, closeQuickAdd);
 
   function openTimerFromHere() {
@@ -90,32 +78,37 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
     router.push("/timer");
   }
 
+  function isActive(href: string) {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
   return (
     <div className="dojo">
       <main className="app">
         <header className="top">
           {pathname === "/" ? <div className="brand">行光道場</div> : <BackButton pathname={pathname} />}
-          <div style={{ display: "flex", gap: 7 }}>
+          <div className="top-actions">
             <button onClick={openTimerFromHere}>◷ 計時</button>
-            <button onClick={() => router.push("/map")}>⌘ 地圖</button>
+            <button onClick={() => router.push("/map")}>⌘ 場域</button>
           </div>
         </header>
         <div id="view">{children}</div>
       </main>
 
-      <nav className="nav">
+      <nav className="nav" aria-label="主要導覽">
         {NAV_ITEMS.map((item) =>
-          item.href ? (
+          "href" in item ? (
             <button
               key={item.key}
-              className={pathname === item.href ? "on" : ""}
-              onClick={() => router.push(item.href!)}
+              className={isActive(item.href) ? "on" : ""}
+              onClick={() => router.push(item.href)}
             >
               <span>{item.icon}</span>
               {item.label}
             </button>
           ) : (
-            <button key={item.key} onClick={() => openQuickAdd()}>
+            <button key={item.key} className={modalOpen ? "on" : ""} onClick={() => openQuickAdd()}>
               <span>{item.icon}</span>
               {item.label}
             </button>
@@ -125,14 +118,16 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
 
       {modalOpen && (
         <QuickAddModal
-          entry={modalOptions.editId ? entries.find((e) => e.id === modalOptions.editId) : undefined}
+          key={`${modalOptions.editId ?? "new"}-${modalOptions.mode ?? "record"}`}
+          entry={modalOptions.editId ? entries.find((entry) => entry.id === modalOptions.editId) : undefined}
           presetSpace={modalOptions.presetSpace}
           presetKind={modalOptions.presetKind}
+          presetDate={modalOptions.presetDate}
+          initialMode={modalOptions.mode}
           onClose={closeQuickAdd}
-          onSave={(data) => {
-            if (modalOptions.editId) updateEntry(modalOptions.editId, data);
-            else addEntry(data);
-            closeQuickAdd();
+          onSaveRecord={async (data) => {
+            if (modalOptions.editId) await updateEntry(modalOptions.editId, data);
+            else await addEntry(data);
           }}
         />
       )}
@@ -140,162 +135,200 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+type RecordPayload = Omit<DojoEntry, "id" | "createdAt" | "updatedAt">;
+
 function QuickAddModal({
   entry,
   presetSpace,
   presetKind,
+  presetDate,
+  initialMode,
   onClose,
-  onSave,
+  onSaveRecord,
 }: {
-  entry?: {
-    title: string;
-    note?: string;
-    space: SpaceKey;
-    kind: string;
-    guangxing: GuangxingKey | null;
-    guangfa: GuangfaKey | null;
-    privacy: Privacy;
-    traceLevel: TraceLevel;
-    traceStatus: TraceStatus;
-    viewCount: number;
-  };
+  entry?: DojoEntry;
   presetSpace?: SpaceKey;
   presetKind?: string;
+  presetDate?: string;
+  initialMode?: "record" | "calendar";
   onClose: () => void;
-  onSave: (data: {
-    title: string;
-    note?: string;
-    space: SpaceKey;
-    kind: string;
-    guangxing: GuangxingKey | null;
-    guangfa: GuangfaKey | null;
-    privacy: Privacy;
-    sourceType: SourceType;
-    traceLevel: TraceLevel;
-    traceStatus: TraceStatus;
-    viewCount: number;
-  }) => void;
+  onSaveRecord: (data: RecordPayload) => Promise<void>;
 }) {
+  const [mode, setMode] = useState<"record" | "calendar">(entry ? "record" : (initialMode ?? "record"));
   const [title, setTitle] = useState(entry?.title ?? "");
   const [note, setNote] = useState(entry?.note ?? "");
+  const [date, setDate] = useState(entry?.date || presetDate || taipeiTodayISO());
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [space, setSpace] = useState<SpaceKey>(entry?.space ?? presetSpace ?? "practice");
   const [kind, setKind] = useState(entry?.kind ?? presetKind ?? "");
   const [guangxing, setGuangxing] = useState<GuangxingKey | null>(entry?.guangxing ?? null);
   const [guangfa, setGuangfa] = useState<GuangfaKey | null>(entry?.guangfa ?? null);
   const [privacy, setPrivacy] = useState<Privacy>(entry?.privacy ?? "私人");
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // sourceType 不是這個表單能直接選的欄位,是依「場域」衍生出來的(見
-  // SPACE_TO_SOURCE_TYPE),送出時才依當下選定的 space 算;traceLevel/
-  // traceStatus/viewCount 這個表單沒有 UI 可以編輯,編輯既有紀錄時原樣保留,
-  // 新建時給地基實作裁決的初始值(daily／一般／0)。
 
-  // Esc 鍵關閉,對齊雛形點擊遮罩關閉的體驗(bottom sheet 常見互動)。
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && !saving) onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, saving]);
 
-  function submit() {
+  async function submit() {
     if (!title.trim()) {
-      setError("請先留下一個標題或一句話。");
+      setError("請先填寫標題。");
       return;
     }
-    onSave({
-      title: title.trim(),
-      note: note.trim() || undefined,
-      space,
-      kind: kind.trim() || "未分類",
-      guangxing,
-      guangfa,
-      privacy,
-      sourceType: SPACE_TO_SOURCE_TYPE[space],
-      traceLevel: entry?.traceLevel ?? "daily",
-      traceStatus: entry?.traceStatus ?? "一般",
-      viewCount: entry?.viewCount ?? 0,
-    });
+    if (!date) {
+      setError("請先選擇日期。");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      if (mode === "calendar") {
+        const response = await fetch("/api/dojo/calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, note, date, startTime, endTime, space, kind: kind.trim() || "行程" }),
+        });
+        const json = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(json.error ?? `儲存失敗（${response.status}）`);
+        window.dispatchEvent(new CustomEvent("dojo:calendar-changed", { detail: json.item }));
+      } else {
+        await onSaveRecord({
+          title: title.trim(),
+          note: note.trim() || undefined,
+          date,
+          space,
+          kind: kind.trim() || "紀錄",
+          guangxing,
+          guangfa,
+          privacy,
+          sourceType: SPACE_TO_SOURCE_TYPE[space],
+          traceLevel: entry?.traceLevel ?? "daily",
+          traceStatus: entry?.traceStatus ?? "一般",
+          viewCount: entry?.viewCount ?? 0,
+          freq: entry?.freq,
+          intensity: entry?.intensity,
+          traceId: entry?.traceId,
+        });
+      }
+      onClose();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <div className="modal show" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet">
-        <button onClick={onClose}>關閉</button>
-        <h2>{entry ? "編輯紀錄" : "快速紀錄"}</h2>
-        <p className="lead">這是可測的本地資料流程;送出後會立刻顯示在相關場域與回看中。</p>
+    <div className="modal show" onClick={(event) => event.target === event.currentTarget && !saving && onClose()}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="quick-add-title">
+        <div className="toolbar">
+          <h2 id="quick-add-title">{entry ? "編輯紀錄" : "新增"}</h2>
+          <button onClick={onClose} disabled={saving}>關閉</button>
+        </div>
 
-        <label>標題／一句話</label>
+        {!entry && (
+          <div className="segmented" aria-label="新增類型">
+            <button className={mode === "record" ? "on" : ""} onClick={() => setMode("record")}>快速紀錄</button>
+            <button className={mode === "calendar" ? "on" : ""} onClick={() => setMode("calendar")}>新增行程</button>
+          </div>
+        )}
+
+        <label htmlFor="quick-title">{mode === "record" ? "標題／一句話" : "行程名稱"}</label>
         <input
+          id="quick-title"
           className="field"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="此刻想留下什麼?"
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder={mode === "record" ? "此刻想留下什麼？" : "要安排什麼？"}
+          autoFocus
         />
 
-        <label>說明(可留白)</label>
+        <label htmlFor="quick-date">日期</label>
+        <input id="quick-date" className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+
+        {mode === "calendar" && (
+          <div className="two">
+            <div>
+              <label htmlFor="quick-start">開始</label>
+              <input id="quick-start" className="field" type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
+            </div>
+            <div>
+              <label htmlFor="quick-end">結束</label>
+              <input id="quick-end" className="field" type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
+            </div>
+          </div>
+        )}
+
+        <label htmlFor="quick-note">說明（可留白）</label>
         <textarea
+          id="quick-note"
           className="field"
           rows={3}
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(event) => setNote(event.target.value)}
           placeholder="描述、感受、來源或下一步"
         />
 
         <label>場域</label>
         <div className="row">
-          {Object.entries(SPACES).map(([k, v]) => (
-            <button key={k} className={space === k ? "on" : ""} onClick={() => setSpace(k as SpaceKey)}>
-              {v[0]}
+          {Object.entries(SPACES).map(([key, value]) => (
+            <button key={key} className={space === key ? "on" : ""} onClick={() => setSpace(key as SpaceKey)}>
+              {value[0]}
             </button>
           ))}
         </div>
 
-        <label>類型</label>
+        <label htmlFor="quick-kind">類型</label>
         <input
+          id="quick-kind"
           className="field"
           value={kind}
-          onChange={(e) => setKind(e.target.value)}
-          placeholder="例如:心／情、提問、草稿"
+          onChange={(event) => setKind(event.target.value)}
+          placeholder={mode === "record" ? "例如：提問、練習、草稿" : "例如：約定、修習、活動"}
         />
 
-        <label>光行(選填)</label>
-        <div className="row">
-          <button className={guangxing === null ? "on" : ""} onClick={() => setGuangxing(null)}>
-            不特別標記
-          </button>
-          {Object.entries(GUANGXING).map(([k, v]) => (
-            <button key={k} className={guangxing === k ? "on" : ""} onClick={() => setGuangxing(k as GuangxingKey)}>
-              {v[0]}
-            </button>
-          ))}
-        </div>
+        {mode === "record" && (
+          <>
+            <label>光行（選填）</label>
+            <div className="row">
+              <button className={guangxing === null ? "on" : ""} onClick={() => setGuangxing(null)}>不標記</button>
+              {Object.entries(GUANGXING).map(([key, value]) => (
+                <button key={key} className={guangxing === key ? "on" : ""} onClick={() => setGuangxing(key as GuangxingKey)}>
+                  {value[0]}
+                </button>
+              ))}
+            </div>
 
-        <label>光法(選填)</label>
-        <div className="row">
-          <button className={guangfa === null ? "on" : ""} onClick={() => setGuangfa(null)}>
-            不特別標記
-          </button>
-          {Object.entries(GUANGFA).map(([k, v]) => (
-            <button key={k} className={guangfa === k ? "on" : ""} onClick={() => setGuangfa(k as GuangfaKey)}>
-              {v[0]}
-            </button>
-          ))}
-        </div>
+            <label>光法（選填）</label>
+            <div className="row">
+              <button className={guangfa === null ? "on" : ""} onClick={() => setGuangfa(null)}>不標記</button>
+              {Object.entries(GUANGFA).map(([key, value]) => (
+                <button key={key} className={guangfa === key ? "on" : ""} onClick={() => setGuangfa(key as GuangfaKey)}>
+                  {value[0]}
+                </button>
+              ))}
+            </div>
 
-        <label>隱私</label>
-        <div className="row">
-          {PRIVACY_OPTIONS.map((p) => (
-            <button key={p} className={privacy === p ? "on" : ""} onClick={() => setPrivacy(p)}>
-              {p}
-            </button>
-          ))}
-        </div>
+            <label>隱私</label>
+            <div className="row">
+              {PRIVACY_OPTIONS.map((option) => (
+                <button key={option} className={privacy === option ? "on" : ""} onClick={() => setPrivacy(option)}>
+                  {option}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-        {error && <p className="note" style={{ color: "var(--danger)" }}>{error}</p>}
-
-        <button className="primary" onClick={submit}>
-          {entry ? "儲存修改" : "保留這則痕跡"}
+        {error && <p className="form-error" role="alert">{error}</p>}
+        <button className="primary" onClick={submit} disabled={saving}>
+          {saving ? "儲存中…" : mode === "record" ? "儲存紀錄" : "加入行事曆"}
         </button>
       </div>
     </div>

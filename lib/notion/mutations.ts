@@ -380,6 +380,28 @@ export async function createTraceEntry(params: {
   return { id: page.id };
 }
 
+export async function updateTraceEntry(
+  id: string,
+  patch: { 標題: string; 內容?: string; space: SpaceKey; sourceType: SourceType }
+) {
+  await withNotionRateLimit(() =>
+    notion().pages.update({
+      page_id: id,
+      properties: {
+        標題: titleProp(patch.標題),
+        內容: richTextProp(patch.內容 ?? ""),
+        space: selectProp(patch.space),
+        sourceType: selectProp(patch.sourceType),
+        最後動靜時間: dateProp(new Date().toISOString()),
+      },
+    })
+  );
+}
+
+export async function archiveTraceEntry(id: string) {
+  await withNotionRateLimit(() => notion().pages.update({ page_id: id, archived: true }));
+}
+
 // 回看:重新計時 7 天(補充裁決04 §一)+ 回看次數 +1;累積到門檻
 // (TRACE_ACCUMULATE_VIEW_THRESHOLD)自動升級 traceLevel 為 accumulated
 // (補充裁決05 實作順序第4項)。已經是 accumulated/permanent 的不重複判斷
