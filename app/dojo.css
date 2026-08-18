@@ -18,6 +18,9 @@
   --da: #344d5a;
   --cl: #62667a;
   --danger: #a95543;
+  --morning: #e7a13b;
+  --evening: #4f86c7;
+  --seed: #5aa06a;
   --radius-card: 20px;
 
   margin: 0;
@@ -1445,7 +1448,7 @@
 }
 .dojo .calendar-grid button {
   position: relative;
-  min-height: 53px;
+  min-height: 82px;
   padding: 5px;
   background: var(--paper);
   border-radius: 10px;
@@ -1468,19 +1471,73 @@
   border-color: var(--gold);
   box-shadow: 0 0 0 1px var(--gold);
 }
-.dojo .calendar-grid button > small {
+.dojo .calendar-item-count {
   position: absolute;
   right: 5px;
   top: 5px;
   color: var(--muted);
   font-size: 9px;
 }
+.dojo .calendar-review-cell {
+  position: absolute;
+  left: 50%;
+  top: 29px;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.dojo .calendar-review-cell small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1;
+}
+.dojo .calendar-review-mark {
+  width: 28px;
+  height: 28px;
+  overflow: visible;
+}
+.dojo .calendar-review-mark.large {
+  width: 54px;
+  height: 54px;
+}
+.dojo .calendar-review-mark path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.dojo .calendar-review-mark.large path {
+  stroke-width: 2.2;
+}
+.dojo .calendar-review-mark .track {
+  stroke: #e2e5df;
+}
+.dojo .calendar-review-mark .morning {
+  stroke: var(--morning);
+}
+.dojo .calendar-review-mark .evening {
+  stroke: var(--evening);
+}
+.dojo .calendar-review-mark .seed {
+  fill: var(--seed);
+}
+.dojo .calendar-empty-dot {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #dfe4dc;
+  transform: translate(-50%, -50%);
+}
 .dojo .calendar-dots {
   position: absolute;
-  left: 6px;
   right: 6px;
   bottom: 6px;
   display: flex;
+  justify-content: flex-end;
   gap: 3px;
 }
 .dojo .calendar-dots i {
@@ -1507,7 +1564,7 @@
   margin: 12px 0;
 }
 .dojo .week-calendar button {
-  min-height: 74px;
+  min-height: 112px;
   padding: 5px;
   border-radius: 10px;
 }
@@ -1519,6 +1576,10 @@
 }
 .dojo .week-calendar button b {
   font-size: 17px;
+}
+.dojo .week-calendar .calendar-review-mark {
+  display: block;
+  margin: 3px auto;
 }
 .dojo .week-calendar button.today {
   background: #eef2e9;
@@ -1570,6 +1631,73 @@
   margin: 3px 0 0;
   color: var(--muted);
   font-size: 12px;
+}
+.dojo .calendar-day-review {
+  background: linear-gradient(145deg, #fffdf8, #f4f1e9);
+}
+.dojo .calendar-review-date {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.dojo .calendar-review-date h2 {
+  margin: 0;
+  font: 600 25px "Noto Serif TC", serif;
+}
+.dojo .calendar-record-pair {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0;
+}
+.dojo .calendar-record-pair > div {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fffdfa;
+}
+.dojo .calendar-record-pair span,
+.dojo .calendar-task-progress span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.dojo .calendar-record-pair strong,
+.dojo .calendar-task-progress strong {
+  font-size: 13px;
+}
+.dojo .morning-dot,
+.dojo .evening-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dojo .morning-dot {
+  background: var(--morning);
+}
+.dojo .evening-dot {
+  background: var(--evening);
+}
+.dojo .calendar-task-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -7px 0 16px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: #eef1ed;
+}
+.dojo .calendar-empty-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.dojo .calendar-review-link {
+  width: 100%;
 }
 
 /* 回看 */

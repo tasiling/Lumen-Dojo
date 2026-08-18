@@ -46,6 +46,12 @@ type AgendaItem = {
   manualId?: string;
 };
 
+type DailyReviewSnapshot = {
+  morning: 0 | 1;
+  evening: 0 | 1 | 2 | 3;
+  taskProgress: { done: number; total: number };
+};
+
 const SOURCE_LABELS: Record<AgendaSource, string> = {
   personal: "個人行程",
   today: "今日三件事",
@@ -80,6 +86,87 @@ function monthGrid(yearMonth: string) {
 function fmtDay(dateISO: string) {
   return new Intl.DateTimeFormat("zh-TW", { month: "long", day: "numeric", weekday: "long" })
     .format(new Date(`${dateISO}T12:00:00+08:00`));
+}
+
+function dailyReviewSnapshot(record?: DailyRecord): DailyReviewSnapshot {
+  const eveningLevel = record?.evening.closedAt
+    ? record.evening.depth === "deep"
+      ? 3
+      : record.evening.depth === "medium"
+        ? 2
+        : 1
+    : 0;
+  return {
+    morning: record?.morning.startedAt ? 1 : 0,
+    evening: eveningLevel,
+    taskProgress: {
+      done: record ? TASK_ORDER.filter((category) => record.tasks[category].completed).length : 0,
+      total: TASK_ORDER.length,
+    },
+  };
+}
+
+function hasDailyActivity(record?: DailyRecord) {
+  if (!record) return false;
+  return Boolean(
+    record.morning.startedAt ||
+    record.morning.intention.trim() ||
+    record.morning.state ||
+    record.daytime.logs.length ||
+    record.daytime.note.trim() ||
+    record.evening.closedAt ||
+    record.evening.highlight.trim() ||
+    record.evening.block.trim() ||
+    record.evening.insight.trim() ||
+    record.evening.nextAction.trim() ||
+    TASK_ORDER.some((category) => {
+      const task = record.tasks[category];
+      return task.text.trim() || task.completed || task.result.trim();
+    })
+  );
+}
+
+function ReviewMark({ review, large = false }: { review: DailyReviewSnapshot; large?: boolean }) {
+  const radii = large ? [8, 13, 18] : [5, 8, 11];
+  const center = large ? 22 : 14;
+  const box = large ? 44 : 28;
+  return (
+    <svg
+      className={`calendar-review-mark ${large ? "large" : ""}`}
+      viewBox={`0 0 ${box} ${box}`}
+      role="img"
+      aria-label={`晨間${review.morning ? "已記錄" : "未記錄"}，收光 ${review.evening} 層，三件事完成 ${review.taskProgress.done} 件`}
+    >
+      {radii.map((radius, index) => {
+        const left = center - radius;
+        const right = center + radius;
+        return (
+          <g key={radius}>
+            <path className="track" d={`M ${left} ${center} A ${radius} ${radius} 0 0 1 ${right} ${center}`} />
+            <path className="track" d={`M ${right} ${center} A ${radius} ${radius} 0 0 1 ${left} ${center}`} />
+            {review.morning > index && (
+              <path className="morning" d={`M ${left} ${center} A ${radius} ${radius} 0 0 1 ${right} ${center}`} />
+            )}
+            {review.evening > index && (
+              <path className="evening" d={`M ${right} ${center} A ${radius} ${radius} 0 0 1 ${left} ${center}`} />
+            )}
+          </g>
+        );
+      })}
+      <circle className="seed" cx={center} cy={center} r={large ? 2.2 : 1.7} />
+    </svg>
+  );
+}
+
+function CalendarReviewCell({ record }: { record?: DailyRecord }) {
+  if (!record) return <span className="calendar-empty-dot" aria-hidden="true" />;
+  const review = dailyReviewSnapshot(record);
+  return (
+    <span className="calendar-review-cell">
+      <ReviewMark review={review} />
+      <small>{review.taskProgress.done}/{review.taskProgress.total}</small>
+    </span>
+  );
 }
 
 export default function CalendarPage() {
@@ -181,6 +268,8 @@ export default function CalendarPage() {
     return result;
   }, [agenda]);
 
+  const dailyByDay = useMemo(() => new Map(daily.map((record) => [record.date, record])), [daily]);
+
   async function removePersonal(id: string) {
     if (!window.confirm("要刪除這筆個人行程嗎？這會送進 Notion 垃圾桶，可在 Notion 復原。")) return;
     try {
@@ -262,6 +351,7 @@ export default function CalendarPage() {
           <div className="calendar-grid">
             {cells.map((cell) => {
               const items = byDay.get(cell.iso) ?? [];
+              const dailyRecord = dailyByDay.get(cell.iso);
               return (
                 <button
                   key={cell.iso}
@@ -269,10 +359,11 @@ export default function CalendarPage() {
                   onClick={() => chooseDay(cell.iso)}
                 >
                   <b>{cell.day}</b>
+                  <CalendarReviewCell record={dailyRecord} />
                   <span className="calendar-dots">
                     {Array.from(new Set(items.map((item) => item.source))).map((source) => <i key={source} className={source} />)}
                   </span>
-                  {items.length > 0 && <small>{items.length}</small>}
+                  {items.length > 0 && <span className="calendar-item-count">{items.length}</span>}
                 </button>
               );
             })}
@@ -282,23 +373,73 @@ export default function CalendarPage() {
 
       {!loading && view === "week" && (
         <div className="week-calendar">
-          {weekDays.map((iso, index) => (
-            <button key={iso} className={`${iso === selectedDay ? "selected" : ""} ${iso === today ? "today" : ""}`} onClick={() => chooseDay(iso)}>
-              <small>週{WEEKDAYS[index]}</small>
-              <b>{Number(iso.slice(8))}</b>
-              <span>{(byDay.get(iso) ?? []).length} 件</span>
-            </button>
-          ))}
+          {weekDays.map((iso, index) => {
+            const review = dailyReviewSnapshot(dailyByDay.get(iso));
+            return (
+              <button key={iso} className={`${iso === selectedDay ? "selected" : ""} ${iso === today ? "today" : ""}`} onClick={() => chooseDay(iso)}>
+                <small>週{WEEKDAYS[index]}</small>
+                <b>{Number(iso.slice(8))}</b>
+                <ReviewMark review={review} />
+                <span>{review.taskProgress.done}/3 · {(byDay.get(iso) ?? []).length} 件</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
       {!loading && (
-        <DayAgenda
-          date={selectedDay}
-          items={byDay.get(selectedDay) ?? []}
-          onAdd={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}
-          onRemove={removePersonal}
-        />
+        <>
+          <DailyReviewSummary date={selectedDay} record={dailyByDay.get(selectedDay)} today={today} />
+          <DayAgenda
+            date={selectedDay}
+            items={byDay.get(selectedDay) ?? []}
+            onAdd={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}
+            onRemove={removePersonal}
+          />
+        </>
+      )}
+    </section>
+  );
+}
+
+function DailyReviewSummary({ date, record, today }: { date: string; record?: DailyRecord; today: string }) {
+  const review = dailyReviewSnapshot(record);
+  const eveningLabels = ["未記錄", "輕層", "中層", "深層"];
+  const hasActivity = hasDailyActivity(record);
+  return (
+    <section className="ritual-card calendar-day-review">
+      <div className="calendar-review-date">
+        <ReviewMark review={review} large />
+        <div>
+          <span className="eyebrow">所選日期</span>
+          <h2>{Number(date.slice(5, 7))} 月 {Number(date.slice(8, 10))} 日</h2>
+        </div>
+      </div>
+
+      <div className="calendar-record-pair">
+        <div>
+          <i className="morning-dot" />
+          <span>晨間</span>
+          <strong>{review.morning ? "已記錄" : "未記錄"}</strong>
+        </div>
+        <div>
+          <i className="evening-dot" />
+          <span>收光</span>
+          <strong>{eveningLabels[review.evening]}</strong>
+        </div>
+      </div>
+
+      <div className="calendar-task-progress">
+        <span>今日三件事</span>
+        <strong>{review.taskProgress.done} / {review.taskProgress.total} 已完成</strong>
+      </div>
+
+      {hasActivity ? (
+        <Link className="button-link calendar-review-link" href={date === today ? "/" : `/review?date=${date}`}>
+          {date === today ? "回到今天繼續書寫" : "查看這一天"}
+        </Link>
+      ) : (
+        <p className="calendar-empty-copy">這一天還沒有留下每日紀錄。空白只是空白，不代表失敗。</p>
       )}
     </section>
   );
