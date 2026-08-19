@@ -33,6 +33,7 @@ type DashboardData = {
 };
 
 type AgendaSource = "personal" | "today" | "work";
+type CalendarMode = "calendar" | "all" | "personal" | "work";
 type AgendaItem = {
   id: string;
   date: string;
@@ -52,11 +53,12 @@ type DailyReviewSnapshot = {
   taskProgress: { done: number; total: number };
 };
 
-const SOURCE_LABELS: Record<AgendaSource, string> = {
-  personal: "個人行程",
-  today: "今日三件事",
-  work: "工作後台",
-};
+const CALENDAR_MODES: { id: CalendarMode; label: string }[] = [
+  { id: "calendar", label: "行事曆" },
+  { id: "all", label: "全部" },
+  { id: "personal", label: "個人行程" },
+  { id: "work", label: "工作後台" },
+];
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
@@ -162,8 +164,10 @@ function ReviewMark({ review, large = false }: { review: DailyReviewSnapshot; la
   );
 }
 
-function CalendarReviewCell({ record }: { record?: DailyRecord }) {
-  if (!record || !hasDailyActivity(record)) return null;
+function CalendarReviewCell({ record, showEmpty = false }: { record?: DailyRecord; showEmpty?: boolean }) {
+  if (!record || !hasDailyActivity(record)) {
+    return showEmpty ? <span className="calendar-empty-dot" aria-hidden="true" /> : null;
+  }
   const review = dailyReviewSnapshot(record);
   return (
     <span className="calendar-review-cell">
@@ -179,7 +183,7 @@ export default function CalendarPage() {
   const [yearMonth, setYearMonth] = useState(today.slice(0, 7));
   const [selectedDay, setSelectedDay] = useState(today);
   const [view, setView] = useState<"month" | "week" | "day">("month");
-  const [filter, setFilter] = useState<"all" | AgendaSource>("all");
+  const [mode, setMode] = useState<CalendarMode>("calendar");
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [personal, setPersonal] = useState<PersonalCalendarItem[]>([]);
   const [daily, setDaily] = useState<DailyRecord[]>([]);
@@ -226,7 +230,7 @@ export default function CalendarPage() {
       date: item.date,
       title: item.title,
       source: "personal" as const,
-      sourceLabel: SOURCE_LABELS.personal,
+      sourceLabel: "個人行程",
       time: item.startTime,
       status: SPACES[item.space][0],
       note: item.note,
@@ -262,9 +266,9 @@ export default function CalendarPage() {
         : []
     );
     return [...personalItems, ...todayItems, ...workItems]
-      .filter((item) => filter === "all" || item.source === filter)
+      .filter((item) => mode === "calendar" || mode === "all" || item.source === mode)
       .sort((a, b) => `${a.date}T${a.time ?? "99:99"}`.localeCompare(`${b.date}T${b.time ?? "99:99"}`));
-  }, [personal, daily, dashboard, filter, today]);
+  }, [personal, daily, dashboard, mode, today]);
 
   const byDay = useMemo(() => {
     const result = new Map<string, AgendaItem[]>();
@@ -307,21 +311,23 @@ export default function CalendarPage() {
     <section className="screen calendar-screen">
       <div className="section-heading page-heading">
         <div>
-          <span className="eyebrow">整合行事曆</span>
+          <span className="eyebrow">行光道場</span>
           <h1>行事曆</h1>
-          <p className="lead">個人行程、今日三件事與工作後台排程在同一個時間軸。</p>
+          <p className="lead">看見每天留下的狀態，也能分開查看個人與工作排程。</p>
         </div>
         <button className="primary compact-button" onClick={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}>＋ 新增</button>
       </div>
 
-      <div className="calendar-metric">
-        <div>
-          <small>工作後台本月交付</small>
-          <b>{dashboard?.completion.done ?? 0}/{dashboard?.completion.total ?? 0}</b>
+      {mode === "work" && (
+        <div className="calendar-metric">
+          <div>
+            <small>本月交付</small>
+            <b>{dashboard?.completion.done ?? 0}/{dashboard?.completion.total ?? 0}</b>
+          </div>
+          <div className="metric-bar"><i style={{ width: `${donePercent}%` }} /></div>
+          <Link href="/backstage">進入工作後台</Link>
         </div>
-        <div className="metric-bar"><i style={{ width: `${donePercent}%` }} /></div>
-        <Link href="/backstage">進入工作後台</Link>
-      </div>
+      )}
 
       <div className="calendar-controls">
         <button onClick={() => moveMonth(-1)}>←</button>
@@ -339,10 +345,9 @@ export default function CalendarPage() {
         ))}
       </div>
 
-      <div className="row source-filter">
-        <button className={filter === "all" ? "on" : ""} onClick={() => setFilter("all")}>全部</button>
-        {(Object.entries(SOURCE_LABELS) as [AgendaSource, string][]).map(([key, label]) => (
-          <button key={key} className={filter === key ? "on" : ""} onClick={() => setFilter(key)}>{label}</button>
+      <div className="row source-filter" aria-label="行事曆顯示內容">
+        {CALENDAR_MODES.map(({ id, label }) => (
+          <button key={id} className={mode === id ? "on" : ""} onClick={() => setMode(id)}>{label}</button>
         ))}
       </div>
 
@@ -350,42 +355,53 @@ export default function CalendarPage() {
       {loading && <div className="empty">正在讀取行事曆…</div>}
 
       {!loading && view === "month" && (
-        <div className="month-calendar">
-          <div className="calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
-          <div className="calendar-grid">
-            {cells.map((cell) => {
-              const items = byDay.get(cell.iso) ?? [];
-              const dailyRecord = dailyByDay.get(cell.iso);
-              return (
-                <button
-                  key={cell.iso}
-                  className={`${cell.inMonth ? "" : "outside"} ${cell.iso === today ? "today" : ""} ${cell.iso === selectedDay ? "selected" : ""}`}
-                  onClick={() => chooseDay(cell.iso)}
-                >
-                  <span className="calendar-date-row">
-                    <b>{cell.day}</b>
-                    {items.length > 0 && <span className="calendar-item-count">{items.length}</span>}
-                  </span>
-                  <CalendarReviewCell record={dailyRecord} />
-                </button>
-              );
-            })}
+        <div className={`month-calendar ${mode === "calendar" ? "calendar-rich" : "calendar-compact"}`}>
+          <div className="calendar-frame">
+            <div className="calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
+            <div className="calendar-grid">
+              {cells.map((cell) => {
+                const items = byDay.get(cell.iso) ?? [];
+                const dailyRecord = dailyByDay.get(cell.iso);
+                const sources = Array.from(new Set(items.map((item) => item.source)));
+                return (
+                  <button
+                    key={cell.iso}
+                    className={`${cell.inMonth ? "" : "outside"} ${cell.iso === today ? "today" : ""} ${cell.iso === selectedDay ? "selected" : ""}`}
+                    onClick={() => chooseDay(cell.iso)}
+                    aria-label={`${cell.iso}${mode === "calendar" && hasDailyActivity(dailyRecord) ? "，有留下狀態" : items.length ? `，${items.length} 件` : ""}`}
+                  >
+                    <span className="calendar-date-row">
+                      <b>{cell.day}</b>
+                      {mode !== "calendar" && items.length > 0 && <span className="calendar-item-count">{items.length}</span>}
+                    </span>
+                    {mode === "calendar" ? (
+                      <CalendarReviewCell record={dailyRecord} showEmpty />
+                    ) : (
+                      <span className="calendar-dots" aria-hidden="true">
+                        {sources.map((source) => <i key={source} className={source} />)}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
 
       {!loading && view === "week" && (
-        <div className="week-calendar">
+        <div className={`week-calendar ${mode === "calendar" ? "calendar-rich" : "calendar-compact"}`}>
           {weekDays.map((iso, index) => {
             const record = dailyByDay.get(iso);
             const review = dailyReviewSnapshot(record);
             const planned = hasDailyTaskPlan(record);
+            const itemCount = (byDay.get(iso) ?? []).length;
             return (
               <button key={iso} className={`${iso === selectedDay ? "selected" : ""} ${iso === today ? "today" : ""}`} onClick={() => chooseDay(iso)}>
                 <small>週{WEEKDAYS[index]}</small>
                 <b>{Number(iso.slice(8))}</b>
-                <ReviewMark review={review} />
-                <span>{planned ? `${review.taskProgress.done}/3 · ` : ""}{(byDay.get(iso) ?? []).length} 件</span>
+                {mode === "calendar" && <ReviewMark review={review} />}
+                <span>{mode === "calendar" && planned ? `${review.taskProgress.done}/3` : `${itemCount} 件`}</span>
               </button>
             );
           })}
@@ -394,7 +410,7 @@ export default function CalendarPage() {
 
       {!loading && (
         <>
-          <DailyReviewSummary date={selectedDay} record={dailyByDay.get(selectedDay)} today={today} />
+          {mode === "calendar" && <DailyReviewSummary date={selectedDay} record={dailyByDay.get(selectedDay)} today={today} />}
           <DayAgenda
             date={selectedDay}
             items={byDay.get(selectedDay) ?? []}
@@ -445,7 +461,7 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
           {date === today ? "回到今天繼續書寫" : "查看這一天"}
         </Link>
       ) : (
-        <p className="calendar-empty-copy">這一天還沒有留下每日紀錄。空白只是空白，不代表失敗。</p>
+        <p className="calendar-empty-copy">這一天還沒有留下紀錄。空白只是空白，不代表失敗。</p>
       )}
     </section>
   );

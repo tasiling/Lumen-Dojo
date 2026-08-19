@@ -1434,11 +1434,19 @@
 .dojo .month-calendar {
   margin-top: 10px;
 }
+.dojo .calendar-frame {
+  overflow: hidden;
+}
+.dojo .calendar-rich .calendar-frame {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: rgba(253, 250, 243, 0.92);
+  box-shadow: 0 8px 24px rgba(126, 101, 69, 0.08);
+}
 .dojo .calendar-weekdays,
 .dojo .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
 }
 .dojo .calendar-weekdays span {
   text-align: center;
@@ -1446,17 +1454,48 @@
   font-size: 11px;
   padding: 4px 0;
 }
+.dojo .calendar-rich .calendar-weekdays {
+  padding: 5px 4px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.dojo .calendar-compact .calendar-grid {
+  gap: 4px;
+}
 .dojo .calendar-grid button {
   position: relative;
-  display: grid;
-  grid-template-rows: 24px minmax(38px, 1fr);
-  align-items: stretch;
-  min-height: 82px;
-  padding: 5px;
-  background: var(--paper);
-  border-radius: 10px;
+  min-width: 0;
   text-align: left;
   overflow: hidden;
+}
+.dojo .calendar-rich .calendar-grid button {
+  display: grid;
+  grid-template-rows: 22px minmax(34px, 1fr);
+  align-items: stretch;
+  min-height: 65px;
+  padding: 4px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.dojo .calendar-rich .calendar-grid button:nth-child(7n) {
+  border-right: 0;
+}
+.dojo .calendar-rich .calendar-grid button:nth-last-child(-n + 7) {
+  border-bottom: 0;
+}
+.dojo .calendar-rich .calendar-grid button:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+.dojo .calendar-compact .calendar-grid button {
+  display: grid;
+  grid-template-rows: 24px minmax(25px, 1fr);
+  align-items: stretch;
+  min-height: 53px;
+  padding: 5px;
+  border-radius: 10px;
+  background: var(--paper);
 }
 .dojo .calendar-date-row {
   display: flex;
@@ -1472,7 +1511,7 @@
 .dojo .calendar-grid button.outside {
   opacity: 0.35;
 }
-.dojo .calendar-grid button.today b {
+.dojo .calendar-grid button.today .calendar-date-row > b {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1482,7 +1521,12 @@
   background: #4d6557;
   color: white;
 }
-.dojo .calendar-grid button.selected {
+.dojo .calendar-rich .calendar-grid button.selected {
+  z-index: 1;
+  background: #fff;
+  box-shadow: inset 0 0 0 2px rgba(79, 134, 199, 0.42);
+}
+.dojo .calendar-compact .calendar-grid button.selected {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px var(--gold);
 }
@@ -1535,12 +1579,35 @@
 .dojo .calendar-review-mark .seed {
   fill: var(--seed);
 }
+.dojo .calendar-empty-dot {
+  align-self: center;
+  justify-self: center;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #dfe4dc;
+}
+.dojo .calendar-dots {
+  align-self: end;
+  justify-self: start;
+  display: flex;
+  gap: 3px;
+  padding: 0 1px 1px;
+}
+.dojo .calendar-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.dojo .calendar-dots .personal,
 .dojo .agenda-item.personal:before {
   background: var(--we);
 }
+.dojo .calendar-dots .today,
 .dojo .agenda-item.today:before {
   background: var(--gold);
 }
+.dojo .calendar-dots .work,
 .dojo .agenda-item.work:before {
   background: var(--li);
 }
@@ -1551,9 +1618,12 @@
   margin: 12px 0;
 }
 .dojo .week-calendar button {
-  min-height: 112px;
+  min-height: 74px;
   padding: 5px;
   border-radius: 10px;
+}
+.dojo .week-calendar.calendar-rich button {
+  min-height: 94px;
 }
 .dojo .week-calendar button small,
 .dojo .week-calendar button span {
