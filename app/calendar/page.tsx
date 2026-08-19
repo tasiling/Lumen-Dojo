@@ -126,6 +126,10 @@ function hasDailyActivity(record?: DailyRecord) {
   );
 }
 
+function hasDailyTaskPlan(record?: DailyRecord) {
+  return Boolean(record && TASK_ORDER.some((category) => record.tasks[category].text.trim()));
+}
+
 function ReviewMark({ review, large = false }: { review: DailyReviewSnapshot; large?: boolean }) {
   const radii = large ? [8, 13, 18] : [5, 8, 11];
   const center = large ? 22 : 14;
@@ -159,12 +163,12 @@ function ReviewMark({ review, large = false }: { review: DailyReviewSnapshot; la
 }
 
 function CalendarReviewCell({ record }: { record?: DailyRecord }) {
-  if (!record || !hasDailyActivity(record)) return <span className="calendar-empty-dot" aria-hidden="true" />;
+  if (!record || !hasDailyActivity(record)) return null;
   const review = dailyReviewSnapshot(record);
   return (
     <span className="calendar-review-cell">
       <ReviewMark review={review} />
-      <small>{review.taskProgress.done}/{review.taskProgress.total}</small>
+      {hasDailyTaskPlan(record) && <small>{review.taskProgress.done}/{review.taskProgress.total}</small>}
     </span>
   );
 }
@@ -363,9 +367,6 @@ export default function CalendarPage() {
                     {items.length > 0 && <span className="calendar-item-count">{items.length}</span>}
                   </span>
                   <CalendarReviewCell record={dailyRecord} />
-                  <span className="calendar-dots">
-                    {Array.from(new Set(items.map((item) => item.source))).map((source) => <i key={source} className={source} />)}
-                  </span>
                 </button>
               );
             })}
@@ -376,13 +377,15 @@ export default function CalendarPage() {
       {!loading && view === "week" && (
         <div className="week-calendar">
           {weekDays.map((iso, index) => {
-            const review = dailyReviewSnapshot(dailyByDay.get(iso));
+            const record = dailyByDay.get(iso);
+            const review = dailyReviewSnapshot(record);
+            const planned = hasDailyTaskPlan(record);
             return (
               <button key={iso} className={`${iso === selectedDay ? "selected" : ""} ${iso === today ? "today" : ""}`} onClick={() => chooseDay(iso)}>
                 <small>週{WEEKDAYS[index]}</small>
                 <b>{Number(iso.slice(8))}</b>
                 <ReviewMark review={review} />
-                <span>{review.taskProgress.done}/3 · {(byDay.get(iso) ?? []).length} 件</span>
+                <span>{planned ? `${review.taskProgress.done}/3 · ` : ""}{(byDay.get(iso) ?? []).length} 件</span>
               </button>
             );
           })}
@@ -408,6 +411,7 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
   const review = dailyReviewSnapshot(record);
   const eveningLabels = ["未記錄", "輕層", "中層", "深層"];
   const hasActivity = hasDailyActivity(record);
+  const hasTaskPlan = hasDailyTaskPlan(record);
   return (
     <section className="ritual-card calendar-day-review">
       <div className="calendar-review-date">
@@ -433,7 +437,7 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
 
       <div className="calendar-task-progress">
         <span>今日三件事</span>
-        <strong>{review.taskProgress.done} / {review.taskProgress.total} 已完成</strong>
+        <strong>{hasTaskPlan ? `${review.taskProgress.done} / ${review.taskProgress.total} 已完成` : "未設定"}</strong>
       </div>
 
       {hasActivity ? (

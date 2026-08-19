@@ -1449,7 +1449,7 @@
 .dojo .calendar-grid button {
   position: relative;
   display: grid;
-  grid-template-rows: 24px minmax(38px, 1fr) 8px;
+  grid-template-rows: 24px minmax(38px, 1fr);
   align-items: stretch;
   min-height: 82px;
   padding: 5px;
@@ -1535,35 +1535,12 @@
 .dojo .calendar-review-mark .seed {
   fill: var(--seed);
 }
-.dojo .calendar-empty-dot {
-  align-self: center;
-  justify-self: center;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #dfe4dc;
-}
-.dojo .calendar-dots {
-  align-self: end;
-  justify-self: end;
-  display: flex;
-  justify-content: flex-end;
-  gap: 3px;
-}
-.dojo .calendar-dots i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-}
-.dojo .calendar-dots .personal,
 .dojo .agenda-item.personal:before {
   background: var(--we);
 }
-.dojo .calendar-dots .today,
 .dojo .agenda-item.today:before {
   background: var(--gold);
 }
-.dojo .calendar-dots .work,
 .dojo .agenda-item.work:before {
   background: var(--li);
 }
