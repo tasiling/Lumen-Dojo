@@ -1448,11 +1448,26 @@
 }
 .dojo .calendar-grid button {
   position: relative;
+  display: grid;
+  grid-template-rows: 24px minmax(38px, 1fr) 8px;
+  align-items: stretch;
   min-height: 82px;
   padding: 5px;
   background: var(--paper);
   border-radius: 10px;
   text-align: left;
+  overflow: hidden;
+}
+.dojo .calendar-date-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+}
+.dojo .calendar-date-row > b {
+  position: relative;
+  z-index: 1;
+  line-height: 23px;
 }
 .dojo .calendar-grid button.outside {
   opacity: 0.35;
@@ -1472,20 +1487,18 @@
   box-shadow: 0 0 0 1px var(--gold);
 }
 .dojo .calendar-item-count {
-  position: absolute;
-  right: 5px;
-  top: 5px;
+  flex: 0 0 auto;
   color: var(--muted);
   font-size: 9px;
+  line-height: 1.35;
 }
 .dojo .calendar-review-cell {
-  position: absolute;
-  left: 50%;
-  top: 29px;
+  align-self: center;
+  justify-self: center;
   display: grid;
   justify-items: center;
   gap: 1px;
-  transform: translateX(-50%);
+  min-width: 0;
   pointer-events: none;
 }
 .dojo .calendar-review-cell small {
@@ -1494,8 +1507,8 @@
   line-height: 1;
 }
 .dojo .calendar-review-mark {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   overflow: visible;
 }
 .dojo .calendar-review-mark.large {
@@ -1523,19 +1536,16 @@
   fill: var(--seed);
 }
 .dojo .calendar-empty-dot {
-  position: absolute;
-  left: 50%;
-  top: 58%;
+  align-self: center;
+  justify-self: center;
   width: 4px;
   height: 4px;
   border-radius: 50%;
   background: #dfe4dc;
-  transform: translate(-50%, -50%);
 }
 .dojo .calendar-dots {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
+  align-self: end;
+  justify-self: end;
   display: flex;
   justify-content: flex-end;
   gap: 3px;
@@ -1633,7 +1643,11 @@
   font-size: 12px;
 }
 .dojo .calendar-day-review {
+  margin-top: 16px;
   background: linear-gradient(145deg, #fffdf8, #f4f1e9);
+}
+.dojo .calendar-screen {
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
 }
 .dojo .calendar-review-date {
   display: flex;

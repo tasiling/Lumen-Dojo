@@ -159,7 +159,7 @@ function ReviewMark({ review, large = false }: { review: DailyReviewSnapshot; la
 }
 
 function CalendarReviewCell({ record }: { record?: DailyRecord }) {
-  if (!record) return <span className="calendar-empty-dot" aria-hidden="true" />;
+  if (!record || !hasDailyActivity(record)) return <span className="calendar-empty-dot" aria-hidden="true" />;
   const review = dailyReviewSnapshot(record);
   return (
     <span className="calendar-review-cell">
@@ -358,12 +358,14 @@ export default function CalendarPage() {
                   className={`${cell.inMonth ? "" : "outside"} ${cell.iso === today ? "today" : ""} ${cell.iso === selectedDay ? "selected" : ""}`}
                   onClick={() => chooseDay(cell.iso)}
                 >
-                  <b>{cell.day}</b>
+                  <span className="calendar-date-row">
+                    <b>{cell.day}</b>
+                    {items.length > 0 && <span className="calendar-item-count">{items.length}</span>}
+                  </span>
                   <CalendarReviewCell record={dailyRecord} />
                   <span className="calendar-dots">
                     {Array.from(new Set(items.map((item) => item.source))).map((source) => <i key={source} className={source} />)}
                   </span>
-                  {items.length > 0 && <span className="calendar-item-count">{items.length}</span>}
                 </button>
               );
             })}
