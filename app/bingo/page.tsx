@@ -300,7 +300,12 @@ export default function BingoPage() {
               <p className="lead">排進今天的哪一格？之後在今天完成時，這格會一起完成。</p>
               <div className="row">
                 {CATEGORIES.map((category) => (
-                  <button key={category} onClick={() => void assignToToday(category)} disabled={saving}>
+                  <button
+                    key={category}
+                    className={`task-category-button ${category}`}
+                    onClick={() => void assignToToday(category)}
+                    disabled={saving}
+                  >
                     {DAILY_TASK_CATEGORIES[category].label}
                   </button>
                 ))}

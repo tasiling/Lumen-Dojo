@@ -17,6 +17,11 @@ import {
 import { formatFreqIntensityLabel, resolveHawkinsLevel } from "@/lib/dojo/hawkins";
 
 const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
+const EVENING_DISPOSITION_LABELS = {
+  carry: "帶回明天",
+  journal: "寫下今天",
+  pause: "暫且放下",
+} as const;
 
 async function readResponse<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
@@ -193,7 +198,7 @@ function DailyReviewCard({ record }: { record: DailyRecord }) {
           const task = record.tasks[category];
           if (!task.text) return null;
           return (
-            <div className="review-task" key={category}>
+            <div className={`review-task ${category}`} key={category}>
               <span>{task.completed ? "✓" : "○"}</span>
               <div>
                 <small>{DAILY_TASK_CATEGORIES[category].label}</small>
@@ -219,6 +224,9 @@ function DailyReviewCard({ record }: { record: DailyRecord }) {
           <>
             <h3>晚間復盤</h3>
             <div className="review-reflection">
+              {record.evening.disposition && (
+                <p><b>收光選擇</b>{EVENING_DISPOSITION_LABELS[record.evening.disposition]}</p>
+              )}
               {record.evening.highlight && <p><b>一束光</b>{record.evening.highlight}</p>}
               {record.evening.block && <p><b>卡住的地方</b>{record.evening.block}</p>}
               {record.evening.insight && <p><b>看見了什麼</b>{record.evening.insight}</p>}

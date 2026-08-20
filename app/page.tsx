@@ -43,6 +43,12 @@ async function readResponse<T>(response: Response): Promise<T> {
   return json as T;
 }
 
+type CarryTasksResponse = {
+  carried: DailyTaskCategory[];
+  alreadyPresent: DailyTaskCategory[];
+  skipped: DailyTaskCategory[];
+};
+
 export default function TodayPage() {
   const date = useMemo(() => taipeiTodayISO(), []);
   const weekStart = useMemo(() => mondayOf(date), [date]);
@@ -82,20 +88,25 @@ export default function TodayPage() {
     };
   }, [date, weekStart]);
 
+  async function writeDaily(next: DailyRecord) {
+    const response = await fetch("/api/dojo/daily", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, record: next }),
+    });
+    const json = await readResponse<{ record: DailyRecord }>(response);
+    setRecord(json.record);
+    return json.record;
+  }
+
   async function persist(next: DailyRecord, message?: string) {
     setSaving(true);
     setError(null);
     setNotice(null);
     try {
-      const response = await fetch("/api/dojo/daily", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, record: next }),
-      });
-      const json = await readResponse<{ record: DailyRecord }>(response);
-      setRecord(json.record);
+      const saved = await writeDaily(next);
       if (message) setNotice(message);
-      return json.record;
+      return saved;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
       throw caught;
@@ -180,12 +191,12 @@ export default function TodayPage() {
   }
 
   async function saveEvening() {
-    if (!record.evening.depth) {
-      setError("請先選擇今晚要用輕、適中或深入復盤。");
-      return;
-    }
     if (!record.evening.disposition) {
       setError("請選擇帶回、寫下今天或暫且放下。");
+      return;
+    }
+    if (record.evening.disposition === "journal" && !record.evening.depth) {
+      setError("請先選擇今晚要用輕、適中或深入復盤。");
       return;
     }
 
@@ -203,22 +214,63 @@ export default function TodayPage() {
         }
       }
 
-      const next = {
+      const disposition = record.evening.disposition;
+      const next: DailyRecord = {
         ...record,
-        evening: { ...record.evening, closedAt: new Date().toISOString() },
+        evening: disposition === "journal"
+          ? { ...record.evening, closedAt: new Date().toISOString() }
+          : {
+              ...record.evening,
+              depth: null,
+              highlight: "",
+              block: "",
+              insight: "",
+              nextAction: "",
+              closedAt: new Date().toISOString(),
+            },
       };
-      const saved = await persist(next);
+      const saved = await writeDaily(next);
+
+      let carryResult: CarryTasksResponse | null = null;
+      if (disposition === "carry") {
+        const flowResponse = await fetch("/api/dojo/flow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "carry-tasks", date, toDate: addCalendarDays(date, 1) }),
+        });
+        carryResult = await readResponse<CarryTasksResponse>(flowResponse);
+      }
+
+      const unfinishedTitles = TASK_ORDER
+        .map((category) => saved.tasks[category])
+        .filter((task) => task.text.trim() && !task.completed)
+        .map((task) => task.text.trim());
       const closingResponse = await fetch("/api/closing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          choice: saved.evening.disposition,
-          note: saved.evening.nextAction,
-          carryToDate: saved.evening.disposition === "carry" ? addCalendarDays(date, 1) : undefined,
+          choice: disposition,
+          note: disposition === "carry" ? unfinishedTitles.join("、") : undefined,
+          carryToDate: disposition === "carry" ? addCalendarDays(date, 1) : undefined,
         }),
       });
       await readResponse(closingResponse);
-      setNotice("晚間復盤已收進今天，之後可在回看找到。");
+
+      if (disposition === "journal") {
+        setNotice("晚間復盤已收進今天，之後可在回看找到。");
+      } else if (disposition === "pause") {
+        setNotice("已記下暫且放下，沒有建立明日待辦。");
+      } else if (carryResult) {
+        const carriedCount = carryResult.carried.length + carryResult.alreadyPresent.length;
+        const skippedText = carryResult.skipped.length > 0
+          ? `；明天已有內容的 ${carryResult.skipped.length} 格保持原樣`
+          : "";
+        setNotice(
+          carriedCount > 0
+            ? `已將 ${carriedCount} 件未完成事項帶回明天${skippedText}。`
+            : `今天沒有可帶回的未完成事項${skippedText}。`
+        );
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -227,6 +279,9 @@ export default function TodayPage() {
   }
 
   const taskDone = TASK_ORDER.filter((category) => record.tasks[category].completed).length;
+  const unfinishedTasks = TASK_ORDER
+    .map((category) => ({ category, task: record.tasks[category] }))
+    .filter(({ task }) => task.text.trim() && !task.completed);
   const boardDone = board?.cells.filter((cell) => cell.index !== 12 && cell.completed).length ?? 0;
 
   return (
@@ -303,8 +358,9 @@ export default function TodayPage() {
                 const task = record.tasks[category];
                 const meta = DAILY_TASK_CATEGORIES[category];
                 return (
-                  <div key={category} className={`daily-task ${task.completed ? "done" : ""}`}>
+                  <div key={category} className={`daily-task ${category} ${task.completed ? "done" : ""}`}>
                     <button
+                      type="button"
                       className={`task-check ${task.completed ? "on" : ""}`}
                       onClick={() => void toggleTask(category)}
                       disabled={!task.text.trim() || saving}
@@ -388,43 +444,8 @@ export default function TodayPage() {
 
           <section className="ritual-card evening-card">
             <span className="eyebrow">晚間收光</span>
-            <h2>用今天需要的深度回看</h2>
-            <div className="segmented three">
-              {([
-                ["light", "輕"],
-                ["medium", "適中"],
-                ["deep", "深入"],
-              ] as const).map(([depth, label]) => (
-                <button
-                  key={depth}
-                  className={record.evening.depth === depth ? "on" : ""}
-                  onClick={() => setRecord({ ...record, evening: { ...record.evening, depth } })}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {record.evening.depth && EVENING_FIELDS[record.evening.depth].map((field) => {
-              const [label, placeholder] = EVENING_LABELS[field];
-              return (
-                <div key={field}>
-                  <label htmlFor={`evening-${field}`}>{label}</label>
-                  <textarea
-                    id={`evening-${field}`}
-                    className="field"
-                    value={record.evening[field]}
-                    onChange={(event) => setRecord({
-                      ...record,
-                      evening: { ...record.evening, [field]: event.target.value },
-                    })}
-                    placeholder={placeholder}
-                  />
-                </div>
-              );
-            })}
-
-            <label>今天怎麼結束？</label>
+            <h2>今晚想怎麼承接自己？</h2>
+            <p className="section-guide">每個選項都有獨立的完成流程，選擇後會在下方展開。</p>
             <div className="closing-choice-grid">
               {([
                 ["carry", "帶回明天", "把下一步放到明天的接續入口"],
@@ -432,18 +453,102 @@ export default function TodayPage() {
                 ["pause", "暫且放下", "今天到此，不留下接續"],
               ] as const).map(([choice, label, description]) => (
                 <button
+                  type="button"
                   key={choice}
                   className={record.evening.disposition === choice ? "on" : ""}
-                  onClick={() => setRecord({ ...record, evening: { ...record.evening, disposition: choice } })}
+                  aria-pressed={record.evening.disposition === choice}
+                  onClick={() => {
+                    setError(null);
+                    setNotice(null);
+                    setRecord((current) => ({
+                      ...current,
+                      evening: { ...current.evening, disposition: choice },
+                    }));
+                  }}
                 >
                   <b>{label}</b>
                   <small>{description}</small>
                 </button>
               ))}
             </div>
-            <button className="primary" disabled={saving} onClick={() => void saveEvening()}>
-              {saving ? "收光中…" : record.evening.closedAt ? "更新今晚復盤" : "完成今晚收光"}
-            </button>
+
+            {record.evening.disposition === "journal" && (
+              <div className="closing-flow-panel journal" aria-live="polite">
+                <label>今天想回看到多深？</label>
+                <div className="segmented three evening-depth-picker">
+                  {([
+                    ["light", "輕"],
+                    ["medium", "適中"],
+                    ["deep", "深入"],
+                  ] as const).map(([depth, label]) => (
+                    <button
+                      type="button"
+                      key={depth}
+                      className={record.evening.depth === depth ? "on" : ""}
+                      aria-pressed={record.evening.depth === depth}
+                      onClick={() => setRecord((current) => ({
+                        ...current,
+                        evening: { ...current.evening, depth },
+                      }))}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {record.evening.depth && EVENING_FIELDS[record.evening.depth].map((field) => {
+                  const [label, placeholder] = EVENING_LABELS[field];
+                  return (
+                    <div key={field}>
+                      <label htmlFor={`evening-${field}`}>{label}</label>
+                      <textarea
+                        id={`evening-${field}`}
+                        className="field"
+                        value={record.evening[field]}
+                        onChange={(event) => setRecord((current) => ({
+                          ...current,
+                          evening: { ...current.evening, [field]: event.target.value },
+                        }))}
+                        placeholder={placeholder}
+                      />
+                    </div>
+                  );
+                })}
+
+                <button type="button" className="primary" disabled={saving} onClick={() => void saveEvening()}>
+                  {saving ? "收光中…" : record.evening.closedAt ? "更新今晚復盤" : "完成並儲存日復盤"}
+                </button>
+              </div>
+            )}
+
+            {record.evening.disposition === "carry" && (
+              <div className="closing-flow-panel carry" aria-live="polite">
+                <b>把未完成的部分帶回明天</b>
+                <p>三件事中尚未完成的內容會放進明天相同分類；來自週盤的格子仍會保留連結。</p>
+                {unfinishedTasks.length > 0 ? (
+                  <ul className="closing-pending-list">
+                    {unfinishedTasks.map(({ category, task }) => (
+                      <li key={category} className={category}>{task.text}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <small>目前沒有尚未完成的三件事。</small>
+                )}
+                <button type="button" className="primary" disabled={saving} onClick={() => void saveEvening()}>
+                  {saving ? "帶回中…" : "確認帶回明天"}
+                </button>
+              </div>
+            )}
+
+            {record.evening.disposition === "pause" && (
+              <div className="closing-flow-panel pause" aria-live="polite">
+                <b>今晚到此，暫且放下</b>
+                <p>會留下今天選擇結束的紀錄，不會將未完成事項建立成明日待辦。</p>
+                <button type="button" className="primary" disabled={saving} onClick={() => void saveEvening()}>
+                  {saving ? "收光中…" : "確認暫且放下"}
+                </button>
+              </div>
+            )}
           </section>
 
           <section className="spaces-shortcut">

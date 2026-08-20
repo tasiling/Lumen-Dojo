@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  addCalendarDays,
   bingoRecordTitle,
   dailyRecordTitle,
   emptyDailyRecord,
@@ -9,6 +10,7 @@ import {
   type DailyTaskCategory,
 } from "@/lib/dojo/formal";
 import { readJsonRecord, upsertJsonRecord } from "@/lib/dojo/notionStore";
+import { carryIncompleteTasks } from "@/lib/dojo/taskCarry";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +22,40 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     if (body.action === "assign-bingo") return assignBingo(body);
     if (body.action === "complete-task") return completeTask(body);
+    if (body.action === "carry-tasks") return carryTasks(body);
     return NextResponse.json({ error: "不明的流程動作" }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
+}
+
+async function carryTasks(body: Record<string, unknown>) {
+  const date = typeof body.date === "string" ? body.date : "";
+  const toDate = typeof body.toDate === "string" ? body.toDate : "";
+  if (!DATE_RE.test(date) || !DATE_RE.test(toDate) || toDate !== addCalendarDays(date, 1)) {
+    return NextResponse.json({ error: "帶回日期必須是來源日的隔天" }, { status: 400 });
+  }
+
+  const sourceRow = await readJsonRecord(dailyRecordTitle(date));
+  if (!sourceRow) return NextResponse.json({ error: "找不到今天的紀錄" }, { status: 404 });
+
+  const targetRow = await readJsonRecord(dailyRecordTitle(toDate));
+  const source = normalizeDailyRecord(sourceRow.value, date);
+  const target = targetRow ? normalizeDailyRecord(targetRow.value, toDate) : emptyDailyRecord(toDate);
+  const result = carryIncompleteTasks(source, target);
+  const normalizedTarget = normalizeDailyRecord(result.target, toDate);
+
+  if (result.carried.length > 0) {
+    await upsertJsonRecord(dailyRecordTitle(toDate), normalizedTarget);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    target: normalizedTarget,
+    carried: result.carried,
+    alreadyPresent: result.alreadyPresent,
+    skipped: result.skipped,
+  });
 }
 
 async function assignBingo(body: Record<string, unknown>) {

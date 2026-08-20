@@ -428,6 +428,13 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
   const eveningLabels = ["未記錄", "輕層", "中層", "深層"];
   const hasActivity = hasDailyActivity(record);
   const hasTaskPlan = hasDailyTaskPlan(record);
+  const eveningStatus = !record?.evening.closedAt
+    ? "未記錄"
+    : record.evening.disposition === "carry"
+      ? "帶回明天"
+      : record.evening.disposition === "pause"
+        ? "暫且放下"
+        : eveningLabels[review.evening];
   return (
     <section className="ritual-card calendar-day-review">
       <div className="calendar-review-date">
@@ -447,7 +454,7 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
         <div>
           <i className="evening-dot" />
           <span>收光</span>
-          <strong>{eveningLabels[review.evening]}</strong>
+          <strong>{eveningStatus}</strong>
         </div>
       </div>
 

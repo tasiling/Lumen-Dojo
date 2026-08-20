@@ -21,6 +21,12 @@
   --morning: #e7a13b;
   --evening: #4f86c7;
   --seed: #5aa06a;
+  --task-important: #e85d55;
+  --task-important-soft: #fde8e5;
+  --task-hobby: #ee9a3a;
+  --task-hobby-soft: #fff0d8;
+  --task-health: #55a96c;
+  --task-health-soft: #e5f4e8;
   --radius-card: 20px;
 
   margin: 0;
@@ -1187,16 +1193,27 @@
   margin: 10px 0 14px;
 }
 .dojo .daily-task {
+  --task-color: var(--task-important);
+  --task-soft: var(--task-important-soft);
   display: grid;
   grid-template-columns: 42px 1fr;
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 15px;
-  background: #fff;
+  background: linear-gradient(90deg, var(--task-soft) 0 7px, #fff 7px);
+}
+.dojo .daily-task.hobby {
+  --task-color: var(--task-hobby);
+  --task-soft: var(--task-hobby-soft);
+}
+.dojo .daily-task.health {
+  --task-color: var(--task-health);
+  --task-soft: var(--task-health-soft);
 }
 .dojo .daily-task.done {
-  background: #eef2e9;
+  background: var(--task-soft);
+  border-color: var(--task-color);
 }
 .dojo .task-check {
   width: 42px;
@@ -1204,11 +1221,14 @@
   padding: 0;
   border-radius: 50%;
   font-size: 18px;
+  color: var(--task-color);
+  border-color: var(--task-color);
+  background: #fff;
 }
 .dojo .task-check.on {
-  background: #4d6557;
+  background: var(--task-color);
   color: #fff;
-  border-color: #4d6557;
+  border-color: var(--task-color);
 }
 .dojo .task-body {
   min-width: 0;
@@ -1217,6 +1237,7 @@
   display: block;
   font-size: 12px;
   font-weight: 650;
+  color: var(--task-color);
 }
 .dojo .task-body .field {
   margin-bottom: 4px;
@@ -1277,6 +1298,80 @@
   display: block;
   color: var(--muted);
   margin-top: 2px;
+}
+.dojo .section-guide {
+  margin: -2px 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.dojo .closing-flow-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+.dojo .closing-flow-panel p {
+  margin: 0;
+  color: #6f6557;
+  font-size: 12px;
+}
+.dojo .closing-flow-panel.journal {
+  background: #fffaf0;
+}
+.dojo .closing-flow-panel.carry {
+  background: var(--task-hobby-soft);
+  border-color: var(--task-hobby);
+}
+.dojo .closing-flow-panel.pause {
+  background: var(--task-health-soft);
+  border-color: var(--task-health);
+}
+.dojo .closing-flow-panel .primary {
+  width: 100%;
+}
+.dojo .closing-pending-list {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.dojo .closing-pending-list li {
+  padding: 7px 9px;
+  border-left: 3px solid var(--task-important);
+  border-radius: 8px;
+  background: #fff9;
+  font-size: 12px;
+}
+.dojo .closing-pending-list li.hobby {
+  border-left-color: var(--task-hobby);
+}
+.dojo .closing-pending-list li.health {
+  border-left-color: var(--task-health);
+}
+.dojo .evening-depth-picker {
+  margin-top: 0;
+}
+.dojo .task-category-button,
+.dojo .review-task {
+  --task-color: var(--task-important);
+  --task-soft: var(--task-important-soft);
+}
+.dojo .task-category-button.hobby,
+.dojo .review-task.hobby {
+  --task-color: var(--task-hobby);
+  --task-soft: var(--task-hobby-soft);
+}
+.dojo .task-category-button.health,
+.dojo .review-task.health {
+  --task-color: var(--task-health);
+  --task-soft: var(--task-health-soft);
+}
+.dojo .task-category-button {
+  border-color: var(--task-color);
+  background: var(--task-soft);
 }
 .dojo .spaces-shortcut {
   padding: 12px 0 4px;
@@ -1808,15 +1903,22 @@
   display: grid;
   grid-template-columns: 24px 1fr;
   gap: 7px;
-  padding: 7px 0;
-  border-bottom: 1px solid #eee5d6;
+  padding: 8px;
+  margin: 5px 0;
+  border-left: 3px solid var(--task-color);
+  border-radius: 10px;
+  background: var(--task-soft);
+}
+.dojo .review-task > span {
+  color: var(--task-color);
+  font-weight: 750;
 }
 .dojo .review-task small,
 .dojo .review-task b {
   display: block;
 }
 .dojo .review-task small {
-  color: var(--muted);
+  color: var(--task-color);
   font-size: 10px;
 }
 .dojo .review-task p,
