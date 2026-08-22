@@ -5,8 +5,14 @@ import {
   normalizeDailyRecord,
   normalizeFormalEntry,
 } from "@/lib/dojo/formal";
+import { decodeClosingContent } from "@/lib/closing/notionFormat";
 import { listJsonRecords } from "@/lib/dojo/notionStore";
-import { listAllTraceEntries } from "@/lib/notion/queries";
+import {
+  listAllJournalEntries,
+  listAllTraceEntries,
+  listKnowledgeEntriesByPrefix,
+} from "@/lib/notion/queries";
+import { CLOSING_TITLE_PREFIX } from "@/lib/notion/schema";
 import { SPACE_TO_SOURCE_TYPE, SPACES, type DojoEntry, type SpaceKey } from "@/lib/dojo/constants";
 
 export const dynamic = "force-dynamic";
@@ -18,10 +24,12 @@ function titleDate(title: string): string | null {
 
 export async function GET() {
   try {
-    const [entryRows, dailyRows, traces] = await Promise.all([
+    const [entryRows, dailyRows, traces, journals, legacyClosingRows] = await Promise.all([
       listJsonRecords(ENTRY_TITLE_PREFIX),
       listJsonRecords(DAILY_TITLE_PREFIX),
       listAllTraceEntries(),
+      listAllJournalEntries(),
+      listKnowledgeEntriesByPrefix(CLOSING_TITLE_PREFIX),
     ]);
 
     const entries = entryRows
@@ -64,9 +72,29 @@ export async function GET() {
       .filter((record): record is NonNullable<typeof record> => record !== null)
       .sort((a, b) => b.date.localeCompare(a.date));
 
+    const historicalJournals = journals.flatMap((journal) => {
+      const date = journal.日期?.slice(0, 10) ?? titleDate(journal.標題);
+      return date ? [{ ...journal, date }] : [];
+    });
+
+    const legacyClosings = legacyClosingRows.flatMap((row) => {
+      const content = decodeClosingContent(row.內容);
+      if (!content) return [];
+      return [{
+        id: row.id,
+        date: content.date || titleDate(row.標題) || "",
+        title: content.title,
+        note: content.note ?? "",
+        carryToDate: content.carryToDate ?? null,
+        carryResolvedAt: content.carryResolvedAt ?? null,
+      }];
+    }).filter((item) => item.date).sort((a, b) => b.date.localeCompare(a.date));
+
     return NextResponse.json({
       entries: [...entries, ...legacy].sort((a, b) => (b.createdAt ?? b.date).localeCompare(a.createdAt ?? a.date)),
       daily,
+      journals: historicalJournals,
+      legacyClosings,
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });

@@ -67,6 +67,9 @@ export type DailyRecord = {
   morning: {
     intention: string;
     state: "低" | "穩" | "亮" | null;
+    gratitude: string;
+    affirmation: string;
+    futureJournal: string;
     startedAt: string | null;
   };
   tasks: Record<DailyTaskCategory, DailyTask>;
@@ -81,6 +84,9 @@ export type DailyRecord = {
     insight: string;
     nextAction: string;
     disposition: ClosingDisposition | null;
+    carryNote: string;
+    carryToDate: string | null;
+    carryResolvedAt: string | null;
     closedAt: string | null;
   };
   updatedAt: string;
@@ -207,7 +213,14 @@ export function emptyDailyRecord(date = taipeiTodayISO()): DailyRecord {
   return {
     version: 1,
     date,
-    morning: { intention: "", state: null, startedAt: null },
+    morning: {
+      intention: "",
+      state: null,
+      gratitude: "",
+      affirmation: "",
+      futureJournal: "",
+      startedAt: null,
+    },
     tasks: {
       important: emptyTask("important"),
       hobby: emptyTask("hobby"),
@@ -221,6 +234,9 @@ export function emptyDailyRecord(date = taipeiTodayISO()): DailyRecord {
       insight: "",
       nextAction: "",
       disposition: null,
+      carryNote: "",
+      carryToDate: null,
+      carryResolvedAt: null,
       closedAt: null,
     },
     updatedAt: new Date().toISOString(),
@@ -291,6 +307,9 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
     morning: {
       intention: stringValue(morning.intention).slice(0, 1000),
       state,
+      gratitude: stringValue(morning.gratitude).slice(0, 3000),
+      affirmation: stringValue(morning.affirmation).slice(0, 2000),
+      futureJournal: stringValue(morning.futureJournal).slice(0, 5000),
       startedAt: nullableString(morning.startedAt),
     },
     tasks: {
@@ -306,6 +325,9 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
       insight: stringValue(evening.insight).slice(0, 3000),
       nextAction: stringValue(evening.nextAction).slice(0, 1000),
       disposition,
+      carryNote: stringValue(evening.carryNote).slice(0, 2000),
+      carryToDate: isDate(evening.carryToDate) ? evening.carryToDate : null,
+      carryResolvedAt: nullableString(evening.carryResolvedAt),
       closedAt: nullableString(evening.closedAt),
     },
     updatedAt: new Date().toISOString(),

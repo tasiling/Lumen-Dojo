@@ -105,10 +105,13 @@ export async function PATCH(req: NextRequest) {
         entry.traceId = trace.id;
       }
 
-      if (entry.traceId && (entry.freq != null || entry.intensity != null)) {
+      if (
+        entry.traceId &&
+        (!previous.traceId || entry.freq !== previous.freq || entry.intensity !== previous.intensity)
+      ) {
         await markTraceMeasure(entry.traceId, {
-          ...(entry.freq != null ? { 頻率: entry.freq } : {}),
-          ...(entry.intensity != null ? { 強度: entry.intensity } : {}),
+          頻率: entry.freq ?? null,
+          強度: entry.intensity ?? null,
         });
       }
     }

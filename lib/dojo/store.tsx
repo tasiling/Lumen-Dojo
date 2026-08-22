@@ -62,6 +62,10 @@ type DojoStore = {
   removeEntry: (id: string) => Promise<void>;
   setEntryFreq: (id: string, freq: number | null) => Promise<void>;
   setEntryIntensity: (id: string, intensity: number | null) => Promise<void>;
+  setEntryMeasure: (
+    id: string,
+    measure: { freq: number | null; intensity: number | null }
+  ) => Promise<void>;
   modalOpen: boolean;
   modalOptions: QuickAddOptions;
   openQuickAdd: (opts?: QuickAddOptions) => void;
@@ -175,6 +179,19 @@ export function DojoProvider({ children }: { children: ReactNode }) {
     [entries, updateEntry]
   );
 
+  const setEntryMeasure = useCallback(
+    async (id: string, measure: { freq: number | null; intensity: number | null }) => {
+      const target = entries.find((entry) => entry.id === id);
+      if (!target || id.startsWith("trace:")) return;
+      await updateEntry(id, {
+        ...editablePayload(target),
+        freq: measure.freq ?? undefined,
+        intensity: measure.intensity ?? undefined,
+      });
+    },
+    [entries, updateEntry]
+  );
+
   const openQuickAdd = useCallback((options: QuickAddOptions = {}) => {
     setModalOptions(options);
     setModalOpen(true);
@@ -211,6 +228,7 @@ export function DojoProvider({ children }: { children: ReactNode }) {
       removeEntry,
       setEntryFreq,
       setEntryIntensity,
+      setEntryMeasure,
       modalOpen,
       modalOptions,
       openQuickAdd,
@@ -230,6 +248,7 @@ export function DojoProvider({ children }: { children: ReactNode }) {
       removeEntry,
       setEntryFreq,
       setEntryIntensity,
+      setEntryMeasure,
       modalOpen,
       modalOptions,
       openQuickAdd,

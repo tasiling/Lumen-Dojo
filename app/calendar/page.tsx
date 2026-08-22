@@ -113,6 +113,9 @@ function hasDailyActivity(record?: DailyRecord) {
   return Boolean(
     record.morning.startedAt ||
     record.morning.intention.trim() ||
+    record.morning.gratitude.trim() ||
+    record.morning.affirmation.trim() ||
+    record.morning.futureJournal.trim() ||
     record.morning.state ||
     record.daytime.logs.length ||
     record.daytime.note.trim() ||
@@ -121,6 +124,7 @@ function hasDailyActivity(record?: DailyRecord) {
     record.evening.block.trim() ||
     record.evening.insight.trim() ||
     record.evening.nextAction.trim() ||
+    record.evening.carryNote.trim() ||
     TASK_ORDER.some((category) => {
       const task = record.tasks[category];
       return task.text.trim() || task.completed || task.result.trim();
@@ -431,7 +435,9 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
   const eveningStatus = !record?.evening.closedAt
     ? "未記錄"
     : record.evening.disposition === "carry"
-      ? "帶回明天"
+      ? record.evening.carryToDate
+        ? `帶回 ${Number(record.evening.carryToDate.slice(5, 7))}/${Number(record.evening.carryToDate.slice(8, 10))}`
+        : "帶回"
       : record.evening.disposition === "pause"
         ? "暫且放下"
         : eveningLabels[review.evening];
@@ -459,7 +465,7 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
       </div>
 
       <div className="calendar-task-progress">
-        <span>今日三件事</span>
+        <span>規劃今天的三件事</span>
         <strong>{hasTaskPlan ? `${review.taskProgress.done} / ${review.taskProgress.total} 已完成` : "未設定"}</strong>
       </div>
 

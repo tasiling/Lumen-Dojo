@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import EntryMeasurePanel from "@/app/components/EntryMeasurePanel";
+import { carryDateOptions, fmtDateWD } from "@/lib/closing/notionFormat";
+import { SPACES, type SpaceKey } from "@/lib/dojo/constants";
+import type { PersonalContinuation } from "@/lib/dojo/continuations";
 import {
   DAILY_TASK_CATEGORIES,
-  addCalendarDays,
   completedBingoLines,
   emptyDailyRecord,
   mondayOf,
@@ -13,7 +16,7 @@ import {
   type DailyTaskCategory,
   type WeeklyBoard,
 } from "@/lib/dojo/formal";
-import { SPACES, type SpaceKey } from "@/lib/dojo/constants";
+import { useDojo } from "@/lib/dojo/store";
 
 const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
 const EVENING_FIELDS = {
@@ -26,7 +29,12 @@ const EVENING_LABELS = {
   highlight: ["今天的一束光", "今天值得留下的片刻"],
   block: ["卡住的地方", "哪裡消耗了你？"],
   insight: ["看見了什麼", "今天多明白了一點什麼？"],
-  nextAction: ["下一步", "要帶往明天的一個小動作"],
+  nextAction: ["下一步", "下一次想怎麼做？"],
+} as const;
+
+const REFLECTION_PROMPTS = {
+  highlight: ["今天做得好的一件事", "今天經歷的美好時刻", "一個想感謝的人或片刻"],
+  block: ["今天想改善的問題", "哪個地方消耗最多", "如果重來一次，會調整什麼"],
 } as const;
 
 function formatToday(dateISO: string) {
@@ -37,27 +45,35 @@ function formatToday(dateISO: string) {
   }).format(new Date(`${dateISO}T12:00:00+08:00`));
 }
 
+function carryOptionLabel(iso: string, index: number) {
+  const prefix = index === 0 ? "明天" : index === 1 ? "後天" : `第 ${index + 1} 天`;
+  return `${prefix} · ${fmtDateWD(iso)}`;
+}
+
 async function readResponse<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error((json as { error?: string }).error ?? `操作失敗（${response.status}）`);
   return json as T;
 }
 
-type CarryTasksResponse = {
-  carried: DailyTaskCategory[];
-  alreadyPresent: DailyTaskCategory[];
-  skipped: DailyTaskCategory[];
-};
-
 export default function TodayPage() {
+  const { entries, entriesLoading, entriesError } = useDojo();
   const date = useMemo(() => taipeiTodayISO(), []);
   const weekStart = useMemo(() => mondayOf(date), [date]);
+  const carryOptions = useMemo(() => carryDateOptions(date), [date]);
+  const todayEntries = useMemo(() => entries.filter((entry) => entry.date === date), [date, entries]);
   const [record, setRecord] = useState<DailyRecord>(() => emptyDailyRecord(date));
   const [board, setBoard] = useState<WeeklyBoard | null>(null);
+  const [continuations, setContinuations] = useState<PersonalContinuation[]>([]);
+  const [continuationError, setContinuationError] = useState<string | null>(null);
+  const [resolvingContinuation, setResolvingContinuation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [eveningError, setEveningError] = useState<string | null>(null);
+  const [eveningFeedback, setEveningFeedback] = useState<string | null>(null);
+  const [morningNotesOpen, setMorningNotesOpen] = useState(false);
   const [logText, setLogText] = useState("");
 
   useEffect(() => {
@@ -75,11 +91,27 @@ export default function TodayPage() {
         if (!cancelled) {
           setRecord(dailyJson.record);
           setBoard(boardJson.board);
+          setMorningNotesOpen(Boolean(
+            dailyJson.record.morning.gratitude ||
+            dailyJson.record.morning.affirmation ||
+            dailyJson.record.morning.futureJournal
+          ));
         }
       } catch (caught) {
         if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
       } finally {
         if (!cancelled) setLoading(false);
+      }
+
+      try {
+        const response = await fetch("/api/dojo/continuations", { cache: "no-store" });
+        const json = await readResponse<{ cards: PersonalContinuation[] }>(response);
+        if (!cancelled) {
+          setContinuations(json.cards ?? []);
+          setContinuationError(null);
+        }
+      } catch (caught) {
+        if (!cancelled) setContinuationError(caught instanceof Error ? caught.message : String(caught));
       }
     }
     void load();
@@ -190,100 +222,91 @@ export default function TodayPage() {
     }
   }
 
+  function addReflectionPrompt(field: "highlight" | "block", prompt: string) {
+    setEveningFeedback(null);
+    setRecord((current) => {
+      if (current.evening[field].includes(prompt)) return current;
+      const prefix = current.evening[field].trim() ? `${current.evening[field].trim()}\n` : "";
+      return {
+        ...current,
+        evening: { ...current.evening, [field]: `${prefix}${prompt}：` },
+      };
+    });
+  }
+
   async function saveEvening() {
-    if (!record.evening.disposition) {
-      setError("請選擇帶回、寫下今天或暫且放下。");
+    const disposition = record.evening.disposition;
+    setEveningError(null);
+    setEveningFeedback(null);
+    if (!disposition) {
+      setEveningError("請選擇帶回、寫下今天或暫且放下。");
       return;
     }
-    if (record.evening.disposition === "journal" && !record.evening.depth) {
-      setError("請先選擇今晚要用輕、適中或深入復盤。");
+    if (disposition === "journal" && !record.evening.depth) {
+      setEveningError("請先選擇今晚要用輕、適中或深入復盤。");
       return;
+    }
+    if (disposition === "carry" && !record.evening.carryNote.trim()) {
+      setEveningError("請寫下想帶回的念頭、問題或下一步。");
+      return;
+    }
+    if (disposition === "carry" && !record.evening.carryToDate) {
+      setEveningError("請選擇要在哪一天重新接住它。");
+      return;
+    }
+
+    let overwrite = false;
+    if (record.evening.closedAt) {
+      overwrite = window.confirm("今天已經完成收光。要用這次內容取代原本紀錄嗎？");
+      if (!overwrite) return;
     }
 
     setSaving(true);
-    setError(null);
-    setNotice(null);
     try {
-      const existingResponse = await fetch("/api/closing/today", { cache: "no-store" });
-      const existingJson = await readResponse<{ existing: unknown }>(existingResponse);
-      if (existingJson.existing) {
-        const replace = window.confirm("今天已經收過光。要用這次的晚間復盤取代原本紀錄嗎？");
-        if (!replace) {
-          setSaving(false);
-          return;
-        }
-      }
-
-      const disposition = record.evening.disposition;
-      const next: DailyRecord = {
-        ...record,
-        evening: disposition === "journal"
-          ? { ...record.evening, closedAt: new Date().toISOString() }
-          : {
-              ...record.evening,
-              depth: null,
-              highlight: "",
-              block: "",
-              insight: "",
-              nextAction: "",
-              closedAt: new Date().toISOString(),
-            },
-      };
-      const saved = await writeDaily(next);
-
-      let carryResult: CarryTasksResponse | null = null;
-      if (disposition === "carry") {
-        const flowResponse = await fetch("/api/dojo/flow", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "carry-tasks", date, toDate: addCalendarDays(date, 1) }),
-        });
-        carryResult = await readResponse<CarryTasksResponse>(flowResponse);
-      }
-
-      const unfinishedTitles = TASK_ORDER
-        .map((category) => saved.tasks[category])
-        .filter((task) => task.text.trim() && !task.completed)
-        .map((task) => task.text.trim());
-      const closingResponse = await fetch("/api/closing", {
+      const response = await fetch("/api/dojo/evening", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          choice: disposition,
-          note: disposition === "carry" ? unfinishedTitles.join("、") : undefined,
-          carryToDate: disposition === "carry" ? addCalendarDays(date, 1) : undefined,
-        }),
+        body: JSON.stringify({ date, record, overwrite }),
       });
-      await readResponse(closingResponse);
-
+      const json = await readResponse<{ record: DailyRecord }>(response);
+      setRecord(json.record);
       if (disposition === "journal") {
-        setNotice("晚間復盤已收進今天，之後可在回看找到。");
+        setEveningFeedback("晚間復盤已收進今天，之後可在回看找到。");
       } else if (disposition === "pause") {
-        setNotice("已記下暫且放下，沒有建立明日待辦。");
-      } else if (carryResult) {
-        const carriedCount = carryResult.carried.length + carryResult.alreadyPresent.length;
-        const skippedText = carryResult.skipped.length > 0
-          ? `；明天已有內容的 ${carryResult.skipped.length} 格保持原樣`
-          : "";
-        setNotice(
-          carriedCount > 0
-            ? `已將 ${carriedCount} 件未完成事項帶回明天${skippedText}。`
-            : `今天沒有可帶回的未完成事項${skippedText}。`
+        setEveningFeedback("今晚已暫且放下；沒有建立待辦，也不需要現在解決。");
+      } else {
+        const carriedDate = json.record.evening.carryToDate ?? record.evening.carryToDate;
+        setEveningFeedback(
+          `已把這段接續帶到 ${carriedDate ? fmtDateWD(carriedDate) : "指定日期"}。未完成任務仍留在本週 Bingo。`
         );
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setEveningError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setSaving(false);
     }
   }
 
-  const taskDone = TASK_ORDER.filter((category) => record.tasks[category].completed).length;
-  const unfinishedTasks = TASK_ORDER
-    .map((category) => ({ category, task: record.tasks[category] }))
-    .filter(({ task }) => task.text.trim() && !task.completed);
-  const boardDone = board?.cells.filter((cell) => cell.index !== 12 && cell.completed).length ?? 0;
+  async function resolveContinuation(card: PersonalContinuation) {
+    setResolvingContinuation(card.id);
+    setContinuationError(null);
+    try {
+      const response = await fetch("/api/dojo/continuations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: card.source, id: card.id, createdDate: card.createdDate }),
+      });
+      await readResponse<{ ok: true }>(response);
+      setContinuations((current) => current.filter((item) => !(item.source === card.source && item.id === card.id)));
+    } catch (caught) {
+      setContinuationError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setResolvingContinuation(null);
+    }
+  }
 
+  const taskDone = TASK_ORDER.filter((category) => record.tasks[category].completed).length;
+  const boardDone = board?.cells.filter((cell) => cell.index !== 12 && cell.completed).length ?? 0;
   return (
     <section className="screen today-screen">
       <div className="hero today-hero">
@@ -295,6 +318,33 @@ export default function TodayPage() {
           <Link href="/bingo">週盤 {boardDone}/24 · {board ? completedBingoLines(board) : 0} 連線</Link>
         </div>
       </div>
+
+      {continuations.length > 0 && (
+        <section className="continuation-section" aria-labelledby="continuation-title">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">帶回今天</span>
+              <h2 id="continuation-title">先接住之前留下的話</h2>
+            </div>
+          </div>
+          <div className="continuation-list">
+            {continuations.map((card) => (
+              <article className="continuation-card" key={`${card.source}:${card.id}`}>
+                <small>{fmtDateWD(card.createdDate)} 留下 · {fmtDateWD(card.carryToDate)} 帶回</small>
+                <p>{card.text}</p>
+                <button
+                  type="button"
+                  disabled={resolvingContinuation === card.id}
+                  onClick={() => void resolveContinuation(card)}
+                >
+                  {resolvingContinuation === card.id ? "處理中…" : "這段已接住"}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+      {continuationError && <p className="form-error" role="alert">接續內容暫時無法讀取：{continuationError}</p>}
 
       {loading && <div className="empty">正在讀取今天…</div>}
       {error && <p className="form-error" role="alert">{error}</p>}
@@ -315,6 +365,7 @@ export default function TodayPage() {
             <div className="segmented three">
               {(["低", "穩", "亮"] as const).map((state) => (
                 <button
+                  type="button"
                   key={state}
                   className={record.morning.state === state ? "on" : ""}
                   onClick={() => setRecord({ ...record, morning: { ...record.morning, state } })}
@@ -332,7 +383,55 @@ export default function TodayPage() {
               onChange={(event) => setRecord({ ...record, morning: { ...record.morning, intention: event.target.value } })}
               placeholder="一句今天的方向即可"
             />
+
+            <details
+              className="optional-notes"
+              open={morningNotesOpen}
+              onToggle={(event) => setMorningNotesOpen(event.currentTarget.open)}
+            >
+              <summary>
+                <span>晨間筆記</span>
+                <small>感恩、肯定與未來日記 · 選填</small>
+              </summary>
+              <div className="optional-notes-body">
+                <label htmlFor="morning-gratitude">我很感恩的三件事</label>
+                <textarea
+                  id="morning-gratitude"
+                  className="field"
+                  value={record.morning.gratitude}
+                  onChange={(event) => setRecord((current) => ({
+                    ...current,
+                    morning: { ...current.morning, gratitude: event.target.value },
+                  }))}
+                  placeholder="想寫多少都可以，不必湊滿三件。"
+                />
+                <label htmlFor="morning-affirmation">我的正向肯定句</label>
+                <textarea
+                  id="morning-affirmation"
+                  className="field"
+                  value={record.morning.affirmation}
+                  onChange={(event) => setRecord((current) => ({
+                    ...current,
+                    morning: { ...current.morning, affirmation: event.target.value },
+                  }))}
+                  placeholder="今天想對自己說的一句話"
+                />
+                <label htmlFor="morning-future-journal">我的未來日記</label>
+                <textarea
+                  id="morning-future-journal"
+                  className="field"
+                  value={record.morning.futureJournal}
+                  onChange={(event) => setRecord((current) => ({
+                    ...current,
+                    morning: { ...current.morning, futureJournal: event.target.value },
+                  }))}
+                  placeholder="用已經發生的語氣，寫下想走向的畫面。"
+                />
+              </div>
+            </details>
+
             <button
+              type="button"
               className="primary"
               disabled={saving}
               onClick={() => void persist({
@@ -347,8 +446,8 @@ export default function TodayPage() {
           <section className="ritual-card">
             <div className="section-heading">
               <div>
-                <span className="eyebrow">今日三件事</span>
-                <h2>重要、喜歡、照顧自己</h2>
+                <span className="eyebrow">晨間啟動 · 今日安排</span>
+                <h2>規劃今天的三件事</h2>
               </div>
               <Link href="/bingo" className="text-link">從週盤帶入</Link>
             </div>
@@ -394,8 +493,8 @@ export default function TodayPage() {
                 );
               })}
             </div>
-            <button className="primary" disabled={saving} onClick={() => void persist(record, "今日三件事已更新。") }>
-              {saving ? "儲存中…" : "儲存今日三件事"}
+            <button type="button" className="primary" disabled={saving} onClick={() => void persist(record, "今天的三件事已更新。") }>
+              {saving ? "儲存中…" : "儲存今天的三件事"}
             </button>
           </section>
 
@@ -415,7 +514,7 @@ export default function TodayPage() {
                 }}
                 placeholder="一句進度、感受或轉折"
               />
-              <button onClick={() => void addLog()} disabled={!logText.trim() || saving}>記下</button>
+              <button type="button" onClick={() => void addLog()} disabled={!logText.trim() || saving}>記下</button>
             </div>
             {record.daytime.logs.length > 0 && (
               <div className="day-log-list">
@@ -423,7 +522,7 @@ export default function TodayPage() {
                   <div className="day-log" key={log.id}>
                     <time>{log.time}</time>
                     <span>{log.text}</span>
-                    <button onClick={() => void removeLog(log.id)} aria-label={`刪除「${log.text}」`}>×</button>
+                    <button type="button" onClick={() => void removeLog(log.id)} aria-label={`刪除「${log.text}」`}>×</button>
                   </div>
                 ))}
               </div>
@@ -437,20 +536,50 @@ export default function TodayPage() {
               onChange={(event) => setRecord({ ...record, daytime: { ...record.daytime, note: event.target.value } })}
               placeholder="自由寫下今天，不需要整理成結論。"
             />
-            <button className="primary" disabled={saving} onClick={() => void persist(record, "日間札記已存下來。") }>
+            <button type="button" className="primary" disabled={saving} onClick={() => void persist(record, "日間札記已存下來。") }>
               {saving ? "儲存中…" : "儲存日間札記"}
             </button>
           </section>
 
-          <section className="ritual-card evening-card">
-            <span className="eyebrow">晚間收光</span>
-            <h2>今晚想怎麼承接自己？</h2>
-            <p className="section-guide">每個選項都有獨立的完成流程，選擇後會在下方展開。</p>
+          <section className="ritual-card evening-card" id="today-closing">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">晚間收光</span>
+                <h2>今晚想怎麼承接自己？</h2>
+              </div>
+              {record.evening.closedAt && <span className="saved-mark">已收光</span>}
+            </div>
+
+            <details className="measure-disclosure">
+              <summary>
+                <span>片刻測頻</span>
+                <small>只標記值得回看的片刻 · 選填</small>
+              </summary>
+              <div className="measure-disclosure-body">
+                <p>頻率與投入強度不是每天必填，也不會被平均成一天的分數。</p>
+                {entriesLoading && <small>正在讀取今天的片刻…</small>}
+                {entriesError && <p className="form-error">{entriesError}</p>}
+                {!entriesLoading && todayEntries.length === 0 && (
+                  <small>今天還沒有六個場域的片刻；需要時可用下方「新增」留下。</small>
+                )}
+                {todayEntries.map((entry) => (
+                  <article className="measure-entry" key={entry.id}>
+                    <div>
+                      <small>{SPACES[entry.space][0]} · {entry.kind}</small>
+                      <b>{entry.title}</b>
+                    </div>
+                    <EntryMeasurePanel entry={entry} />
+                  </article>
+                ))}
+              </div>
+            </details>
+
+            <p className="section-guide">選一種今晚真正需要的收束；三個選項各自有完整流程。</p>
             <div className="closing-choice-grid">
               {([
-                ["carry", "帶回明天", "把下一步放到明天的接續入口"],
-                ["journal", "寫下今天", "留下復盤，不建立待辦"],
-                ["pause", "暫且放下", "今天到此，不留下接續"],
+                ["journal", "寫下今天", "留下一束光，也可往卡點、洞察與下一步深入"],
+                ["carry", "帶回", "把一段念頭、問題或下一步帶到指定日期"],
+                ["pause", "暫且放下", "今天到此，不建立待辦或接續"],
               ] as const).map(([choice, label, description]) => (
                 <button
                   type="button"
@@ -458,8 +587,8 @@ export default function TodayPage() {
                   className={record.evening.disposition === choice ? "on" : ""}
                   aria-pressed={record.evening.disposition === choice}
                   onClick={() => {
-                    setError(null);
-                    setNotice(null);
+                    setEveningError(null);
+                    setEveningFeedback(null);
                     setRecord((current) => ({
                       ...current,
                       evening: { ...current.evening, disposition: choice },
@@ -472,7 +601,16 @@ export default function TodayPage() {
               ))}
             </div>
 
-            {record.evening.disposition === "journal" && (
+            {eveningError && <p className="form-error closing-inline-message" role="alert">{eveningError}</p>}
+            {eveningFeedback && (
+              <div className="closing-success" role="status">
+                <b>今晚已收好</b>
+                <p>{eveningFeedback}</p>
+                <button type="button" onClick={() => setEveningFeedback(null)}>修改今晚的選擇</button>
+              </div>
+            )}
+
+            {!eveningFeedback && record.evening.disposition === "journal" && (
               <div className="closing-flow-panel journal" aria-live="polite">
                 <label>今天想回看到多深？</label>
                 <div className="segmented three evening-depth-picker">
@@ -498,9 +636,25 @@ export default function TodayPage() {
 
                 {record.evening.depth && EVENING_FIELDS[record.evening.depth].map((field) => {
                   const [label, placeholder] = EVENING_LABELS[field];
+                  const prompts = field === "highlight" || field === "block" ? REFLECTION_PROMPTS[field] : null;
                   return (
                     <div key={field}>
                       <label htmlFor={`evening-${field}`}>{label}</label>
+                      {prompts && (
+                        <div className="prompt-chip-list" aria-label={`${label}書寫提示`}>
+                          {prompts.map((prompt) => (
+                            <button
+                              type="button"
+                              key={prompt}
+                              onClick={() => {
+                                if (field === "highlight" || field === "block") addReflectionPrompt(field, prompt);
+                              }}
+                            >
+                              {prompt}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <textarea
                         id={`evening-${field}`}
                         className="field"
@@ -521,29 +675,48 @@ export default function TodayPage() {
               </div>
             )}
 
-            {record.evening.disposition === "carry" && (
+            {!eveningFeedback && record.evening.disposition === "carry" && (
               <div className="closing-flow-panel carry" aria-live="polite">
-                <b>把未完成的部分帶回明天</b>
-                <p>三件事中尚未完成的內容會放進明天相同分類；來自週盤的格子仍會保留連結。</p>
-                {unfinishedTasks.length > 0 ? (
-                  <ul className="closing-pending-list">
-                    {unfinishedTasks.map(({ category, task }) => (
-                      <li key={category} className={category}>{task.text}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <small>目前沒有尚未完成的三件事。</small>
-                )}
+                <b>把一段話帶到之後</b>
+                <p>這裡承接的是念頭、問題或下一步；未完成任務會留在本週 Bingo，不會被複製。</p>
+                <label htmlFor="carry-note">想帶回什麼？</label>
+                <textarea
+                  id="carry-note"
+                  className="field"
+                  value={record.evening.carryNote}
+                  onChange={(event) => setRecord((current) => ({
+                    ...current,
+                    evening: { ...current.evening, carryNote: event.target.value },
+                  }))}
+                  placeholder="一個還想想看的問題、一段提醒，或下一次想試的小動作。"
+                />
+                <label>在哪一天重新接住？</label>
+                <div className="carry-date-grid">
+                  {carryOptions.map((option, index) => (
+                    <button
+                      type="button"
+                      key={option}
+                      className={record.evening.carryToDate === option ? "on" : ""}
+                      aria-pressed={record.evening.carryToDate === option}
+                      onClick={() => setRecord((current) => ({
+                        ...current,
+                        evening: { ...current.evening, carryToDate: option },
+                      }))}
+                    >
+                      {carryOptionLabel(option, index)}
+                    </button>
+                  ))}
+                </div>
                 <button type="button" className="primary" disabled={saving} onClick={() => void saveEvening()}>
-                  {saving ? "帶回中…" : "確認帶回明天"}
+                  {saving ? "帶回中…" : "確認帶回"}
                 </button>
               </div>
             )}
 
-            {record.evening.disposition === "pause" && (
+            {!eveningFeedback && record.evening.disposition === "pause" && (
               <div className="closing-flow-panel pause" aria-live="polite">
                 <b>今晚到此，暫且放下</b>
-                <p>會留下今天選擇結束的紀錄，不會將未完成事項建立成明日待辦。</p>
+                <p>會留下今天選擇結束的紀錄，不建立明日待辦，也不要求你現在整理出答案。</p>
                 <button type="button" className="primary" disabled={saving} onClick={() => void saveEvening()}>
                   {saving ? "收光中…" : "確認暫且放下"}
                 </button>

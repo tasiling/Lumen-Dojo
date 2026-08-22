@@ -498,6 +498,15 @@ export async function findJournalEntryByTitle(title: string) {
   return pages[0] ? mapJournal(pages[0]) : null;
 }
 
+// 正式版「回看」需要保留舊收光頁曾寫入 DB-18 的七題日記。這裡只讀取並
+// 映射既有資料，不遷移或改寫存量，避免影響舊流程與 Notion 結構。
+export async function listAllJournalEntries() {
+  const pages = await queryAll(DATA_SOURCES.DB18_日記庫);
+  return pages
+    .map(mapJournal)
+    .sort((a, b) => (b.日期 ?? "").localeCompare(a.日期 ?? ""));
+}
+
 // --- DB-19 生活痕跡庫:居所兩區(上區/下區)與淡去邏輯的資料層 ---
 // (補充裁決04/05)。淡去的實際判斷(7 天門檻)在 lib/trace/rules.ts,不在
 // 這裡——這裡只負責把候選集合縮小到查詢窗口內(補充裁決05 §2.1)。

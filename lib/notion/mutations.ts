@@ -425,17 +425,18 @@ export async function registerTraceView(id: string) {
 }
 
 // 標記頻率／強度本身也是一種動靜(補充裁決04「什麼算動靜」表),所以跟收光
-// 復盤測頻的既有規則一樣——只寫入這次真的動過的欄位,同時更新最後動靜時
-// 間。標記之後這筆痕跡會落入下區、永久免淡(補充裁決04 §2.2),那個「落入
-// 下區」的判斷屬於讀取端(listPersistentTraces 的查詢條件已經涵蓋),這裡只
+// 復盤測頻的既有規則一樣——只寫入這次指定的欄位；null 代表使用者明確
+// 清除標記。同時更新最後動靜時間。標記之後這筆痕跡會落入下區、永久免淡
+// (補充裁決04 §2.2)；那個「落入下區」的判斷屬於讀取端
+// (listPersistentTraces 的查詢條件已經涵蓋),這裡只
 // 負責寫值。
-export async function markTraceMeasure(id: string, patch: { 頻率?: number; 強度?: number }) {
+export async function markTraceMeasure(id: string, patch: { 頻率?: number | null; 強度?: number | null }) {
   await withNotionRateLimit(() =>
     notion().pages.update({
       page_id: id,
       properties: {
-        ...(patch.頻率 !== undefined ? { 頻率: numberProp(patch.頻率) } : {}),
-        ...(patch.強度 !== undefined ? { 強度: numberProp(patch.強度) } : {}),
+        ...(patch.頻率 !== undefined ? { 頻率: { number: patch.頻率 } } : {}),
+        ...(patch.強度 !== undefined ? { 強度: { number: patch.強度 } } : {}),
         最後動靜時間: dateProp(new Date().toISOString()),
       },
     })

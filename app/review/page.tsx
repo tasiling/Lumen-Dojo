@@ -1,12 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useDojo } from "@/lib/dojo/store";
-import {
-  DAILY_TASK_CATEGORIES,
-  type DailyRecord,
-  type DailyTaskCategory,
-} from "@/lib/dojo/formal";
 import {
   GUANGFA,
   GUANGXING,
@@ -14,14 +8,38 @@ import {
   type DojoEntry,
   type SpaceKey,
 } from "@/lib/dojo/constants";
+import {
+  DAILY_TASK_CATEGORIES,
+  type DailyRecord,
+  type DailyTaskCategory,
+} from "@/lib/dojo/formal";
 import { formatFreqIntensityLabel, resolveHawkinsLevel } from "@/lib/dojo/hawkins";
+import { useDojo } from "@/lib/dojo/store";
+import { JOURNAL_QUESTIONS, type JournalQuestionKey } from "@/lib/journal/notionFormat";
 
 const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
 const EVENING_DISPOSITION_LABELS = {
-  carry: "帶回明天",
+  carry: "帶回",
   journal: "寫下今天",
   pause: "暫且放下",
 } as const;
+
+type HistoricalJournal = {
+  id: string;
+  date: string;
+  標題: string;
+  日期: string | null;
+  answers: Record<JournalQuestionKey, string>;
+};
+
+type LegacyClosing = {
+  id: string;
+  date: string;
+  title: string;
+  note: string;
+  carryToDate: string | null;
+  carryResolvedAt: string | null;
+};
 
 async function readResponse<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
@@ -38,6 +56,8 @@ export default function ReviewPage() {
   const { entries: editableEntries, openQuickAdd, removeEntry, refreshEntries } = useDojo();
   const [daily, setDaily] = useState<DailyRecord[]>([]);
   const [entries, setEntries] = useState<DojoEntry[]>([]);
+  const [journals, setJournals] = useState<HistoricalJournal[]>([]);
+  const [legacyClosings, setLegacyClosings] = useState<LegacyClosing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -59,10 +79,17 @@ export default function ReviewPage() {
       setError(null);
       try {
         const response = await fetch("/api/dojo/review", { cache: "no-store" });
-        const json = await readResponse<{ daily: DailyRecord[]; entries: DojoEntry[] }>(response);
+        const json = await readResponse<{
+          daily: DailyRecord[];
+          entries: DojoEntry[];
+          journals: HistoricalJournal[];
+          legacyClosings: LegacyClosing[];
+        }>(response);
         if (!cancelled) {
           setDaily(json.daily ?? []);
           setEntries(json.entries ?? []);
+          setJournals(json.journals ?? []);
+          setLegacyClosings(json.legacyClosings ?? []);
         }
       } catch (caught) {
         if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
@@ -76,22 +103,51 @@ export default function ReviewPage() {
     };
   }, []);
 
+  const dailyByDate = useMemo(() => new Map(daily.map((record) => [record.date, record])), [daily]);
+  const journalsByDate = useMemo(() => {
+    const map = new Map<string, HistoricalJournal[]>();
+    for (const journal of journals) map.set(journal.date, [...(map.get(journal.date) ?? []), journal]);
+    return map;
+  }, [journals]);
+  const legacyClosingsByDate = useMemo(() => {
+    const map = new Map<string, LegacyClosing[]>();
+    for (const closing of legacyClosings) map.set(closing.date, [...(map.get(closing.date) ?? []), closing]);
+    return map;
+  }, [legacyClosings]);
+
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-Hant");
-  const visibleDaily = useMemo(() => daily.filter((record) => {
-    if (dateFilter && record.date !== dateFilter) return false;
-    if (!normalizedQuery) return true;
-    const text = [
-      record.morning.intention,
-      record.daytime.note,
-      ...record.daytime.logs.map((log) => log.text),
-      ...TASK_ORDER.map((category) => record.tasks[category].text),
-      record.evening.highlight,
-      record.evening.block,
-      record.evening.insight,
-      record.evening.nextAction,
-    ].join(" ").toLocaleLowerCase("zh-Hant");
-    return text.includes(normalizedQuery);
-  }), [daily, dateFilter, normalizedQuery]);
+  const visibleReviewDates = useMemo(() => {
+    const dates = new Set([
+      ...daily.map((record) => record.date),
+      ...journals.map((journal) => journal.date),
+      ...legacyClosings.map((closing) => closing.date),
+    ]);
+    return [...dates].sort((a, b) => b.localeCompare(a)).filter((date) => {
+      if (dateFilter && date !== dateFilter) return false;
+      if (!normalizedQuery) return true;
+      const record = dailyByDate.get(date);
+      const text = [
+        record?.morning.intention,
+        record?.morning.gratitude,
+        record?.morning.affirmation,
+        record?.morning.futureJournal,
+        record?.daytime.note,
+        ...(record?.daytime.logs.map((log) => log.text) ?? []),
+        ...TASK_ORDER.flatMap((category) => [
+          record?.tasks[category].text ?? "",
+          record?.tasks[category].result ?? "",
+        ]),
+        record?.evening.highlight,
+        record?.evening.block,
+        record?.evening.insight,
+        record?.evening.nextAction,
+        record?.evening.carryNote,
+        ...(journalsByDate.get(date) ?? []).flatMap((journal) => Object.values(journal.answers)),
+        ...(legacyClosingsByDate.get(date) ?? []).flatMap((closing) => [closing.title, closing.note]),
+      ].filter(Boolean).join(" ").toLocaleLowerCase("zh-Hant");
+      return text.includes(normalizedQuery);
+    });
+  }, [daily, dailyByDate, dateFilter, journals, journalsByDate, legacyClosings, legacyClosingsByDate, normalizedQuery]);
 
   const visibleEntries = useMemo(() => entries.filter((entry) => {
     if (dateFilter && entry.date !== dateFilter) return false;
@@ -123,24 +179,24 @@ export default function ReviewPage() {
         <div>
           <span className="eyebrow">回看</span>
           <h1>走過的光</h1>
-          <p className="lead">今天的三件事、札記、晚間復盤與六場域痕跡都在這裡。</p>
+          <p className="lead">晨間、三件事、札記、晚間復盤與舊版筆記，都依日期留在這裡。</p>
         </div>
-        {dateFilter && <button onClick={() => setDateFilter("")}>清除日期</button>}
+        {dateFilter && <button type="button" onClick={() => setDateFilter("")}>清除日期</button>}
       </div>
 
-      <input className="field search-field" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜尋任務、札記或痕跡" />
+      <input className="field search-field" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜尋任務、札記、復盤或痕跡" />
 
       <div className="segmented three">
-        <button className={mode === "all" ? "on" : ""} onClick={() => setMode("all")}>全部</button>
-        <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>每日回看</button>
-        <button className={mode === "entries" ? "on" : ""} onClick={() => setMode("entries")}>場域痕跡</button>
+        <button type="button" className={mode === "all" ? "on" : ""} onClick={() => setMode("all")}>全部</button>
+        <button type="button" className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>日期回看</button>
+        <button type="button" className={mode === "entries" ? "on" : ""} onClick={() => setMode("entries")}>場域痕跡</button>
       </div>
 
       {(mode === "all" || mode === "entries") && (
         <div className="row source-filter">
-          <button className={space === "all" ? "on" : ""} onClick={() => setSpace("all")}>全部場域</button>
+          <button type="button" className={space === "all" ? "on" : ""} onClick={() => setSpace("all")}>全部場域</button>
           {(Object.entries(SPACES) as [SpaceKey, (typeof SPACES)[SpaceKey]][]).map(([key, value]) => (
-            <button key={key} className={space === key ? "on" : ""} onClick={() => setSpace(key)}>{value[0]}</button>
+            <button type="button" key={key} className={space === key ? "on" : ""} onClick={() => setSpace(key)}>{value[0]}</button>
           ))}
         </div>
       )}
@@ -151,8 +207,16 @@ export default function ReviewPage() {
 
       {!loading && (mode === "all" || mode === "daily") && (
         <div className="review-days">
-          {visibleDaily.map((record) => <DailyReviewCard key={record.date} record={record} />)}
-          {visibleDaily.length === 0 && mode === "daily" && <div className="empty">這個條件下沒有每日回看。</div>}
+          {visibleReviewDates.map((date) => (
+            <DailyReviewCard
+              key={date}
+              date={date}
+              record={dailyByDate.get(date)}
+              journals={journalsByDate.get(date) ?? []}
+              legacyClosings={legacyClosingsByDate.get(date) ?? []}
+            />
+          ))}
+          {visibleReviewDates.length === 0 && mode === "daily" && <div className="empty">這個條件下沒有日期回看。</div>}
         </div>
       )}
 
@@ -173,43 +237,86 @@ export default function ReviewPage() {
         </div>
       )}
 
-      {!loading && mode === "all" && visibleDaily.length === 0 && visibleEntries.length === 0 && (
+      {!loading && mode === "all" && visibleReviewDates.length === 0 && visibleEntries.length === 0 && (
         <div className="empty">還沒有符合條件的內容。</div>
       )}
     </section>
   );
 }
 
-function DailyReviewCard({ record }: { record: DailyRecord }) {
-  const completed = TASK_ORDER.filter((category) => record.tasks[category].completed).length;
-  const hasEvening = Boolean(record.evening.closedAt || record.evening.highlight || record.evening.insight);
+function DailyReviewCard({
+  date,
+  record,
+  journals,
+  legacyClosings,
+}: {
+  date: string;
+  record?: DailyRecord;
+  journals: HistoricalJournal[];
+  legacyClosings: LegacyClosing[];
+}) {
+  const completed = record ? TASK_ORDER.filter((category) => record.tasks[category].completed).length : 0;
+  const hasTasks = Boolean(record && TASK_ORDER.some((category) => record.tasks[category].text));
+  const hasMorningNotes = Boolean(record && (
+    record.morning.gratitude || record.morning.affirmation || record.morning.futureJournal
+  ));
+  const oldAnswers = journals.flatMap((journal) =>
+    JOURNAL_QUESTIONS.flatMap((question) => {
+      const value = journal.answers[question.key]?.trim();
+      return value ? [{ label: question.label, value }] : [];
+    })
+  );
+  const hasEvening = Boolean(
+    record?.evening.closedAt || record?.evening.highlight || record?.evening.insight || legacyClosings.length
+  );
+  const summaryStatus = record
+    ? `${completed}/3 · ${hasEvening ? "已收光" : "未收光"}`
+    : `舊資料 · ${oldAnswers.length ? "有舊筆記" : "有收光處置"}`;
+
   return (
-    <details className="review-day-card" open={false}>
+    <details className="review-day-card">
       <summary>
         <div>
-          <span className="eyebrow">{fmtDate(record.date)}</span>
-          <b>{record.morning.intention || "這一天沒有留下晨間意圖"}</b>
+          <span className="eyebrow">{fmtDate(date)}</span>
+          <b>{record?.morning.intention || (oldAnswers.length ? "這一天留有舊版筆記" : "這一天留下了一段紀錄")}</b>
         </div>
-        <span>{completed}/3 · {hasEvening ? "已收光" : "未收光"}</span>
+        <span>{summaryStatus}</span>
       </summary>
       <div className="review-day-body">
-        <h3>今日三件事</h3>
-        {TASK_ORDER.map((category) => {
-          const task = record.tasks[category];
-          if (!task.text) return null;
-          return (
-            <div className={`review-task ${category}`} key={category}>
-              <span>{task.completed ? "✓" : "○"}</span>
-              <div>
-                <small>{DAILY_TASK_CATEGORIES[category].label}</small>
-                <b>{task.text}</b>
-                {task.result && <p>{task.result}</p>}
-              </div>
-            </div>
-          );
-        })}
+        {record?.morning.intention && <><h3>晨間意圖</h3><p className="review-prose">{record.morning.intention}</p></>}
 
-        {record.daytime.logs.length > 0 && (
+        {hasMorningNotes && (
+          <>
+            <h3>晨間筆記</h3>
+            <div className="review-reflection">
+              {record?.morning.gratitude && <p><b>我很感恩的三件事</b>{record.morning.gratitude}</p>}
+              {record?.morning.affirmation && <p><b>我的正向肯定句</b>{record.morning.affirmation}</p>}
+              {record?.morning.futureJournal && <p><b>我的未來日記</b>{record.morning.futureJournal}</p>}
+            </div>
+          </>
+        )}
+
+        {hasTasks && (
+          <>
+            <h3>三件事完成情況</h3>
+            {TASK_ORDER.map((category) => {
+              const task = record?.tasks[category];
+              if (!task?.text) return null;
+              return (
+                <div className={`review-task ${category}`} key={category}>
+                  <span>{task.completed ? "✓" : "○"}</span>
+                  <div>
+                    <small>{DAILY_TASK_CATEGORIES[category].label}</small>
+                    <b>{task.text}</b>
+                    {task.result && <p>{task.result}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {record && record.daytime.logs.length > 0 && (
           <>
             <h3>白天追蹤</h3>
             <div className="timeline">
@@ -218,9 +325,9 @@ function DailyReviewCard({ record }: { record: DailyRecord }) {
           </>
         )}
 
-        {record.daytime.note && <><h3>日間札記</h3><p className="review-prose">{record.daytime.note}</p></>}
+        {record?.daytime.note && <><h3>日間札記</h3><p className="review-prose">{record.daytime.note}</p></>}
 
-        {hasEvening && (
+        {record && (record.evening.closedAt || record.evening.disposition) && (
           <>
             <h3>晚間復盤</h3>
             <div className="review-reflection">
@@ -231,8 +338,37 @@ function DailyReviewCard({ record }: { record: DailyRecord }) {
               {record.evening.block && <p><b>卡住的地方</b>{record.evening.block}</p>}
               {record.evening.insight && <p><b>看見了什麼</b>{record.evening.insight}</p>}
               {record.evening.nextAction && <p><b>下一步</b>{record.evening.nextAction}</p>}
+              {record.evening.carryNote && (
+                <p>
+                  <b>帶回 {record.evening.carryToDate ? fmtDate(record.evening.carryToDate) : "之後"}</b>
+                  {record.evening.carryNote}
+                </p>
+              )}
             </div>
           </>
+        )}
+
+        {oldAnswers.length > 0 && (
+          <details className="historical-review-block">
+            <summary>舊版晨間與收光筆記</summary>
+            <div className="review-reflection">
+              {oldAnswers.map((answer, index) => <p key={`${answer.label}:${index}`}><b>{answer.label}</b>{answer.value}</p>)}
+            </div>
+          </details>
+        )}
+
+        {legacyClosings.length > 0 && (
+          <details className="historical-review-block">
+            <summary>舊版收光處置</summary>
+            <div className="review-reflection">
+              {legacyClosings.map((closing) => (
+                <p key={closing.id}>
+                  <b>{closing.title}{closing.carryToDate ? ` · 帶到 ${fmtDate(closing.carryToDate)}` : ""}</b>
+                  {closing.note || "這一天沒有另外留下文字。"}
+                </p>
+              ))}
+            </div>
+          </details>
         )}
       </div>
     </details>
@@ -266,8 +402,8 @@ function ReviewEntryCard({
       <small>{entry.date || "未標日期"} · {entry.privacy}</small>
       {editable && (
         <div className="actions">
-          <button onClick={(event) => { event.stopPropagation(); onEdit(); }}>編輯</button>
-          <button className="danger" onClick={(event) => { event.stopPropagation(); onDelete(); }}>刪除</button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(); }}>編輯</button>
+          <button type="button" className="danger" onClick={(event) => { event.stopPropagation(); onDelete(); }}>刪除</button>
         </div>
       )}
     </article>

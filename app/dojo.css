@@ -1186,6 +1186,85 @@
 .dojo .morning-card {
   background: linear-gradient(145deg, #fffdf8, #f4ead4);
 }
+.dojo .optional-notes,
+.dojo .measure-disclosure {
+  margin: 12px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffaf0a8;
+  overflow: hidden;
+}
+.dojo .optional-notes summary,
+.dojo .measure-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.dojo .optional-notes summary::-webkit-details-marker,
+.dojo .measure-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+.dojo .optional-notes summary span,
+.dojo .measure-disclosure summary span {
+  font-weight: 700;
+}
+.dojo .optional-notes summary small,
+.dojo .measure-disclosure summary small {
+  color: var(--muted);
+  text-align: right;
+}
+.dojo .optional-notes-body,
+.dojo .measure-disclosure-body {
+  padding: 0 12px 12px;
+  border-top: 1px solid #e8dcc8;
+}
+.dojo .optional-notes-body label {
+  display: block;
+  margin-top: 12px;
+}
+.dojo .optional-notes-body .field {
+  min-height: 82px;
+}
+.dojo .continuation-section {
+  width: 100%;
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid #bdcdbd;
+  border-radius: var(--radius-card);
+  background: linear-gradient(145deg, #f5f8f2, #e8efe5);
+}
+.dojo .continuation-section h2 {
+  font: 600 19px "Noto Serif TC", serif;
+  margin: 2px 0 10px;
+}
+.dojo .continuation-list {
+  display: grid;
+  gap: 9px;
+}
+.dojo .continuation-card {
+  padding: 12px;
+  border: 1px solid #c7d3c5;
+  border-radius: 13px;
+  background: #fffdf8;
+}
+.dojo .continuation-card small {
+  color: var(--muted);
+}
+.dojo .continuation-card p {
+  margin: 7px 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dojo .continuation-card button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-color: #8fa78f;
+  color: #3e5e4a;
+}
 .dojo .daily-task-list {
   display: flex;
   flex-direction: column;
@@ -1299,6 +1378,67 @@
   color: var(--muted);
   margin-top: 2px;
 }
+.dojo .measure-disclosure {
+  background: #f7f2e8;
+}
+.dojo .measure-disclosure-body > p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 10px 0;
+}
+.dojo .measure-entry {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+  margin-top: 8px;
+  border: 1px solid #e2d5bd;
+  border-radius: 12px;
+  background: #fff;
+}
+.dojo .measure-entry > div:first-child small,
+.dojo .measure-entry > div:first-child b {
+  display: block;
+}
+.dojo .measure-entry > div:first-child small {
+  color: var(--muted);
+}
+.dojo .measure-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dojo .measure-summary button,
+.dojo .measure-heading button {
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.dojo .measure-editor {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ece3d4;
+}
+.dojo .measure-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dojo .measure-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 8px;
+}
+.dojo .measure-control .field {
+  margin: 0;
+}
+.dojo .measure-control small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
 .dojo .section-guide {
   margin: -2px 0 10px;
   color: var(--muted);
@@ -1330,6 +1470,61 @@
 }
 .dojo .closing-flow-panel .primary {
   width: 100%;
+}
+.dojo .prompt-chip-list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 7px 0 2px;
+  scrollbar-width: thin;
+}
+.dojo .prompt-chip-list button {
+  min-height: 34px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #fff;
+  color: #76582f;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.dojo .carry-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.dojo .carry-date-grid button {
+  min-height: 42px;
+  padding: 7px;
+  background: #fff;
+  font-size: 11px;
+}
+.dojo .carry-date-grid button.on {
+  border-color: var(--task-hobby);
+  background: #f6e2ca;
+  color: #805024;
+  font-weight: 700;
+}
+.dojo .closing-inline-message {
+  margin: 10px 0 0;
+}
+.dojo .closing-success {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 15px;
+  border: 1px solid #a9c3aa;
+  border-radius: 15px;
+  background: #e8f0e5;
+}
+.dojo .closing-success p {
+  margin: 0;
+  color: #45604b;
+  font-size: 13px;
+}
+.dojo .closing-success button {
+  justify-self: start;
+  min-height: 36px;
+  padding: 7px 10px;
 }
 .dojo .closing-pending-list {
   display: grid;
@@ -1943,6 +2138,23 @@
   display: block;
   color: var(--muted);
   font-size: 11px;
+}
+.dojo .historical-review-block {
+  margin-top: 14px;
+  border: 1px dashed #cdbd9f;
+  border-radius: 12px;
+  background: #fbf7ef;
+  overflow: hidden;
+}
+.dojo .historical-review-block > summary {
+  padding: 11px;
+  color: #7b633e;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+.dojo .historical-review-block .review-reflection {
+  padding: 0 10px 10px;
 }
 .dojo .review-divider {
   margin: 24px 0 4px;
