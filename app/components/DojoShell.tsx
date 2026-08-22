@@ -50,7 +50,7 @@ function BackButton({ pathname }: { pathname: string }) {
 const NAV_ITEMS = [
   { key: "today", icon: "☀", label: "今天", href: "/" },
   { key: "calendar", icon: "▦", label: "行事曆", href: "/calendar" },
-  { key: "add", icon: "＋", label: "新增" },
+  { key: "add", icon: "＋", label: "新增", href: "/add" },
   { key: "bingo", icon: "◇", label: "週盤", href: "/bingo" },
   { key: "review", icon: "◷", label: "回看", href: "/review" },
 ] as const;
@@ -66,7 +66,6 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
     updateEntry,
     modalOpen,
     modalOptions,
-    openQuickAdd,
     closeQuickAdd,
     startTimerFromSpace,
   } = useDojo();
@@ -97,23 +96,16 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <nav className="nav" aria-label="主要導覽">
-        {NAV_ITEMS.map((item) =>
-          "href" in item ? (
-            <button
-              key={item.key}
-              className={isActive(item.href) ? "on" : ""}
-              onClick={() => router.push(item.href)}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </button>
-          ) : (
-            <button key={item.key} className={modalOpen ? "on" : ""} onClick={() => openQuickAdd()}>
-              <span>{item.icon}</span>
-              {item.label}
-            </button>
-          )
-        )}
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            className={isActive(item.href) ? "on" : ""}
+            onClick={() => router.push(item.href)}
+          >
+            <span>{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
       </nav>
 
       {modalOpen && (

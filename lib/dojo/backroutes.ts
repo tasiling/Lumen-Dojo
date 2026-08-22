@@ -10,6 +10,7 @@
 export const PARENT_ROUTE: Record<string, string> = {
   "/overview": "/calendar",
   "/calendar": "/",
+  "/add": "/",
   "/bingo": "/",
   "/backstage": "/map",
   "/map": "/",
@@ -34,6 +35,7 @@ export const ROUTE_LABEL: Record<string, string> = {
   "/": "今天",
   "/overview": "行事曆",
   "/calendar": "行事曆",
+  "/add": "新增",
   "/bingo": "週盤",
   "/backstage": "工作後台",
   "/map": "場域",

@@ -2191,6 +2191,442 @@
   padding-top: 10px;
 }
 
+/* 新增／捕捉：主要導覽使用完整頁面；快速捕捉只收件，整理留到織光堂。 */
+.dojo .add-screen {
+  padding-top: 14px;
+  background:
+    radial-gradient(circle at 94% 3%, #eadfca 0 6%, transparent 25%),
+    linear-gradient(180deg, #f8f3e9 0%, var(--bg) 32%);
+  min-height: calc(100dvh - 150px);
+}
+.dojo .capture-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 118px;
+  padding: 18px;
+  border: 1px solid #ddcfb3;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #fffdf7, #eee2cb);
+  box-shadow: 0 8px 24px #76603d12;
+}
+.dojo .capture-hero h1 {
+  margin: 1px 0 3px;
+  font-size: 27px;
+}
+.dojo .capture-hero p {
+  margin: 0;
+  color: #706756;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.dojo .capture-spark {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #8b642c;
+  background: #f7ead0;
+  border: 1px solid #ddc99f;
+  font-size: 29px;
+  box-shadow: inset 0 0 0 5px #fffaf080;
+}
+.dojo .add-mode-tabs {
+  margin: 14px 0;
+  border-radius: 15px;
+  box-shadow: 0 3px 12px #76603d0b;
+}
+.dojo .add-mode-tabs button {
+  min-height: 50px;
+}
+.dojo .capture-form-card {
+  width: 100%;
+  padding: 18px;
+  border: 1px solid #dfd2b8;
+  border-radius: 22px;
+  background: #fffdf8;
+  box-shadow: 0 7px 24px #76603d12;
+}
+.dojo .capture-form-card label {
+  display: block;
+  margin-top: 15px;
+  color: #665c4c;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.dojo .capture-form-card label span {
+  color: var(--gold);
+}
+.dojo .capture-form-card .field {
+  min-height: 50px;
+  margin-top: 7px;
+  margin-bottom: 4px;
+  padding: 13px 14px;
+  border-color: #ddd1ba;
+  border-radius: 13px;
+  background: #fffefb;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+.dojo .capture-form-card .field:focus {
+  border-color: #b9904d;
+  background: #fff;
+  box-shadow: 0 0 0 3px #c99a4b25;
+}
+.dojo .capture-form-card textarea.field {
+  resize: vertical;
+  line-height: 1.75;
+}
+.dojo .capture-form-card .capture-excerpt {
+  min-height: 176px;
+}
+.dojo .capture-title-field {
+  font-size: 16px;
+}
+.dojo .capture-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dojo .capture-card-heading h2 {
+  margin: 2px 0 0;
+  font: 600 21px "Noto Serif TC", serif;
+}
+.dojo .capture-private {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid #cfd9ce;
+  border-radius: 999px;
+  background: #edf2eb;
+  color: #4d6557;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.dojo .capture-guidance {
+  margin: 8px 0 14px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.dojo .field-help {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.dojo .capture-success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  margin: 13px 0;
+  border: 1px solid #b9ceba;
+  border-radius: 14px;
+  background: #ebf2e9;
+  color: #3f5c49;
+}
+.dojo .capture-success b,
+.dojo .capture-success span {
+  display: block;
+}
+.dojo .capture-success span {
+  margin-top: 2px;
+  font-size: 11px;
+}
+.dojo .capture-success a,
+.dojo .capture-calendar-link {
+  color: #765925;
+  font-size: 11px;
+  font-weight: 700;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+.dojo .capture-submit {
+  min-height: 54px;
+  margin-top: 19px;
+  border-radius: 14px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  box-shadow: 0 5px 13px #3c544421;
+}
+.dojo .capture-submit span {
+  margin-right: 5px;
+}
+.dojo .capture-footnote {
+  margin: 9px 4px 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 10.5px;
+}
+.dojo .capture-time-row {
+  margin-top: 2px;
+}
+.dojo .calendar-form-card {
+  border-color: #ddd2bd;
+}
+
+/* 織光堂待織素材：承接捕捉，精細類型與整理筆記在這裡才出現。 */
+.dojo .weaving-inbox {
+  margin: 15px 0 18px;
+  padding: 15px;
+  border: 1px solid #c9d3d8;
+  border-radius: 20px;
+  background: linear-gradient(155deg, #f8fbfb, #edf2f3);
+  box-shadow: 0 5px 18px #314e5b12;
+}
+.dojo .weaving-inbox-heading {
+  align-items: center;
+  margin-bottom: 11px;
+}
+.dojo .weaving-inbox-heading h2 {
+  margin: 1px 0 0;
+  font: 600 21px "Noto Serif TC", serif;
+}
+.dojo .weaving-inbox-heading .lead {
+  margin: 3px 0 0;
+  line-height: 1.5;
+}
+.dojo .weaving-count {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--we);
+  color: #fff;
+  font: 700 18px "Noto Serif TC", serif;
+}
+.dojo .weaving-empty {
+  padding: 22px 14px;
+  border: 1px dashed #b8c6cc;
+  border-radius: 16px;
+  background: #fbfdfd;
+  color: #60717a;
+  text-align: center;
+}
+.dojo .weaving-empty > span,
+.dojo .weaving-empty > b {
+  display: block;
+}
+.dojo .weaving-empty > span {
+  color: var(--we);
+  font-size: 25px;
+}
+.dojo .weaving-empty p {
+  margin: 4px 0 10px;
+  font-size: 12px;
+}
+.dojo .weaving-empty a {
+  color: #3f606f;
+  font-size: 12px;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+.dojo .weaving-retry {
+  float: right;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.dojo .weaving-capture-list {
+  display: grid;
+  gap: 10px;
+}
+.dojo .weaving-capture-card {
+  padding: 14px;
+  border: 1px solid #c8d4d8;
+  border-radius: 16px;
+  background: #fffefa;
+  box-shadow: 0 2px 8px #314e5b0b;
+}
+.dojo .weaving-capture-card.is-woven {
+  background: #f7faf8;
+  border-color: #cad7cc;
+}
+.dojo .weaving-capture-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #71818a;
+  font-size: 10.5px;
+}
+.dojo .weaving-capture-meta span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e7eef1;
+  color: #4b6976;
+  font-weight: 700;
+}
+.dojo .weaving-capture-card h3 {
+  margin: 9px 0 5px;
+  font: 650 17px "Noto Serif TC", serif;
+}
+.dojo .weaving-excerpt {
+  max-height: 8.1em;
+  margin: 5px 0;
+  overflow: auto;
+  color: #514c44;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dojo .weaving-original-note {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-left: 3px solid #b7c7ce;
+  border-radius: 0 9px 9px 0;
+  background: #eef3f4;
+}
+.dojo .weaving-original-note b {
+  color: #62747c;
+  font-size: 10.5px;
+}
+.dojo .weaving-original-note p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.dojo .weaving-source {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 9px;
+  overflow: hidden;
+  color: #4b6976;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+.dojo .weaving-edit-button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 12px;
+  border-color: #9fb2ba;
+  background: #edf3f4;
+  color: #3f606f;
+  font-weight: 700;
+}
+.dojo .woven-result {
+  margin-top: 11px;
+  padding: 10px;
+  border-radius: 11px;
+  background: #e9f0e9;
+}
+.dojo .woven-result span {
+  color: #46624d;
+  font-size: 11px;
+  font-weight: 800;
+}
+.dojo .woven-result p {
+  margin: 4px 0 0;
+  color: #536258;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.dojo .weaving-editor {
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px solid #d9e1e4;
+}
+.dojo .weaving-editor-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dojo .weaving-editor-heading b,
+.dojo .weaving-editor-heading span {
+  display: block;
+}
+.dojo .weaving-editor-heading button {
+  min-height: 0;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+}
+.dojo .content-type-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 10px 0 13px;
+}
+.dojo .content-type-options button {
+  min-height: 78px;
+  padding: 9px;
+  border-color: #c8d4d8;
+  background: #fbfdfd;
+  text-align: left;
+}
+.dojo .content-type-options button b,
+.dojo .content-type-options button small {
+  display: block;
+}
+.dojo .content-type-options button b {
+  color: #334e59;
+  font-size: 12.5px;
+}
+.dojo .content-type-options button small {
+  margin-top: 3px;
+  color: #78878e;
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+.dojo .content-type-options button.on {
+  border-color: var(--we);
+  background: #dfeaed;
+  box-shadow: 0 0 0 2px #4c69771f;
+}
+.dojo .weaving-editor > label {
+  display: block;
+  color: #5f7078;
+  font-size: 12px;
+  font-weight: 700;
+}
+.dojo .weaving-editor .field {
+  margin-top: 6px;
+  background: #fff;
+}
+.dojo .weaving-editor-actions {
+  display: grid;
+  grid-template-columns: 0.9fr 1.2fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.dojo .weaving-editor-actions button {
+  min-height: 45px;
+  padding: 7px;
+  font-size: 11.5px;
+}
+.dojo .woven-history {
+  margin-top: 13px;
+  border-top: 1px solid #cbd7db;
+}
+.dojo .woven-history > summary {
+  padding: 13px 2px 9px;
+  color: #526b76;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+}
+.dojo .woven-history > summary span {
+  display: inline-grid;
+  min-width: 23px;
+  height: 23px;
+  place-items: center;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: #dfe8e7;
+  font-size: 10px;
+}
+
 @media (min-width: 501px) {
   .dojo {
     padding: 20px;

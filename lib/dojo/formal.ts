@@ -16,11 +16,13 @@ export const DAILY_TITLE_PREFIX = "行光今日-";
 export const BINGO_TITLE_PREFIX = "行光週盤-";
 export const CALENDAR_TITLE_PREFIX = "行光行程-";
 export const ENTRY_TITLE_PREFIX = "行光紀錄-";
+export const CAPTURE_TITLE_PREFIX = "行光捕捉-";
 export const FORMAL_STATE_TITLE_PREFIXES = [
   DAILY_TITLE_PREFIX,
   BINGO_TITLE_PREFIX,
   CALENDAR_TITLE_PREFIX,
   ENTRY_TITLE_PREFIX,
+  CAPTURE_TITLE_PREFIX,
 ] as const;
 
 export const TAIPEI_TIME_ZONE = "Asia/Taipei";
@@ -129,6 +131,53 @@ export type PersonalCalendarItem = {
   updatedAt: string;
 };
 
+// 捕捉是進入織光堂以前的收件匣。此處只保留素材本身與一個輕量小分類；
+// 內容類型、整理筆記與完成狀態都由織光堂處理，不要求使用者在捕捉當下決定場域。
+export const CAPTURE_CATEGORIES = {
+  tarot: "塔羅／靈性",
+  psychology: "心理學／神經科學",
+  english: "英文學習",
+  social: "社群素材",
+  learning: "學習心得",
+  business: "商業／教練",
+  reading: "書籍／文章",
+  other: "其他",
+} as const;
+
+export type CaptureCategoryKey = keyof typeof CAPTURE_CATEGORIES;
+
+export const CAPTURE_CONTENT_TYPES = {
+  atomic: ["原子概念", "一個可以獨立理解、重複使用的知識點"],
+  inspiration: ["靈感", "尚未成形，但值得保留的創作火花"],
+  method: ["方法論", "可以重複使用的思考框架或做事方式"],
+  material: ["素材", "引用、案例、圖片或日後可以使用的資料"],
+  insight: ["洞見", "經過思考後得到的結論、觀察或新連接"],
+  affirmation: ["肯定句", "用來支持信念與自我認同的句子"],
+  invocation: ["祈請詞", "作為儀式、定錨或引導使用的文字"],
+} as const;
+
+export type CaptureContentType = keyof typeof CAPTURE_CONTENT_TYPES;
+export type CaptureStatus = "pending" | "woven";
+
+export type CaptureEntry = {
+  version: 1;
+  recordType: "capture-entry";
+  id: string;
+  title: string;
+  category: CaptureCategoryKey | null;
+  excerpt: string;
+  note: string;
+  sourceUrl: string;
+  status: CaptureStatus;
+  contentType: CaptureContentType | null;
+  weavingNote: string;
+  capturedAt: string;
+  wovenAt: string | null;
+  updatedAt: string;
+};
+
+export type FormalCaptureContent = Omit<CaptureEntry, "id">;
+
 export type FormalEntryContent = Omit<DojoEntry, "id"> & {
   version: 1;
   recordType: "dojo-entry";
@@ -178,6 +227,10 @@ export function calendarRecordTitle(dateISO: string, nonce: string): string {
 
 export function entryRecordTitle(nonce: string): string {
   return `${ENTRY_TITLE_PREFIX}${nonce}`;
+}
+
+export function captureRecordTitle(nonce: string): string {
+  return `${CAPTURE_TITLE_PREFIX}${nonce}`;
 }
 
 export function monthTitleKey(prefix: string, yearMonth: string): string {
@@ -443,6 +496,83 @@ export function normalizeCalendarItem(
 
 function validChoice<T extends string>(value: unknown, choices: readonly T[], fallback: T): T {
   return typeof value === "string" && choices.includes(value as T) ? (value as T) : fallback;
+}
+
+function isoDateTime(value: unknown, fallback: string): string {
+  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) return fallback;
+  return new Date(value).toISOString();
+}
+
+export function isValidCaptureSourceUrl(value: unknown): boolean {
+  if (typeof value !== "string" || !value.trim()) return true;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function normalizedCaptureSourceUrl(value: unknown): string {
+  if (!isValidCaptureSourceUrl(value) || typeof value !== "string" || !value.trim()) return "";
+  return new URL(value.trim()).toString().slice(0, 2000);
+}
+
+export function normalizeCaptureEntry(
+  value: unknown,
+  params: { id: string; capturedAt?: string; touch?: boolean }
+): CaptureEntry | null {
+  const source = value && typeof value === "object" ? (value as Partial<CaptureEntry>) : {};
+  const title = stringValue(source.title).trim().slice(0, 300);
+  if (!title) return null;
+
+  const now = new Date().toISOString();
+  const category =
+    typeof source.category === "string" && source.category in CAPTURE_CATEGORIES
+      ? (source.category as CaptureCategoryKey)
+      : null;
+  const contentType =
+    typeof source.contentType === "string" && source.contentType in CAPTURE_CONTENT_TYPES
+      ? (source.contentType as CaptureContentType)
+      : null;
+  const status: CaptureStatus = source.status === "woven" ? "woven" : "pending";
+  const capturedAt = params.capturedAt ?? isoDateTime(source.capturedAt, now);
+  const existingWovenAt = source.wovenAt ? isoDateTime(source.wovenAt, now) : null;
+
+  return {
+    version: 1,
+    recordType: "capture-entry",
+    id: params.id,
+    title,
+    category,
+    excerpt: stringValue(source.excerpt).trim().slice(0, 12000),
+    note: stringValue(source.note).trim().slice(0, 3000),
+    sourceUrl: normalizedCaptureSourceUrl(source.sourceUrl),
+    status,
+    contentType,
+    weavingNote: stringValue(source.weavingNote).trim().slice(0, 5000),
+    capturedAt,
+    wovenAt: status === "woven" ? (existingWovenAt ?? now) : null,
+    updatedAt: params.touch ? now : isoDateTime(source.updatedAt, now),
+  };
+}
+
+export function captureContent(entry: CaptureEntry): FormalCaptureContent {
+  return {
+    version: 1,
+    recordType: "capture-entry",
+    title: entry.title,
+    category: entry.category,
+    excerpt: entry.excerpt,
+    note: entry.note,
+    sourceUrl: entry.sourceUrl,
+    status: entry.status,
+    contentType: entry.contentType,
+    weavingNote: entry.weavingNote,
+    capturedAt: entry.capturedAt,
+    wovenAt: entry.wovenAt,
+    updatedAt: entry.updatedAt,
+  };
 }
 
 export function normalizeFormalEntry(
