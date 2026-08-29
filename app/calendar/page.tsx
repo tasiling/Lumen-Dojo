@@ -45,6 +45,7 @@ type AgendaItem = {
   note?: string;
   href?: string;
   manualId?: string;
+  taskCategory?: DailyTaskCategory;
 };
 
 type DailyReviewSnapshot = {
@@ -248,6 +249,7 @@ export default function CalendarPage() {
               date: record.date,
               title: task.text,
               source: "today" as const,
+              taskCategory: category,
               sourceLabel: DAILY_TASK_CATEGORIES[category].label,
               status: task.completed ? "已完成" : "進行中",
               href: record.date === today ? "/" : `/review?date=${record.date}`,
@@ -505,7 +507,10 @@ function DayAgenda({
       ) : (
         <div className="agenda-list">
           {items.map((item) => (
-            <div key={item.id} className={`agenda-item ${item.source}`}>
+            <div
+              key={item.id}
+              className={`agenda-item ${item.source}${item.taskCategory ? ` ${item.taskCategory}` : ""}`}
+            >
               <div className="agenda-time">{item.time || "全天"}</div>
               <div className="agenda-body">
                 <small>{item.sourceLabel}{item.status ? ` · ${item.status}` : ""}</small>

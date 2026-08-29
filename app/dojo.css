@@ -34,12 +34,16 @@
   color: var(--ink);
   font: 15px/1.6 "Noto Sans TC", system-ui, -apple-system, sans-serif;
   min-height: 100dvh;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 .dojo * {
   box-sizing: border-box;
 }
 .dojo .app {
+  width: 100%;
   max-width: 500px;
+  min-width: 0;
   margin: auto;
   min-height: 100dvh;
   background: var(--bg);
@@ -47,6 +51,8 @@
   position: relative;
 }
 .dojo .top {
+  width: 100%;
+  min-width: 0;
   position: sticky;
   top: 0;
   z-index: 6;
@@ -59,6 +65,7 @@
   align-items: center;
 }
 .dojo .brand {
+  min-width: 0;
   font: 700 20px "Noto Serif TC", serif;
   letter-spacing: 0.14em;
 }
@@ -89,6 +96,8 @@
   cursor: pointer;
 }
 .dojo .screen {
+  width: 100%;
+  min-width: 0;
   padding: 18px 16px;
 }
 .dojo .screen h1 {
@@ -1062,6 +1071,8 @@
 }
 .dojo .ritual-card {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
@@ -1079,9 +1090,10 @@
   background: var(--paper);
 }
 .dojo .segmented.three {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .dojo .segmented button {
+  min-width: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -1446,6 +1458,9 @@
 }
 .dojo .closing-flow-panel {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 10px;
   margin-top: 12px;
   padding: 15px;
@@ -1470,9 +1485,18 @@
 }
 .dojo .closing-flow-panel .primary {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.dojo .closing-flow-panel > * {
+  min-width: 0;
+  max-width: 100%;
 }
 .dojo .prompt-chip-list {
   display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 6px;
   overflow-x: auto;
   padding: 7px 0 2px;
@@ -1953,6 +1977,24 @@
 .dojo .calendar-dots .today,
 .dojo .agenda-item.today:before {
   background: var(--gold);
+}
+.dojo .agenda-item.today.important:before {
+  background: var(--task-important);
+}
+.dojo .agenda-item.today.hobby:before {
+  background: var(--task-hobby);
+}
+.dojo .agenda-item.today.health:before {
+  background: var(--task-health);
+}
+.dojo .agenda-item.today.important {
+  background: linear-gradient(90deg, var(--task-important-soft) 0 8px, var(--paper) 8px);
+}
+.dojo .agenda-item.today.hobby {
+  background: linear-gradient(90deg, var(--task-hobby-soft) 0 8px, var(--paper) 8px);
+}
+.dojo .agenda-item.today.health {
+  background: linear-gradient(90deg, var(--task-health-soft) 0 8px, var(--paper) 8px);
 }
 .dojo .calendar-dots .work,
 .dojo .agenda-item.work:before {
