@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
 import { GUANGXING, GUANGFA, type GuangxingKey, type GuangfaKey } from "@/lib/dojo/constants";
+import LearningPaths from "../components/LearningPaths";
 
 type Tab = "body" | "mind" | "spirit" | "guangxing" | "guangfa" | "logs";
 const TABS: { key: Tab; label: string }[] = [
@@ -118,17 +119,19 @@ function MindTab() {
           </button>
         ))}
       </div>
-      <div className="card">
-        <span className="label">心・{sub}</span>
-        <b>覺察此刻的心。</b>
-        <small>{MIND_SUB_DESC[sub]}</small>
-      </div>
-      <button className="primary" onClick={() => openQuickAdd({ presetSpace: "practice", presetKind: `心／${sub}` })}>
-        留下{sub}的紀錄
-      </button>
-      <button className="ghost" onClick={startHere}>
-        在此計時
-      </button>
+      {sub === "知" ? <LearningPaths /> : <>
+        <div className="card">
+          <span className="label">心・{sub}</span>
+          <b>覺察此刻的心。</b>
+          <small>{MIND_SUB_DESC[sub]}</small>
+        </div>
+        <button className="primary" onClick={() => openQuickAdd({ presetSpace: "practice", presetKind: `心／${sub}` })}>
+          留下{sub}的紀錄
+        </button>
+        <button className="ghost" onClick={startHere}>
+          在此計時
+        </button>
+      </>}
     </>
   );
 }

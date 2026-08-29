@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const captures = rows
       .map((row) => normalizeCaptureEntry(row.value, { id: row.id }))
       .filter((capture): capture is NonNullable<typeof capture> => capture !== null)
-      .filter((capture) => requestedStatus !== "pending" && requestedStatus !== "woven"
+      .filter((capture) => requestedStatus !== "pending" && requestedStatus !== "adopted" && requestedStatus !== "faded"
         ? true
         : capture.status === requestedStatus)
       .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
@@ -49,9 +49,24 @@ export async function POST(req: NextRequest) {
       {
         ...body,
         status: "pending",
+        processingDepth: "raw",
         contentType: null,
-        weavingNote: "",
-        wovenAt: null,
+        forageSummary: "",
+        forageReason: "",
+        knowledgeLinks: [],
+        learningTracks: [],
+        destinations: [],
+        pinned: false,
+        fadedAt: null,
+        sentToPracticeAt: null,
+        sentToWeavingAt: null,
+        weaving: {
+          outputType: null,
+          projectTitle: "",
+          status: "ready",
+          productionNote: "",
+          outputUrl: "",
+        },
       },
       { id: "pending", touch: true }
     );

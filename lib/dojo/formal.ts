@@ -17,12 +17,14 @@ export const BINGO_TITLE_PREFIX = "行光週盤-";
 export const CALENDAR_TITLE_PREFIX = "行光行程-";
 export const ENTRY_TITLE_PREFIX = "行光紀錄-";
 export const CAPTURE_TITLE_PREFIX = "行光捕捉-";
+export const LEARNING_TITLE_PREFIX = "行光修習-";
 export const FORMAL_STATE_TITLE_PREFIXES = [
   DAILY_TITLE_PREFIX,
   BINGO_TITLE_PREFIX,
   CALENDAR_TITLE_PREFIX,
   ENTRY_TITLE_PREFIX,
   CAPTURE_TITLE_PREFIX,
+  LEARNING_TITLE_PREFIX,
 ] as const;
 
 export const TAIPEI_TIME_ZONE = "Asia/Taipei";
@@ -131,12 +133,17 @@ export type PersonalCalendarItem = {
   updatedAt: string;
 };
 
-// 捕捉是進入織光堂以前的收件匣。此處只保留素材本身與一個輕量小分類；
-// 內容類型、整理筆記與完成狀態都由織光堂處理，不要求使用者在捕捉當下決定場域。
+// 擷取只保留原始材料；後續由野採加上分類、知識關聯與去向。原文永遠不會被
+// 摘要覆蓋。舊版曾把捕捉直接送進織光堂，normalizeCaptureEntry 會在讀取時以
+// 非破壞方式轉成新版資料，不需要批次覆寫 DB-14。
 export const CAPTURE_CATEGORIES = {
   tarot: "塔羅／靈性",
   psychology: "心理學／神經科學",
   english: "英文學習",
+  massage: "按摩知識",
+  yijing: "易經",
+  ziwei: "紫微斗數",
+  qimen: "奇門遁甲",
   social: "社群素材",
   learning: "學習心得",
   business: "商業／教練",
@@ -157,10 +164,48 @@ export const CAPTURE_CONTENT_TYPES = {
 } as const;
 
 export type CaptureContentType = keyof typeof CAPTURE_CONTENT_TYPES;
-export type CaptureStatus = "pending" | "woven";
+export type CaptureStatus = "pending" | "adopted" | "faded";
+export type CaptureProcessingDepth = "raw" | "light" | "deep";
+export type CaptureDestination = "practice" | "weaving" | "dao";
+export type LearningTrackKey = "english" | "massage" | "yijing" | "ziwei" | "qimen";
+export type KnowledgeRelation = "supports" | "extends" | "contradicts" | "example" | "question";
+
+export const KNOWLEDGE_RELATIONS: Record<KnowledgeRelation, string> = {
+  supports: "支持",
+  extends: "延伸",
+  contradicts: "矛盾",
+  example: "案例",
+  question: "待解問題",
+};
+
+export type CaptureKnowledgeLink = {
+  id: string;
+  label: string;
+  relation: KnowledgeRelation;
+};
+
+export const WEAVING_OUTPUT_TYPES = {
+  article: "文章",
+  carousel: "IG 圖文卡",
+  shortVideo: "短影音",
+  longVideo: "長影片",
+  script: "講稿／腳本",
+  lesson: "教學內容／練習單",
+} as const;
+
+export type WeavingOutputType = keyof typeof WEAVING_OUTPUT_TYPES;
+export type WeavingProductionStatus = "ready" | "outline" | "draft" | "revision" | "completed";
+
+export type CaptureWeavingState = {
+  outputType: WeavingOutputType | null;
+  projectTitle: string;
+  status: WeavingProductionStatus;
+  productionNote: string;
+  outputUrl: string;
+};
 
 export type CaptureEntry = {
-  version: 1;
+  version: 2;
   recordType: "capture-entry";
   id: string;
   title: string;
@@ -169,10 +214,19 @@ export type CaptureEntry = {
   note: string;
   sourceUrl: string;
   status: CaptureStatus;
+  processingDepth: CaptureProcessingDepth;
   contentType: CaptureContentType | null;
-  weavingNote: string;
+  forageSummary: string;
+  forageReason: string;
+  knowledgeLinks: CaptureKnowledgeLink[];
+  learningTracks: LearningTrackKey[];
+  destinations: CaptureDestination[];
+  pinned: boolean;
   capturedAt: string;
-  wovenAt: string | null;
+  fadedAt: string | null;
+  sentToPracticeAt: string | null;
+  sentToWeavingAt: string | null;
+  weaving: CaptureWeavingState;
   updatedAt: string;
 };
 
@@ -535,12 +589,67 @@ export function normalizeCaptureEntry(
     typeof source.contentType === "string" && source.contentType in CAPTURE_CONTENT_TYPES
       ? (source.contentType as CaptureContentType)
       : null;
-  const status: CaptureStatus = source.status === "woven" ? "woven" : "pending";
+  const legacyStatus = (source as { status?: string }).status;
+  const isLegacy = (source as { version?: number }).version !== 2;
+  const legacyWeavingNote = stringValue((source as { weavingNote?: unknown }).weavingNote).trim();
+  const legacyPrepared = isLegacy && (legacyStatus === "woven" || Boolean(contentType) || Boolean(legacyWeavingNote));
   const capturedAt = params.capturedAt ?? isoDateTime(source.capturedAt, now);
-  const existingWovenAt = source.wovenAt ? isoDateTime(source.wovenAt, now) : null;
+  const legacyWovenAt = (source as { wovenAt?: unknown }).wovenAt;
+  const sentToWeavingAt = source.sentToWeavingAt
+    ? isoDateTime(source.sentToWeavingAt, now)
+    : legacyWovenAt
+      ? isoDateTime(legacyWovenAt, now)
+      : legacyPrepared
+        ? isoDateTime(source.updatedAt, capturedAt)
+      : null;
+  const processingDepth: CaptureProcessingDepth =
+    source.processingDepth === "light" || source.processingDepth === "deep"
+      ? source.processingDepth
+      : legacyPrepared
+        ? (contentType || legacyWeavingNote ? "deep" : "light")
+        : "raw";
+  const destinations = Array.isArray(source.destinations)
+    ? source.destinations.filter((item): item is CaptureDestination =>
+        item === "practice" || item === "weaving" || item === "dao")
+    : [];
+  if (legacyPrepared && !destinations.includes("weaving")) destinations.push("weaving");
+  const learningTracks = Array.isArray(source.learningTracks)
+    ? source.learningTracks.filter((item): item is LearningTrackKey =>
+        item === "english" || item === "massage" || item === "yijing" || item === "ziwei" || item === "qimen")
+    : [];
+  const knowledgeLinks = Array.isArray(source.knowledgeLinks)
+    ? source.knowledgeLinks.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const link = item as Partial<CaptureKnowledgeLink>;
+        const label = stringValue(link.label).trim().slice(0, 120);
+        const relation: KnowledgeRelation =
+          link.relation === "supports" || link.relation === "contradicts" || link.relation === "example" || link.relation === "question"
+            ? link.relation
+            : "extends";
+        return label ? [{ id: stringValue(link.id, crypto.randomUUID()), label, relation }] : [];
+      }).slice(0, 30)
+    : [];
+  const sourceWeaving: Partial<CaptureWeavingState> = source.weaving && typeof source.weaving === "object" ? source.weaving : {};
+  const outputType = typeof sourceWeaving.outputType === "string" && sourceWeaving.outputType in WEAVING_OUTPUT_TYPES
+    ? sourceWeaving.outputType as WeavingOutputType
+    : null;
+  const productionStatus: WeavingProductionStatus =
+    sourceWeaving.status === "outline" || sourceWeaving.status === "draft" || sourceWeaving.status === "revision" || sourceWeaving.status === "completed"
+      ? sourceWeaving.status
+      : "ready";
+  const sourceStatus: CaptureStatus = legacyPrepared
+    ? "adopted"
+    : source.status === "adopted" || source.status === "faded" ? source.status : "pending";
+  const lastActivityAt = isoDateTime(source.updatedAt, capturedAt);
+  const inactiveDays = Math.floor((new Date(now).getTime() - new Date(lastActivityAt).getTime()) / 86_400_000);
+  const shouldFade = sourceStatus === "pending" && processingDepth === "raw" && destinations.length === 0 && !source.pinned && inactiveDays >= 30;
+  const status: CaptureStatus = shouldFade ? "faded" : sourceStatus;
+  const fadedAt = status === "faded"
+    ? (source.fadedAt ? isoDateTime(source.fadedAt, now) : new Date(new Date(lastActivityAt).getTime() + 30 * 86_400_000).toISOString())
+    : null;
 
   return {
-    version: 1,
+    version: 2,
     recordType: "capture-entry",
     id: params.id,
     title,
@@ -549,17 +658,32 @@ export function normalizeCaptureEntry(
     note: stringValue(source.note).trim().slice(0, 3000),
     sourceUrl: normalizedCaptureSourceUrl(source.sourceUrl),
     status,
+    processingDepth,
     contentType,
-    weavingNote: stringValue(source.weavingNote).trim().slice(0, 5000),
+    forageSummary: stringValue(source.forageSummary, legacyWeavingNote).trim().slice(0, 5000),
+    forageReason: stringValue(source.forageReason).trim().slice(0, 3000),
+    knowledgeLinks,
+    learningTracks,
+    destinations,
+    pinned: Boolean(source.pinned),
     capturedAt,
-    wovenAt: status === "woven" ? (existingWovenAt ?? now) : null,
+    fadedAt,
+    sentToPracticeAt: source.sentToPracticeAt ? isoDateTime(source.sentToPracticeAt, now) : null,
+    sentToWeavingAt,
+    weaving: {
+      outputType,
+      projectTitle: stringValue(sourceWeaving.projectTitle).trim().slice(0, 300),
+      status: productionStatus,
+      productionNote: stringValue(sourceWeaving.productionNote).trim().slice(0, 8000),
+      outputUrl: normalizedCaptureSourceUrl(sourceWeaving.outputUrl),
+    },
     updatedAt: params.touch ? now : isoDateTime(source.updatedAt, now),
   };
 }
 
 export function captureContent(entry: CaptureEntry): FormalCaptureContent {
   return {
-    version: 1,
+    version: 2,
     recordType: "capture-entry",
     title: entry.title,
     category: entry.category,
@@ -567,10 +691,19 @@ export function captureContent(entry: CaptureEntry): FormalCaptureContent {
     note: entry.note,
     sourceUrl: entry.sourceUrl,
     status: entry.status,
+    processingDepth: entry.processingDepth,
     contentType: entry.contentType,
-    weavingNote: entry.weavingNote,
+    forageSummary: entry.forageSummary,
+    forageReason: entry.forageReason,
+    knowledgeLinks: entry.knowledgeLinks,
+    learningTracks: entry.learningTracks,
+    destinations: entry.destinations,
+    pinned: entry.pinned,
     capturedAt: entry.capturedAt,
-    wovenAt: entry.wovenAt,
+    fadedAt: entry.fadedAt,
+    sentToPracticeAt: entry.sentToPracticeAt,
+    sentToWeavingAt: entry.sentToWeavingAt,
+    weaving: entry.weaving,
     updatedAt: entry.updatedAt,
   };
 }

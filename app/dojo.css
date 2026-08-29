@@ -2191,7 +2191,7 @@
   padding-top: 10px;
 }
 
-/* 新增／捕捉：主要導覽使用完整頁面；快速捕捉只收件，整理留到織光堂。 */
+/* 新增／擷取：主要導覽使用完整頁面；擷取只收原始材料，整理留到野採。 */
 .dojo .add-screen {
   padding-top: 14px;
   background:
@@ -2369,7 +2369,7 @@
   border-color: #ddd2bd;
 }
 
-/* 織光堂待織素材：承接捕捉，精細類型與整理筆記在這裡才出現。 */
+/* 織光堂可製作素材：只承接野採已採用並送入的內容。 */
 .dojo .weaving-inbox {
   margin: 15px 0 18px;
   padding: 15px;
@@ -2625,6 +2625,345 @@
   border-radius: 999px;
   background: #dfe8e7;
   font-size: 10px;
+}
+
+/* 野採：狀態、整理深度、使用去向分開，輕整理可在十秒內完成。 */
+.dojo .forage-inbox {
+  margin: 15px 0 18px;
+  padding: 15px;
+  border: 1px solid #e1c996;
+  border-radius: 20px;
+  background: linear-gradient(150deg, #fffaf0, #f4ead5);
+  box-shadow: 0 5px 18px #7a5c2010;
+}
+.dojo .forage-heading {
+  align-items: center;
+  margin-bottom: 12px;
+}
+.dojo .forage-heading h2 {
+  margin: 1px 0;
+  font: 600 21px "Noto Serif TC", serif;
+}
+.dojo .forage-heading .lead {
+  margin: 3px 0 0;
+  line-height: 1.5;
+}
+.dojo .forage-capture-link {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border: 1px solid #c9a96a;
+  border-radius: 11px;
+  color: #765925;
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.dojo .forage-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.dojo .forage-tabs button {
+  min-width: 0;
+  padding: 7px 4px;
+  border-color: #d9c7a4;
+  color: #756951;
+  font-size: 11px;
+}
+.dojo .forage-tabs button span {
+  display: inline-grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: #ede2cd;
+  font-size: 9px;
+}
+.dojo .forage-tabs button.on {
+  border-color: #b78c40;
+  background: #e9d7b6;
+  color: #5f471e;
+}
+.dojo .forage-fade-note,
+.dojo .muted-note {
+  margin: 0 2px 11px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+.dojo .forage-list {
+  display: grid;
+  gap: 10px;
+}
+.dojo .forage-card {
+  padding: 14px;
+  border: 1px solid #ddc99f;
+  border-radius: 16px;
+  background: #fffefa;
+}
+.dojo .forage-card h3 {
+  margin: 9px 0 5px;
+  font: 650 17px "Noto Serif TC", serif;
+}
+.dojo .forage-card .weaving-capture-meta span {
+  background: #f3e7cd;
+  color: #765925;
+}
+.dojo .forage-result {
+  margin-top: 10px;
+  padding: 9px;
+  border-radius: 11px;
+  background: #eef2e8;
+}
+.dojo .forage-result div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.dojo .forage-result span,
+.dojo .production-badges span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #dce7da;
+  color: #48604d;
+  font-size: 10px;
+  font-weight: 750;
+}
+.dojo .forage-result p {
+  margin: 7px 1px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.dojo .forage-editor {
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px solid #e1d3b7;
+}
+.dojo .forage-editor > label,
+.dojo .deep-forage label,
+.dojo .learning-editor label {
+  display: block;
+  margin: 12px 0 5px;
+  color: #695d49;
+  font-size: 11.5px;
+  font-weight: 750;
+}
+.dojo .forage-editor .field,
+.dojo .deep-forage .field,
+.dojo .learning-editor .field {
+  background: #fff;
+}
+.dojo .destination-grid,
+.dojo .output-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.dojo .destination-grid button {
+  min-width: 0;
+  min-height: 66px;
+  padding: 7px 4px;
+}
+.dojo .destination-grid b,
+.dojo .destination-grid small {
+  display: block;
+}
+.dojo .destination-grid b { font-size: 11.5px; }
+.dojo .destination-grid small { margin-top: 3px; color: var(--muted); font-size: 8.5px; }
+.dojo .destination-grid button.on,
+.dojo .learning-chip-row button.on,
+.dojo .output-type-grid button.on {
+  border-color: #b88d43;
+  background: #ead9b9;
+  color: #5d461f;
+}
+.dojo .learning-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dojo .learning-chip-row button {
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 10.5px;
+}
+.dojo .forage-editor label.forage-pin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f7efdf;
+  font-size: 10.5px;
+}
+.dojo .forage-pin input { width: 17px; height: 17px; accent-color: #a77d36; }
+.dojo .deep-forage {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #e0d2b5;
+}
+.dojo .deep-forage summary {
+  color: #715820;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+}
+.dojo .deep-forage summary small {
+  display: block;
+  margin: 2px 0 0 19px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.dojo .knowledge-link-add {
+  display: grid;
+  grid-template-columns: 1.4fr 0.85fr auto;
+  gap: 5px;
+}
+.dojo .knowledge-link-add button { padding: 6px 8px; font-size: 10px; }
+.dojo .knowledge-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.dojo .knowledge-links span {
+  padding: 5px 4px 5px 8px;
+  border-radius: 999px;
+  background: #e6ebdf;
+  color: #4f6049;
+  font-size: 10px;
+}
+.dojo .knowledge-links button {
+  min-width: 24px;
+  min-height: 24px;
+  margin-left: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.dojo .forage-actions,
+.dojo .learning-editor-actions,
+.dojo .learning-actions {
+  display: grid;
+  grid-template-columns: 0.9fr 1.35fr;
+  gap: 7px;
+  margin-top: 13px;
+}
+.dojo .forage-actions button { min-height: 46px; padding: 6px; font-size: 10.5px; }
+.dojo .forage-fade-action {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 5px;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  color: #8a7960;
+  font-size: 9.5px;
+}
+
+/* 織光堂只顯示已由野採送入的材料，並保存實際成品進度。 */
+.dojo .production-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+.dojo .production-badges span {
+  background: #e4ecef;
+  color: #45616d;
+}
+.dojo .output-type-grid { grid-template-columns: repeat(2, 1fr); margin: 6px 0 12px; }
+.dojo .output-type-grid button { min-width: 0; min-height: 42px; padding: 6px; font-size: 10.5px; }
+.dojo .production-save { width: 100%; margin-top: 12px; }
+.dojo .weaving-capture-card.production-completed { border-color: #aebfae; background: #f5f8f3; }
+
+/* 修習所・心知：五條共用學習路徑，英文先使用完整 CEFR 試行欄位。 */
+.dojo .learning-paths { margin-top: 12px; }
+.dojo .learning-heading h2 {
+  margin: 2px 0;
+  font: 600 22px "Noto Serif TC", serif;
+}
+.dojo .learning-heading p { margin: 3px 0 12px; color: var(--muted); font-size: 11.5px; line-height: 1.6; }
+.dojo .learning-track-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.dojo .learning-track-grid > button {
+  min-width: 0;
+  min-height: 122px;
+  padding: 11px;
+  border-color: #ddd3bd;
+  text-align: left;
+}
+.dojo .learning-track-grid > button > span {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--track-color) 18%, white);
+  color: var(--track-color);
+  font-weight: 800;
+}
+.dojo .learning-track-grid b,
+.dojo .learning-track-grid small,
+.dojo .learning-track-grid em { display: block; }
+.dojo .learning-track-grid b { margin-top: 7px; font-size: 13px; }
+.dojo .learning-track-grid small { margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.4; }
+.dojo .learning-track-grid em { margin-top: 6px; color: var(--track-color); font-size: 9px; font-style: normal; font-weight: 700; }
+.dojo .learning-track-grid button.on { border-color: var(--track-color); background: color-mix(in srgb, var(--track-color) 9%, white); box-shadow: 0 0 0 2px color-mix(in srgb, var(--track-color) 14%, transparent); }
+.dojo .learning-detail {
+  margin-top: 11px;
+  padding: 15px;
+  border: 1px solid color-mix(in srgb, var(--track-color) 48%, white);
+  border-radius: 19px;
+  background: #fffefa;
+  box-shadow: 0 4px 16px #5949270c;
+}
+.dojo .learning-detail-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.dojo .learning-detail-head h3 { margin: 2px 0 9px; font: 650 20px "Noto Serif TC", serif; }
+.dojo .learning-detail-head button { min-height: 0; padding: 3px; border: 0; background: transparent; color: var(--track-color); font-size: 10.5px; }
+.dojo .learning-facts { display: grid; gap: 7px; }
+.dojo .learning-facts > div { padding: 9px 10px; border-radius: 11px; background: #f5f2e9; }
+.dojo .learning-facts > div.next { background: color-mix(in srgb, var(--track-color) 10%, white); }
+.dojo .learning-facts small { color: var(--muted); font-size: 9px; }
+.dojo .learning-facts p { margin: 3px 0 0; font-size: 11.5px; line-height: 1.55; }
+.dojo .english-pilot {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 11px;
+  border-radius: 13px;
+  background: #eaf0f4;
+}
+.dojo .cefr-route { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.dojo .cefr-route span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px; background: #fff; color: #49677e; font-weight: 800; }
+.dojo .cefr-route i { color: #7890a0; font-style: normal; }
+.dojo .english-pilot small { color: #68808f; font-size: 9px; }
+.dojo .english-pilot p { margin: 2px 0 7px; font-size: 10.5px; line-height: 1.45; }
+.dojo .learning-actions button { min-width: 0; padding: 7px; font-size: 10.5px; }
+.dojo .learning-resources { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e4dccb; }
+.dojo .subsection-title { display: flex; align-items: center; justify-content: space-between; }
+.dojo .subsection-title h4 { margin: 0 0 7px; font-size: 12px; }
+.dojo .subsection-title span { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 999px; background: #ece6d9; font-size: 9px; }
+.dojo .learning-material { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid #eee7d9; }
+.dojo .learning-material:first-of-type { border-top: 0; }
+.dojo .learning-material b,
+.dojo .learning-material small { display: block; }
+.dojo .learning-material b { font-size: 11.5px; }
+.dojo .learning-material small { max-height: 3em; overflow: hidden; margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.5; }
+.dojo .learning-material a { flex: 0 0 auto; color: var(--track-color); font-size: 9.5px; }
+.dojo .english-editor { margin-top: 11px; padding-top: 4px; border-top: 1px solid #e4dccb; }
+
+@media (max-width: 370px) {
+  .dojo .destination-grid { grid-template-columns: 1fr; }
+  .dojo .knowledge-link-add { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 501px) {

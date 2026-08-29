@@ -27,10 +27,10 @@ export default function AddPage() {
         <span className="capture-spark" aria-hidden="true">✦</span>
         <div>
           <span className="eyebrow">新增</span>
-          <h1>{mode === "capture" ? "捕捉" : "排入行程"}</h1>
+          <h1>{mode === "capture" ? "擷取" : "排入行程"}</h1>
           <p>
             {mode === "capture"
-              ? "先把一閃而過的素材接住，整理與轉化留到織光堂。"
+              ? "先把一閃而過的素材接住，分類與關聯留到野採。"
               : "把已經確定時間的事情，放進行事曆。"}
           </p>
         </div>
@@ -38,7 +38,7 @@ export default function AddPage() {
 
       <div className="segmented add-mode-tabs" aria-label="新增方式">
         <button type="button" className={mode === "capture" ? "on" : ""} onClick={() => setMode("capture")}>
-          ✦ 捕捉
+          ✦ 擷取
         </button>
         <button type="button" className={mode === "calendar" ? "on" : ""} onClick={() => setMode("calendar")}>
           ◷ 排入行程
@@ -71,7 +71,7 @@ function CaptureForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!title.trim()) {
-      setError("請先寫下這則捕捉的標題。");
+      setError("請先寫下這則擷取的標題。");
       return;
     }
 
@@ -104,20 +104,20 @@ function CaptureForm() {
     <form className="capture-form-card" onSubmit={submit}>
       <div className="capture-card-heading">
         <div>
-          <span className="label">捕捉入口</span>
+          <span className="label">擷取入口</span>
           <h2>先留下來就好</h2>
         </div>
         <span className="capture-private">私人收件匣</span>
       </div>
-      <p className="capture-guidance">不用先決定場域、光行或作品方向，這些會在織光堂整理。</p>
+      <p className="capture-guidance">不用先決定場域、知識關聯或作品方向，這些會在野採慢慢處理。</p>
 
       {saved && (
         <div className="capture-success" role="status">
           <div>
-            <b>已收進待織素材</b>
-            <span>「{saved.title}」已安全保存，可以繼續捕捉。</span>
+            <b>已收進野採的採集匣</b>
+            <span>「{saved.title}」已安全保存，可以繼續擷取。</span>
           </div>
-          <Link href="/weaving">前往織光堂整理 →</Link>
+          <Link href="/forage">前往野採整理 →</Link>
         </div>
       )}
 
@@ -145,7 +145,7 @@ function CaptureForm() {
           <option key={key} value={key}>{label}</option>
         ))}
       </select>
-      <small className="field-help">只做輕量標記；真正的內容類型會留到織光堂判斷。</small>
+      <small className="field-help">只做輕量標記；知識連結與使用去向會留到野採判斷。</small>
 
       <label htmlFor="capture-excerpt">內容／節錄</label>
       <textarea
@@ -184,9 +184,9 @@ function CaptureForm() {
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="primary capture-submit" type="submit" disabled={saving}>
         <span aria-hidden="true">✦</span>
-        {saving ? "正在收進來…" : "收進待織素材"}
+        {saving ? "正在收進來…" : "收進野採"}
       </button>
-      <p className="capture-footnote">儲存後會進入織光堂，不會自動公開或混入六個場域紀錄。</p>
+      <p className="capture-footnote">儲存後會進入野採採集匣，不會自動公開，也不會直接變成作品。</p>
     </form>
   );
 }
