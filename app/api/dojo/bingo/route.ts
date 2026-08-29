@@ -8,6 +8,7 @@ import {
   taipeiTodayISO,
 } from "@/lib/dojo/formal";
 import { listJsonRecords, readJsonRecord, upsertJsonRecord } from "@/lib/dojo/notionStore";
+import { syncLearningActivity } from "@/lib/dojo/learningStore";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,9 @@ export async function PUT(req: NextRequest) {
     const weekStart = mondayOf(week);
     const board = normalizeWeeklyBoard(body.board, weekStart);
     const saved = await upsertJsonRecord(bingoRecordTitle(weekStart), board);
+    for (const cell of board.cells) {
+      if (cell.learning) await syncLearningActivity({ weekStart, cell });
+    }
     return NextResponse.json({ ok: true, id: saved.id, board });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });

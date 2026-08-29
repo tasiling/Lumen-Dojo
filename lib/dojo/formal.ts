@@ -99,6 +99,22 @@ export type DailyRecord = {
 export type BingoCell = {
   index: number;
   text: string;
+  category: DailyTaskCategory | null;
+  sourceType: "manual" | "routine" | "learning" | "project" | "flexible";
+  sourceId: string | null;
+  learning: {
+    trackKey: LearningTrackKey;
+    templateKey: string;
+    skill: string;
+  } | null;
+  completion: {
+    mode: "single" | "count";
+    target: number;
+    progress: number;
+    unit: string;
+    requiresEvidence: boolean;
+  };
+  evidenceNote: string;
   completed: boolean;
   completedAt: string | null;
   assignedDate: string | null;
@@ -106,10 +122,16 @@ export type BingoCell = {
 };
 
 export type WeeklyBoard = {
-  version: 1;
+  version: 1 | 2;
   weekStart: string;
   title: string;
   cells: BingoCell[];
+  rules: {
+    planningDay: 0;
+    crossColorLines: boolean;
+    minimumLineColors: 2;
+  };
+  colorsConfirmedAt: string | null;
   reflection: {
     brightSpot: string;
     adjustment: string;
@@ -443,17 +465,25 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
 
 export function emptyWeeklyBoard(weekStart: string): WeeklyBoard {
   return {
-    version: 1,
+    version: 2,
     weekStart,
     title: "本週行光盤",
     cells: Array.from({ length: 25 }, (_, index) => ({
       index,
       text: index === 12 ? "自在格" : "",
+      category: null,
+      sourceType: "manual" as const,
+      sourceId: null,
+      learning: null,
+      completion: { mode: "single" as const, target: 1, progress: index === 12 ? 1 : 0, unit: "次", requiresEvidence: false },
+      evidenceNote: "",
       completed: index === 12,
       completedAt: index === 12 ? weekStart : null,
       assignedDate: null,
       assignedCategory: null,
     })),
+    rules: { planningDay: 0, crossColorLines: true, minimumLineColors: 2 },
+    colorsConfirmedAt: null,
     reflection: { brightSpot: "", adjustment: "", nextFocus: "" },
     archivedAt: null,
     updatedAt: new Date().toISOString(),
@@ -463,6 +493,7 @@ export function emptyWeeklyBoard(weekStart: string): WeeklyBoard {
 export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string): WeeklyBoard {
   const source = value && typeof value === "object" ? (value as Partial<WeeklyBoard>) : {};
   const base = emptyWeeklyBoard(expectedWeekStart);
+  const isVersionTwo = source.version === 2;
   const incoming = Array.isArray(source.cells) ? source.cells : [];
   const byIndex = new Map<number, Partial<BingoCell>>();
   for (const cell of incoming) {
@@ -472,24 +503,65 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
     if (fallback.index === 12) return fallback;
     const cell = byIndex.get(fallback.index) ?? {};
     const category =
-      cell.assignedCategory === "important" || cell.assignedCategory === "hobby" || cell.assignedCategory === "health"
-        ? cell.assignedCategory
+      cell.category === "important" || cell.category === "hobby" || cell.category === "health"
+        ? cell.category
+        : cell.assignedCategory === "important" || cell.assignedCategory === "hobby" || cell.assignedCategory === "health"
+          ? cell.assignedCategory
         : null;
+    const sourceType: BingoCell["sourceType"] =
+      cell.sourceType === "routine" || cell.sourceType === "learning" || cell.sourceType === "project" || cell.sourceType === "flexible"
+        ? cell.sourceType
+        : "manual";
+    const learningSource = cell.learning && typeof cell.learning === "object" ? cell.learning : null;
+    const learning = learningSource &&
+      (learningSource.trackKey === "english" || learningSource.trackKey === "massage" || learningSource.trackKey === "yijing" || learningSource.trackKey === "ziwei" || learningSource.trackKey === "qimen")
+      ? {
+          trackKey: learningSource.trackKey,
+          templateKey: stringValue(learningSource.templateKey).slice(0, 100),
+          skill: stringValue(learningSource.skill).slice(0, 100),
+        }
+      : null;
+    const completionSource = cell.completion && typeof cell.completion === "object" ? cell.completion : null;
+    const mode: BingoCell["completion"]["mode"] = completionSource?.mode === "count" ? "count" : "single";
+    const target = Math.max(1, Math.min(99, Math.round(Number(completionSource?.target) || 1)));
+    const legacyProgress = cell.completed ? target : 0;
+    const progress = Math.max(0, Math.min(target, Math.round(Number(completionSource?.progress) || legacyProgress)));
     return {
       index: fallback.index,
       text: stringValue(cell.text).slice(0, 300),
-      completed: Boolean(cell.completed),
+      category,
+      sourceType,
+      sourceId: nullableString(cell.sourceId),
+      learning,
+      completion: {
+        mode,
+        target,
+        progress,
+        unit: stringValue(completionSource?.unit, "次").slice(0, 20),
+        requiresEvidence: Boolean(completionSource?.requiresEvidence),
+      },
+      evidenceNote: stringValue(cell.evidenceNote).slice(0, 2000),
+      completed: progress >= target,
       completedAt: nullableString(cell.completedAt),
       assignedDate: isDate(cell.assignedDate) ? cell.assignedDate : null,
-      assignedCategory: category,
+      assignedCategory:
+        cell.assignedCategory === "important" || cell.assignedCategory === "hobby" || cell.assignedCategory === "health"
+          ? cell.assignedCategory
+          : null,
     };
   });
   const reflection = source.reflection && typeof source.reflection === "object" ? source.reflection : base.reflection;
   return {
-    version: 1,
+    version: isVersionTwo ? 2 : 1,
     weekStart: expectedWeekStart,
     title: stringValue(source.title, base.title).slice(0, 200),
     cells,
+    rules: {
+      planningDay: 0,
+      crossColorLines: isVersionTwo ? source.rules?.crossColorLines !== false : false,
+      minimumLineColors: 2,
+    },
+    colorsConfirmedAt: nullableString(source.colorsConfirmedAt),
     reflection: {
       brightSpot: stringValue(reflection.brightSpot).slice(0, 3000),
       adjustment: stringValue(reflection.adjustment).slice(0, 3000),
@@ -517,7 +589,18 @@ const BINGO_LINES = [
 
 export function completedBingoLines(board: WeeklyBoard): number {
   const done = new Set(board.cells.filter((cell) => cell.completed).map((cell) => cell.index));
-  return BINGO_LINES.filter((line) => line.every((index) => done.has(index))).length;
+  return BINGO_LINES.filter((line) => {
+    if (!line.every((index) => done.has(index))) return false;
+    if (!board.rules.crossColorLines) return true;
+    const colors = new Set(
+      line.flatMap((index) => {
+        if (index === 12) return [];
+        const category = board.cells[index]?.category;
+        return category ? [category] : [];
+      })
+    );
+    return colors.size >= board.rules.minimumLineColors;
+  }).length;
 }
 
 function isSpace(value: unknown): value is SpaceKey {

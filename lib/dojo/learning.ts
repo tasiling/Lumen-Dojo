@@ -49,9 +49,35 @@ export const LEARNING_TRACKS: Record<LearningTrackKey, {
 export const ENGLISH_SKILLS = ["聽力", "口說", "閱讀", "寫作", "詞彙", "文法", "發音"] as const;
 export type EnglishSkill = (typeof ENGLISH_SKILLS)[number];
 export type CefrLevel = "A1" | "A2" | "B1" | "B2" | "C1";
+export type EnglishWeeklyMode = "foundation-writing" | "vocabulary-growth";
+
+export type LearningActivity = {
+  id: string;
+  weekStart: string;
+  cellIndex: number;
+  templateKey: string;
+  skill: string;
+  progress: number;
+  target: number;
+  unit: string;
+  evidenceNote: string;
+  completedAt: string | null;
+  updatedAt: string;
+};
+
+export type WeeklyLearningCandidate = {
+  templateKey: string;
+  title: string;
+  skill: EnglishSkill;
+  completionMode: "single" | "count";
+  target: number;
+  unit: string;
+  requiresEvidence: boolean;
+  defaultCategory: "important" | "hobby" | "health";
+};
 
 export type LearningTrackRecord = {
-  version: 1;
+  version: 1 | 2;
   recordType: "learning-track";
   key: LearningTrackKey;
   goal: string;
@@ -63,9 +89,31 @@ export type LearningTrackRecord = {
     targetLevel: CefrLevel;
     focusSkills: EnglishSkill[];
     checkpoint: string;
+    weeklyMode: EnglishWeeklyMode;
   } | null;
+  activityLog: LearningActivity[];
   updatedAt: string;
 };
+
+const FOUNDATION_WRITING_CANDIDATES: WeeklyLearningCandidate[] = [
+  { templateKey: "journal-translation", title: "日記自譯＋AI 對照修正", skill: "寫作", completionMode: "single", target: 1, unit: "篇", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "vocabforge-journal-round", title: "VocabForge 一輪（來源：當週日記生詞）", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "work-five-expressions", title: "5 種說法＋當週工作實際使用", skill: "口說", completionMode: "single", target: 1, unit: "次實戰", requiresEvidence: true, defaultCategory: "important" },
+  { templateKey: "speaking-scenario", title: "SpeakRPG 或 VoiceTube 情境對話一次", skill: "口說", completionMode: "single", target: 1, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
+  { templateKey: "shadowing-twice", title: "跟讀練習 2 次", skill: "發音", completionMode: "count", target: 2, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
+];
+
+const VOCABULARY_GROWTH_CANDIDATES: WeeklyLearningCandidate[] = [
+  { templateKey: "journal-translation", title: "日記自譯＋AI 對照修正", skill: "寫作", completionMode: "single", target: 1, unit: "篇", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "vocabforge-journal-round-1", title: "VocabForge 第一輪（行光日記豆倉）", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "vocabforge-journal-round-2", title: "VocabForge 第二輪（行光日記豆倉）", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "work-five-expressions", title: "5 種說法＋當週工作實際使用", skill: "口說", completionMode: "single", target: 1, unit: "次實戰", requiresEvidence: true, defaultCategory: "important" },
+  { templateKey: "speaking-maintenance", title: "情境對話或跟讀維持一次", skill: "口說", completionMode: "single", target: 1, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
+];
+
+export function englishWeeklyCandidates(mode: EnglishWeeklyMode): WeeklyLearningCandidate[] {
+  return (mode === "vocabulary-growth" ? VOCABULARY_GROWTH_CANDIDATES : FOUNDATION_WRITING_CANDIDATES).map((item) => ({ ...item }));
+}
 
 export function learningRecordTitle(key: LearningTrackKey): string {
   return `${LEARNING_TITLE_PREFIX}${key}`;
@@ -74,7 +122,7 @@ export function learningRecordTitle(key: LearningTrackKey): string {
 export function defaultLearningTrack(key: LearningTrackKey): LearningTrackRecord {
   const config = LEARNING_TRACKS[key];
   return {
-    version: 1,
+    version: 2,
     recordType: "learning-track",
     key,
     goal: config.defaultGoal,
@@ -86,7 +134,9 @@ export function defaultLearningTrack(key: LearningTrackKey): LearningTrackRecord
       targetLevel: "C1",
       focusSkills: ["口說", "聽力"],
       checkpoint: "先穩定完成日常與按摩工作情境的 B1 口語表達",
+      weeklyMode: "foundation-writing",
     } : null,
+    activityLog: [],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -103,9 +153,30 @@ export function normalizeLearningTrack(value: unknown, expectedKey: LearningTrac
   const focusSkills = englishSource && Array.isArray(englishSource.focusSkills)
     ? englishSource.focusSkills.filter((skill): skill is EnglishSkill => ENGLISH_SKILLS.includes(skill as EnglishSkill))
     : base.english?.focusSkills ?? [];
+  const activityLog = Array.isArray(source.activityLog)
+    ? source.activityLog.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const activity = item as Partial<LearningActivity>;
+        if (!stringValue(activity.id) || !stringValue(activity.weekStart) || typeof activity.cellIndex !== "number") return [];
+        return [{
+          id: stringValue(activity.id).slice(0, 160),
+          weekStart: stringValue(activity.weekStart).slice(0, 10),
+          cellIndex: activity.cellIndex,
+          templateKey: stringValue(activity.templateKey).slice(0, 100),
+          skill: stringValue(activity.skill).slice(0, 100),
+          progress: Math.max(0, Math.min(99, Math.round(Number(activity.progress) || 0))),
+          target: Math.max(1, Math.min(99, Math.round(Number(activity.target) || 1))),
+          unit: stringValue(activity.unit, "次").slice(0, 20),
+          evidenceNote: stringValue(activity.evidenceNote).slice(0, 2000),
+          completedAt: typeof activity.completedAt === "string" ? activity.completedAt : null,
+          updatedAt: typeof activity.updatedAt === "string" ? activity.updatedAt : new Date().toISOString(),
+        }];
+      }).slice(-160)
+    : [];
 
   return {
     ...base,
+    version: 2,
     goal: stringValue(source.goal, base.goal).trim().slice(0, 1000),
     currentStage: stringValue(source.currentStage, base.currentStage).trim().slice(0, 500),
     currentFocus: stringValue(source.currentFocus).trim().slice(0, 1000),
@@ -115,7 +186,9 @@ export function normalizeLearningTrack(value: unknown, expectedKey: LearningTrac
       targetLevel: englishSource && levels.includes(englishSource.targetLevel) ? englishSource.targetLevel : "C1",
       focusSkills,
       checkpoint: stringValue(englishSource?.checkpoint, base.english?.checkpoint).trim().slice(0, 1000),
+      weeklyMode: englishSource?.weeklyMode === "vocabulary-growth" ? "vocabulary-growth" : "foundation-writing",
     } : null,
+    activityLog,
     updatedAt: new Date().toISOString(),
   };
 }

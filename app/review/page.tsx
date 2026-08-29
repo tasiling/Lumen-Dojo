@@ -10,9 +10,11 @@ import {
 } from "@/lib/dojo/constants";
 import {
   DAILY_TASK_CATEGORIES,
+  taipeiTodayISO,
   type DailyRecord,
   type DailyTaskCategory,
 } from "@/lib/dojo/formal";
+import { combineJournalTexts, formatDailyJournalText, type JournalExportMode } from "@/lib/dojo/journalExport";
 import { formatFreqIntensityLabel, resolveHawkinsLevel } from "@/lib/dojo/hawkins";
 import { useDojo } from "@/lib/dojo/store";
 import { JOURNAL_QUESTIONS, type JournalQuestionKey } from "@/lib/journal/notionFormat";
@@ -52,6 +54,18 @@ function fmtDate(dateISO: string) {
     .format(new Date(`${dateISO}T12:00:00+08:00`));
 }
 
+function downloadText(filename: string, content: string) {
+  const blob = new Blob(["\uFEFF", content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default function ReviewPage() {
   const { entries: editableEntries, openQuickAdd, removeEntry, refreshEntries } = useDojo();
   const [daily, setDaily] = useState<DailyRecord[]>([]);
@@ -64,6 +78,7 @@ export default function ReviewPage() {
   const [mode, setMode] = useState<"all" | "daily" | "entries">("all");
   const [space, setSpace] = useState<"all" | SpaceKey>("all");
   const [dateFilter, setDateFilter] = useState("");
+  const [exportMonth, setExportMonth] = useState(() => taipeiTodayISO().slice(0, 7));
 
   useEffect(() => {
     const date = new URLSearchParams(window.location.search).get("date");
@@ -115,14 +130,15 @@ export default function ReviewPage() {
     return map;
   }, [legacyClosings]);
 
+  const allReviewDates = useMemo(() => [...new Set([
+    ...daily.map((record) => record.date),
+    ...journals.map((journal) => journal.date),
+    ...legacyClosings.map((closing) => closing.date),
+  ])].sort((a, b) => b.localeCompare(a)), [daily, journals, legacyClosings]);
+
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-Hant");
   const visibleReviewDates = useMemo(() => {
-    const dates = new Set([
-      ...daily.map((record) => record.date),
-      ...journals.map((journal) => journal.date),
-      ...legacyClosings.map((closing) => closing.date),
-    ]);
-    return [...dates].sort((a, b) => b.localeCompare(a)).filter((date) => {
+    return allReviewDates.filter((date) => {
       if (dateFilter && date !== dateFilter) return false;
       if (!normalizedQuery) return true;
       const record = dailyByDate.get(date);
@@ -147,7 +163,7 @@ export default function ReviewPage() {
       ].filter(Boolean).join(" ").toLocaleLowerCase("zh-Hant");
       return text.includes(normalizedQuery);
     });
-  }, [daily, dailyByDate, dateFilter, journals, journalsByDate, legacyClosings, legacyClosingsByDate, normalizedQuery]);
+  }, [allReviewDates, dailyByDate, dateFilter, journalsByDate, legacyClosingsByDate, normalizedQuery]);
 
   const visibleEntries = useMemo(() => entries.filter((entry) => {
     if (dateFilter && entry.date !== dateFilter) return false;
@@ -173,6 +189,19 @@ export default function ReviewPage() {
     void fetch(`/api/traces/${entry.traceId}/view`, { method: "PATCH" });
   }
 
+  function exportMonthJournal() {
+    const dates = allReviewDates.filter((date) => date.startsWith(`${exportMonth}-`)).sort();
+    const text = combineJournalTexts(dates.map((date) => formatDailyJournalText({
+      date,
+      record: dailyByDate.get(date),
+      journals: journalsByDate.get(date) ?? [],
+      legacyClosings: legacyClosingsByDate.get(date) ?? [],
+      mode: "review",
+    })));
+    if (!text) return;
+    downloadText(`行光日記-${exportMonth}.txt`, text);
+  }
+
   return (
     <section className="screen review-screen">
       <div className="section-heading page-heading">
@@ -191,6 +220,12 @@ export default function ReviewPage() {
         <button type="button" className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>日期回看</button>
         <button type="button" className={mode === "entries" ? "on" : ""} onClick={() => setMode("entries")}>場域痕跡</button>
       </div>
+
+      <section className="review-export-bar">
+        <div><small>純文字備份</small><b>匯出日間札記與日復盤</b></div>
+        <input type="month" value={exportMonth} onChange={(event) => setExportMonth(event.target.value)} aria-label="選擇匯出月份" />
+        <button type="button" onClick={exportMonthJournal} disabled={!allReviewDates.some((date) => date.startsWith(`${exportMonth}-`))}>匯出本月</button>
+      </section>
 
       {(mode === "all" || mode === "entries") && (
         <div className="row source-filter">
@@ -273,6 +308,11 @@ function DailyReviewCard({
     ? `${completed}/3 · ${hasEvening ? "已收光" : "未收光"}`
     : `舊資料 · ${oldAnswers.length ? "有舊筆記" : "有收光處置"}`;
 
+  function exportDay(mode: JournalExportMode) {
+    const content = formatDailyJournalText({ date, record, journals, legacyClosings, mode });
+    downloadText(`${mode === "full" ? "行光每日紀錄" : "行光日記"}-${date}.txt`, content);
+  }
+
   return (
     <details className="review-day-card">
       <summary>
@@ -283,6 +323,10 @@ function DailyReviewCard({
         <span>{summaryStatus}</span>
       </summary>
       <div className="review-day-body">
+        <div className="review-export-actions">
+          <button type="button" onClick={() => exportDay("review")}>匯出日復盤</button>
+          <button type="button" onClick={() => exportDay("full")}>匯出完整紀錄</button>
+        </div>
         {record?.morning.intention && <><h3>晨間意圖</h3><p className="review-prose">{record.morning.intention}</p></>}
 
         {hasMorningNotes && (

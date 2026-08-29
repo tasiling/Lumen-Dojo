@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import EnglishWeeklyPlanner from "@/app/components/EnglishWeeklyPlanner";
 import {
   DAILY_TASK_CATEGORIES,
   addCalendarDays,
@@ -13,6 +14,7 @@ import {
   type DailyTaskCategory,
   type WeeklyBoard,
 } from "@/lib/dojo/formal";
+import type { LearningTrackRecord } from "@/lib/dojo/learning";
 
 const CATEGORIES: DailyTaskCategory[] = ["important", "hobby", "health"];
 
@@ -43,6 +45,8 @@ export default function BingoPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [showArchive, setShowArchive] = useState(false);
   const [archiveBoards, setArchiveBoards] = useState<WeeklyBoard[]>([]);
+  const [englishTrack, setEnglishTrack] = useState<LearningTrackRecord | null>(null);
+  const [evidenceNote, setEvidenceNote] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -53,9 +57,16 @@ export default function BingoPage() {
       setSelected(null);
       setEditing(false);
       try {
-        const response = await fetch(`/api/dojo/bingo?week=${weekStart}`, { cache: "no-store" });
-        const json = await readResponse<{ board: WeeklyBoard }>(response);
-        if (!cancelled) setBoard(json.board);
+        const [boardResponse, learningResponse] = await Promise.all([
+          fetch(`/api/dojo/bingo?week=${weekStart}`, { cache: "no-store" }),
+          fetch("/api/dojo/learning", { cache: "no-store" }),
+        ]);
+        const json = await readResponse<{ board: WeeklyBoard }>(boardResponse);
+        const learning = await readResponse<{ tracks: LearningTrackRecord[] }>(learningResponse);
+        if (!cancelled) {
+          setBoard(json.board);
+          setEnglishTrack(learning.tracks.find((track) => track.key === "english") ?? null);
+        }
       } catch (caught) {
         if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
       } finally {
@@ -90,52 +101,29 @@ export default function BingoPage() {
     }
   }
 
-  async function toggleSelected() {
+  async function changeProgress(direction: -1 | 1) {
     if (selected === null || selected === 12 || board.archivedAt) return;
-    const current = board.cells[selected];
-    if (!current.text.trim()) return;
-    if (current.assignedDate && current.assignedCategory) {
-      setSaving(true);
-      setError(null);
-      setNotice(null);
-      try {
-        const response = await fetch("/api/dojo/flow", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "complete-task",
-            date: current.assignedDate,
-            category: current.assignedCategory,
-            completed: !current.completed,
-          }),
-        });
-        const json = await readResponse<{ board: WeeklyBoard | null }>(response);
-        if (!json.board) throw new Error("今天的任務連結已變更，請重新排入今天。");
-        setBoard(json.board);
-        setNotice(current.completed ? "今天與週盤都已改回未完成。" : "今天與週盤都已同步完成。");
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    const cells = board.cells.map((cell) =>
-      cell.index === selected
-        ? { ...cell, completed: !cell.completed, completedAt: cell.completed ? null : new Date().toISOString() }
-        : cell
-    );
+    setSaving(true); setError(null); setNotice(null);
     try {
-      await save({ ...board, cells }, current.completed ? "已改回未完成。" : "完成狀態已存下來。");
-    } catch {
-      // save() 已顯示錯誤。
-    }
+      const response = await fetch("/api/dojo/flow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "progress-bingo", weekStart, cellIndex: selected, direction, evidenceNote }),
+      });
+      const json = await readResponse<{ board: WeeklyBoard }>(response);
+      setBoard(json.board);
+      const cell = json.board.cells[selected];
+      setNotice(cell.completed ? "這一格已完成，進度也已回寫修習所。" : `已記下 ${cell.completion.progress}/${cell.completion.target} ${cell.completion.unit}。`);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setSaving(false); }
   }
 
-  async function assignToToday(category: DailyTaskCategory) {
+  async function assignToToday() {
     if (selected === null || selected === 12 || board.archivedAt) return;
     const cell = board.cells[selected];
     if (!cell.text.trim()) return;
+    const category = cell.category;
+    if (!category) { setError("請先在週盤為這一格決定重要、喜歡或照顧自己。"); return; }
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -160,6 +148,26 @@ export default function BingoPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function setCellCategory(category: DailyTaskCategory) {
+    if (selected === null || board.archivedAt) return;
+    const next: WeeklyBoard = {
+      ...board,
+      version: 2,
+      rules: { planningDay: 0, crossColorLines: true, minimumLineColors: 2 },
+      colorsConfirmedAt: null,
+      cells: board.cells.map((cell) => cell.index === selected ? { ...cell, category } : cell),
+    };
+    try { await save(next, `已設為「${DAILY_TASK_CATEGORIES[category].label}」。`); } catch { /* save 已顯示錯誤 */ }
+  }
+
+  async function confirmColors() {
+    const uncolored = board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && !cell.category).length;
+    if (uncolored) { setError(`還有 ${uncolored} 個已填格子尚未定色。`); return; }
+    try {
+      await save({ ...board, version: 2, rules: { planningDay: 0, crossColorLines: true, minimumLineColors: 2 }, colorsConfirmedAt: new Date().toISOString() }, "本週三色已確認；排入今天時會沿用這裡的分類。");
+    } catch { /* save 已顯示錯誤 */ }
   }
 
   async function archiveBoard() {
@@ -188,6 +196,11 @@ export default function BingoPage() {
 
   const completed = board.cells.filter((cell) => cell.index !== 12 && cell.completed).length;
   const selectedCell = selected === null ? null : board.cells[selected];
+  const colorCounts = CATEGORIES.map((category) => ({
+    category,
+    count: board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && cell.category === category).length,
+  }));
+  const uncoloredCount = board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && !cell.category).length;
 
   return (
     <section className="screen bingo-screen">
@@ -228,6 +241,27 @@ export default function BingoPage() {
 
       {!loading && (
         <>
+          {englishTrack && !board.archivedAt && (
+            <EnglishWeeklyPlanner
+              board={board}
+              english={englishTrack}
+              disabled={saving}
+              onApply={async (next) => { await save(next, "英文學習路徑已放入本週盤面，請完成本週定色。"); }}
+            />
+          )}
+
+          <section className="ritual-card weekly-color-plan">
+            <div className="section-heading">
+              <div><span className="eyebrow">週日定色</span><h2>先決定這週為什麼做</h2></div>
+              <span className={`saved-mark ${board.colorsConfirmedAt ? "confirmed" : ""}`}>{board.colorsConfirmedAt ? "已確認" : `${uncoloredCount} 格待定`}</span>
+            </div>
+            <p className="lead">每格在週盤決定「重要／喜歡／照顧自己」，排入今天時直接沿用。有效連線需至少包含兩種顏色。</p>
+            <div className="weekly-color-counts">
+              {colorCounts.map(({ category, count }) => <span key={category} className={category}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")} <b>{count}</b></span>)}
+            </div>
+            {!board.archivedAt && <button className="primary" disabled={saving || uncoloredCount > 0} onClick={() => void confirmColors()}>{board.colorsConfirmedAt ? "重新確認本週三色" : "確認本週三色"}</button>}
+          </section>
+
           <section className="ritual-card board-card">
             <div className="section-heading">
               <div>
@@ -259,7 +293,7 @@ export default function BingoPage() {
                     onChange={(event) => setBoard({
                       ...board,
                       cells: board.cells.map((item) => item.index === cell.index
-                        ? { ...item, text: event.target.value, completed: event.target.value.trim() ? item.completed : false }
+                        ? { ...item, text: event.target.value, completed: event.target.value.trim() ? item.completed : false, completion: event.target.value.trim() ? item.completion : { ...item.completion, progress: 0 }, category: event.target.value.trim() ? item.category : null }
                         : item),
                     })}
                     placeholder={`${cell.index + 1}`}
@@ -268,12 +302,14 @@ export default function BingoPage() {
                 ) : (
                   <button
                     key={cell.index}
-                    className={`bingo-cell ${cell.completed ? "done" : ""} ${selected === cell.index ? "selected" : ""} ${cell.index === 12 ? "free" : ""}`}
-                    onClick={() => cell.index !== 12 && setSelected(cell.index)}
+                    className={`bingo-cell ${cell.category ?? "uncolored"} ${cell.completed ? "done" : ""} ${selected === cell.index ? "selected" : ""} ${cell.index === 12 ? "free" : ""}`}
+                    onClick={() => { if (cell.index !== 12) { setSelected(cell.index); setEvidenceNote(cell.evidenceNote); } }}
                     disabled={cell.index !== 12 && !cell.text.trim()}
                   >
                     <span>{cell.text || "空格"}</span>
                     {cell.completed && <i>✓</i>}
+                    {cell.index !== 12 && cell.text && <em>{cell.category ? DAILY_TASK_CATEGORIES[cell.category].label.replace(/^一件/, "") : "待定色"}</em>}
+                    {cell.completion.target > 1 && <small>{cell.completion.progress}/{cell.completion.target} {cell.completion.unit}</small>}
                     {cell.assignedDate && <small>已排入 {cell.assignedDate.slice(5)}</small>}
                   </button>
                 )
@@ -291,24 +327,19 @@ export default function BingoPage() {
             <section className="ritual-card selected-cell-panel">
               <span className="eyebrow">第 {selectedCell.index + 1} 格</span>
               <h2>{selectedCell.text}</h2>
-              <div className="two">
-                <button onClick={() => void toggleSelected()} disabled={saving}>
-                  {selectedCell.completed ? "改回未完成" : "標記完成"}
-                </button>
-                <Link href="/" className="button-link">查看今天</Link>
+              {selectedCell.learning && <p className="learning-cell-source">修習所・{selectedCell.learning.trackKey === "english" ? "英文到 C1" : selectedCell.learning.trackKey}・{selectedCell.learning.skill}</p>}
+              <div className="cell-color-picker">
+                <small>本週三色</small>
+                <div className="row">{CATEGORIES.map((category) => <button key={category} className={`task-category-button ${category} ${selectedCell.category === category ? "on" : ""}`} onClick={() => void setCellCategory(category)} disabled={saving || Boolean(selectedCell.assignedDate)}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")}</button>)}</div>
               </div>
-              <p className="lead">排進今天的哪一格？之後在今天完成時，這格會一起完成。</p>
-              <div className="row">
-                {CATEGORIES.map((category) => (
-                  <button
-                    key={category}
-                    className={`task-category-button ${category}`}
-                    onClick={() => void assignToToday(category)}
-                    disabled={saving}
-                  >
-                    {DAILY_TASK_CATEGORIES[category].label}
-                  </button>
-                ))}
+              {selectedCell.completion.requiresEvidence && <label className="evidence-field">工作實戰紀錄<textarea className="field" rows={3} value={evidenceNote} onChange={(event) => setEvidenceNote(event.target.value)} placeholder="實際使用日期、情境、說出的句子與對方反應" /></label>}
+              <div className="cell-progress">
+                <span>本週進度 <b>{selectedCell.completion.progress}/{selectedCell.completion.target}</b> {selectedCell.completion.unit}</span>
+                <div><button onClick={() => void changeProgress(-1)} disabled={saving || selectedCell.completion.progress === 0}>−</button><button className="primary" onClick={() => void changeProgress(1)} disabled={saving || selectedCell.completed}>{selectedCell.completed ? "已完成" : selectedCell.completion.target > 1 ? "記一次" : "完成這格"}</button></div>
+              </div>
+              <div className="two">
+                <button onClick={() => void assignToToday()} disabled={saving || !selectedCell.category}>{selectedCell.assignedDate ? `已排入 ${selectedCell.assignedDate.slice(5)}` : selectedCell.category ? `排入今天・${DAILY_TASK_CATEGORIES[selectedCell.category].label.replace(/^一件/, "")}` : "請先定色"}</button>
+                <Link href="/" className="button-link">查看今天</Link>
               </div>
             </section>
           )}
