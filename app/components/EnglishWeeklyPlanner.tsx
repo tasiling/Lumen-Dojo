@@ -7,7 +7,7 @@ import {
   type WeeklyBoard,
 } from "@/lib/dojo/formal";
 import {
-  englishWeeklyCandidates,
+  englishManualWeeklyCandidates,
   type LearningTrackRecord,
 } from "@/lib/dojo/learning";
 
@@ -25,7 +25,7 @@ export default function EnglishWeeklyPlanner({
   onApply: (board: WeeklyBoard) => Promise<void>;
 }) {
   const candidates = useMemo(
-    () => englishWeeklyCandidates(english.english?.weeklyMode ?? "foundation-writing"),
+    () => englishManualWeeklyCandidates(english.english?.weeklyMode ?? "foundation-writing"),
     [english.english?.weeklyMode]
   );
   const [colors, setColors] = useState<Record<string, DailyTaskCategory>>(() =>
@@ -84,8 +84,8 @@ export default function EnglishWeeklyPlanner({
   return (
     <section className="ritual-card english-week-planner">
       <button type="button" className="english-week-planner-head" onClick={() => setOpen((value) => !value)}>
-        <span><small>修習所・英文到 C1</small><b>本週英文五格</b></span>
-        <em>{existingCount}/5 已放入</em>
+        <span><small>修習所・英文到 C1</small><b>本週英文四格・手動版</b></span>
+        <em>{existingCount}/4 已放入</em>
       </button>
       {open && (
         <div className="english-week-planner-body">
@@ -112,7 +112,7 @@ export default function EnglishWeeklyPlanner({
             <button type="button" className="primary english-week-apply" disabled={disabled} onClick={() => void apply()}>
               加入尚未放入的 {missing.length} 格
             </button>
-          ) : <p className="save-notice">本週英文五格已全部放入。</p>}
+          ) : <p className="save-notice">本週英文四格已全部放入。</p>}
         </div>
       )}
     </section>

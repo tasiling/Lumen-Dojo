@@ -14,6 +14,7 @@ import {
   taipeiTodayISO,
   type DailyRecord,
   type DailyTaskCategory,
+  type MorningDepth,
   type WeeklyBoard,
 } from "@/lib/dojo/formal";
 import { useDojo } from "@/lib/dojo/store";
@@ -24,6 +25,12 @@ const EVENING_FIELDS = {
   medium: ["highlight", "block"],
   deep: ["highlight", "block", "insight", "nextAction"],
 } as const;
+
+const MORNING_DEPTHS: { key: MorningDepth; label: string; note: string }[] = [
+  { key: "light", label: "輕", note: "狀態與定向" },
+  { key: "medium", label: "適中", note: "加上感恩與肯定" },
+  { key: "deep", label: "深入", note: "再寫未來日記" },
+];
 
 const EVENING_LABELS = {
   highlight: ["今天的一束光", "今天值得留下的片刻"],
@@ -73,7 +80,6 @@ export default function TodayPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [eveningError, setEveningError] = useState<string | null>(null);
   const [eveningFeedback, setEveningFeedback] = useState<string | null>(null);
-  const [morningNotesOpen, setMorningNotesOpen] = useState(false);
   const [logText, setLogText] = useState("");
   const [readingVisitCount, setReadingVisitCount] = useState(0);
 
@@ -92,11 +98,6 @@ export default function TodayPage() {
         if (!cancelled) {
           setRecord(dailyJson.record);
           setBoard(boardJson.board);
-          setMorningNotesOpen(Boolean(
-            dailyJson.record.morning.gratitude ||
-            dailyJson.record.morning.affirmation ||
-            dailyJson.record.morning.futureJournal
-          ));
         }
       } catch (caught) {
         if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
@@ -382,7 +383,27 @@ export default function TodayPage() {
                 <span className="eyebrow">晨間啟動</span>
                 <h2>先看見此刻</h2>
               </div>
-              {record.morning.startedAt && <span className="saved-mark">已啟動</span>}
+              {record.morning.startedAt && <span className="saved-mark">{
+                record.morning.depth === "deep" ? "深層" : record.morning.depth === "medium" ? "中層" : "輕層"
+              }</span>}
+            </div>
+
+            <label>今天想寫到多深？</label>
+            <div className="segmented three morning-depth-picker">
+              {MORNING_DEPTHS.map((depth) => (
+                <button
+                  type="button"
+                  key={depth.key}
+                  className={(record.morning.depth ?? "light") === depth.key ? "on" : ""}
+                  onClick={() => setRecord((current) => ({
+                    ...current,
+                    morning: { ...current.morning, depth: depth.key },
+                  }))}
+                >
+                  <b>{depth.label}</b>
+                  <small>{depth.note}</small>
+                </button>
+              ))}
             </div>
 
             <label>現在的狀態</label>
@@ -408,16 +429,12 @@ export default function TodayPage() {
               placeholder="一句今天的方向即可"
             />
 
-            <details
-              className="optional-notes"
-              open={morningNotesOpen}
-              onToggle={(event) => setMorningNotesOpen(event.currentTarget.open)}
-            >
-              <summary>
-                <span>晨間筆記</span>
-                <small>感恩、肯定與未來日記 · 選填</small>
-              </summary>
-              <div className="optional-notes-body">
+            {(record.morning.depth === "medium" || record.morning.depth === "deep") && (
+              <section className="morning-layer-fields">
+                <div className="morning-layer-heading">
+                  <b>中層書寫</b>
+                  <small>感恩與肯定句</small>
+                </div>
                 <label htmlFor="morning-gratitude">我很感恩的三件事</label>
                 <textarea
                   id="morning-gratitude"
@@ -440,6 +457,14 @@ export default function TodayPage() {
                   }))}
                   placeholder="今天想對自己說的一句話"
                 />
+              </section>
+            )}
+            {record.morning.depth === "deep" && (
+              <section className="morning-layer-fields deep">
+                <div className="morning-layer-heading">
+                  <b>深層書寫</b>
+                  <small>把想走向的生活先寫下來</small>
+                </div>
                 <label htmlFor="morning-future-journal">我的未來日記</label>
                 <textarea
                   id="morning-future-journal"
@@ -451,8 +476,8 @@ export default function TodayPage() {
                   }))}
                   placeholder="用已經發生的語氣，寫下想走向的畫面。"
                 />
-              </div>
-            </details>
+              </section>
+            )}
 
             <button
               type="button"
@@ -460,8 +485,12 @@ export default function TodayPage() {
               disabled={saving}
               onClick={() => void persist({
                 ...record,
-                morning: { ...record.morning, startedAt: record.morning.startedAt ?? new Date().toISOString() },
-              }, "晨間啟動已存下來。")}
+                morning: {
+                  ...record.morning,
+                  depth: record.morning.depth ?? "light",
+                  startedAt: record.morning.startedAt ?? new Date().toISOString(),
+                },
+              }, `晨間${record.morning.depth === "deep" ? "深層" : record.morning.depth === "medium" ? "中層" : "輕層"}已存下來。`)}
             >
               {saving ? "儲存中…" : "儲存晨間啟動"}
             </button>

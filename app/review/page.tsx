@@ -304,6 +304,7 @@ function DailyReviewCard({
   const hasEvening = Boolean(
     record?.evening.closedAt || record?.evening.highlight || record?.evening.insight || legacyClosings.length
   );
+  const morningDepthLabel = record?.morning.depth === "deep" ? "深層" : record?.morning.depth === "medium" ? "中層" : record?.morning.startedAt ? "輕層" : null;
   const summaryStatus = record
     ? `${completed}/3 · ${hasEvening ? "已收光" : "未收光"}`
     : `舊資料 · ${oldAnswers.length ? "有舊筆記" : "有收光處置"}`;
@@ -327,7 +328,7 @@ function DailyReviewCard({
           <button type="button" onClick={() => exportDay("review")}>匯出日復盤</button>
           <button type="button" onClick={() => exportDay("full")}>匯出完整紀錄</button>
         </div>
-        {record?.morning.intention && <><h3>晨間意圖</h3><p className="review-prose">{record.morning.intention}</p></>}
+        {record?.morning.intention && <><h3>晨間意圖{morningDepthLabel ? ` · ${morningDepthLabel}` : ""}</h3><p className="review-prose">{record.morning.intention}</p></>}
 
         {hasMorningNotes && (
           <>

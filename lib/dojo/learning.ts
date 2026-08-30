@@ -116,6 +116,16 @@ export function englishWeeklyCandidates(mode: EnglishWeeklyMode): WeeklyLearning
   return (mode === "vocabulary-growth" ? VOCABULARY_GROWTH_CANDIDATES : FOUNDATION_WRITING_CANDIDATES).map((item) => ({ ...item }));
 }
 
+// 專屬工作台尚未完成前，週盤依真實手動負擔只放四格。後續工具成熟時，
+// englishWeeklyCandidates 仍保留完整五格規格，方便切回自動化版本。
+export function englishManualWeeklyCandidates(mode: EnglishWeeklyMode): WeeklyLearningCandidate[] {
+  const candidates = mode === "vocabulary-growth" ? VOCABULARY_GROWTH_CANDIDATES : FOUNDATION_WRITING_CANDIDATES;
+  const selectedKeys = mode === "vocabulary-growth"
+    ? new Set(["journal-translation", "vocabforge-journal-round-1", "work-five-expressions", "speaking-maintenance"])
+    : new Set(["journal-translation", "vocabforge-journal-round", "work-five-expressions", "speaking-scenario"]);
+  return candidates.filter((item) => selectedKeys.has(item.templateKey)).map((item) => ({ ...item }));
+}
+
 export function learningRecordTitle(key: LearningTrackKey): string {
   return `${LEARNING_TITLE_PREFIX}${key}`;
 }

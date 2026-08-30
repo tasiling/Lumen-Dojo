@@ -1126,6 +1126,29 @@
   color: var(--ink);
   font-weight: 700;
 }
+.dojo .morning-depth-picker button {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 7px 4px;
+}
+.dojo .morning-depth-picker button b,
+.dojo .morning-depth-picker button small { display: block; }
+.dojo .morning-depth-picker button b { font-size: 12px; }
+.dojo .morning-depth-picker button small { color: var(--muted); font-size: 7.5px; line-height: 1.3; }
+.dojo .morning-layer-fields {
+  margin: 13px 0;
+  padding: 13px;
+  border: 1px solid #e5d6bb;
+  border-radius: 13px;
+  background: #fffaf0;
+}
+.dojo .morning-layer-fields.deep { background: #f7f1e4; }
+.dojo .morning-layer-heading { margin-bottom: 10px; }
+.dojo .morning-layer-heading b,
+.dojo .morning-layer-heading small { display: block; }
+.dojo .morning-layer-heading b { font-size: 12px; }
+.dojo .morning-layer-heading small { margin-top: 2px; color: var(--muted); font-size: 9px; }
 .dojo .text-link {
   color: #8b642c;
   font-size: 12px;
@@ -1854,6 +1877,42 @@
 .dojo .weekly-color-counts b { display: block; margin-top: 2px; font-size: 15px; }
 .dojo .saved-mark.confirmed { color: #3f6752; }
 .dojo .weekly-color-plan > .primary { width: 100%; }
+.dojo .weekly-setup-planner { padding: 0; overflow: hidden; }
+.dojo .weekly-setup-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  border: 0;
+  border-radius: 0;
+  background: #f1eadb;
+  text-align: left;
+}
+.dojo .weekly-setup-head small,
+.dojo .weekly-setup-head b { display: block; }
+.dojo .weekly-setup-head small { color: #997133; font-size: 9px; }
+.dojo .weekly-setup-head b { margin-top: 3px; font-size: 14px; }
+.dojo .weekly-setup-head em { color: #765c32; font-size: 9px; font-style: normal; font-weight: 800; }
+.dojo .weekly-setup-body { padding: 12px; }
+.dojo .weekly-setup-body > p { margin: 0 0 10px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.dojo .weekly-setup-groups { display: grid; gap: 8px; }
+.dojo .weekly-setup-groups article { padding: 11px; border: 1px solid var(--line); border-radius: 13px; background: #fffaf0; }
+.dojo .weekly-setup-groups article.health { background: var(--task-health-soft); }
+.dojo .weekly-setup-groups article.hobby { background: var(--task-hobby-soft); }
+.dojo .weekly-setup-group-heading { display: flex; justify-content: space-between; gap: 8px; }
+.dojo .weekly-setup-group-heading b,
+.dojo .weekly-setup-group-heading small { display: block; }
+.dojo .weekly-setup-group-heading b { font-size: 11.5px; }
+.dojo .weekly-setup-group-heading small { margin-top: 2px; color: var(--muted); font-size: 8.5px; }
+.dojo .weekly-setup-group-heading span { flex: 0 0 auto; font-size: 10px; font-weight: 800; }
+.dojo .weekly-setup-groups article > p { margin: 7px 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.dojo .weekly-setup-groups ul { margin: 7px 0 10px; padding-left: 17px; }
+.dojo .weekly-setup-groups li { margin: 3px 0; font-size: 9.5px; line-height: 1.45; }
+.dojo .weekly-setup-groups li.added { color: var(--muted); text-decoration: line-through; }
+.dojo .weekly-setup-groups article > button { width: 100%; min-height: 36px; font-size: 10px; }
+.dojo .weekly-setup-complete { padding: 7px; border-radius: 9px; background: #e9f0e9; color: #3f6752; text-align: center; font-size: 9.5px; font-weight: 800; }
+.dojo .weekly-setup-footnote { margin: 10px 0 0 !important; }
 .dojo .english-week-planner { padding: 0; overflow: hidden; }
 .dojo .english-week-planner-head { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px; border: 0; border-radius: 0; background: #eaf0f4; text-align: left; }
 .dojo .english-week-planner-head small,

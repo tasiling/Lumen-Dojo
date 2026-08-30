@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import EnglishWeeklyPlanner from "@/app/components/EnglishWeeklyPlanner";
 import ReadingInsightPlanner from "@/app/components/ReadingInsightPlanner";
+import WeeklySetupPlanner from "@/app/components/WeeklySetupPlanner";
 import {
   DAILY_TASK_CATEGORIES,
   addCalendarDays,
@@ -314,6 +315,14 @@ export default function BingoPage() {
 
       {!loading && (
         <>
+          {!board.archivedAt && (
+            <WeeklySetupPlanner
+              board={board}
+              disabled={saving}
+              onApply={async (next, message) => { await save(next, message); }}
+            />
+          )}
+
           {englishTrack && !board.archivedAt && (
             <EnglishWeeklyPlanner
               board={board}

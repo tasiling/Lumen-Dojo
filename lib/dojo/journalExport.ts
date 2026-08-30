@@ -15,6 +15,7 @@ export type ExportLegacyClosing = {
 
 const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
 const DISPOSITION_LABELS = { carry: "帶回", journal: "寫下今天", pause: "暫且放下" } as const;
+const DEPTH_LABELS = { light: "輕層", medium: "中層", deep: "深層" } as const;
 
 function section(title: string, lines: Array<string | null | undefined>): string | null {
   const content = lines.map((line) => line?.trim() ?? "").filter(Boolean);
@@ -40,6 +41,7 @@ export function formatDailyJournalText(params: {
 
   if (mode === "full" && record) {
     const morning = section("晨間", [
+      record.morning.depth ? `晨間層級\n${DEPTH_LABELS[record.morning.depth]}` : null,
       labeled("今日意圖", record.morning.intention),
       record.morning.state ? `此刻狀態\n${record.morning.state}` : null,
       labeled("我很感恩的三件事", record.morning.gratitude),

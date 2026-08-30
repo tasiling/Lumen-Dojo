@@ -65,12 +65,14 @@ export type DayLog = {
 };
 
 export type EveningDepth = "light" | "medium" | "deep";
+export type MorningDepth = EveningDepth;
 export type ClosingDisposition = "carry" | "journal" | "pause";
 
 export type DailyRecord = {
   version: 1;
   date: string;
   morning: {
+    depth: MorningDepth | null;
     intention: string;
     state: "低" | "穩" | "亮" | null;
     gratitude: string;
@@ -346,6 +348,7 @@ export function emptyDailyRecord(date = taipeiTodayISO()): DailyRecord {
     version: 1,
     date,
     morning: {
+      depth: null,
       intention: "",
       state: null,
       gratitude: "",
@@ -410,6 +413,16 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
   const evening = source.evening && typeof source.evening === "object" ? source.evening : base.evening;
   const tasks = source.tasks && typeof source.tasks === "object" ? source.tasks : base.tasks;
   const state = morning.state === "低" || morning.state === "穩" || morning.state === "亮" ? morning.state : null;
+  const explicitMorningDepth = morning.depth === "light" || morning.depth === "medium" || morning.depth === "deep"
+    ? morning.depth
+    : null;
+  const legacyMorningDepth: MorningDepth | null = stringValue(morning.futureJournal).trim()
+    ? "deep"
+    : stringValue(morning.gratitude).trim() || stringValue(morning.affirmation).trim()
+      ? "medium"
+      : nullableString(morning.startedAt)
+        ? "light"
+        : null;
   const depth = evening.depth === "light" || evening.depth === "medium" || evening.depth === "deep" ? evening.depth : null;
   const disposition =
     evening.disposition === "carry" || evening.disposition === "journal" || evening.disposition === "pause"
@@ -437,6 +450,7 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
     version: 1,
     date: expectedDate,
     morning: {
+      depth: explicitMorningDepth ?? legacyMorningDepth,
       intention: stringValue(morning.intention).slice(0, 1000),
       state,
       gratitude: stringValue(morning.gratitude).slice(0, 3000),

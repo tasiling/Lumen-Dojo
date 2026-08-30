@@ -49,7 +49,7 @@ type AgendaItem = {
 };
 
 type DailyReviewSnapshot = {
-  morning: 0 | 1;
+  morning: 0 | 1 | 2 | 3;
   evening: 0 | 1 | 2 | 3;
   taskProgress: { done: number; total: number };
 };
@@ -92,6 +92,13 @@ function fmtDay(dateISO: string) {
 }
 
 function dailyReviewSnapshot(record?: DailyRecord): DailyReviewSnapshot {
+  const morningLevel = record?.morning.startedAt
+    ? record.morning.depth === "deep"
+      ? 3
+      : record.morning.depth === "medium"
+        ? 2
+        : 1
+    : 0;
   const eveningLevel = record?.evening.closedAt
     ? record.evening.depth === "deep"
       ? 3
@@ -100,7 +107,7 @@ function dailyReviewSnapshot(record?: DailyRecord): DailyReviewSnapshot {
         : 1
     : 0;
   return {
-    morning: record?.morning.startedAt ? 1 : 0,
+    morning: morningLevel,
     evening: eveningLevel,
     taskProgress: {
       done: record ? TASK_ORDER.filter((category) => record.tasks[category].completed).length : 0,
@@ -146,7 +153,7 @@ function ReviewMark({ review, large = false }: { review: DailyReviewSnapshot; la
       className={`calendar-review-mark ${large ? "large" : ""}`}
       viewBox={`0 0 ${box} ${box}`}
       role="img"
-      aria-label={`晨間${review.morning ? "已記錄" : "未記錄"}，收光 ${review.evening} 層，三件事完成 ${review.taskProgress.done} 件`}
+      aria-label={`晨間 ${review.morning} 層，收光 ${review.evening} 層，三件事完成 ${review.taskProgress.done} 件`}
     >
       {radii.map((radius, index) => {
         const left = center - radius;
@@ -431,6 +438,7 @@ export default function CalendarPage() {
 
 function DailyReviewSummary({ date, record, today }: { date: string; record?: DailyRecord; today: string }) {
   const review = dailyReviewSnapshot(record);
+  const morningLabels = ["未記錄", "輕層", "中層", "深層"];
   const eveningLabels = ["未記錄", "輕層", "中層", "深層"];
   const hasActivity = hasDailyActivity(record);
   const hasTaskPlan = hasDailyTaskPlan(record);
@@ -457,7 +465,7 @@ function DailyReviewSummary({ date, record, today }: { date: string; record?: Da
         <div>
           <i className="morning-dot" />
           <span>晨間</span>
-          <strong>{review.morning ? "已記錄" : "未記錄"}</strong>
+          <strong>{morningLabels[review.morning]}</strong>
         </div>
         <div>
           <i className="evening-dot" />
