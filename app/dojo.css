@@ -1666,6 +1666,15 @@
   gap: 3px;
   text-align: center;
 }
+.dojo .bingo-cell-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-weight: 700;
+  word-break: break-word;
+}
 .dojo .bingo-cell.important { border-color: var(--task-important); background: var(--task-important-soft); }
 .dojo .bingo-cell.hobby { border-color: var(--task-hobby); background: var(--task-hobby-soft); }
 .dojo .bingo-cell.health { border-color: var(--task-health); background: var(--task-health-soft); }
@@ -1705,6 +1714,12 @@
   font-size: 8px;
   opacity: 0.8;
 }
+.dojo .bingo-cell-date {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .dojo .bingo-grid textarea {
   resize: none;
   border: 1px solid var(--gold);
@@ -1715,7 +1730,84 @@
 .dojo .selected-cell-panel h2 {
   word-break: break-word;
 }
+.dojo .bingo-detail-modal {
+  justify-content: center;
+}
+.dojo .bingo-detail-modal .selected-cell-panel {
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -12px 32px #30251f24;
+}
+.dojo .bingo-detail-handle {
+  width: 42px;
+  height: 4px;
+  margin: -4px auto 10px;
+  border-radius: 999px;
+  background: #c9bfad;
+}
+.dojo .bingo-detail-heading {
+  align-items: flex-start;
+  margin-top: 0;
+}
+.dojo .bingo-detail-heading > div {
+  min-width: 0;
+}
+.dojo .bingo-detail-heading h2 {
+  margin: 3px 0 0;
+  font-size: 19px;
+  line-height: 1.45;
+}
 .dojo .learning-cell-source { margin: -3px 0 12px; color: #56728d; font-size: 10px; font-weight: 700; }
+.dojo .cell-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0 14px;
+}
+.dojo .cell-detail-facts span {
+  min-width: 0;
+  padding: 9px 7px;
+  border-radius: 11px;
+  background: #f3efe5;
+}
+.dojo .cell-detail-facts small,
+.dojo .cell-detail-facts b {
+  display: block;
+}
+.dojo .cell-detail-facts small {
+  color: var(--muted);
+  font-size: 8px;
+}
+.dojo .cell-detail-facts b {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  font-size: 10.5px;
+}
+.dojo .cell-short-label-editor {
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fffaf0;
+}
+.dojo .cell-short-label-editor > label {
+  font-size: 11px;
+  font-weight: 700;
+}
+.dojo .cell-short-label-editor > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  margin-top: 4px;
+}
+.dojo .cell-short-label-editor .field {
+  min-width: 0;
+  margin: 0;
+}
+.dojo .cell-short-label-editor small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 9px;
+}
 .dojo .cell-color-picker { margin: 10px 0; }
 .dojo .cell-color-picker > small { display: block; margin-bottom: 6px; color: var(--muted); }
 .dojo .cell-color-picker .task-category-button.on { box-shadow: 0 0 0 2px var(--task-color); font-weight: 800; }

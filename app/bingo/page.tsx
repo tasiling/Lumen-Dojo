@@ -12,11 +12,27 @@ import {
   taipeiTodayISO,
   type DailyRecord,
   type DailyTaskCategory,
+  type BingoCell,
   type WeeklyBoard,
 } from "@/lib/dojo/formal";
 import type { LearningTrackRecord } from "@/lib/dojo/learning";
+import { useBackableState } from "@/lib/dojo/backstack";
 
 const CATEGORIES: DailyTaskCategory[] = ["important", "hobby", "health"];
+const ENGLISH_CELL_SHORT_LABELS: Record<string, string> = {
+  "journal-translation": "日記自譯",
+  "vocabforge-journal-round": "生詞一輪",
+  "vocabforge-journal-round-1": "生詞第一輪",
+  "vocabforge-journal-round-2": "生詞第二輪",
+  "work-five-expressions": "說法實戰",
+  "speaking-scenario": "情境對話",
+  "shadowing-twice": "跟讀 ×2",
+  "speaking-maintenance": "口說維持",
+};
+
+function bingoCellShortLabel(cell: BingoCell) {
+  return cell.shortLabel.trim() || (cell.learning?.trackKey === "english" ? ENGLISH_CELL_SHORT_LABELS[cell.learning.templateKey] : "") || cell.text;
+}
 
 function fmtWeek(weekStart: string) {
   const end = addCalendarDays(weekStart, 6);
@@ -47,6 +63,19 @@ export default function BingoPage() {
   const [archiveBoards, setArchiveBoards] = useState<WeeklyBoard[]>([]);
   const [englishTrack, setEnglishTrack] = useState<LearningTrackRecord | null>(null);
   const [evidenceNote, setEvidenceNote] = useState("");
+  const [shortLabelDraft, setShortLabelDraft] = useState("");
+  const detailOpen = selected !== null && !editing;
+
+  useBackableState(detailOpen, () => setSelected(null));
+
+  useEffect(() => {
+    if (!detailOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [detailOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,6 +189,17 @@ export default function BingoPage() {
       cells: board.cells.map((cell) => cell.index === selected ? { ...cell, category } : cell),
     };
     try { await save(next, `已設為「${DAILY_TASK_CATEGORIES[category].label}」。`); } catch { /* save 已顯示錯誤 */ }
+  }
+
+  async function saveShortLabel() {
+    if (selected === null || board.archivedAt) return;
+    const next = {
+      ...board,
+      cells: board.cells.map((cell) => cell.index === selected
+        ? { ...cell, shortLabel: shortLabelDraft.trim().slice(0, 12) }
+        : cell),
+    };
+    try { await save(next, "盤面短名稱已儲存，完整任務內容保持不變。"); } catch { /* save 已顯示錯誤 */ }
   }
 
   async function confirmColors() {
@@ -277,7 +317,7 @@ export default function BingoPage() {
               {board.archivedAt ? (
                 <span className="saved-mark">已封存</span>
               ) : (
-                <button onClick={() => setEditing((value) => !value)}>{editing ? "完成編輯" : "編輯格子"}</button>
+                <button onClick={() => { setSelected(null); setEditing((value) => !value); }}>{editing ? "完成編輯" : "編輯格子"}</button>
               )}
             </div>
 
@@ -303,14 +343,17 @@ export default function BingoPage() {
                   <button
                     key={cell.index}
                     className={`bingo-cell ${cell.category ?? "uncolored"} ${cell.completed ? "done" : ""} ${selected === cell.index ? "selected" : ""} ${cell.index === 12 ? "free" : ""}`}
-                    onClick={() => { if (cell.index !== 12) { setSelected(cell.index); setEvidenceNote(cell.evidenceNote); } }}
+                    onClick={() => { if (cell.index !== 12) { setSelected(cell.index); setEvidenceNote(cell.evidenceNote); setShortLabelDraft(bingoCellShortLabel(cell)); } }}
                     disabled={cell.index !== 12 && !cell.text.trim()}
+                    aria-label={cell.index === 12
+                      ? "自在格，已完成"
+                      : `${cell.text || "空格"}${cell.category ? `，${DAILY_TASK_CATEGORIES[cell.category].label}` : "，尚未定色"}${cell.completed ? "，已完成" : ""}`}
                   >
-                    <span>{cell.text || "空格"}</span>
+                    <span className="bingo-cell-title">{bingoCellShortLabel(cell) || "空格"}</span>
                     {cell.completed && <i>✓</i>}
-                    {cell.index !== 12 && cell.text && <em>{cell.category ? DAILY_TASK_CATEGORIES[cell.category].label.replace(/^一件/, "") : "待定色"}</em>}
-                    {cell.completion.target > 1 && <small>{cell.completion.progress}/{cell.completion.target} {cell.completion.unit}</small>}
-                    {cell.assignedDate && <small>已排入 {cell.assignedDate.slice(5)}</small>}
+                    {cell.index !== 12 && cell.text && !cell.category && <em>待定色</em>}
+                    {cell.completion.target > 1 && <small>{cell.completion.progress}/{cell.completion.target}</small>}
+                    {cell.assignedDate && <small className="bingo-cell-date">已排 {cell.assignedDate.slice(5)}</small>}
                   </button>
                 )
               )}
@@ -323,25 +366,54 @@ export default function BingoPage() {
             )}
           </section>
 
-          {selectedCell && !editing && !board.archivedAt && (
-            <section className="ritual-card selected-cell-panel">
-              <span className="eyebrow">第 {selectedCell.index + 1} 格</span>
-              <h2>{selectedCell.text}</h2>
-              {selectedCell.learning && <p className="learning-cell-source">修習所・{selectedCell.learning.trackKey === "english" ? "英文到 C1" : selectedCell.learning.trackKey}・{selectedCell.learning.skill}</p>}
-              <div className="cell-color-picker">
-                <small>本週三色</small>
-                <div className="row">{CATEGORIES.map((category) => <button key={category} className={`task-category-button ${category} ${selectedCell.category === category ? "on" : ""}`} onClick={() => void setCellCategory(category)} disabled={saving || Boolean(selectedCell.assignedDate)}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")}</button>)}</div>
-              </div>
-              {selectedCell.completion.requiresEvidence && <label className="evidence-field">工作實戰紀錄<textarea className="field" rows={3} value={evidenceNote} onChange={(event) => setEvidenceNote(event.target.value)} placeholder="實際使用日期、情境、說出的句子與對方反應" /></label>}
-              <div className="cell-progress">
-                <span>本週進度 <b>{selectedCell.completion.progress}/{selectedCell.completion.target}</b> {selectedCell.completion.unit}</span>
-                <div><button onClick={() => void changeProgress(-1)} disabled={saving || selectedCell.completion.progress === 0}>−</button><button className="primary" onClick={() => void changeProgress(1)} disabled={saving || selectedCell.completed}>{selectedCell.completed ? "已完成" : selectedCell.completion.target > 1 ? "記一次" : "完成這格"}</button></div>
-              </div>
-              <div className="two">
-                <button onClick={() => void assignToToday()} disabled={saving || !selectedCell.category}>{selectedCell.assignedDate ? `已排入 ${selectedCell.assignedDate.slice(5)}` : selectedCell.category ? `排入今天・${DAILY_TASK_CATEGORIES[selectedCell.category].label.replace(/^一件/, "")}` : "請先定色"}</button>
-                <Link href="/" className="button-link">查看今天</Link>
-              </div>
-            </section>
+          {selectedCell && !editing && (
+            <div className="modal bingo-detail-modal" onClick={(event) => event.target === event.currentTarget && setSelected(null)}>
+              <section className="sheet selected-cell-panel" role="dialog" aria-modal="true" aria-labelledby="bingo-detail-title">
+                <div className="bingo-detail-handle" aria-hidden="true" />
+                <div className="toolbar bingo-detail-heading">
+                  <div>
+                    <span className="eyebrow">第 {selectedCell.index + 1} 格</span>
+                    <h2 id="bingo-detail-title">{selectedCell.text}</h2>
+                  </div>
+                  <button onClick={() => setSelected(null)}>關閉</button>
+                </div>
+                {selectedCell.learning && <p className="learning-cell-source">修習所・{selectedCell.learning.trackKey === "english" ? "英文到 C1" : selectedCell.learning.trackKey}・{selectedCell.learning.skill}</p>}
+
+                <div className="cell-detail-facts">
+                  <span><small>盤面名稱</small><b>{bingoCellShortLabel(selectedCell)}</b></span>
+                  <span><small>完成條件</small><b>{selectedCell.completion.target} {selectedCell.completion.unit}</b></span>
+                  <span><small>本週分類</small><b>{selectedCell.category ? DAILY_TASK_CATEGORIES[selectedCell.category].label.replace(/^一件/, "") : "尚未定色"}</b></span>
+                </div>
+
+                {!board.archivedAt ? (
+                  <>
+                    <div className="cell-short-label-editor">
+                      <label htmlFor="bingo-short-label">盤面短名稱</label>
+                      <div>
+                        <input id="bingo-short-label" className="field" maxLength={12} value={shortLabelDraft} onChange={(event) => setShortLabelDraft(event.target.value)} placeholder="最多 12 個字" />
+                        <button onClick={() => void saveShortLabel()} disabled={saving || shortLabelDraft.trim() === selectedCell.shortLabel}>儲存</button>
+                      </div>
+                      <small>只改盤面顯示，完整任務內容不會被縮寫覆蓋。</small>
+                    </div>
+                    <div className="cell-color-picker">
+                      <small>本週三色</small>
+                      <div className="row">{CATEGORIES.map((category) => <button key={category} className={`task-category-button ${category} ${selectedCell.category === category ? "on" : ""}`} onClick={() => void setCellCategory(category)} disabled={saving || Boolean(selectedCell.assignedDate)}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")}</button>)}</div>
+                    </div>
+                    {selectedCell.completion.requiresEvidence && <label className="evidence-field">工作實戰紀錄<textarea className="field" rows={3} value={evidenceNote} onChange={(event) => setEvidenceNote(event.target.value)} placeholder="實際使用日期、情境、說出的句子與對方反應" /></label>}
+                    <div className="cell-progress">
+                      <span>本週進度 <b>{selectedCell.completion.progress}/{selectedCell.completion.target}</b> {selectedCell.completion.unit}</span>
+                      <div><button onClick={() => void changeProgress(-1)} disabled={saving || selectedCell.completion.progress === 0}>−</button><button className="primary" onClick={() => void changeProgress(1)} disabled={saving || selectedCell.completed}>{selectedCell.completed ? "已完成" : selectedCell.completion.target > 1 ? "記一次" : "完成這格"}</button></div>
+                    </div>
+                    <div className="two">
+                      <button onClick={() => void assignToToday()} disabled={saving || !selectedCell.category}>{selectedCell.assignedDate ? `已排入 ${selectedCell.assignedDate.slice(5)}` : selectedCell.category ? `排入今天・${DAILY_TASK_CATEGORIES[selectedCell.category].label.replace(/^一件/, "")}` : "請先定色"}</button>
+                      <Link href="/" className="button-link">查看今天</Link>
+                    </div>
+                  </>
+                ) : (
+                  <div className="cell-progress"><span>封存進度 <b>{selectedCell.completion.progress}/{selectedCell.completion.target}</b> {selectedCell.completion.unit}</span></div>
+                )}
+              </section>
+            </div>
           )}
 
           <section className="ritual-card">

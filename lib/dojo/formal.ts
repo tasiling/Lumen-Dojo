@@ -99,6 +99,7 @@ export type DailyRecord = {
 export type BingoCell = {
   index: number;
   text: string;
+  shortLabel: string;
   category: DailyTaskCategory | null;
   sourceType: "manual" | "routine" | "learning" | "project" | "flexible";
   sourceId: string | null;
@@ -471,6 +472,7 @@ export function emptyWeeklyBoard(weekStart: string): WeeklyBoard {
     cells: Array.from({ length: 25 }, (_, index) => ({
       index,
       text: index === 12 ? "自在格" : "",
+      shortLabel: "",
       category: null,
       sourceType: "manual" as const,
       sourceId: null,
@@ -529,6 +531,7 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
     return {
       index: fallback.index,
       text: stringValue(cell.text).slice(0, 300),
+      shortLabel: stringValue(cell.shortLabel).slice(0, 12),
       category,
       sourceType,
       sourceId: nullableString(cell.sourceId),

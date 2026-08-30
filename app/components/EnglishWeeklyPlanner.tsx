@@ -54,6 +54,7 @@ export default function EnglishWeeklyPlanner({
         return {
           ...cell,
           text: candidate.title,
+          shortLabel: candidate.shortTitle,
           category: colors[candidate.templateKey] ?? candidate.defaultCategory,
           sourceType: "learning",
           sourceId: "english",

@@ -68,6 +68,7 @@ export type LearningActivity = {
 export type WeeklyLearningCandidate = {
   templateKey: string;
   title: string;
+  shortTitle: string;
   skill: EnglishSkill;
   completionMode: "single" | "count";
   target: number;
@@ -96,19 +97,19 @@ export type LearningTrackRecord = {
 };
 
 const FOUNDATION_WRITING_CANDIDATES: WeeklyLearningCandidate[] = [
-  { templateKey: "journal-translation", title: "日記自譯＋AI 對照修正", skill: "寫作", completionMode: "single", target: 1, unit: "篇", requiresEvidence: false, defaultCategory: "important" },
-  { templateKey: "vocabforge-journal-round", title: "VocabForge 一輪（來源：當週日記生詞）", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
-  { templateKey: "work-five-expressions", title: "5 種說法＋當週工作實際使用", skill: "口說", completionMode: "single", target: 1, unit: "次實戰", requiresEvidence: true, defaultCategory: "important" },
-  { templateKey: "speaking-scenario", title: "SpeakRPG 或 VoiceTube 情境對話一次", skill: "口說", completionMode: "single", target: 1, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
-  { templateKey: "shadowing-twice", title: "跟讀練習 2 次", skill: "發音", completionMode: "count", target: 2, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
+  { templateKey: "journal-translation", title: "日記自譯＋AI 對照修正", shortTitle: "日記自譯", skill: "寫作", completionMode: "single", target: 1, unit: "篇", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "vocabforge-journal-round", title: "VocabForge 一輪（來源：當週日記生詞）", shortTitle: "生詞一輪", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "work-five-expressions", title: "5 種說法＋當週工作實際使用", shortTitle: "說法實戰", skill: "口說", completionMode: "single", target: 1, unit: "次實戰", requiresEvidence: true, defaultCategory: "important" },
+  { templateKey: "speaking-scenario", title: "SpeakRPG 或 VoiceTube 情境對話一次", shortTitle: "情境對話", skill: "口說", completionMode: "single", target: 1, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
+  { templateKey: "shadowing-twice", title: "跟讀練習 2 次", shortTitle: "跟讀 ×2", skill: "發音", completionMode: "count", target: 2, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
 ];
 
 const VOCABULARY_GROWTH_CANDIDATES: WeeklyLearningCandidate[] = [
-  { templateKey: "journal-translation", title: "日記自譯＋AI 對照修正", skill: "寫作", completionMode: "single", target: 1, unit: "篇", requiresEvidence: false, defaultCategory: "important" },
-  { templateKey: "vocabforge-journal-round-1", title: "VocabForge 第一輪（行光日記豆倉）", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
-  { templateKey: "vocabforge-journal-round-2", title: "VocabForge 第二輪（行光日記豆倉）", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
-  { templateKey: "work-five-expressions", title: "5 種說法＋當週工作實際使用", skill: "口說", completionMode: "single", target: 1, unit: "次實戰", requiresEvidence: true, defaultCategory: "important" },
-  { templateKey: "speaking-maintenance", title: "情境對話或跟讀維持一次", skill: "口說", completionMode: "single", target: 1, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
+  { templateKey: "journal-translation", title: "日記自譯＋AI 對照修正", shortTitle: "日記自譯", skill: "寫作", completionMode: "single", target: 1, unit: "篇", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "vocabforge-journal-round-1", title: "VocabForge 第一輪（行光日記豆倉）", shortTitle: "生詞第一輪", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "vocabforge-journal-round-2", title: "VocabForge 第二輪（行光日記豆倉）", shortTitle: "生詞第二輪", skill: "詞彙", completionMode: "single", target: 1, unit: "輪", requiresEvidence: false, defaultCategory: "important" },
+  { templateKey: "work-five-expressions", title: "5 種說法＋當週工作實際使用", shortTitle: "說法實戰", skill: "口說", completionMode: "single", target: 1, unit: "次實戰", requiresEvidence: true, defaultCategory: "important" },
+  { templateKey: "speaking-maintenance", title: "情境對話或跟讀維持一次", shortTitle: "口說維持", skill: "口說", completionMode: "single", target: 1, unit: "次", requiresEvidence: false, defaultCategory: "hobby" },
 ];
 
 export function englishWeeklyCandidates(mode: EnglishWeeklyMode): WeeklyLearningCandidate[] {
