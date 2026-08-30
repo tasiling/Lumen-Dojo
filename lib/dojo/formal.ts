@@ -18,6 +18,7 @@ export const CALENDAR_TITLE_PREFIX = "行光行程-";
 export const ENTRY_TITLE_PREFIX = "行光紀錄-";
 export const CAPTURE_TITLE_PREFIX = "行光捕捉-";
 export const LEARNING_TITLE_PREFIX = "行光修習-";
+export const WEAVING_PROJECT_TITLE_PREFIX = "行光織光企劃-";
 export const FORMAL_STATE_TITLE_PREFIXES = [
   DAILY_TITLE_PREFIX,
   BINGO_TITLE_PREFIX,
@@ -25,6 +26,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   ENTRY_TITLE_PREFIX,
   CAPTURE_TITLE_PREFIX,
   LEARNING_TITLE_PREFIX,
+  WEAVING_PROJECT_TITLE_PREFIX,
 ] as const;
 
 export const TAIPEI_TIME_ZONE = "Asia/Taipei";
@@ -101,7 +103,7 @@ export type BingoCell = {
   text: string;
   shortLabel: string;
   category: DailyTaskCategory | null;
-  sourceType: "manual" | "routine" | "learning" | "project" | "flexible";
+  sourceType: "manual" | "routine" | "learning" | "reading" | "project" | "flexible";
   sourceId: string | null;
   learning: {
     trackKey: LearningTrackKey;
@@ -511,7 +513,7 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
           ? cell.assignedCategory
         : null;
     const sourceType: BingoCell["sourceType"] =
-      cell.sourceType === "routine" || cell.sourceType === "learning" || cell.sourceType === "project" || cell.sourceType === "flexible"
+      cell.sourceType === "routine" || cell.sourceType === "learning" || cell.sourceType === "reading" || cell.sourceType === "project" || cell.sourceType === "flexible"
         ? cell.sourceType
         : "manual";
     const learningSource = cell.learning && typeof cell.learning === "object" ? cell.learning : null;

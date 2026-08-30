@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { WEAVING_OUTPUT_TYPES, type WeavingOutputType } from "@/lib/dojo/formal";
+import type { ReadingWeavingProjectWithCards } from "@/lib/dojo/weavingProjects";
 import {
   ACTIVE_INSIGHT_STATUSES,
   INSIGHT_TOPICS,
@@ -23,6 +25,11 @@ type View = "due" | "program" | "topics" | "stuck";
 export default function ReadingCardsPage() {
   const router = useRouter();
   const [cards, setCards] = useState<InsightCardWithBook[]>([]);
+  const [weavingProjects, setWeavingProjects] = useState<ReadingWeavingProjectWithCards[]>([]);
+  const [selectedForWeaving, setSelectedForWeaving] = useState<string[]>([]);
+  const [projectTitle, setProjectTitle] = useState("");
+  const [outputType, setOutputType] = useState<WeavingOutputType | null>(null);
+  const [creatingProject, setCreatingProject] = useState(false);
   const [todayISO, setTodayISO] = useState("");
   const [view, setView] = useState<View>("due");
   const [loading, setLoading] = useState(true);
@@ -32,9 +39,14 @@ export default function ReadingCardsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/dojo/reading/cards", { cache: "no-store" });
+      const [response, projectsResponse] = await Promise.all([
+        fetch("/api/dojo/reading/cards", { cache: "no-store" }),
+        fetch("/api/dojo/weaving-projects", { cache: "no-store" }),
+      ]);
       const json = await readJson<{ cards: InsightCardWithBook[]; todayISO: string }>(response);
+      const projectJson = await readJson<{ projects: ReadingWeavingProjectWithCards[] }>(projectsResponse);
       setCards(json.cards ?? []);
+      setWeavingProjects(projectJson.projects ?? []);
       setTodayISO(json.todayISO);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -51,13 +63,42 @@ export default function ReadingCardsPage() {
   const dueCards = useMemo(() => cards.filter((card) =>
     ACTIVE_INSIGHT_STATUSES.includes(card.status) && Boolean(card.nextVisitAt && card.nextVisitAt <= todayISO)
   ), [cards, todayISO]);
+  const assignedToWeaving = useMemo(() => new Set(weavingProjects.flatMap((project) => project.insightCardIds)), [weavingProjects]);
   const programCards = useMemo(() => cards.filter((card) =>
-    (card.status === "已驗證" || card.status === "不成立") && card.programApplication === "未定"
-  ), [cards]);
+    (card.status === "已驗證" || card.status === "不成立") && card.programApplication === "未定" && !assignedToWeaving.has(card.id)
+  ), [assignedToWeaving, cards]);
   const stuckCards = useMemo(() => cards.filter((card) => isStuckInsight(card, todayISO)), [cards, todayISO]);
 
   function updateCard(next: InsightCardWithBook) {
     setCards((current) => current.map((card) => card.id === next.id ? { ...card, ...next } : card));
+  }
+
+  function toggleForWeaving(cardId: string) {
+    setSelectedForWeaving((current) => current.includes(cardId)
+      ? current.filter((id) => id !== cardId)
+      : current.length >= 8 ? current : [...current, cardId]);
+  }
+
+  async function createWeavingProject() {
+    if (!selectedForWeaving.length || !outputType) return;
+    setCreatingProject(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/dojo/weaving-projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: projectTitle, outputType, insightCardIds: selectedForWeaving }),
+      });
+      const json = await readJson<{ projects: ReadingWeavingProjectWithCards[] }>(response);
+      setWeavingProjects(json.projects ?? []);
+      setSelectedForWeaving([]);
+      setProjectTitle("");
+      setOutputType(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setCreatingProject(false);
+    }
   }
 
   return (
@@ -89,13 +130,26 @@ export default function ReadingCardsPage() {
         />
       )}
       {!loading && view === "program" && (
-        <CardSection
-          title="可做節目"
-          hint="已有真實結果，且尚未決定用途"
-          cards={programCards}
-          empty="已驗證或不成立的洞察，會在這裡等待你決定用途。"
-          onUpdated={updateCard}
-        />
+        <>
+          <CardSection
+            title="可做內容"
+            hint="選一至數張成熟洞察，組成一個內容企劃"
+            cards={programCards}
+            empty="已驗證或不成立的洞察，會在這裡等待你決定用途。"
+            selectable
+            selectedIds={selectedForWeaving}
+            onSelect={toggleForWeaving}
+            onUpdated={updateCard}
+          />
+          {selectedForWeaving.length > 0 && <section className="reading-weaving-composer">
+            <div><span className="eyebrow">送往織光堂</span><h2>{selectedForWeaving.length} 張洞察組成一個企劃</h2><p>只建立來源關聯；洞察原文仍由 Notion DB-22 保管。</p></div>
+            <label>企劃題目（可稍後修改）</label>
+            <input value={projectTitle} onChange={(event) => setProjectTitle(event.target.value)} placeholder="留白時以第一張洞察命名" />
+            <label>想做成什麼？</label>
+            <div className="reading-output-picker">{Object.entries(WEAVING_OUTPUT_TYPES).map(([key, label]) => <button key={key} className={outputType === key ? "on" : ""} onClick={() => setOutputType(key as WeavingOutputType)}>{label}</button>)}</div>
+            <button className="primary" disabled={!outputType || creatingProject} onClick={() => void createWeavingProject()}>{creatingProject ? "建立中…" : outputType ? "建立織光企劃" : "先選擇成品形式"}</button>
+          </section>}
+        </>
       )}
       {!loading && view === "stuck" && (
         <CardSection
@@ -137,6 +191,9 @@ function CardSection({
   empty,
   extra,
   stuck = false,
+  selectable = false,
+  selectedIds = [],
+  onSelect,
   onUpdated,
 }: {
   title: string;
@@ -145,18 +202,35 @@ function CardSection({
   empty: string;
   extra?: React.ReactNode;
   stuck?: boolean;
+  selectable?: boolean;
+  selectedIds?: string[];
+  onSelect?: (cardId: string) => void;
   onUpdated: (card: InsightCardWithBook) => void;
 }) {
   return <section className="reading-library-section">
     <div className="reading-section-heading"><div><h2>{title}</h2><p>{hint}</p></div></div>
     {extra}
     {cards.length === 0 ? <div className="reading-soft-empty">{empty}</div> : (
-      <div className="reading-library-list">{cards.map((card) => <LibraryCard key={card.id} card={card} stuck={stuck} onUpdated={onUpdated} />)}</div>
+      <div className="reading-library-list">{cards.map((card) => <LibraryCard key={card.id} card={card} stuck={stuck} selectable={selectable} selected={selectedIds.includes(card.id)} onSelect={onSelect} onUpdated={onUpdated} />)}</div>
     )}
   </section>;
 }
 
-function LibraryCard({ card, stuck = false, onUpdated }: { card: InsightCardWithBook; stuck?: boolean; onUpdated: (card: InsightCardWithBook) => void }) {
+function LibraryCard({
+  card,
+  stuck = false,
+  selectable = false,
+  selected = false,
+  onSelect,
+  onUpdated,
+}: {
+  card: InsightCardWithBook;
+  stuck?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (cardId: string) => void;
+  onUpdated: (card: InsightCardWithBook) => void;
+}) {
   const [organizing, setOrganizing] = useState(false);
   const [stuckPanel, setStuckPanel] = useState(false);
   const [topics, setTopics] = useState<InsightTopic[]>(card.topics);
@@ -199,7 +273,7 @@ function LibraryCard({ card, stuck = false, onUpdated }: { card: InsightCardWith
     }
   }
 
-  return <article className={`reading-library-card ${stuck ? "is-stuck" : ""}`}>
+  return <article className={`reading-library-card ${stuck ? "is-stuck" : ""} ${selected ? "is-selected" : ""}`}>
     <div className="reading-visit-meta"><span>{card.actionType}</span><span>{card.status}</span><span>{card.sourceBookTitle}</span></div>
     <h3>{card.insight}</h3>
     <div className="reading-original-action"><small>行動化</small><p>{card.action}</p></div>
@@ -210,6 +284,7 @@ function LibraryCard({ card, stuck = false, onUpdated }: { card: InsightCardWith
       {card.postponementCount > 0 && <span>順延 {card.postponementCount} 次</span>}
     </div>
     <div className="reading-library-actions">
+      {selectable && <button className={selected ? "reading-select-card on" : "reading-select-card"} onClick={() => onSelect?.(card.id)}>{selected ? "已選入企劃" : "選入內容企劃"}</button>}
       <button onClick={() => setOrganizing((value) => !value)}>整理標籤</button>
       {stuck && <button className="danger" onClick={() => setStuckPanel((value) => !value)}>處理卡住狀態</button>}
     </div>

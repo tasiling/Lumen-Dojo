@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ModuleDomainPage from "../components/ModuleDomainPage";
 import WeavingCaptureInbox from "../components/WeavingCaptureInbox";
+import ReadingInsightProjects from "../components/ReadingInsightProjects";
 
 export default function WeavingPage() {
   return (
@@ -11,6 +12,7 @@ export default function WeavingPage() {
       defaultKind="創作"
       extra={(
         <>
+          <ReadingInsightProjects />
           <WeavingCaptureInbox />
           <Link href="/backstage" className="backstage-inline-link">內容生產工具已集中到工作後台 →</Link>
         </>

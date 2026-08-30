@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import EnglishWeeklyPlanner from "@/app/components/EnglishWeeklyPlanner";
+import ReadingInsightPlanner from "@/app/components/ReadingInsightPlanner";
 import {
   DAILY_TASK_CATEGORIES,
   addCalendarDays,
@@ -290,6 +291,14 @@ export default function BingoPage() {
             />
           )}
 
+          {!board.archivedAt && (
+            <ReadingInsightPlanner
+              board={board}
+              disabled={saving}
+              onApply={async (next) => { await save(next, "閱讀洞察已選入本週盤面；原始卡片仍留在閱讀萃取。"); }}
+            />
+          )}
+
           <section className="ritual-card weekly-color-plan">
             <div className="section-heading">
               <div><span className="eyebrow">週日定色</span><h2>先決定這週為什麼做</h2></div>
@@ -378,6 +387,7 @@ export default function BingoPage() {
                   <button onClick={() => setSelected(null)}>關閉</button>
                 </div>
                 {selectedCell.learning && <p className="learning-cell-source">修習所・{selectedCell.learning.trackKey === "english" ? "英文到 C1" : selectedCell.learning.trackKey}・{selectedCell.learning.skill}</p>}
+                {selectedCell.sourceType === "reading" && <p className="learning-cell-source">閱讀萃取・執行型洞察</p>}
 
                 <div className="cell-detail-facts">
                   <span><small>盤面名稱</small><b>{bingoCellShortLabel(selectedCell)}</b></span>

@@ -3505,6 +3505,45 @@
 .dojo .reading-organize-panel select { width: 100%; margin: 6px 0 11px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: #fffefa; }
 .dojo .reading-topic-groups { display: grid; gap: 21px; }
 
+.dojo .reading-weekly-planner { border-color: #c7d4c3; background: linear-gradient(145deg, #fffdf7, #edf3e9); }
+.dojo .reading-weekly-candidates { display: grid; gap: 7px; margin-top: 12px; }
+.dojo .reading-weekly-candidates > button { display: grid; gap: 3px; width: 100%; min-height: 0; padding: 11px; border-color: #d4ddcf; background: #fffefa; text-align: left; }
+.dojo .reading-weekly-candidates > button b { font-size: 11px; line-height: 1.5; }
+.dojo .reading-weekly-candidates > button small { color: #5e685e; font-size: 9.5px; line-height: 1.55; }
+.dojo .reading-weekly-candidates > button span { color: var(--muted); font-size: 8.5px; }
+.dojo .reading-weekly-candidates > button.on { border-color: #5b745e; background: #e8f0e5; box-shadow: 0 0 0 2px #5670581c; }
+.dojo .reading-weekly-decision { margin-top: 10px; padding: 11px; border: 1px solid #cfdbc9; border-radius: 14px; background: #fffefa; }
+.dojo .reading-weekly-decision p { margin: 0 0 8px; }
+.dojo .reading-weekly-decision p b,
+.dojo .reading-weekly-decision p span { display: block; }
+.dojo .reading-weekly-decision p b { font-size: 11px; }
+.dojo .reading-weekly-decision p span { margin-top: 2px; color: var(--muted); font-size: 9px; }
+.dojo .reading-weekly-decision > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.dojo .reading-weekly-decision > div button { min-width: 0; padding: 7px 3px; font-size: 9px; }
+.dojo .reading-weekly-decision > .primary { width: 100%; margin-top: 9px; }
+
+.dojo .reading-library-card.is-selected { border-color: #4e6f76; background: #f1f7f7; box-shadow: 0 0 0 2px #486a7118; }
+.dojo .reading-library-actions .reading-select-card { flex: 1; border-color: #789096; color: #48656c; }
+.dojo .reading-library-actions .reading-select-card.on { background: #496971; color: #fff; }
+.dojo .reading-weaving-composer { position: sticky; bottom: 86px; z-index: 4; margin-top: 14px; padding: 14px; border: 1px solid #9aafb5; border-radius: 18px; background: #f7fbfb; box-shadow: 0 12px 30px #263f482c; }
+.dojo .reading-weaving-composer h2 { margin: 3px 0; font-size: 16px; }
+.dojo .reading-weaving-composer p { margin: 3px 0 11px; color: var(--muted); font-size: 9.5px; line-height: 1.5; }
+.dojo .reading-weaving-composer label { display: block; margin-top: 9px; color: #5b7078; font-size: 10px; font-weight: 700; }
+.dojo .reading-weaving-composer input { width: 100%; margin-top: 5px; padding: 10px; border: 1px solid #c7d5d8; border-radius: 11px; background: #fff; }
+.dojo .reading-output-picker { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
+.dojo .reading-output-picker button { min-width: 0; padding: 7px 4px; font-size: 9px; }
+.dojo .reading-output-picker button.on { border-color: var(--we); background: #dfeaed; color: #35535e; font-weight: 700; }
+.dojo .reading-weaving-composer > .primary { width: 100%; margin-top: 11px; }
+
+.dojo .reading-insight-projects { border-color: #b8cbd0; background: linear-gradient(155deg, #f8fbfb, #e8f0f1); }
+.dojo .reading-project-sources { display: grid; gap: 7px; margin: 10px 0; }
+.dojo .reading-project-sources > div { padding: 9px 10px; border-left: 3px solid #8faab1; border-radius: 0 10px 10px 0; background: #edf3f4; }
+.dojo .reading-project-sources b,
+.dojo .reading-project-sources small { display: block; }
+.dojo .reading-project-sources b { font-size: 11px; line-height: 1.5; }
+.dojo .reading-project-sources p { margin: 4px 0; color: #52636a; font-size: 9.5px; line-height: 1.55; white-space: pre-wrap; }
+.dojo .reading-project-sources small { color: #77858a; font-size: 8.5px; }
+
 .dojo .reading-module-entry {
   margin: 12px 0;
   padding: 14px;
