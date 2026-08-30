@@ -86,7 +86,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
     <div className="dojo">
       <main className="app">
         <header className="top">
-          {pathname === "/" ? <div className="brand">行光道場</div> : <BackButton pathname={pathname} />}
+          {pathname === "/" ? <div className="brand"><b>行光道場</b><small>Lumen Dojo</small></div> : <BackButton pathname={pathname} />}
           <div className="top-actions">
             <button onClick={openTimerFromHere}>◷ 計時</button>
             <button onClick={() => router.push("/map")}>⌘ 場域</button>

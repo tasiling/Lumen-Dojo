@@ -66,8 +66,21 @@
 }
 .dojo .brand {
   min-width: 0;
-  font: 700 20px "Noto Serif TC", serif;
+}
+.dojo .brand b,
+.dojo .brand small {
+  display: block;
+}
+.dojo .brand b {
+  font: 700 18px "Noto Serif TC", serif;
   letter-spacing: 0.14em;
+}
+.dojo .brand small {
+  margin-top: -2px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
 }
 /* 頂部返回鍵(新增返回導航):取代居所以外頁面左上角原本的品牌字,樸素文字
    按鈕,不要跟一般操作按鈕一樣有邊框底色,才不會搶走真正的操作按鈕的份量。 */
@@ -1053,6 +1066,12 @@
 .dojo .section-title {
   margin: 22px 0 8px;
 }
+.dojo .domain-primary-actions {
+  margin-bottom: 32px;
+}
+.dojo .domain-primary-actions + .section-title {
+  margin-top: 0;
+}
 .dojo .section-heading {
   display: flex;
   justify-content: space-between;
@@ -1639,6 +1658,16 @@
   color: var(--muted);
   font-size: 12px;
   margin: 3px 0 0;
+}
+.dojo .board-heading-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+.dojo .board-heading-actions button {
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 10px;
 }
 .dojo .bingo-grid {
   display: grid;
@@ -3221,7 +3250,9 @@
   margin-top: 15px;
 }
 .dojo .reading-shortcuts { margin-top: 8px; }
-.dojo .reading-shortcuts button { min-height: 38px; background: #fff9; font-size: 11px; }
+.dojo .reading-hero-actions button,
+.dojo .reading-shortcuts button { min-height: 44px; font-size: 12px; }
+.dojo .reading-shortcuts button { background: #fff9; }
 .dojo .reading-section-heading {
   display: flex;
   align-items: flex-start;

@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "行光道場",
-  description: "全零的深耕聚光系統 — 行光道場",
+  title: "行光道場｜Lumen Dojo",
+  description: "全零的深耕聚光系統 — 行光道場 Lumen Dojo",
 };
 
 export default function RootLayout({

@@ -35,7 +35,7 @@ export default function ModuleDomainPage({
         <p>{lead}</p>
       </div>
       {extra}
-      <div className="two">
+      <div className="two domain-primary-actions">
         <button className="primary" onClick={() => openQuickAdd({ presetSpace: space, presetKind: defaultKind })}>
           ＋ 新增紀錄
         </button>

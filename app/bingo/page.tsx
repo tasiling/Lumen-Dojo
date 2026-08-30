@@ -44,6 +44,28 @@ function fmtWeek(weekStart: string) {
   return `${compact(weekStart)} — ${compact(end)}`;
 }
 
+function shuffledBoard(board: WeeklyBoard): WeeklyBoard {
+  const movable = board.cells.filter((cell) => cell.index !== 12);
+  const shuffled = [...movable];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapWith = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapWith]] = [shuffled[swapWith], shuffled[index]];
+  }
+  if (shuffled.every((cell, index) => cell.index === movable[index].index)) {
+    shuffled.push(shuffled.shift()!);
+  }
+  let cursor = 0;
+  return {
+    ...board,
+    cells: board.cells.map((cell) => {
+      if (cell.index === 12) return cell;
+      const moved = shuffled[cursor];
+      cursor += 1;
+      return { ...moved, index: cell.index };
+    }),
+  };
+}
+
 async function readResponse<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error((json as { error?: string }).error ?? `操作失敗（${response.status}）`);
@@ -211,6 +233,14 @@ export default function BingoPage() {
     } catch { /* save 已顯示錯誤 */ }
   }
 
+  async function shuffleCells() {
+    if (board.archivedAt || board.cells.some((cell) => cell.assignedDate)) return;
+    setSelected(null);
+    try {
+      await save(shuffledBoard(board), "24 個一般格已隨機換位；中央自在格保持原位。");
+    } catch { /* save 已顯示錯誤 */ }
+  }
+
   async function archiveBoard() {
     if (board.archivedAt) return;
     const confirmed = window.confirm("封存後仍可回看，但這週盤將不能再編輯。確定封存嗎？");
@@ -242,6 +272,8 @@ export default function BingoPage() {
     count: board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && cell.category === category).length,
   }));
   const uncoloredCount = board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && !cell.category).length;
+  const hasAssignedCells = board.cells.some((cell) => Boolean(cell.assignedDate));
+  const hasBoardContent = board.cells.some((cell) => cell.index !== 12 && Boolean(cell.text.trim()));
 
   return (
     <section className="screen bingo-screen">
@@ -326,7 +358,14 @@ export default function BingoPage() {
               {board.archivedAt ? (
                 <span className="saved-mark">已封存</span>
               ) : (
-                <button onClick={() => { setSelected(null); setEditing((value) => !value); }}>{editing ? "完成編輯" : "編輯格子"}</button>
+                <div className="board-heading-actions">
+                  <button
+                    disabled={saving || editing || hasAssignedCells || !hasBoardContent}
+                    title={hasAssignedCells ? "已有格子排入今天，為避免完成狀態失去對應，本週不再換位" : "中央自在格不移動"}
+                    onClick={() => void shuffleCells()}
+                  >隨機換位</button>
+                  <button onClick={() => { setSelected(null); setEditing((value) => !value); }}>{editing ? "完成編輯" : "編輯格子"}</button>
+                </div>
               )}
             </div>
 

@@ -317,7 +317,7 @@ export default function CalendarPage() {
     <section className="screen calendar-screen">
       <div className="section-heading page-heading">
         <div>
-          <span className="eyebrow">行光道場</span>
+          <span className="eyebrow">Lumen Dojo</span>
           <h1>行事曆</h1>
           <p className="lead">看見每天留下的狀態，也能分開查看個人與工作排程。</p>
         </div>
