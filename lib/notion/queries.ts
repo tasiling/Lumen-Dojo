@@ -19,6 +19,18 @@ import {
 import { JOURNAL_QUESTIONS, type JournalQuestionKey } from "@/lib/journal/notionFormat";
 import { FORMAL_STATE_TITLE_PREFIXES } from "@/lib/dojo/formal";
 import type { SpaceKey, SourceType, TraceLevel, TraceStatus } from "@/lib/dojo/constants";
+import {
+  isBookReason,
+  isBookStatus,
+  isInsightActionType,
+  isInsightStatus,
+  isInsightTopic,
+  isProgramApplication,
+  isReadingSubject,
+  type InsightCard,
+  type ReadingBook,
+  type ReadingNote,
+} from "@/lib/reading/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type QueryFilter = any;
@@ -49,6 +61,152 @@ export async function queryAll(
     cursor = res.has_more ? (res.next_cursor ?? undefined) : undefined;
   } while (cursor);
   return results;
+}
+
+// --- DB-21／DB-22 閱讀萃取 ---
+// DB-21 一列代表一次閱讀。筆記不另存副本，直接使用該列頁面內文的 paragraph
+// blocks；DB-22 只承載已通過「能否行動」門檻的洞察卡片。
+export function mapReadingBook(p: NotionPage): ReadingBook {
+  const subject = readSelect(p, "學科");
+  const reason = readSelect(p, "選書理由");
+  const status = readSelect(p, "狀態");
+  return {
+    id: p.id,
+    title: readTitle(p, "書名"),
+    author: readRichText(p, "作者"),
+    readCount: Math.max(1, readNumber(p, "讀次") ?? 1),
+    subject: isReadingSubject(subject) ? subject : null,
+    reason: isBookReason(reason) ? reason : null,
+    question: readRichText(p, "帶著什麼問題讀"),
+    status: isBookStatus(status) ? status : "待讀",
+    startedAt: readDateStart(p, "開始日期"),
+    extractedAt: readDateStart(p, "萃取完成日"),
+    insightCardIds: readRelationIds(p, "洞察卡片"),
+    createdAt: typeof p.created_time === "string" ? p.created_time : "",
+  };
+}
+
+export async function listReadingBooks(): Promise<ReadingBook[]> {
+  const pages = await queryAll(DATA_SOURCES.DB21_書籍庫);
+  return pages.map(mapReadingBook).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getReadingBook(bookId: string): Promise<ReadingBook> {
+  const page = await withNotionRateLimit(() => notion().pages.retrieve({ page_id: bookId }));
+  if (!("properties" in page)) throw new Error("找不到這一輪閱讀");
+  return mapReadingBook(page as NotionPage);
+}
+
+export async function nextReadingCount(title: string): Promise<number> {
+  const pages = await queryAll(DATA_SOURCES.DB21_書籍庫, {
+    property: "書名",
+    title: { equals: title },
+  });
+  const maximum = pages.reduce((value, page) => Math.max(value, readNumber(page, "讀次") ?? 1), 0);
+  return maximum + 1;
+}
+
+type NoteRichText = { plain_text?: string };
+type ReadingBlock = {
+  id: string;
+  type: string;
+  [key: string]: unknown;
+};
+
+const NOTE_BLOCK_TYPES = new Set([
+  "paragraph",
+  "bulleted_list_item",
+  "numbered_list_item",
+  "quote",
+  "callout",
+  "heading_1",
+  "heading_2",
+  "heading_3",
+]);
+
+function readingBlockText(block: ReadingBlock): string {
+  const value = block[block.type] as { rich_text?: NoteRichText[] } | undefined;
+  return (value?.rich_text ?? []).map((item) => item.plain_text ?? "").join("");
+}
+
+export async function listReadingNotes(bookId: string): Promise<ReadingNote[]> {
+  const notes: ReadingNote[] = [];
+  let cursor: string | undefined;
+  do {
+    const response = await withNotionRateLimit(() =>
+      notion().blocks.children.list({ block_id: bookId, start_cursor: cursor, page_size: 100 })
+    );
+    for (const raw of response.results) {
+      const block = raw as unknown as ReadingBlock;
+      if (!NOTE_BLOCK_TYPES.has(block.type)) continue;
+      const text = readingBlockText(block);
+      if (!text.trim()) continue;
+      notes.push({ id: block.id, text, editable: block.type === "paragraph" });
+    }
+    cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined;
+  } while (cursor);
+  return notes;
+}
+
+export function mapInsightCard(p: NotionPage): InsightCard {
+  const actionType = readSelect(p, "行動型態");
+  const status = readSelect(p, "狀態");
+  const programApplication = readSelect(p, "節目應用");
+  const topics = readMultiSelect(p, "主題標籤");
+  return {
+    id: p.id,
+    insight: readTitle(p, "洞察"),
+    sourceBookId: readRelationIds(p, "來源書籍")[0] ?? null,
+    actionType: isInsightActionType(actionType) ? actionType : "觀察型",
+    action: readRichText(p, "行動化"),
+    status: isInsightStatus(status) ? status : "觀察中",
+    nextVisitAt: readDateStart(p, "下次回訪日"),
+    result: readRichText(p, "感悟與結果"),
+    programApplication: isProgramApplication(programApplication) ? programApplication : "未定",
+    topics: topics.filter(isInsightTopic),
+    extractedAt: readDateStart(p, "萃取日期"),
+    postponementCount: Math.max(0, readNumber(p, "順延次數") ?? 0),
+    createdAt: typeof p.created_time === "string" ? p.created_time : "",
+  };
+}
+
+export async function listInsightCards(): Promise<InsightCard[]> {
+  const pages = await queryAll(DATA_SOURCES.DB22_洞察卡片庫);
+  return pages.map(mapInsightCard).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function listInsightCardsForBook(bookId: string): Promise<InsightCard[]> {
+  const pages = await queryAll(DATA_SOURCES.DB22_洞察卡片庫, {
+    property: "來源書籍",
+    relation: { contains: bookId },
+  });
+  return pages.map(mapInsightCard).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export async function getInsightCard(cardId: string): Promise<InsightCard> {
+  const page = await withNotionRateLimit(() => notion().pages.retrieve({ page_id: cardId }));
+  if (!("properties" in page)) throw new Error("找不到這張洞察卡片");
+  return mapInsightCard(page as NotionPage);
+}
+
+export async function listDueInsightCards(todayISO: string): Promise<InsightCard[]> {
+  const pages = await queryAll(
+    DATA_SOURCES.DB22_洞察卡片庫,
+    {
+      and: [
+        { property: "下次回訪日", date: { on_or_before: todayISO } },
+        {
+          or: [
+            { property: "狀態", select: { equals: "待行動" } },
+            { property: "狀態", select: { equals: "觀察中" } },
+            { property: "狀態", select: { equals: "行動中" } },
+          ],
+        },
+      ],
+    },
+    [{ property: "下次回訪日", direction: "ascending" }]
+  );
+  return pages.map(mapInsightCard);
 }
 
 // --- DB-01 牌組表 ---

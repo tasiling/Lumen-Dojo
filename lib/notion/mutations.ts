@@ -22,7 +22,14 @@ import {
   relationProp,
   urlProp,
 } from "./properties";
-import { queryAll, getSession, findJournalEntryByTitle, getTraceEntry } from "./queries";
+import {
+  queryAll,
+  getSession,
+  findJournalEntryByTitle,
+  getTraceEntry,
+  getReadingBook,
+  nextReadingCount,
+} from "./queries";
 import { readTitle } from "./properties";
 import {
   JOURNAL_QUESTIONS,
@@ -32,6 +39,15 @@ import {
 } from "@/lib/journal/notionFormat";
 import type { SpaceKey, SourceType } from "@/lib/dojo/constants";
 import { TRACE_ACCUMULATE_VIEW_THRESHOLD } from "@/lib/trace/rules";
+import type {
+  BookReason,
+  BookStatus,
+  InsightActionType,
+  InsightStatus,
+  InsightTopic,
+  ProgramApplication,
+  ReadingSubject,
+} from "@/lib/reading/types";
 
 // Session 編號格式:S-YYYYMMDD-流水號(總綱 DB-03)。流水號以當日已存在筆數 +1 計算。
 export async function nextSessionCode(dateISO: string): Promise<string> {
@@ -501,4 +517,167 @@ export async function createFeedback(params: {
     })
   );
   return { id: page.id, code };
+}
+
+// --- DB-21／DB-22 閱讀萃取 ---
+export async function createReadingBook(params: {
+  title: string;
+  author?: string;
+  readCount?: number;
+  subject?: ReadingSubject | null;
+  reason?: BookReason | null;
+  question?: string;
+  status: BookStatus;
+  todayISO: string;
+}) {
+  const page = await withNotionRateLimit(() =>
+    notion().pages.create({
+      parent: { type: "data_source_id", data_source_id: DATA_SOURCES.DB21_書籍庫 },
+      properties: {
+        書名: titleProp(params.title.trim()),
+        讀次: numberProp(Math.max(1, params.readCount ?? 1)),
+        狀態: selectProp(params.status),
+        ...(params.author?.trim() ? { 作者: richTextProp(params.author.trim()) } : {}),
+        ...(params.subject ? { 學科: selectProp(params.subject) } : {}),
+        ...(params.reason ? { 選書理由: selectProp(params.reason) } : {}),
+        ...(params.question?.trim() ? { 帶著什麼問題讀: richTextProp(params.question.trim()) } : {}),
+        ...(params.status === "閱讀中" ? { 開始日期: dateProp(params.todayISO) } : {}),
+      },
+    })
+  );
+  return { id: page.id };
+}
+
+export async function rereadBook(params: { sourceBookId: string; question: string; reason?: BookReason | null; todayISO: string }) {
+  const source = await getReadingBook(params.sourceBookId);
+  const readCount = await nextReadingCount(source.title);
+  return createReadingBook({
+    title: source.title,
+    author: source.author,
+    readCount,
+    subject: source.subject,
+    reason: params.reason,
+    question: params.question,
+    status: "閱讀中",
+    todayISO: params.todayISO,
+  });
+}
+
+export async function updateReadingBook(
+  bookId: string,
+  patch: {
+    status?: BookStatus;
+    question?: string;
+    subject?: ReadingSubject | null;
+    reason?: BookReason | null;
+    todayISO: string;
+  }
+) {
+  await withNotionRateLimit(() =>
+    notion().pages.update({
+      page_id: bookId,
+      properties: {
+        ...(patch.question !== undefined ? { 帶著什麼問題讀: richTextProp(patch.question.trim()) } : {}),
+        ...(patch.subject ? { 學科: selectProp(patch.subject) } : {}),
+        ...(patch.reason ? { 選書理由: selectProp(patch.reason) } : {}),
+        ...(patch.status ? { 狀態: selectProp(patch.status) } : {}),
+        ...(patch.status === "閱讀中" ? { 開始日期: dateProp(patch.todayISO) } : {}),
+        ...(patch.status === "已萃取" || patch.status === "已製作成內容"
+          ? { 萃取完成日: dateProp(patch.todayISO) }
+          : {}),
+      },
+    })
+  );
+}
+
+export async function appendReadingNote(bookId: string, text: string) {
+  const response = await withNotionRateLimit(() =>
+    notion().blocks.children.append({
+      block_id: bookId,
+      children: [
+        {
+          object: "block",
+          type: "paragraph",
+          paragraph: { rich_text: richTextProp(text).rich_text },
+        },
+      ],
+    })
+  );
+  const created = response.results[0];
+  if (!created) throw new Error("筆記沒有成功建立");
+  return { id: created.id };
+}
+
+export async function updateReadingNote(noteId: string, text: string) {
+  await withNotionRateLimit(() =>
+    notion().blocks.update({
+      block_id: noteId,
+      type: "paragraph",
+      paragraph: { rich_text: richTextProp(text).rich_text },
+    })
+  );
+}
+
+export async function archiveReadingNote(noteId: string) {
+  await withNotionRateLimit(() => notion().blocks.delete({ block_id: noteId }));
+}
+
+export async function createInsightCard(params: {
+  bookId: string;
+  insight: string;
+  action: string;
+  actionType: InsightActionType;
+  todayISO: string;
+  nextVisitISO: string;
+}) {
+  const status: InsightStatus = params.actionType === "觀察型" ? "觀察中" : "待行動";
+  const page = await withNotionRateLimit(() =>
+    notion().pages.create({
+      parent: { type: "data_source_id", data_source_id: DATA_SOURCES.DB22_洞察卡片庫 },
+      properties: {
+        洞察: titleProp(params.insight.trim()),
+        來源書籍: relationProp([params.bookId]),
+        行動型態: selectProp(params.actionType),
+        行動化: richTextProp(params.action.trim()),
+        狀態: selectProp(status),
+        下次回訪日: dateProp(params.nextVisitISO),
+        節目應用: selectProp("未定"),
+        萃取日期: dateProp(params.todayISO),
+        順延次數: numberProp(0),
+      },
+    })
+  );
+  return { id: page.id };
+}
+
+export async function updateInsightCard(
+  cardId: string,
+  patch: {
+    actionType?: InsightActionType;
+    action?: string;
+    status?: InsightStatus;
+    nextVisitAt?: string;
+    result?: string;
+    postponementCount?: number;
+    programApplication?: ProgramApplication;
+    topics?: InsightTopic[];
+  }
+) {
+  await withNotionRateLimit(() =>
+    notion().pages.update({
+      page_id: cardId,
+      properties: {
+        ...(patch.actionType ? { 行動型態: selectProp(patch.actionType) } : {}),
+        ...(patch.action !== undefined ? { 行動化: richTextProp(patch.action.trim()) } : {}),
+        ...(patch.status ? { 狀態: selectProp(patch.status) } : {}),
+        ...(patch.nextVisitAt ? { 下次回訪日: dateProp(patch.nextVisitAt) } : {}),
+        ...(patch.result !== undefined ? { 感悟與結果: richTextProp(patch.result) } : {}),
+        ...(patch.postponementCount !== undefined
+          ? { 順延次數: numberProp(Math.max(0, patch.postponementCount)) }
+          : {}),
+        ...(patch.programApplication ? { 節目應用: selectProp(patch.programApplication) } : {}),
+        ...(patch.topics ? { 主題標籤: multiSelectProp(patch.topics) } : {}),
+      },
+    })
+  );
 }

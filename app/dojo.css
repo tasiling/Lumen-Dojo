@@ -3188,9 +3188,332 @@
 .dojo .learning-material a { flex: 0 0 auto; color: var(--track-color); font-size: 9.5px; }
 .dojo .english-editor { margin-top: 11px; padding-top: 4px; border-top: 1px solid #e4dccb; }
 
+/* 閱讀萃取：DB-21 書籍／自由區塊筆記 → DB-22 可行動洞察卡。手機單欄，
+   不使用完成率、進度條或成就語彙。 */
+.dojo .reading-screen { padding-bottom: calc(36px + env(safe-area-inset-bottom)); }
+.dojo .reading-hero,
+.dojo .reading-page-intro {
+  margin: -18px -16px 18px;
+  padding: 24px 18px 20px;
+  background: linear-gradient(145deg, #fdfaf3 20%, #efe3c8);
+  border-bottom: 1px solid var(--line);
+}
+.dojo .reading-hero h1,
+.dojo .reading-page-intro h1,
+.dojo .reading-session-head h1 {
+  margin: 3px 0 5px;
+  font: 650 27px "Noto Serif TC", serif;
+  line-height: 1.35;
+}
+.dojo .reading-hero > p,
+.dojo .reading-page-intro > p,
+.dojo .reading-session-head > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.dojo .reading-hero-actions,
+.dojo .reading-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 15px;
+}
+.dojo .reading-shortcuts { margin-top: 8px; }
+.dojo .reading-shortcuts button { min-height: 38px; background: #fff9; font-size: 11px; }
+.dojo .reading-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.dojo .reading-section-heading h2 { margin: 0; font: 650 18px "Noto Serif TC", serif; }
+.dojo .reading-section-heading p { margin: 2px 0 0; color: var(--muted); font-size: 10.5px; line-height: 1.5; }
+.dojo .reading-section-heading > span {
+  display: grid;
+  place-items: center;
+  min-width: 27px;
+  height: 27px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ece3d1;
+  color: #7a6b55;
+  font-size: 10px;
+}
+.dojo .reading-section-heading > button { min-height: 33px; padding: 5px 8px; font-size: 10px; }
+.dojo .reading-shelf-section { margin: 22px 0; }
+.dojo .reading-book-list { display: grid; gap: 10px; }
+.dojo .reading-book-card {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: var(--paper);
+  box-shadow: 0 2px 8px #5c4b2910;
+}
+.dojo .reading-book-meta,
+.dojo .reading-visit-meta,
+.dojo .reading-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.dojo .reading-book-meta span,
+.dojo .reading-visit-meta span,
+.dojo .reading-card-tags span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eee8da;
+  color: #776d5f;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.dojo .reading-book-card h3,
+.dojo .reading-insight-card h3,
+.dojo .reading-library-card h3 {
+  margin: 8px 0 4px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.dojo .reading-author { margin: 0 0 7px; color: var(--muted); font-size: 10px; }
+.dojo .reading-question { margin: 8px 0 12px; padding-left: 10px; border-left: 2px solid var(--gold); font-size: 11.5px; line-height: 1.65; }
+.dojo .reading-book-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 9px;
+  padding-top: 10px;
+  border-top: 1px solid #eee6d7;
+}
+.dojo .reading-book-foot > span { color: var(--muted); font-size: 9.5px; }
+.dojo .reading-book-foot > div { display: flex; flex: 0 0 auto; gap: 5px; margin-left: auto; }
+.dojo .reading-book-foot button { min-height: 33px; padding: 5px 9px; color: #6f5429; font-size: 10px; }
+.dojo .reading-soft-empty {
+  padding: 17px 13px;
+  border: 1px dashed #dcd1bb;
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+.dojo .reading-abandoned { padding-top: 8px; border-top: 1px solid var(--line); }
+.dojo .reading-abandoned > summary,
+.dojo .reading-state-actions > summary,
+.dojo .reading-optional-fields > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 11px;
+}
+.dojo .reading-abandoned > summary span { float: right; }
+.dojo .reading-abandoned .reading-book-list { margin-top: 10px; }
+.dojo .reading-form-sheet .toolbar { align-items: flex-start; }
+.dojo .reading-form-sheet .toolbar h2,
+.dojo .reading-card-sheet .toolbar h2 { margin: 2px 0; font-size: 20px; }
+.dojo .reading-form-sheet label,
+.dojo .reading-card-sheet label,
+.dojo .reading-visit-panel label,
+.dojo .reading-stuck-panel label,
+.dojo .reading-organize-panel label { display: block; margin-top: 10px; font-size: 11px; font-weight: 700; }
+.dojo .reading-question-input { min-height: 105px; }
+.dojo .reading-selected-book { margin: 3px 0 12px; padding: 11px 12px; border-left: 3px solid var(--gold); border-radius: 11px; background: #f6efe1; }
+.dojo .reading-selected-book span,
+.dojo .reading-selected-book strong { display: block; }
+.dojo .reading-selected-book span { color: var(--muted); font-size: 9px; }
+.dojo .reading-selected-book strong { margin-top: 2px; font-size: 13px; line-height: 1.5; }
+.dojo .reading-field-help { margin: -7px 0 12px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.dojo .reading-optional-fields { margin: 4px 0 13px; padding: 10px; border: 1px dashed var(--line); border-radius: 13px; }
+.dojo .reading-optional-fields[open] summary { margin-bottom: 8px; color: #765a2d; }
+.dojo .reading-submit { margin-top: 6px; }
+
+.dojo .reading-session-head { margin-bottom: 12px; }
+.dojo .reading-question-anchor {
+  position: sticky;
+  top: 73px;
+  z-index: 5;
+  margin: 0 -5px 19px;
+  padding: 12px 14px;
+  border: 1px solid #d8bd82;
+  border-radius: 15px;
+  background: #f5e8ccf2;
+  box-shadow: 0 5px 16px #5b48231b;
+  backdrop-filter: blur(8px);
+}
+.dojo .reading-question-anchor span { color: #8e6727; font-size: 9.5px; letter-spacing: .06em; }
+.dojo .reading-question-anchor p { margin: 3px 0 0; font: 600 13px/1.55 "Noto Serif TC", serif; }
+.dojo .reading-notes-section,
+.dojo .reading-cards-section { margin: 21px 0; }
+.dojo .reading-note-list,
+.dojo .reading-insight-list,
+.dojo .reading-visit-list,
+.dojo .reading-library-list { display: grid; gap: 10px; }
+.dojo .reading-note-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+}
+.dojo .reading-note-card textarea,
+.dojo .reading-visit-panel textarea,
+.dojo .reading-stuck-panel textarea,
+.dojo .reading-organize-panel textarea {
+  width: 100%;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 13px/1.75 inherit;
+}
+.dojo .reading-note-card textarea { min-height: 112px; }
+.dojo .reading-note-card.is-readonly p { margin: 0; white-space: pre-wrap; font-size: 12px; line-height: 1.75; }
+.dojo .reading-note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee6d7;
+}
+.dojo .reading-save-state { margin-right: auto; color: var(--muted); font-size: 8.5px; }
+.dojo .reading-save-state.saving { color: #8d6a2e; }
+.dojo .reading-save-state.saved { color: #51725b; }
+.dojo .reading-save-state.error { color: var(--danger); }
+.dojo .reading-note-actions button { min-height: 30px; padding: 4px 7px; font-size: 9px; }
+.dojo .reading-note-actions .reading-delete-note { border-color: transparent; background: transparent; color: var(--muted); }
+.dojo .reading-note-actions .reading-make-card { border-color: #b8c8ba; color: #44604b; }
+.dojo .reading-add-note { width: 100%; margin-top: 10px; border-style: dashed; background: transparent; color: #796b57; }
+.dojo .reading-insight-card,
+.dojo .reading-library-card {
+  padding: 13px;
+  border: 1px solid #d8d9cc;
+  border-radius: 15px;
+  background: #fbfbf5;
+}
+.dojo .reading-insight-card > div:first-child { display: flex; gap: 5px; }
+.dojo .reading-insight-card > div:first-child span { padding: 3px 7px; border-radius: 999px; background: #e7eee7; color: #4e6754; font-size: 8.5px; }
+.dojo .reading-insight-card p,
+.dojo .reading-library-card p { margin: 6px 0; font-size: 10.5px; line-height: 1.6; }
+.dojo .reading-insight-card small { color: var(--muted); font-size: 9px; }
+.dojo .reading-gentle-warning { padding: 9px 10px; border-radius: 11px; background: #f5ead8; color: #805f2d; font-size: 10px; line-height: 1.55; }
+.dojo .reading-state-actions { margin: 23px 0; padding: 13px; border: 1px dashed var(--line); border-radius: 14px; }
+.dojo .reading-state-actions p { color: var(--muted); font-size: 10px; line-height: 1.6; }
+.dojo .reading-state-actions button { width: 100%; margin-top: 7px; }
+.dojo .reading-card-sheet .segmented button small { display: block; margin-top: 2px; color: var(--muted); font-size: 8.5px; }
+
+.dojo .reading-page-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: -7px 0 16px;
+}
+.dojo .reading-page-tabs button.on { border-color: var(--gold); background: #eee1c8; font-weight: 700; }
+.dojo .reading-complete-empty {
+  padding: 35px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  text-align: center;
+}
+.dojo .reading-complete-empty > span { display: grid; place-items: center; width: 48px; height: 48px; margin: auto; border-radius: 50%; background: #e5eee5; color: #4e6d56; font-size: 22px; }
+.dojo .reading-complete-empty h2 { margin: 12px 0 4px; }
+.dojo .reading-complete-empty p { margin: 0; color: var(--muted); font-size: 10.5px; }
+.dojo .reading-visit-card {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+.dojo .reading-visit-card h2 { margin: 10px 0; font-size: 16px; line-height: 1.55; }
+.dojo .reading-original-action { padding: 11px; border-radius: 12px; background: #f1eee5; }
+.dojo .reading-original-action small { color: #7b6e5b; font-size: 9px; }
+.dojo .reading-original-action p { margin: 4px 0 0; white-space: pre-wrap; font-size: 11.5px; line-height: 1.65; }
+.dojo .reading-previous-results { margin: 10px 0; padding: 9px 10px; border: 1px solid #e7decd; border-radius: 11px; }
+.dojo .reading-previous-results summary { color: var(--muted); font-size: 9.5px; }
+.dojo .reading-previous-results p { white-space: pre-wrap; font-size: 10px; }
+.dojo .reading-postpone-count { margin: 8px 0; color: #996f2e; font-size: 9.5px; }
+.dojo .reading-visit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 12px; }
+.dojo .reading-visit-actions button { min-width: 0; font-size: 10px; }
+.dojo .reading-visit-actions .reading-start-action { grid-column: 1 / -1; border-style: dashed; }
+.dojo .reading-visit-panel,
+.dojo .reading-stuck-panel,
+.dojo .reading-organize-panel { margin-top: 12px; padding: 12px; border: 1px solid #ddcfb2; border-radius: 13px; background: #f8f2e5; }
+.dojo .reading-visit-panel textarea,
+.dojo .reading-stuck-panel textarea { margin-top: 7px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: #fffefa; }
+.dojo .reading-visit-panel > p,
+.dojo .reading-stuck-panel > p { margin: 7px 0; color: var(--muted); font-size: 9.5px; line-height: 1.55; }
+.dojo .reading-stuck-panel > span { color: #a56b2d; font-size: 9px; font-weight: 700; }
+.dojo .reading-stuck-panel h3 { margin: 3px 0 5px; font-size: 13px; }
+.dojo .reading-panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.dojo .reading-panel-actions .primary { width: auto; }
+.dojo .reading-stuck-primary { width: 100%; margin-top: 8px; }
+.dojo .reading-stuck-abandon { margin-top: 13px; padding-top: 11px; border-top: 1px solid #e2d3b7; }
+.dojo .reading-stuck-abandon .danger { width: 100%; margin-top: 8px; }
+
+.dojo .reading-library-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+.dojo .reading-library-tabs button { min-width: 0; padding: 9px 6px; font-size: 9.5px; }
+.dojo .reading-library-tabs button span { display: block; margin-bottom: 2px; color: var(--gold); font-size: 14px; font-weight: 800; }
+.dojo .reading-library-tabs button.on { border-color: var(--gold); background: #eee1c8; }
+.dojo .reading-library-section > .primary { margin-bottom: 12px; }
+.dojo .reading-library-card.is-stuck { border-color: #d4ab74; background: #fcf7ec; }
+.dojo .reading-library-result { max-height: 5em; overflow: hidden; padding: 8px 9px; border-left: 2px solid #9eb09c; background: #eff3ed; white-space: pre-wrap; }
+.dojo .reading-card-tags { margin: 9px 0; }
+.dojo .reading-library-actions { display: flex; gap: 6px; margin-top: 10px; }
+.dojo .reading-library-actions button { min-height: 31px; padding: 4px 7px; font-size: 9px; }
+.dojo .reading-topic-picker { display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0 11px; }
+.dojo .reading-topic-picker button { min-height: 31px; padding: 4px 7px; font-size: 9px; }
+.dojo .reading-topic-picker button.on { border-color: #6c806c; background: #e4ede3; color: #456048; }
+.dojo .reading-organize-panel select { width: 100%; margin: 6px 0 11px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: #fffefa; }
+.dojo .reading-topic-groups { display: grid; gap: 21px; }
+
+.dojo .reading-module-entry {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #cfc0a0;
+  border-radius: 16px;
+  background: linear-gradient(140deg, #fffdf7, #efe5d1);
+}
+.dojo .reading-module-entry h3 { margin: 2px 0; font: 650 17px "Noto Serif TC", serif; }
+.dojo .reading-module-entry p { margin: 3px 0 11px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.dojo .reading-module-entry > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.dojo .reading-module-entry a { display: grid; place-items: center; min-height: 36px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); text-decoration: none; font-size: 10px; }
+.dojo .reading-module-entry a.primary { border-color: #4d6557; background: #4d6557; color: #fffaf0; }
+.dojo .reading-today-reminder {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #c9d4c6;
+  border-radius: 15px;
+  background: #f1f5ee;
+  color: var(--ink);
+  text-decoration: none;
+}
+.dojo .reading-today-reminder > span { padding: 5px 7px; border-radius: 999px; background: #dce8db; color: #4c6650; font-size: 9px; }
+.dojo .reading-today-reminder b,
+.dojo .reading-today-reminder small { display: block; }
+.dojo .reading-today-reminder b { font-size: 11px; }
+.dojo .reading-today-reminder small { margin-top: 2px; color: var(--muted); font-size: 9px; }
+.dojo .reading-today-reminder i { color: #57705b; font-style: normal; }
+
 @media (max-width: 370px) {
   .dojo .destination-grid { grid-template-columns: 1fr; }
   .dojo .knowledge-link-add { grid-template-columns: 1fr; }
+  .dojo .reading-two-selects,
+  .dojo .reading-hero-actions,
+  .dojo .reading-visit-actions { grid-template-columns: 1fr; }
+  .dojo .reading-visit-actions .reading-start-action { grid-column: auto; }
 }
 
 @media (min-width: 501px) {

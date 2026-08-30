@@ -29,7 +29,7 @@ function BackButton({ pathname }: { pathname: string }) {
   if (NO_BACK_BUTTON.has(pathname)) return null;
 
   const useBrowserBack = USE_BROWSER_BACK.has(pathname);
-  const parent = PARENT_ROUTE[pathname] ?? "/";
+  const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/reading/books/") ? "/reading" : "/");
   const label = useBrowserBack ? "返回" : (ROUTE_LABEL[parent] ?? "今天");
 
   function handleClick() {

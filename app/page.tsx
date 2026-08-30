@@ -75,6 +75,7 @@ export default function TodayPage() {
   const [eveningFeedback, setEveningFeedback] = useState<string | null>(null);
   const [morningNotesOpen, setMorningNotesOpen] = useState(false);
   const [logText, setLogText] = useState("");
+  const [readingVisitCount, setReadingVisitCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +120,21 @@ export default function TodayPage() {
       cancelled = true;
     };
   }, [date, weekStart]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReadingVisits() {
+      try {
+        const response = await fetch("/api/dojo/reading/cards?view=due&countOnly=true", { cache: "no-store" });
+        const json = await readResponse<{ count: number }>(response);
+        if (!cancelled) setReadingVisitCount(Math.max(0, json.count ?? 0));
+      } catch {
+        // 閱讀回訪是今天頁的輕量提醒；讀取失敗不應阻擋晨間、三件事或收光。
+      }
+    }
+    void loadReadingVisits();
+    return () => { cancelled = true; };
+  }, []);
 
   async function writeDaily(next: DailyRecord) {
     const response = await fetch("/api/dojo/daily", {
@@ -345,6 +361,14 @@ export default function TodayPage() {
         </section>
       )}
       {continuationError && <p className="form-error" role="alert">接續內容暫時無法讀取：{continuationError}</p>}
+
+      {readingVisitCount > 0 && (
+        <Link className="reading-today-reminder" href="/reading/visits">
+          <span>閱讀回訪</span>
+          <div><b>今天有 {readingVisitCount} 張洞察卡到期</b><small>回來看看：做了嗎，結果如何？</small></div>
+          <i>→</i>
+        </Link>
+      )}
 
       {loading && <div className="empty">正在讀取今天…</div>}
       {error && <p className="form-error" role="alert">{error}</p>}
