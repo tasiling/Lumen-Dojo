@@ -76,7 +76,7 @@ export default function LearningPaths() {
   return <section className="learning-paths">
     <div className="learning-heading"><div><span className="eyebrow">心・知</span><h2>學習路徑</h2><p>知道正在學什麼、下一步做什麼，也能接住野採送來的材料。</p></div></div>
     <div className="reading-module-entry">
-      <div><span className="eyebrow">獨立閱讀流程</span><h3>閱讀萃取</h3><p>帶著問題閱讀，自由留筆記，再把能行動的洞察立成卡片。</p></div>
+      <div><span className="eyebrow">獨立閱讀流程</span><h3>閱讀萃取</h3><p>先留下文獻紀錄，再把自己的理解提煉成可行動的洞察。</p></div>
       <div><Link className="primary" href="/reading">打開書架</Link><Link href="/reading/visits">今日回訪</Link></div>
     </div>
     <div className="learning-track-grid">{(Object.keys(LEARNING_TRACKS) as LearningTrackKey[]).map((key) => {

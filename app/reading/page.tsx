@@ -56,7 +56,7 @@ export default function ReadingShelfPage() {
       <div className="reading-hero">
         <span className="eyebrow">修習所・心知</span>
         <h1>閱讀萃取</h1>
-        <p>帶著問題閱讀，先自由留下筆記，再把能行動的洞察立成卡片。</p>
+        <p>帶著問題閱讀，先留下文獻與反應，再把自己的想法提煉成可行動的洞察。</p>
         <div className="reading-hero-actions">
           <button className="primary" onClick={() => setForm({ mode: "start" })}>開始一本書</button>
           <button onClick={() => setForm({ mode: "wait" })}>先放入待讀</button>

@@ -3404,6 +3404,36 @@
 .dojo .reading-state-actions p { color: var(--muted); font-size: 10px; line-height: 1.6; }
 .dojo .reading-state-actions button { width: 100%; margin-top: 7px; }
 .dojo .reading-card-sheet .segmented button small { display: block; margin-top: 2px; color: var(--muted); font-size: 8.5px; }
+.dojo .reading-card-source {
+  margin: 5px 0 13px;
+  border: 1px solid #ddd2bc;
+  border-radius: 13px;
+  background: #f5f1e8;
+  overflow: hidden;
+}
+.dojo .reading-card-source summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.dojo .reading-card-source summary::-webkit-details-marker { display: none; }
+.dojo .reading-card-source summary span { font-size: 11px; font-weight: 750; }
+.dojo .reading-card-source summary small { color: var(--muted); font-size: 9px; }
+.dojo .reading-card-source p {
+  max-height: 132px;
+  margin: 0;
+  padding: 11px 12px;
+  border-top: 1px solid #e2d9c8;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #62594c;
+  font-size: 10.5px;
+  line-height: 1.7;
+}
 
 .dojo .reading-page-tabs {
   display: grid;

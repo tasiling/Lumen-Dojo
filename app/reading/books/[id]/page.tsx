@@ -102,7 +102,7 @@ export default function ReadingBookPage() {
 
       <section className="reading-notes-section">
         <div className="reading-section-heading">
-          <div><h2>閱讀筆記</h2><p>自由寫下章節重點、疑問或聯想，不需要先整理。</p></div>
+          <div><h2>閱讀紀錄</h2><p>先留下書中內容、摘要或當下反應；它們還不等於洞察。</p></div>
         </div>
         <div className="reading-note-list">
           {notes.map((note) => (
@@ -126,7 +126,7 @@ export default function ReadingBookPage() {
           <button onClick={() => router.push("/reading/cards")}>卡片庫</button>
         </div>
         {cards.length > 5 && <p className="reading-gentle-warning">已超過建議張數。可以保留，但先確認每張都真的寫得出行動。</p>}
-        {cards.length === 0 ? <div className="reading-soft-empty">筆記寫得出「我能拿它做什麼」時，再按旁邊的「立成卡片」。</div> : (
+        {cards.length === 0 ? <div className="reading-soft-empty">一則紀錄讓你長出自己的想法時，再按旁邊的「提煉洞察」。</div> : (
           <div className="reading-insight-list">
             {cards.map((card) => (
               <article key={card.id} className="reading-insight-card">
@@ -152,7 +152,7 @@ export default function ReadingBookPage() {
       {cardDraft !== null && (
         <InsightCardSheet
           bookId={bookId}
-          initialInsight={cardDraft}
+          sourceText={cardDraft}
           executionCount={executionCount}
           onClose={() => setCardDraft(null)}
           onCreated={(card) => { setCards((current) => [...current, card]); setCardDraft(null); setNotice("洞察卡已建立，回訪日也排好了。"); }}
@@ -247,7 +247,7 @@ function ReadingNoteEditor({
           onChange={(event) => onText(event.target.value)}
           onBlur={() => void save(note.text)}
           rows={4}
-          placeholder="這一段讓你想到什麼？可以先從一句話開始。"
+          placeholder="書中的句子、重點、摘要，或你當下的反應…"
         />
       ) : <p>{note.text}</p>}
       <div className="reading-note-actions">
@@ -256,7 +256,7 @@ function ReadingNoteEditor({
         </span>
         {saveState === "error" && <button onClick={() => void save(note.text)}>重試</button>}
         {note.editable && <button className="reading-delete-note" disabled={saveState === "saving"} onClick={() => void remove()}>刪除</button>}
-        <button className="reading-make-card" disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={() => onMakeCard(note.text)}>立成卡片</button>
+        <button className="reading-make-card" disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={() => onMakeCard(note.text)}>提煉洞察</button>
       </div>
     </article>
   );
@@ -264,25 +264,26 @@ function ReadingNoteEditor({
 
 function InsightCardSheet({
   bookId,
-  initialInsight,
+  sourceText,
   executionCount,
   onClose,
   onCreated,
 }: {
   bookId: string;
-  initialInsight: string;
+  sourceText: string;
   executionCount: number;
   onClose: () => void;
   onCreated: (card: InsightCard) => void;
 }) {
-  const [insight, setInsight] = useState(initialInsight);
+  const [insight, setInsight] = useState("");
   const [action, setAction] = useState("");
   const [actionType, setActionType] = useState<InsightActionType>("觀察型");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    if (!action.trim()) { setError("寫不出行動的洞察，先留在筆記層就好"); return; }
+    if (!insight.trim()) { setError("先用自己的話寫下：這段內容讓你想到什麼？"); return; }
+    if (!action.trim()) { setError("暫時寫不出行動，就先留在閱讀紀錄"); return; }
     setSaving(true);
     setError(null);
     try {
@@ -303,12 +304,17 @@ function InsightCardSheet({
   return (
     <div className="modal show" onClick={(event) => event.target === event.currentTarget && !saving && onClose()}>
       <div className="sheet reading-card-sheet" role="dialog" aria-modal="true" aria-labelledby="insight-form-title">
-        <div className="toolbar"><div><span className="eyebrow">從筆記立卡</span><h2 id="insight-form-title">我能拿它做什麼？</h2></div><button onClick={onClose} disabled={saving}>關閉</button></div>
-        <label>洞察</label>
-        <textarea className="field" rows={4} value={insight} onChange={(event) => setInsight(event.target.value)} />
-        <label>行動化 *</label>
+        <div className="toolbar"><div><span className="eyebrow">從來源紀錄提煉</span><h2 id="insight-form-title">這段讓我想到什麼？</h2></div><button onClick={onClose} disabled={saving}>關閉</button></div>
+        <details className="reading-card-source">
+          <summary><span>來源紀錄</span><small>書中內容・點開查看</small></summary>
+          <p>{sourceText}</p>
+        </details>
+        <label>我的洞察 *</label>
+        <textarea className="field" rows={4} value={insight} onChange={(event) => setInsight(event.target.value)} placeholder="我如何理解這段內容？我同意、質疑，或連結到哪些經驗？" autoFocus />
+        <p className="reading-field-help">請用自己的話留下想法；上方的來源紀錄不會被當成洞察。</p>
+        <label>我能拿它做什麼？ *</label>
         <textarea className="field" rows={3} value={action} onChange={(event) => setAction(event.target.value)} placeholder="接下來要觀察什麼，或實際做出什麼改變？" />
-        <p className="reading-field-help">寫不出行動的洞察，留在筆記層就好，不必勉強立卡。</p>
+        <p className="reading-field-help">暫時寫不出行動，就先留在閱讀紀錄，不必勉強立卡。</p>
         <label>行動型態</label>
         <div className="segmented">
           <button className={actionType === "觀察型" ? "on" : ""} onClick={() => setActionType("觀察型")}>觀察型<small>兩週後回訪</small></button>

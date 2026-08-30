@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     if (!bookId) return NextResponse.json({ error: "缺少來源書籍" }, { status: 400 });
     if (!insight) return NextResponse.json({ error: "請先留下洞察" }, { status: 400 });
     if (!action) {
-      return NextResponse.json({ error: "寫不出行動的洞察，先留在筆記層就好" }, { status: 400 });
+      return NextResponse.json({ error: "暫時寫不出行動，就先留在閱讀紀錄" }, { status: 400 });
     }
     await getReadingBook(bookId);
     const todayISO = taipeiTodayISO();
