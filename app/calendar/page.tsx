@@ -55,10 +55,10 @@ type DailyReviewSnapshot = {
 };
 
 const CALENDAR_MODES: { id: CalendarMode; label: string }[] = [
-  { id: "calendar", label: "行事曆" },
-  { id: "all", label: "全部" },
-  { id: "personal", label: "個人行程" },
+  { id: "calendar", label: "個人追蹤" },
+  { id: "personal", label: "私人行程" },
   { id: "work", label: "工作後台" },
+  { id: "all", label: "全部" },
 ];
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
@@ -242,7 +242,7 @@ export default function CalendarPage() {
       date: item.date,
       title: item.title,
       source: "personal" as const,
-      sourceLabel: "個人行程",
+      sourceLabel: "私人行程",
       time: item.startTime,
       status: SPACES[item.space][0],
       note: item.note,
@@ -292,7 +292,7 @@ export default function CalendarPage() {
   const dailyByDay = useMemo(() => new Map(daily.map((record) => [record.date, record])), [daily]);
 
   async function removePersonal(id: string) {
-    if (!window.confirm("要刪除這筆個人行程嗎？這會送進 Notion 垃圾桶，可在 Notion 復原。")) return;
+    if (!window.confirm("要刪除這筆私人行程嗎？這會送進 Notion 垃圾桶，可在 Notion 復原。")) return;
     try {
       const response = await fetch(`/api/dojo/calendar?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       await readResponse(response);
