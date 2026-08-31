@@ -2428,6 +2428,18 @@
   padding: 7px;
   font-size: 10px;
 }
+.dojo .review-export-actions .review-english-action {
+  grid-column: 1 / -1;
+  border-color: #7890a4;
+  background: #edf3f7;
+  color: #405f77;
+  font-weight: 750;
+}
+.dojo .review-export-actions .review-english-action.ready {
+  border-color: #56728d;
+  background: #56728d;
+  color: #fff;
+}
 .dojo .review-day-body h3 {
   font: 600 14px "Noto Serif TC", serif;
   color: #8b642c;
@@ -3298,6 +3310,159 @@
 .dojo .learning-material b { font-size: 11.5px; }
 .dojo .learning-material small { max-height: 3em; overflow: hidden; margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.5; }
 .dojo .learning-material a { flex: 0 0 auto; color: var(--track-color); font-size: 9.5px; }
+
+/* 英文自譯工作台 */
+.dojo .english-journal-workbench {
+  margin-top: 16px;
+  padding: 13px;
+  border: 1px solid #bac9d4;
+  border-radius: 15px;
+  background: linear-gradient(150deg, #f7fafc, #edf3f7);
+}
+.dojo .english-journal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dojo .english-journal-head h4 { margin: 2px 0 4px; font: 650 17px "Noto Serif TC", serif; }
+.dojo .english-journal-head p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.55; }
+.dojo .english-journal-head > span {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #dfe9ef;
+  color: #45657d;
+  font-size: 9px;
+  font-weight: 750;
+}
+.dojo .english-journal-queue {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+.dojo .english-journal-queue > button {
+  min-width: 0;
+  min-height: 55px;
+  padding: 8px 9px;
+  border-color: #c7d3db;
+  background: #fff;
+  text-align: left;
+}
+.dojo .english-journal-queue > button.on {
+  border-color: #56728d;
+  background: #e2ebf1;
+  box-shadow: 0 0 0 2px rgb(86 114 141 / 12%);
+}
+.dojo .english-journal-queue small,
+.dojo .english-journal-queue b { display: block; }
+.dojo .english-journal-queue small { color: var(--muted); font-size: 9px; }
+.dojo .english-journal-queue b { margin-top: 3px; color: #405f77; font-size: 11px; }
+.dojo .english-journal-editor {
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid #cbd7df;
+  border-radius: 13px;
+  background: #fffdfa;
+}
+.dojo .english-journal-editor-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dojo .english-journal-editor-title small,
+.dojo .english-journal-editor-title b { display: block; }
+.dojo .english-journal-editor-title small { color: var(--muted); font-size: 9px; }
+.dojo .english-journal-editor-title b { margin-top: 2px; color: #45657d; font-size: 12px; }
+.dojo .english-journal-editor > label {
+  display: block;
+  margin: 13px 0 6px;
+  color: #3f5363;
+  font-size: 11px;
+  font-weight: 750;
+}
+.dojo .english-journal-editor .field {
+  width: 100%;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.dojo .english-source-block {
+  margin-top: 10px;
+  border: 1px solid #d5dee4;
+  border-radius: 11px;
+  background: #f7fafb;
+  overflow: hidden;
+}
+.dojo .english-source-block summary {
+  padding: 9px 10px;
+  color: #45657d;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 750;
+}
+.dojo .english-source-block p {
+  max-height: 230px;
+  overflow: auto;
+  margin: 0;
+  padding: 0 10px 11px;
+  color: #4d555c;
+  font-size: 10.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.dojo .english-journal-actions {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 7px;
+  margin-top: 8px;
+}
+.dojo .english-journal-actions button { min-width: 0; padding: 7px; font-size: 9.5px; }
+.dojo .english-journal-complete { width: 100%; margin-top: 13px; }
+.dojo .completion-help { display: block; margin-top: 5px; color: var(--muted); font-size: 9px; text-align: center; }
+.dojo .english-journal-sources {
+  margin-top: 12px;
+  border-top: 1px solid #cdd9e0;
+}
+.dojo .english-journal-sources > summary {
+  padding: 11px 1px 7px;
+  color: #45657d;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 750;
+}
+.dojo .english-journal-sources > div > button {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 9px;
+  border-color: #d5dee4;
+  background: #fff;
+  text-align: left;
+}
+.dojo .english-journal-sources button span { min-width: 0; }
+.dojo .english-journal-sources button small,
+.dojo .english-journal-sources button b { display: block; }
+.dojo .english-journal-sources button small { color: var(--muted); font-size: 8.5px; }
+.dojo .english-journal-sources button b {
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dojo .english-journal-sources button em { flex: 0 0 auto; color: #56728d; font-size: 9px; font-style: normal; font-weight: 750; }
+.dojo .english-journal-sources.completed { border-top-style: dashed; }
+
+@media (max-width: 380px) {
+  .dojo .english-journal-queue { grid-template-columns: 1fr; }
+  .dojo .english-journal-actions { grid-template-columns: 1fr; }
+}
 .dojo .english-editor { margin-top: 11px; padding-top: 4px; border-top: 1px solid #e4dccb; }
 
 /* 閱讀萃取：DB-21 書籍／自由區塊筆記 → DB-22 可行動洞察卡。手機單欄，

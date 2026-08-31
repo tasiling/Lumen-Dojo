@@ -290,6 +290,8 @@ function DailyReviewCard({
   journals: HistoricalJournal[];
   legacyClosings: LegacyClosing[];
 }) {
+  const [englishStatus, setEnglishStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [englishError, setEnglishError] = useState<string | null>(null);
   const completed = record ? TASK_ORDER.filter((category) => record.tasks[category].completed).length : 0;
   const hasTasks = Boolean(record && TASK_ORDER.some((category) => record.tasks[category].text));
   const hasMorningNotes = Boolean(record && (
@@ -314,6 +316,25 @@ function DailyReviewCard({
     downloadText(`${mode === "full" ? "行光每日紀錄" : "行光日記"}-${date}.txt`, content);
   }
 
+  async function sendToEnglishPractice() {
+    setEnglishStatus("sending");
+    setEnglishError(null);
+    try {
+      const sourceText = formatDailyJournalText({ date, record, journals, legacyClosings, mode: "review" });
+      const response = await fetch("/api/dojo/english-journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, sourceText }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error((json as { error?: string }).error ?? `送出失敗（${response.status}）`);
+      setEnglishStatus("sent");
+    } catch (caught) {
+      setEnglishStatus("idle");
+      setEnglishError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
   return (
     <details className="review-day-card">
       <summary>
@@ -327,7 +348,17 @@ function DailyReviewCard({
         <div className="review-export-actions">
           <button type="button" onClick={() => exportDay("review")}>匯出日復盤</button>
           <button type="button" onClick={() => exportDay("full")}>匯出完整紀錄</button>
+          {englishStatus !== "sent" ? (
+            <button type="button" className="review-english-action" onClick={() => void sendToEnglishPractice()} disabled={englishStatus === "sending"}>
+              {englishStatus === "sending" ? "正在送往修習所…" : "送往英文自譯"}
+            </button>
+          ) : (
+            <button type="button" className="review-english-action ready" onClick={() => { window.location.href = `/practice?journal=${date}`; }}>
+              已加入・前往英文自譯 →
+            </button>
+          )}
         </div>
+        {englishError && <p className="form-error">{englishError}</p>}
         {record?.morning.intention && <><h3>晨間意圖{morningDepthLabel ? ` · ${morningDepthLabel}` : ""}</h3><p className="review-prose">{record.morning.intention}</p></>}
 
         {hasMorningNotes && (

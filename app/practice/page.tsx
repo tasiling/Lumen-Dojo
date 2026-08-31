@@ -15,7 +15,7 @@
 // 身/心的知情意/靈沒有既定的光行／光法對應關係(那是兩套獨立的選填標籤,不
 // 是身心靈的子分類),維持「不特別標記」,不自行發明對應。
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
 import { GUANGXING, GUANGFA, type GuangxingKey, type GuangfaKey } from "@/lib/dojo/constants";
 import LearningPaths from "../components/LearningPaths";
@@ -32,6 +32,11 @@ const TABS: { key: Tab; label: string }[] = [
 
 export default function PracticePage() {
   const [tab, setTab] = useState<Tab>("body");
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).get("journal")) return;
+    const timer = window.setTimeout(() => setTab("mind"), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   return (
     <section className="screen">
       <h1>修習所</h1>

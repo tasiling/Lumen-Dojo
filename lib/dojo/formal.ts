@@ -11,6 +11,9 @@ import {
   type TraceLevel,
   type TraceStatus,
 } from "./constants";
+import { ENGLISH_JOURNAL_TITLE_PREFIX } from "./englishJournal";
+
+export { ENGLISH_JOURNAL_TITLE_PREFIX };
 
 export const DAILY_TITLE_PREFIX = "行光今日-";
 export const BINGO_TITLE_PREFIX = "行光週盤-";
@@ -27,6 +30,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   CAPTURE_TITLE_PREFIX,
   LEARNING_TITLE_PREFIX,
   WEAVING_PROJECT_TITLE_PREFIX,
+  ENGLISH_JOURNAL_TITLE_PREFIX,
 ] as const;
 
 export const TAIPEI_TIME_ZONE = "Asia/Taipei";
