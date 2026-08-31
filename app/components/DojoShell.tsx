@@ -47,13 +47,62 @@ function BackButton({ pathname }: { pathname: string }) {
   );
 }
 
+type NavIconName = "sun" | "calendar" | "add" | "board" | "history";
+
+function NavIcon({ name }: { name: NavIconName }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...common}>
+      {name === "sun" && (
+        <>
+          <circle cx="12" cy="12" r="3.5" />
+          <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4" />
+        </>
+      )}
+      {name === "calendar" && (
+        <>
+          <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+          <path d="M7.5 3v4M16.5 3v4M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01M8 16.5h.01M12 16.5h.01M16 16.5h.01" />
+        </>
+      )}
+      {name === "add" && (
+        <>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 8v8M8 12h8" />
+        </>
+      )}
+      {name === "board" && (
+        <>
+          <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+          <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+          <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+          <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+        </>
+      )}
+      {name === "history" && (
+        <>
+          <path d="M4.8 7.2V3.8M4.8 7.2h3.4M5 7a8.5 8.5 0 1 1-1.1 8" />
+          <path d="M12 7.5V12l3 2" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 const NAV_ITEMS = [
-  { key: "today", icon: "☀", label: "今天", href: "/" },
-  { key: "calendar", icon: "▦", label: "行事曆", href: "/calendar" },
-  { key: "add", icon: "＋", label: "新增", href: "/add" },
-  { key: "bingo", icon: "◇", label: "週盤", href: "/bingo" },
-  { key: "review", icon: "◷", label: "回看", href: "/review" },
-] as const;
+  { key: "today", icon: "sun", label: "今天", href: "/" },
+  { key: "calendar", icon: "calendar", label: "行事曆", href: "/calendar" },
+  { key: "add", icon: "add", label: "新增", href: "/add" },
+  { key: "bingo", icon: "board", label: "週盤", href: "/bingo" },
+  { key: "review", icon: "history", label: "回看", href: "/review" },
+] as const satisfies ReadonlyArray<{ key: string; icon: NavIconName; label: string; href: string }>;
 
 const PRIVACY_OPTIONS: Privacy[] = ["私人", "限閱", "公開"];
 
@@ -102,7 +151,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
             className={isActive(item.href) ? "on" : ""}
             onClick={() => router.push(item.href)}
           >
-            <span>{item.icon}</span>
+            <span className="nav-icon"><NavIcon name={item.icon} /></span>
             {item.label}
           </button>
         ))}

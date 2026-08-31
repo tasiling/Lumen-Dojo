@@ -357,10 +357,17 @@
   min-height: 50px;
   border-radius: 14px;
 }
-.dojo .nav button span {
+.dojo .nav .nav-icon {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  margin: 0 auto 3px;
+  place-items: center;
+}
+.dojo .nav .nav-icon svg {
   display: block;
-  font-size: 19px;
-  margin-bottom: 2px;
+  width: 24px;
+  height: 24px;
 }
 .dojo .nav button.on {
   color: var(--ink);
