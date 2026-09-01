@@ -148,20 +148,47 @@ export async function PATCH(req: NextRequest) {
     const previous = normalizeEnglishJournalPractice(row.value, date);
     if (!previous) return NextResponse.json({ error: "英文練習內容無法讀取" }, { status: 409 });
     const incoming = body.practice && typeof body.practice === "object" ? body.practice : {};
+    const incomingSegments = Array.isArray((incoming as { segments?: unknown }).segments)
+      ? (incoming as { segments: unknown[] }).segments
+      : [];
+    const safeSegments = previous.segments.map((segment) => {
+      const update = incomingSegments.find((item) =>
+        item && typeof item === "object" && (item as { id?: unknown }).id === segment.id
+      );
+      if (!update || typeof update !== "object") return segment;
+      const fields = update as Record<string, unknown>;
+      return {
+        ...segment,
+        draft: typeof fields.draft === "string" ? fields.draft : segment.draft,
+        aiRevision: typeof fields.aiRevision === "string" ? fields.aiRevision : segment.aiRevision,
+        finalVersion: typeof fields.finalVersion === "string" ? fields.finalVersion : segment.finalVersion,
+        phrases: typeof fields.phrases === "string" ? fields.phrases : segment.phrases,
+        status: fields.status === "skipped" ? "skipped" as const : segment.status === "skipped" ? "untouched" as const : segment.status,
+      };
+    });
     const requestedComplete = body.complete === true;
-    const candidate = normalizeEnglishJournalPractice({
+    const promptCopiedSegmentId = typeof body.promptCopied === "string" ? body.promptCopied : null;
+    const merged = normalizeEnglishJournalPractice({
       ...previous,
       ...incoming,
+      segments: safeSegments,
       date,
       sourceText: previous.sourceText,
       createdAt: previous.createdAt,
-      promptCopiedAt: body.promptCopied === true ? new Date().toISOString() : previous.promptCopiedAt,
       completedAt: requestedComplete ? new Date().toISOString() : previous.completedAt,
       updatedAt: new Date().toISOString(),
     }, date);
+    const candidate = merged && promptCopiedSegmentId
+      ? normalizeEnglishJournalPractice({
+          ...merged,
+          segments: merged.segments.map((segment) => segment.id === promptCopiedSegmentId
+            ? { ...segment, promptCopiedAt: new Date().toISOString() }
+            : segment),
+        }, date)
+      : merged;
     if (!candidate) return NextResponse.json({ error: "英文練習內容不正確" }, { status: 400 });
     if (requestedComplete && !canCompleteEnglishJournal(candidate)) {
-      return NextResponse.json({ error: "請先留下英文初稿，以及 AI 修正版或最終英文版" }, { status: 400 });
+      return NextResponse.json({ error: "每個未略過的段落都需要英文初稿，以及 AI 修正版或自己的定稿" }, { status: 400 });
     }
     await upsertJsonRecord(title, candidate);
     const weeklySynced = requestedComplete ? await completeWeeklyJournalCell(candidate) : false;

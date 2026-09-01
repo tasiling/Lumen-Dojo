@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   canCompleteEnglishJournal,
+  canCompleteSegment,
   englishJournalCoachPrompt,
+  englishJournalFinalText,
   type EnglishJournalPractice,
+  type EnglishJournalSegment,
 } from "@/lib/dojo/englishJournal";
 
 type JournalSource = { date: string; title: string; sourceText: string };
@@ -27,6 +30,14 @@ function formatDate(date: string): string {
     .format(new Date(`${date}T12:00:00+08:00`));
 }
 
+function segmentStateLabel(segment: EnglishJournalSegment): string {
+  if (segment.status === "skipped") return "已略過";
+  if (canCompleteSegment(segment)) return "已對照";
+  if (segment.aiRevision.trim() || segment.promptCopiedAt) return "對照中";
+  if (segment.draft.trim()) return "已有初稿";
+  return "尚未開始";
+}
+
 export default function EnglishJournalWorkbench({
   initialDate,
   onCompleted,
@@ -38,6 +49,8 @@ export default function EnglishJournalWorkbench({
   const [sources, setSources] = useState<JournalSource[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(initialDate ?? null);
   const [draft, setDraft] = useState<EnglishJournalPractice | null>(null);
+  const [activeSegment, setActiveSegment] = useState(0);
+  const [reviewing, setReviewing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -79,6 +92,8 @@ export default function EnglishJournalWorkbench({
         const timer = window.setTimeout(() => {
           setSelectedDate(initialDate);
           setDraft(structuredClone(existing));
+          setActiveSegment(0);
+          setReviewing(false);
         }, 0);
         return () => window.clearTimeout(timer);
       }
@@ -92,12 +107,28 @@ export default function EnglishJournalWorkbench({
 
   const pending = useMemo(() => practices.filter((practice) => practice.status !== "completed"), [practices]);
   const completed = useMemo(() => practices.filter((practice) => practice.status === "completed"), [practices]);
+  const currentSegment = draft?.segments[activeSegment] ?? null;
+  const handledSegments = draft?.segments.filter((segment) =>
+    segment.status === "skipped" || canCompleteSegment(segment)
+  ).length ?? 0;
 
   function selectPractice(practice: EnglishJournalPractice) {
     setSelectedDate(practice.date);
     setDraft(structuredClone(practice));
+    setActiveSegment(0);
+    setReviewing(false);
     setNotice(null);
     setError(null);
+  }
+
+  function updateSegment(changes: Partial<EnglishJournalSegment>) {
+    if (!draft || !currentSegment) return;
+    setDraft({
+      ...draft,
+      segments: draft.segments.map((segment, index) =>
+        index === activeSegment ? { ...segment, ...changes } : segment
+      ),
+    });
   }
 
   async function queueSource(source: JournalSource) {
@@ -116,7 +147,9 @@ export default function EnglishJournalWorkbench({
       setSources((current) => current.filter((item) => item.date !== result.practice.date));
       setSelectedDate(result.practice.date);
       setDraft(structuredClone(result.practice));
-      setNotice("已加入待自譯，中文原文會保持不變。");
+      setActiveSegment(0);
+      setReviewing(false);
+      setNotice(`已切成 ${result.practice.segments.length} 段，中文原文快照不會被改寫。`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -124,8 +157,9 @@ export default function EnglishJournalWorkbench({
     }
   }
 
-  async function savePractice(options?: { promptCopied?: boolean; complete?: boolean }) {
-    if (!draft) return null;
+  async function savePractice(options?: { promptCopied?: boolean; complete?: boolean }, override?: EnglishJournalPractice) {
+    const practice = override ?? draft;
+    if (!practice) return null;
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -134,14 +168,9 @@ export default function EnglishJournalWorkbench({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: draft.date,
-          practice: {
-            draft: draft.draft,
-            aiRevision: draft.aiRevision,
-            finalVersion: draft.finalVersion,
-            phrases: draft.phrases,
-          },
-          promptCopied: options?.promptCopied === true,
+          date: practice.date,
+          practice: { segments: practice.segments },
+          promptCopied: options?.promptCopied === true ? practice.segments[activeSegment]?.id : null,
           complete: options?.complete === true,
         }),
       });
@@ -150,7 +179,7 @@ export default function EnglishJournalWorkbench({
       setPractices((current) => current.map((item) => item.date === result.practice.date ? result.practice : item));
       setNotice(options?.complete
         ? result.weeklySynced ? "英文自譯已完成，也已同步本週週盤。" : "英文自譯已完成；本週沒有對應格，因此未變更週盤。"
-        : options?.promptCopied ? "指令已複製，進行 AI 對照後再把結果貼回來。" : "進度已儲存。");
+        : options?.promptCopied ? "這一段的指令已複製；取得 AI 回覆後貼回同一段。" : "這一段的進度已儲存。");
       if (options?.complete) await onCompleted?.();
       return result.practice;
     } catch (caught) {
@@ -162,16 +191,36 @@ export default function EnglishJournalWorkbench({
   }
 
   async function copyPrompt() {
-    if (!draft?.draft.trim()) {
-      setError("請先寫下自己的英文初稿。");
+    if (!draft || !currentSegment?.draft.trim()) {
+      setError("請先寫下這一段的英文初稿。");
       return;
     }
     try {
-      await navigator.clipboard.writeText(englishJournalCoachPrompt(draft));
+      await navigator.clipboard.writeText(englishJournalCoachPrompt(currentSegment));
       await savePractice({ promptCopied: true });
     } catch {
       setError("瀏覽器未允許複製；請再按一次或檢查剪貼簿權限。");
     }
+  }
+
+  async function copyFinalJournal() {
+    if (!draft) return;
+    const text = englishJournalFinalText(draft);
+    if (!text) {
+      setError("目前還沒有可組合的英文定稿。");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice("完整英文日記已複製。");
+    } catch {
+      setError("瀏覽器未允許複製；請檢查剪貼簿權限。");
+    }
+  }
+
+  function toggleSkip() {
+    if (!currentSegment) return;
+    updateSegment({ status: currentSegment.status === "skipped" ? "untouched" : "skipped" });
   }
 
   return (
@@ -180,7 +229,7 @@ export default function EnglishJournalWorkbench({
         <div>
           <span className="eyebrow">英文寫作練習</span>
           <h4>英文自譯工作台</h4>
-          <p>先自己翻譯，再用 AI 對照；只有看完修正才算完成。</p>
+          <p>一次只處理一段：先自己翻譯，再用 AI 對照與定稿。</p>
         </div>
         <span>{pending.length} 篇待處理</span>
       </div>
@@ -209,64 +258,131 @@ export default function EnglishJournalWorkbench({
           {draft && (
             <article className="english-journal-editor">
               <div className="english-journal-editor-title">
-                <div><small>{formatDate(draft.date)}</small><b>{STATUS_LABELS[draft.status]}</b></div>
+                <div>
+                  <small>{formatDate(draft.date)}</small>
+                  <b>{reviewing ? "全文中英回看" : `第 ${activeSegment + 1} 段，共 ${draft.segments.length} 段`}</b>
+                </div>
                 <button type="button" className="text-link" onClick={() => { setDraft(null); setSelectedDate(null); }}>收起</button>
               </div>
 
-              <details open className="english-source-block">
-                <summary>中文原文快照</summary>
-                <p>{draft.sourceText}</p>
-              </details>
-
-              <label>我的英文初稿</label>
-              <textarea
-                className="field"
-                rows={8}
-                value={draft.draft}
-                onChange={(event) => setDraft({ ...draft, draft: event.target.value })}
-                placeholder="先用現在會的英文寫，不需要每一句都查到完美。"
-              />
-              <div className="english-journal-actions">
-                <button type="button" onClick={() => void savePractice()} disabled={saving}>儲存進度</button>
-                <button type="button" className="primary" onClick={() => void copyPrompt()} disabled={saving || !draft.draft.trim()}>複製 AI 對照指令</button>
+              <div className="english-segment-map" aria-label="段落位置">
+                {draft.segments.map((segment, index) => (
+                  <button
+                    type="button"
+                    key={segment.id}
+                    className={index === activeSegment && !reviewing ? "on" : ""}
+                    data-state={segment.status === "skipped" ? "skipped" : canCompleteSegment(segment) ? "ready" : "open"}
+                    aria-label={`前往第 ${index + 1} 段：${segmentStateLabel(segment)}`}
+                    onClick={() => { setActiveSegment(index); setReviewing(false); }}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
               </div>
 
-              <label>AI 修正版／對照結果</label>
-              <textarea
-                className="field"
-                rows={8}
-                value={draft.aiRevision}
-                onChange={(event) => setDraft({ ...draft, aiRevision: event.target.value })}
-                placeholder="把 AI 提供的修正版與重要說明貼回來。"
-              />
+              {!reviewing && currentSegment && (
+                <>
+                  <div className="english-segment-heading">
+                    <span>{currentSegment.label}</span>
+                    <button type="button" className="text-link" onClick={toggleSkip}>
+                      {currentSegment.status === "skipped" ? "恢復這段" : "略過這段"}
+                    </button>
+                  </div>
 
-              <label>我最後採用的英文版</label>
-              <textarea
-                className="field"
-                rows={7}
-                value={draft.finalVersion}
-                onChange={(event) => setDraft({ ...draft, finalVersion: event.target.value })}
-                placeholder="用看完對照後真正想保留的英文重寫一次。"
-              />
+                  {currentSegment.status === "skipped" ? (
+                    <div className="english-segment-skipped">
+                      <b>這一段不列入本篇練習</b>
+                      <p>{currentSegment.sourceText}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <section className="english-source-card">
+                        <small>中文原文</small>
+                        <p>{currentSegment.sourceText}</p>
+                      </section>
 
-              <label>慣用語候選</label>
-              <textarea
-                className="field"
-                rows={5}
-                value={draft.phrases}
-                onChange={(event) => setDraft({ ...draft, phrases: event.target.value })}
-                placeholder="先留下真正想學的片語；之後再由你挑選送往 VocabForge。"
-              />
+                      <label>我的英文自譯</label>
+                      <textarea
+                        className="field"
+                        rows={7}
+                        value={currentSegment.draft}
+                        onChange={(event) => updateSegment({ draft: event.target.value })}
+                        placeholder="只翻譯目前這一段。先用現在會的英文寫，不用急著查到完美。"
+                      />
+                      <div className="english-journal-actions">
+                        <button type="button" onClick={() => void savePractice()} disabled={saving}>儲存這段</button>
+                        <button type="button" className="primary" onClick={() => void copyPrompt()} disabled={saving || !currentSegment.draft.trim()}>複製這段 AI 對照</button>
+                      </div>
 
-              <button
-                type="button"
-                className="primary english-journal-complete"
-                disabled={saving || !canCompleteEnglishJournal(draft)}
-                onClick={() => void savePractice({ complete: true })}
-              >
-                完成自譯與對照
-              </button>
-              {!canCompleteEnglishJournal(draft) && <small className="completion-help">需要英文初稿，以及 AI 修正版或最終英文版。</small>}
+                      <details className="english-comparison-block" open={Boolean(currentSegment.aiRevision || currentSegment.promptCopiedAt)}>
+                        <summary>AI 對照與我的定稿</summary>
+                        <label>AI 修正版／說明</label>
+                        <textarea
+                          className="field"
+                          rows={7}
+                          value={currentSegment.aiRevision}
+                          onChange={(event) => updateSegment({ aiRevision: event.target.value })}
+                          placeholder="把這一段的 AI 修正版與重要說明貼回來。"
+                        />
+
+                        <label>我最後採用的英文</label>
+                        <textarea
+                          className="field"
+                          rows={6}
+                          value={currentSegment.finalVersion}
+                          onChange={(event) => updateSegment({ finalVersion: event.target.value })}
+                          placeholder="整理成你真正想保留的英文；也可以暫時採用 AI 修正版。"
+                        />
+
+                        <label>這段想帶走的表達（選填，最多 1–2 個）</label>
+                        <textarea
+                          className="field"
+                          rows={3}
+                          value={currentSegment.phrases}
+                          onChange={(event) => updateSegment({ phrases: event.target.value })}
+                          placeholder="只留下真的想再用一次的片語或搭配詞。"
+                        />
+                      </details>
+                    </>
+                  )}
+
+                  <div className="english-segment-nav">
+                    <button type="button" disabled={activeSegment === 0} onClick={() => setActiveSegment((index) => Math.max(0, index - 1))}>上一段</button>
+                    <button type="button" disabled={activeSegment >= draft.segments.length - 1} onClick={() => setActiveSegment((index) => Math.min(draft.segments.length - 1, index + 1))}>下一段</button>
+                  </div>
+                </>
+              )}
+
+              {reviewing && (
+                <div className="english-full-review">
+                  <div className="english-review-summary">
+                    <span>已處理 {handledSegments} 段，共 {draft.segments.length} 段</span>
+                    <button type="button" onClick={() => void copyFinalJournal()}>複製完整英文</button>
+                  </div>
+                  {draft.segments.map((segment, index) => (
+                    <section key={segment.id} className={segment.status === "skipped" ? "skipped" : ""}>
+                      <div><small>第 {index + 1} 段・中文</small><p>{segment.sourceText}</p></div>
+                      <div><small>{segment.status === "skipped" ? "本段已略過" : "我的英文"}</small><p>{segment.status === "skipped" ? "—" : segment.finalVersion || segment.aiRevision || segment.draft || "尚未自譯"}</p></div>
+                      {segment.phrases.trim() && <aside><small>想帶走的表達</small><p>{segment.phrases}</p></aside>}
+                    </section>
+                  ))}
+                </div>
+              )}
+
+              <div className="english-journal-finish">
+                <button type="button" onClick={() => setReviewing((value) => !value)}>
+                  {reviewing ? "回到逐段練習" : "全文中英回看"}
+                </button>
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={saving || !canCompleteEnglishJournal(draft)}
+                  onClick={() => void savePractice({ complete: true })}
+                >
+                  完成本篇
+                </button>
+              </div>
+              {!canCompleteEnglishJournal(draft) && <small className="completion-help">每個未略過的段落都要有英文初稿，以及 AI 修正版或自己的定稿。</small>}
             </article>
           )}
 
@@ -289,7 +405,7 @@ export default function EnglishJournalWorkbench({
               <div>
                 {completed.map((practice) => (
                   <button type="button" key={practice.date} onClick={() => selectPractice(practice)}>
-                    <span><small>{formatDate(practice.date)}</small><b>{practice.finalVersion.split("\n")[0] || "已完成英文自譯"}</b></span>
+                    <span><small>{formatDate(practice.date)}</small><b>{englishJournalFinalText(practice).split("\n")[0] || "已完成英文自譯"}</b></span>
                     <em>查看</em>
                   </button>
                 ))}

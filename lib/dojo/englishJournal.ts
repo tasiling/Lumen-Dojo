@@ -1,24 +1,48 @@
 export const ENGLISH_JOURNAL_TITLE_PREFIX = "行光英文自譯-";
 
 export type EnglishJournalStatus = "queued" | "drafting" | "comparing" | "completed";
+export type EnglishJournalSegmentStatus = "untouched" | "drafted" | "comparing" | "finalized" | "skipped";
 
-export type EnglishJournalPractice = {
-  version: 1;
-  recordType: "english-journal-practice";
-  date: string;
+export type EnglishJournalSegment = {
+  id: string;
+  label: string;
   sourceText: string;
   draft: string;
   aiRevision: string;
   finalVersion: string;
   phrases: string;
-  status: EnglishJournalStatus;
+  status: EnglishJournalSegmentStatus;
   promptCopiedAt: string | null;
+};
+
+export type EnglishJournalPractice = {
+  version: 2;
+  recordType: "english-journal-practice";
+  date: string;
+  sourceText: string;
+  segments: EnglishJournalSegment[];
+  status: EnglishJournalStatus;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
+type LegacyEnglishJournalPractice = {
+  date?: unknown;
+  sourceText?: unknown;
+  draft?: unknown;
+  aiRevision?: unknown;
+  finalVersion?: unknown;
+  phrases?: unknown;
+  promptCopiedAt?: unknown;
+  completedAt?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  segments?: unknown;
+};
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const SOURCE_HEADER_RE = /^行光(?:日記|每日紀錄)\s*\n日期：\d{4}-\d{2}-\d{2}\s*/;
 
 function stringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -28,23 +52,104 @@ function nullableString(value: unknown): string | null {
   return typeof value === "string" && value ? value : null;
 }
 
+function segmentStatus(segment: Omit<EnglishJournalSegment, "status">, requested?: unknown): EnglishJournalSegmentStatus {
+  if (requested === "skipped") return "skipped";
+  if (segment.finalVersion.trim()) return "finalized";
+  if (segment.aiRevision.trim() || segment.promptCopiedAt) return "comparing";
+  if (segment.draft.trim()) return "drafted";
+  return "untouched";
+}
+
+function segmentLabel(text: string, index: number): string {
+  const firstLine = text.split("\n").map((line) => line.trim()).find(Boolean) ?? "";
+  const bracketed = firstLine.match(/^【(.+)】$/)?.[1];
+  if (bracketed) return bracketed;
+  if (firstLine.length <= 18 && text.includes("\n")) return firstLine.replace(/[：:]$/, "");
+  return `第 ${index + 1} 段`;
+}
+
+export function splitEnglishJournalSource(sourceText: string): EnglishJournalSegment[] {
+  const clean = sourceText.trim().replace(SOURCE_HEADER_RE, "").trim();
+  const chunks = clean.split(/\n\s*\n+/).map((part) => part.trim()).filter(Boolean);
+  const usable = chunks.length ? chunks : clean ? [clean] : [];
+  return usable.map((text, index) => {
+    const base = {
+      id: `segment-${index + 1}`,
+      label: segmentLabel(text, index),
+      sourceText: text.slice(0, 12000),
+      draft: "",
+      aiRevision: "",
+      finalVersion: "",
+      phrases: "",
+      promptCopiedAt: null,
+    };
+    return { ...base, status: segmentStatus(base) };
+  });
+}
+
+function normalizeSegment(value: unknown, index: number): EnglishJournalSegment | null {
+  if (!value || typeof value !== "object") return null;
+  const source = value as Partial<EnglishJournalSegment>;
+  const sourceText = stringValue(source.sourceText).trim().slice(0, 12000);
+  if (!sourceText) return null;
+  const base = {
+    id: stringValue(source.id, `segment-${index + 1}`).slice(0, 80),
+    label: stringValue(source.label, segmentLabel(sourceText, index)).slice(0, 80),
+    sourceText,
+    draft: stringValue(source.draft).slice(0, 12000),
+    aiRevision: stringValue(source.aiRevision).slice(0, 12000),
+    finalVersion: stringValue(source.finalVersion).slice(0, 12000),
+    phrases: stringValue(source.phrases).slice(0, 4000),
+    promptCopiedAt: nullableString(source.promptCopiedAt),
+  };
+  return { ...base, status: segmentStatus(base, source.status) };
+}
+
+function canCompleteSegments(segments: EnglishJournalSegment[]): boolean {
+  const active = segments.filter((segment) => segment.status !== "skipped");
+  return active.length > 0 && segments.every(canCompleteSegment);
+}
+
+function practiceStatus(segments: EnglishJournalSegment[], completedAt: string | null): EnglishJournalStatus {
+  if (completedAt && segments.length && canCompleteSegments(segments)) return "completed";
+  if (segments.some((segment) => segment.status === "comparing" || segment.status === "finalized")) return "comparing";
+  if (segments.some((segment) => segment.status === "drafted" || segment.status === "skipped")) return "drafting";
+  return "queued";
+}
+
+function legacySegment(source: LegacyEnglishJournalPractice, sourceText: string): EnglishJournalSegment[] {
+  const draft = stringValue(source.draft).slice(0, 30000);
+  const aiRevision = stringValue(source.aiRevision).slice(0, 30000);
+  const finalVersion = stringValue(source.finalVersion).slice(0, 30000);
+  const phrases = stringValue(source.phrases).slice(0, 12000);
+  if (!draft && !aiRevision && !finalVersion && !phrases) return splitEnglishJournalSource(sourceText);
+  const base = {
+    id: "legacy-full-entry",
+    label: "舊版全文",
+    sourceText: sourceText.trim().slice(0, 30000),
+    draft,
+    aiRevision,
+    finalVersion,
+    phrases,
+    promptCopiedAt: nullableString(source.promptCopiedAt),
+  };
+  return [{ ...base, status: segmentStatus(base) }];
+}
+
 export function englishJournalRecordTitle(date: string): string {
   return `${ENGLISH_JOURNAL_TITLE_PREFIX}${date.replace(/-/g, "")}`;
 }
 
 export function emptyEnglishJournalPractice(date: string, sourceText: string): EnglishJournalPractice {
   const now = new Date().toISOString();
+  const cleanSource = sourceText.trim().slice(0, 30000);
   return {
-    version: 1,
+    version: 2,
     recordType: "english-journal-practice",
     date,
-    sourceText: sourceText.trim().slice(0, 30000),
-    draft: "",
-    aiRevision: "",
-    finalVersion: "",
-    phrases: "",
+    sourceText: cleanSource,
+    segments: splitEnglishJournalSource(cleanSource),
     status: "queued",
-    promptCopiedAt: null,
     completedAt: null,
     createdAt: now,
     updatedAt: now,
@@ -55,58 +160,61 @@ export function normalizeEnglishJournalPractice(
   value: unknown,
   expectedDate?: string,
 ): EnglishJournalPractice | null {
-  const source = value && typeof value === "object" ? value as Partial<EnglishJournalPractice> : {};
+  const source = value && typeof value === "object" ? value as LegacyEnglishJournalPractice : {};
   const date = expectedDate && DATE_RE.test(expectedDate)
     ? expectedDate
     : DATE_RE.test(stringValue(source.date)) ? stringValue(source.date) : null;
   if (!date) return null;
-  const base = emptyEnglishJournalPractice(date, stringValue(source.sourceText));
-  const draft = stringValue(source.draft).slice(0, 30000);
-  const aiRevision = stringValue(source.aiRevision).slice(0, 30000);
-  const finalVersion = stringValue(source.finalVersion).slice(0, 30000);
+  const sourceText = stringValue(source.sourceText).trim().slice(0, 30000);
+  const base = emptyEnglishJournalPractice(date, sourceText);
+  const suppliedSegments = Array.isArray(source.segments)
+    ? source.segments.flatMap((segment, index) => normalizeSegment(segment, index) ?? [])
+    : [];
+  const segments = suppliedSegments.length ? suppliedSegments : legacySegment(source, sourceText);
   const completedAt = nullableString(source.completedAt);
-  let status: EnglishJournalStatus = "queued";
-  if (completedAt && draft.trim() && (aiRevision.trim() || finalVersion.trim())) status = "completed";
-  else if (nullableString(source.promptCopiedAt) || aiRevision.trim()) status = "comparing";
-  else if (draft.trim()) status = "drafting";
+  const status = practiceStatus(segments, completedAt);
 
   return {
     ...base,
-    sourceText: stringValue(source.sourceText).trim().slice(0, 30000),
-    draft,
-    aiRevision,
-    finalVersion,
-    phrases: stringValue(source.phrases).slice(0, 12000),
+    segments,
     status,
-    promptCopiedAt: nullableString(source.promptCopiedAt),
     completedAt: status === "completed" ? completedAt : null,
     createdAt: nullableString(source.createdAt) ?? base.createdAt,
     updatedAt: nullableString(source.updatedAt) ?? base.updatedAt,
   };
 }
 
-export function canCompleteEnglishJournal(practice: EnglishJournalPractice): boolean {
-  return Boolean(practice.draft.trim() && (practice.aiRevision.trim() || practice.finalVersion.trim()));
+export function canCompleteSegment(segment: EnglishJournalSegment): boolean {
+  if (segment.status === "skipped") return true;
+  return Boolean(segment.draft.trim() && (segment.aiRevision.trim() || segment.finalVersion.trim()));
 }
 
-export function englishJournalCoachPrompt(practice: EnglishJournalPractice): string {
-  return `你是我的英文日記教練。
+export function canCompleteEnglishJournal(practice: EnglishJournalPractice): boolean {
+  return canCompleteSegments(practice.segments);
+}
 
-請比較中文原文與我的英文初稿。不要改變原意，也不要使用超出 B1–B2 太多的艱深表達。
+export function englishJournalFinalText(practice: EnglishJournalPractice): string {
+  return practice.segments
+    .filter((segment) => segment.status !== "skipped")
+    .map((segment) => segment.finalVersion.trim() || segment.aiRevision.trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+export function englishJournalCoachPrompt(segment: EnglishJournalSegment): string {
+  return `你是我的英文日記教練。這次只處理一個段落，不要延伸或代寫其他內容。
+
+請比較中文原文與我的英文初稿。保留我的原意與語氣，主要使用 B1–B2 程度的自然英文。
 
 請依序提供：
 1. 保留我原本語氣的修正版
 2. 更自然的英文版本
-3. 最值得理解的 3–5 個修正
-4. 可重複用於生活或工作的慣用語與搭配詞
-5. 每個慣用語的中文意思及一個貼近我生活的例句
+3. 最值得理解的 1–3 個修正
+4. 最多 2 個可重複用於生活或工作的片語或搭配詞，並附中文意思
 
-不要只列單一生詞，優先提取片語、搭配詞和完整表達。
-
-【中文原文】
-${practice.sourceText.trim()}
+【目前段落的中文原文】
+${segment.sourceText.trim()}
 
 【我的英文初稿】
-${practice.draft.trim()}`;
+${segment.draft.trim()}`;
 }
-
