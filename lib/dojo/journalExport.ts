@@ -65,9 +65,17 @@ export function formatDailyJournalText(params: {
   if (daytime) sections.push(daytime);
 
   if (record) {
+    // The review export becomes English-practice material.  The closing
+    // disposition is workflow metadata ("寫下今天", "帶回", ...), not prose
+    // the user wrote, so only keep it in the full archival export.
+    const highlightLabel = mode === "review"
+      ? "一束光（今日亮點：今天值得記住的美好時刻）"
+      : "一束光";
     const evening = section("晚間復盤", [
-      record.evening.disposition ? `收光選擇\n${DISPOSITION_LABELS[record.evening.disposition]}` : null,
-      labeled("一束光", record.evening.highlight),
+      mode === "full" && record.evening.disposition
+        ? `收光選擇\n${DISPOSITION_LABELS[record.evening.disposition]}`
+        : null,
+      labeled(highlightLabel, record.evening.highlight),
       labeled("卡住的地方", record.evening.block),
       labeled("看見了什麼", record.evening.insight),
       labeled("下一步", record.evening.nextAction),

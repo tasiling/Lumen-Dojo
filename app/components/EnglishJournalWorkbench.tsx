@@ -6,6 +6,7 @@ import {
   canCompleteSegment,
   englishJournalCoachPrompt,
   englishJournalFinalText,
+  englishJournalVocabCandidates,
   type EnglishJournalPractice,
   type EnglishJournalSegment,
 } from "@/lib/dojo/englishJournal";
@@ -55,6 +56,8 @@ export default function EnglishJournalWorkbench({
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVocabKeys, setSelectedVocabKeys] = useState<string[]>([]);
+  const [sendingToVocabForge, setSendingToVocabForge] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,6 +114,8 @@ export default function EnglishJournalWorkbench({
   const handledSegments = draft?.segments.filter((segment) =>
     segment.status === "skipped" || canCompleteSegment(segment)
   ).length ?? 0;
+  const vocabCandidates = useMemo(() => draft ? englishJournalVocabCandidates(draft) : [], [draft]);
+  const exportedVocabKeys = useMemo(() => new Set(draft?.vocabForgeExports.map((item) => item.key) ?? []), [draft]);
 
   function selectPractice(practice: EnglishJournalPractice) {
     setSelectedDate(practice.date);
@@ -119,6 +124,7 @@ export default function EnglishJournalWorkbench({
     setReviewing(false);
     setNotice(null);
     setError(null);
+    setSelectedVocabKeys([]);
   }
 
   function updateSegment(changes: Partial<EnglishJournalSegment>) {
@@ -221,6 +227,49 @@ export default function EnglishJournalWorkbench({
   function toggleSkip() {
     if (!currentSegment) return;
     updateSegment({ status: currentSegment.status === "skipped" ? "untouched" : "skipped" });
+  }
+
+  function toggleVocabCandidate(key: string) {
+    if (exportedVocabKeys.has(key)) return;
+    setError(null);
+    setSelectedVocabKeys((current) => {
+      if (current.includes(key)) return current.filter((item) => item !== key);
+      if (current.length >= 3) {
+        setError("每篇先選最多 3 個真正想留下的表達，避免詞庫一次增加太多。");
+        return current;
+      }
+      return [...current, key];
+    });
+  }
+
+  async function sendToVocabForge() {
+    if (!draft || !selectedVocabKeys.length) return;
+    setSendingToVocabForge(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const saved = await savePractice();
+      if (!saved) return;
+      const response = await fetch("/api/dojo/english-journal/vocabforge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: saved.date, keys: selectedVocabKeys }),
+      });
+      const result = await responseJson<{
+        practice: EnglishJournalPractice;
+        created: number;
+        existing: number;
+      }>(response);
+      setDraft(structuredClone(result.practice));
+      setPractices((current) => current.map((item) => item.date === result.practice.date ? result.practice : item));
+      setSelectedVocabKeys([]);
+      const duplicateNote = result.existing ? `；${result.existing} 個已存在，已保留原本進度` : "";
+      setNotice(`已送入 VocabForge 行光日記豆倉：新增 ${result.created} 個${duplicateNote}。`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSendingToVocabForge(false);
+    }
   }
 
   return (
@@ -340,8 +389,9 @@ export default function EnglishJournalWorkbench({
                           rows={3}
                           value={currentSegment.phrases}
                           onChange={(event) => updateSegment({ phrases: event.target.value })}
-                          placeholder="只留下真的想再用一次的片語或搭配詞。"
+                          placeholder={"每行一個，例如：\nfeel at ease｜感到安心\nwhat stood out to me｜最令我印象深刻的是"}
                         />
+                        <small className="field-help">格式：英文表達｜中文意思。這裡留下的內容才會出現在 VocabForge 候選匣。</small>
                       </details>
                     </>
                   )}
@@ -367,6 +417,43 @@ export default function EnglishJournalWorkbench({
                     </section>
                   ))}
                 </div>
+              )}
+
+              {vocabCandidates.length > 0 && (
+                <section className="vocabforge-candidate-tray">
+                  <div className="subsection-title">
+                    <div><small>語言素材出口</small><h4>送往 VocabForge</h4></div>
+                    <span>{selectedVocabKeys.length}/3 已選</span>
+                  </div>
+                  <p>只挑真正想再用一次的表達；匯入不會自動完成 VocabForge 週盤格。</p>
+                  <div className="vocabforge-candidate-list">
+                    {vocabCandidates.map((candidate) => {
+                      const exported = exportedVocabKeys.has(candidate.key);
+                      const selected = selectedVocabKeys.includes(candidate.key);
+                      return (
+                        <button
+                          type="button"
+                          key={`${candidate.segmentId}:${candidate.key}`}
+                          className={selected ? "on" : ""}
+                          disabled={exported || sendingToVocabForge}
+                          onClick={() => toggleVocabCandidate(candidate.key)}
+                        >
+                          <span>{selected ? "✓" : exported ? "✓" : "○"}</span>
+                          <div><b>{candidate.expression}</b><small>{candidate.meaning || "尚未填中文意思"}</small></div>
+                          <em>{exported ? "已送出" : `第 ${draft.segments.findIndex((segment) => segment.id === candidate.segmentId) + 1} 段`}</em>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    className="primary vocabforge-send-button"
+                    disabled={!selectedVocabKeys.length || sendingToVocabForge || saving}
+                    onClick={() => void sendToVocabForge()}
+                  >
+                    {sendingToVocabForge ? "正在送往 VocabForge…" : `送出 ${selectedVocabKeys.length} 項至行光日記豆倉`}
+                  </button>
+                </section>
               )}
 
               <div className="english-journal-finish">

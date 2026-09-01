@@ -172,6 +172,7 @@ export async function PATCH(req: NextRequest) {
       ...previous,
       ...incoming,
       segments: safeSegments,
+      vocabForgeExports: previous.vocabForgeExports,
       date,
       sourceText: previous.sourceText,
       createdAt: previous.createdAt,
