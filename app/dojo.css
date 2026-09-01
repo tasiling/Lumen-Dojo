@@ -3311,6 +3311,150 @@
 .dojo .learning-material small { max-height: 3em; overflow: hidden; margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.5; }
 .dojo .learning-material a { flex: 0 0 auto; color: var(--track-color); font-size: 9.5px; }
 
+/* 修習所・英文：低負擔 VoiceTube 主題修習。 */
+.dojo .topic-study-workbench {
+  margin-top: 16px;
+  padding: 13px;
+  border: 1px solid #c7ceb5;
+  border-radius: 15px;
+  background: linear-gradient(150deg, #fbfcf7, #eef2e7);
+}
+.dojo .topic-study-head,
+.dojo .topic-study-title,
+.dojo .topic-video-link {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 9px;
+}
+.dojo .topic-study-head h4 { margin: 2px 0 4px; font: 650 17px "Noto Serif TC", serif; }
+.dojo .topic-study-head p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.55; }
+.dojo .topic-study-head > button { flex: 0 0 auto; min-height: 34px; padding: 6px 9px; font-size: 9.5px; }
+.dojo .topic-study-create,
+.dojo .topic-study-editor {
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid #d4d9c8;
+  border-radius: 13px;
+  background: #fffefa;
+}
+.dojo .topic-study-create label,
+.dojo .topic-stage-panel > label {
+  display: block;
+  margin: 10px 0 5px;
+  color: #56634e;
+  font-size: 10px;
+  font-weight: 750;
+}
+.dojo .topic-study-create > label:first-child { margin-top: 0; }
+.dojo .topic-study-create-row { display: grid; grid-template-columns: 0.72fr 1.28fr; gap: 7px; }
+.dojo .topic-study-create .primary,
+.dojo .topic-stage-panel > .primary { width: 100%; margin-top: 11px; }
+.dojo .topic-study-queue {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 11px;
+}
+.dojo .topic-study-queue > button {
+  min-width: 0;
+  min-height: 55px;
+  padding: 8px 9px;
+  border-color: #d1d7c5;
+  background: #fff;
+  text-align: left;
+}
+.dojo .topic-study-queue > button.on { border-color: #65775d; background: #e9efe4; box-shadow: 0 0 0 2px #65775d1c; }
+.dojo .topic-study-queue small,
+.dojo .topic-study-queue b,
+.dojo .topic-study-title small,
+.dojo .topic-study-title b,
+.dojo .topic-video-link small,
+.dojo .topic-video-link b { display: block; }
+.dojo .topic-study-queue small,
+.dojo .topic-study-title small,
+.dojo .topic-video-link small { color: var(--muted); font-size: 9px; }
+.dojo .topic-study-queue b { margin-top: 3px; font-size: 11px; line-height: 1.35; }
+.dojo .topic-study-title b { margin-top: 2px; font-size: 13px; }
+.dojo .topic-study-title > span { padding: 5px 8px; border-radius: 999px; background: #e4ebde; color: #53694e; font-size: 9px; font-weight: 750; }
+.dojo .topic-study-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 11px; }
+.dojo .topic-study-steps span { padding: 6px 3px; border-radius: 8px; background: #f1f0ea; color: #99978f; text-align: center; font-size: 8.5px; }
+.dojo .topic-study-steps span.on { background: #dfe8d9; color: #4c6549; font-weight: 800; }
+.dojo .topic-study-steps span.done { background: #edf2e9; color: #70806c; }
+.dojo .topic-stage-panel { margin-top: 12px; }
+.dojo .topic-stage-panel h5 { margin: 0; font-size: 12px; }
+.dojo .topic-stage-panel > p { margin: 4px 0 10px; color: var(--muted); font-size: 9.5px; }
+.dojo .topic-study-external {
+  display: grid;
+  place-items: center;
+  min-height: 39px;
+  padding: 7px;
+  border: 1px solid #aebca6;
+  border-radius: 10px;
+  background: #f2f6ef;
+  color: #4d6849;
+  text-align: center;
+  text-decoration: none;
+  font-size: 10px;
+}
+.dojo .topic-video-link { align-items: center; padding: 9px; border-radius: 10px; background: #edf2e9; }
+.dojo .topic-video-link b { margin-top: 2px; font-size: 10.5px; }
+.dojo .topic-video-link a { flex: 0 0 auto; color: #526b4d; font-size: 9.5px; }
+.dojo .topic-study-summary { padding: 10px; border-radius: 11px; background: #f1f4ed; }
+.dojo .topic-study-summary small { color: #667361; font-size: 9px; font-weight: 750; }
+.dojo .topic-study-summary p,
+.dojo .topic-study-completed p { margin: 5px 0 0; font-size: 10.5px; line-height: 1.65; white-space: pre-wrap; }
+.dojo .topic-vocab-tray { margin-top: 11px; padding: 10px; border: 1px solid #cbd8df; border-radius: 12px; background: #f5f9fb; }
+.dojo .topic-vocab-tray > div:first-child b,
+.dojo .topic-vocab-tray > div:first-child small { display: block; }
+.dojo .topic-vocab-tray > div:first-child b { color: #45657d; font-size: 11px; }
+.dojo .topic-vocab-tray > div:first-child small { margin: 2px 0 8px; color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+.dojo .topic-vocab-tray > button:not(.topic-vocab-send) {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 0;
+  margin-top: 6px;
+  padding: 8px;
+  border-color: #d3dde2;
+  background: #fff;
+  text-align: left;
+}
+.dojo .topic-vocab-tray > button:not(.topic-vocab-send) > span { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid #b8c7ce; border-radius: 6px; }
+.dojo .topic-vocab-tray > button:not(.topic-vocab-send) b,
+.dojo .topic-vocab-tray > button:not(.topic-vocab-send) small { display: block; }
+.dojo .topic-vocab-tray > button:not(.topic-vocab-send) b { font-size: 10px; }
+.dojo .topic-vocab-tray > button:not(.topic-vocab-send) small { margin-top: 2px; color: var(--muted); font-size: 8.5px; }
+.dojo .topic-vocab-tray > button:not(.topic-vocab-send) em { color: #5f7f69; font-size: 8px; font-style: normal; }
+.dojo .topic-vocab-tray > button.on { border-color: #56728d; background: #e8f0f4; }
+.dojo .topic-vocab-tray > button.exported { opacity: 0.75; background: #edf3ed; }
+.dojo .topic-vocab-send { width: 100%; margin-top: 8px; }
+.dojo .topic-prompt-chips { display: flex; gap: 5px; margin-bottom: 6px; overflow-x: auto; scrollbar-width: none; }
+.dojo .topic-prompt-chips::-webkit-scrollbar { display: none; }
+.dojo .topic-prompt-chips span { flex: 0 0 auto; padding: 5px 7px; border-radius: 999px; background: #eef1e9; color: #64705f; font-size: 8.5px; }
+.dojo .topic-respeak { display: flex !important; align-items: center; gap: 9px; padding: 9px; border: 1px solid #d8ddce; border-radius: 10px; background: #fbfcf8; }
+.dojo .topic-respeak input { width: 18px; height: 18px; }
+.dojo .topic-respeak b,
+.dojo .topic-respeak small { display: block; }
+.dojo .topic-respeak small { margin-top: 2px; color: var(--muted); font-weight: 400; }
+.dojo .topic-study-completed { margin-top: 11px; padding: 11px; border-radius: 11px; background: #e8f0e4; }
+.dojo .topic-study-completed b { color: #50694b; font-size: 11px; }
+.dojo .topic-study-completed small { display: block; margin-top: 7px; color: #6c7c68; font-size: 9px; }
+.dojo .topic-study-history { margin-top: 11px; }
+.dojo .topic-study-history summary { color: #65725f; cursor: pointer; font-size: 9.5px; font-weight: 750; }
+.dojo .topic-study-history button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 0; margin-top: 6px; padding: 8px; text-align: left; }
+.dojo .topic-study-history button small,
+.dojo .topic-study-history button b { display: block; }
+.dojo .topic-study-history button small { color: var(--muted); font-size: 8.5px; }
+.dojo .topic-study-history button b { margin-top: 2px; font-size: 10px; }
+.dojo .topic-study-history button em { color: #61745a; font-size: 8.5px; font-style: normal; }
+
+@media (max-width: 370px) {
+  .dojo .topic-study-create-row { grid-template-columns: 1fr; }
+}
+
 /* 英文自譯工作台 */
 .dojo .english-journal-workbench {
   margin-top: 16px;
