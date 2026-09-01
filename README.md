@@ -25,10 +25,14 @@ P3 生產日工作台、P4 固定項目註冊器、P6 回饋快填、P7 提案�
 ```
 NOTION_TOKEN=你的 Notion Internal Integration Token
 ACCESS_KEY=你自訂的一組存取金鑰(任意字串,建議夠長夠隨機)
+VOCABFORGE_INTEGRATION_URL=你的 VocabForge Railway 網址
+LUMEN_VOCABFORGE_SYNC_SECRET=兩個 Railway 服務共用的隨機串接密鑰
 ```
 
 - `NOTION_TOKEN`:擁有者自行在 Notion 建立 Integration 並取得,**不得寫死在程式碼或提交進版控**(`.env.local` 已在 `.gitignore` 中)。Integration 需被分享(share)到本委派書「三、資料對接表」列出的 16 個資料庫,否則 API 會回傳 404/未授權。
 - `ACCESS_KEY`:單一存取金鑰(委派書 v1.1 新增需求)。**不是登入系統、無帳號無多用戶**——只是一把鑰匙:沒設定這個環境變數,App 會拒絕所有請求;設定了但瀏覽器沒帶對的金鑰,頁面會被導去 `/unlock`、API 會回 401。在 `/unlock` 輸入一次金鑰後存進瀏覽器 cookie(1 年),之後不用再輸入。金鑰本身建議用亂數產生一段夠長的字串(例如 `openssl rand -hex 24`),不要用容易猜的詞。
+- `VOCABFORGE_INTEGRATION_URL`:VocabForge 正式或預覽服務的根網址。只由後端用來傳送使用者在英文自譯工作台親自選中的 1–3 個表達。
+- `LUMEN_VOCABFORGE_SYNC_SECRET`:伺服器對伺服器的串接密鑰,不得加上 `NEXT_PUBLIC_` 前綴。VocabForge 服務端需以 `LUMEN_INTEGRATION_SECRET` 設定相同內容。
 
 ## 本機開發
 
