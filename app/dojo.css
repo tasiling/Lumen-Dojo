@@ -1095,6 +1095,16 @@
 .dojo .page-heading .lead {
   margin-bottom: 0;
 }
+.dojo .page-heading-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+.dojo .page-heading-actions button {
+  min-height: 38px;
+  padding: 7px 9px;
+  font-size: 10px;
+}
 .dojo .ritual-card {
   width: 100%;
   min-width: 0;
@@ -1796,6 +1806,10 @@
   padding-bottom: calc(18px + env(safe-area-inset-bottom));
   box-shadow: 0 -12px 32px #30251f24;
 }
+.dojo .bingo-detail-modal .board-settings-sheet {
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -12px 32px #30251f24;
+}
 .dojo .bingo-detail-handle {
   width: 42px;
   height: 4px;
@@ -1841,32 +1855,52 @@
   overflow-wrap: anywhere;
   font-size: 10.5px;
 }
-.dojo .cell-short-label-editor {
+.dojo .cell-management-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.dojo .danger-button,
+.dojo button.danger-button {
+  border-color: #cf8e87;
+  background: #fff6f4;
+  color: #a64d45;
+}
+.dojo .cell-task-editor {
   padding: 11px;
   border: 1px solid var(--line);
   border-radius: 13px;
   background: #fffaf0;
 }
-.dojo .cell-short-label-editor > label {
+.dojo .cell-task-editor > label,
+.dojo .cell-completion-editor label,
+.dojo .board-settings-sheet > label {
+  display: block;
+  margin: 9px 0 5px;
   font-size: 11px;
   font-weight: 700;
 }
-.dojo .cell-short-label-editor > div {
+.dojo .cell-task-editor > label:first-child { margin-top: 0; }
+.dojo .cell-task-editor .field { margin: 0; background: #fff; }
+.dojo .cell-completion-editor {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px;
-  margin-top: 4px;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
 }
-.dojo .cell-short-label-editor .field {
-  min-width: 0;
-  margin: 0;
-}
-.dojo .cell-short-label-editor small {
+.dojo .cell-task-editor > .primary { width: 100%; margin-top: 11px; }
+.dojo .cell-task-editor > small {
   display: block;
-  margin-top: 5px;
+  margin-top: 7px;
   color: var(--muted);
   font-size: 9px;
 }
+.dojo .board-settings-sheet > .field { margin: 0; }
+.dojo .board-settings-sheet > .primary { width: 100%; margin-top: 8px; }
+.dojo .board-delete-zone { margin-top: 17px; padding: 12px; border: 1px solid #e0b0aa; border-radius: 13px; background: #fff7f5; }
+.dojo .board-delete-zone b { color: #9a4a43; font-size: 12px; }
+.dojo .board-delete-zone p { margin: 5px 0 10px; color: #806966; font-size: 9.5px; line-height: 1.55; }
+.dojo .board-delete-zone button { width: 100%; }
 .dojo .cell-color-picker { margin: 10px 0; }
 .dojo .cell-color-picker > small { display: block; margin-bottom: 6px; color: var(--muted); }
 .dojo .cell-color-picker .row {
@@ -1925,6 +1959,7 @@
 .dojo .weekly-setup-groups article.health { background: var(--task-health-soft); }
 .dojo .weekly-setup-groups article.hobby { background: var(--task-hobby-soft); }
 .dojo .weekly-setup-groups article.system { border-color: #bfcddb; background: #eef4f7; }
+.dojo .weekly-setup-groups article.sanko { border-color: #dac28f; background: #fff8e9; }
 .dojo .weekly-paused-group { margin-bottom: 10px; padding: 10px; border: 1px dashed #d7ccbb; border-radius: 12px; background: #f7f3ec; }
 .dojo .weekly-paused-group > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .dojo .weekly-paused-group b { color: #786f62; font-size: 10.5px; }
@@ -1940,7 +1975,10 @@
 .dojo .weekly-setup-groups ul { margin: 7px 0 10px; padding-left: 17px; }
 .dojo .weekly-setup-groups li { margin: 3px 0; font-size: 9.5px; line-height: 1.45; }
 .dojo .weekly-setup-groups li.added { color: var(--muted); text-decoration: line-through; }
-.dojo .weekly-setup-groups article > button { width: 100%; min-height: 36px; font-size: 10px; }
+.dojo .weekly-setup-group-actions { display: grid; gap: 6px; }
+.dojo .weekly-setup-group-actions > button { width: 100%; min-height: 36px; font-size: 10px; }
+.dojo .weekly-setup-group-actions > button.remove,
+.dojo .english-week-actions > button.remove { border-color: #d5aaa4; background: #fff8f6; color: #9c554e; }
 .dojo .weekly-setup-complete { padding: 7px; border-radius: 9px; background: #e9f0e9; color: #3f6752; text-align: center; font-size: 9.5px; font-weight: 800; }
 .dojo .weekly-setup-footnote { margin: 10px 0 0 !important; }
 .dojo .english-week-planner { padding: 0; overflow: hidden; }
@@ -1968,8 +2006,16 @@
 .dojo .candidate-colors button.health { border-color: var(--task-health); background: var(--task-health-soft); }
 .dojo .candidate-colors button.on { box-shadow: inset 0 0 0 2px currentColor; font-weight: 800; }
 .dojo .english-week-apply { width: 100%; margin-top: 8px; }
+.dojo .english-week-actions { display: grid; gap: 6px; margin-top: 8px; }
+.dojo .english-week-actions .english-week-apply { margin-top: 0; }
+.dojo .english-week-actions > button { width: 100%; }
 .dojo .cell-completion-criteria { margin: -3px 0 12px; padding: 9px 10px; border-radius: 10px; background: #eef3f5; color: #53646d; font-size: 10px; line-height: 1.55; }
 .dojo .cell-completion-criteria b { display: block; margin-bottom: 3px; color: #3f5968; font-size: 9px; }
+@media (max-width: 420px) {
+  .dojo .bingo-screen .page-heading { flex-wrap: wrap; }
+  .dojo .bingo-screen .page-heading-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .dojo .bingo-screen .page-heading-actions button { width: 100%; }
+}
 .dojo .archive-list > button {
   width: 100%;
   text-align: left;

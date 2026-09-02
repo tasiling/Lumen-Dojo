@@ -18,11 +18,13 @@ export default function EnglishWeeklyPlanner({
   english,
   disabled,
   onApply,
+  onRemove,
 }: {
   board: WeeklyBoard;
   english: LearningTrackRecord;
   disabled: boolean;
   onApply: (board: WeeklyBoard) => Promise<void>;
+  onRemove: (indexes: number[], label: string) => Promise<void>;
 }) {
   const candidates = useMemo(() => englishFocusWeeklyCandidates(), []);
   const groups = useMemo(() => [...new Set(candidates.map((item) => item.group))], [candidates]);
@@ -34,6 +36,11 @@ export default function EnglishWeeklyPlanner({
   const existing = new Set(board.cells.flatMap((cell) => cell.learning?.trackKey === "english" ? [cell.learning.templateKey] : []));
   const missing = candidates.filter((item) => !existing.has(item.templateKey));
   const existingCount = candidates.filter((item) => existing.has(item.templateKey)).length;
+  const existingIndexes = board.cells.flatMap((cell) =>
+    cell.learning?.trackKey === "english" && candidates.some((candidate) => candidate.templateKey === cell.learning?.templateKey)
+      ? [cell.index]
+      : []
+  );
 
   async function apply() {
     const empty = board.cells.filter((cell) => cell.index !== 12 && !cell.text.trim());
@@ -87,6 +94,18 @@ export default function EnglishWeeklyPlanner({
     }
   }
 
+  async function removeEnglishPlan() {
+    if (!existingIndexes.length) return;
+    const confirmed = window.confirm(`確定從本週移除已加入的 ${existingIndexes.length} 個英文修習格嗎？已排入今天或已完成的紀錄會保留。`);
+    if (!confirmed) return;
+    setError(null);
+    try {
+      await onRemove(existingIndexes, "英文集中週修習鏈");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "移除英文修習格時發生錯誤");
+    }
+  }
+
   return (
     <section className="ritual-card english-week-planner">
       <button type="button" className="english-week-planner-head" onClick={() => setOpen((value) => !value)}>
@@ -117,11 +136,14 @@ export default function EnglishWeeklyPlanner({
             ))}
           </section>)}
           {error && <p className="form-error">{error}</p>}
-          {missing.length > 0 ? (
-            <button type="button" className="primary english-week-apply" disabled={disabled} onClick={() => void apply()}>
-              加入尚未放入的 {missing.length} 格
-            </button>
-          ) : <p className="save-notice">本週英文 10 格已全部放入。</p>}
+          <div className="english-week-actions">
+            {missing.length > 0 ? (
+              <button type="button" className="primary english-week-apply" disabled={disabled} onClick={() => void apply()}>
+                加入尚未放入的 {missing.length} 格
+              </button>
+            ) : <p className="save-notice">本週英文 10 格已全部放入。</p>}
+            {existingIndexes.length > 0 && <button type="button" className="remove" disabled={disabled} onClick={() => void removeEnglishPlan()}>從本週移除 {existingIndexes.length} 格</button>}
+          </div>
         </div>
       )}
     </section>

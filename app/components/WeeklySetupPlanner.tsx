@@ -22,10 +22,11 @@ type SetupGroup = {
   countLabel: string;
   note: string;
   tone: string;
+  recommendation?: string;
   templates: SetupTemplate[];
 };
 
-const PAUSED_SANKO_TEMPLATES: SetupTemplate[] = [
+const SANKO_TEMPLATES: SetupTemplate[] = [
   { id: "sanko-topics", text: "決定兩天主題、題目與選項", shortLabel: "兩天題目", category: "important", sourceType: "routine", completionCriteria: "完成兩天份的主題、題目與選項。" },
   { id: "sanko-cards", text: "完成兩天抽牌與素材整理", shortLabel: "抽牌整理", category: "important", sourceType: "routine", completionCriteria: "完成兩天份抽牌與素材整理。" },
   { id: "sanko-draft-1", text: "完成第一天解牌成稿", shortLabel: "首日成稿", category: "important", sourceType: "routine", completionCriteria: "完成第一天解牌成稿。" },
@@ -34,6 +35,15 @@ const PAUSED_SANKO_TEMPLATES: SetupTemplate[] = [
 ];
 
 const GROUPS: SetupGroup[] = [
+  {
+    key: "sanko",
+    title: "日上三更・手動兩天版",
+    countLabel: "5 格重要",
+    note: "工具尚未完成時，每格對應一段真實手工作業；要不要放進本週由你決定。",
+    tone: "sanko",
+    recommendation: "本週建議：先不加入",
+    templates: SANKO_TEMPLATES,
+  },
   {
     key: "english-system",
     title: "英文系統建置",
@@ -92,10 +102,12 @@ export default function WeeklySetupPlanner({
   board,
   disabled,
   onApply,
+  onRemove,
 }: {
   board: WeeklyBoard;
   disabled: boolean;
   onApply: (board: WeeklyBoard, message: string) => Promise<void>;
+  onRemove: (indexes: number[], label: string) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,30 +152,41 @@ export default function WeeklySetupPlanner({
     }
   }
 
+  async function removeGroup(group: SetupGroup, indexes: number[]) {
+    const confirmed = window.confirm(`確定從本週移除「${group.title}」的 ${indexes.length} 格嗎？已排入今天的任務會保留，但會解除週盤連結。`);
+    if (!confirmed) return;
+    setError(null);
+    try {
+      await onRemove(indexes, group.title);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "移除週盤企劃時發生錯誤");
+    }
+  }
+
   return (
     <section className="ritual-card weekly-setup-planner">
       <button type="button" className="weekly-setup-head" onClick={() => setOpen((value) => !value)}>
-        <span><small>週日組盤</small><b>英文集中週配置</b></span>
-        <em>14 格支援＋英文 10 格</em>
+        <span><small>週日組盤</small><b>本週企劃清單</b></span>
+        <em>自由選配・不必填滿</em>
       </button>
       {open && <div className="weekly-setup-body">
-        <p>英文修習與英文系統建置分開排入；這週先停止日上三更自動填格，但不刪除原本模板與資料。</p>
-        <article className="weekly-paused-group">
-          <div><b>日上三更・暫緩</b><span>不加入本週盤面</span></div>
-          <p>原本 {PAUSED_SANKO_TEMPLATES.length} 格模板仍保留，之後恢復時可以重新啟用。</p>
-        </article>
+        <p>每一組都只是建議模板。你可以加入、補入或從本週移除；不會因為本週主攻英文而鎖住其他企劃。</p>
         <div className="weekly-setup-groups">
           {GROUPS.map((group) => {
             const added = group.templates.filter((template) => existing.has(`${SOURCE_PREFIX}${template.id}`)).length;
             const complete = added === group.templates.length;
+            const indexes = board.cells.flatMap((cell) => group.templates.some((template) => cell.sourceId === `${SOURCE_PREFIX}${template.id}`) ? [cell.index] : []);
             return <article key={group.key} className={group.tone}>
               <div className="weekly-setup-group-heading">
-                <div><b>{group.title}</b><small>{group.countLabel}</small></div>
+                <div><b>{group.title}</b><small>{group.countLabel}{group.recommendation ? `・${group.recommendation}` : ""}</small></div>
                 <span>{added}/{group.templates.length}</span>
               </div>
               <p>{group.note}</p>
               <ul>{group.templates.map((template) => <li key={template.id} className={existing.has(`${SOURCE_PREFIX}${template.id}`) ? "added" : ""}>{template.text}</li>)}</ul>
-              {complete ? <div className="weekly-setup-complete">已放入盤面</div> : <button type="button" disabled={disabled} onClick={() => void applyGroup(group)}>加入尚缺的 {group.templates.length - added} 格</button>}
+              <div className="weekly-setup-group-actions">
+                {complete ? <div className="weekly-setup-complete">已放入盤面</div> : <button type="button" disabled={disabled} onClick={() => void applyGroup(group)}>加入尚缺的 {group.templates.length - added} 格</button>}
+                {indexes.length > 0 && <button type="button" className="remove" disabled={disabled} onClick={() => void removeGroup(group, indexes)}>從本週移除 {indexes.length} 格</button>}
+              </div>
             </article>;
           })}
         </div>

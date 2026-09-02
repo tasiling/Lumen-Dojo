@@ -487,26 +487,30 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
   };
 }
 
+export function emptyBingoCell(index: number, weekStart: string): BingoCell {
+  return {
+    index,
+    text: index === 12 ? "自在格" : "",
+    shortLabel: "",
+    category: null,
+    sourceType: "manual",
+    sourceId: null,
+    learning: null,
+    completion: { mode: "single", target: 1, progress: index === 12 ? 1 : 0, unit: "次", requiresEvidence: false, criteria: "" },
+    evidenceNote: "",
+    completed: index === 12,
+    completedAt: index === 12 ? weekStart : null,
+    assignedDate: null,
+    assignedCategory: null,
+  };
+}
+
 export function emptyWeeklyBoard(weekStart: string): WeeklyBoard {
   return {
     version: 2,
     weekStart,
     title: "本週行光盤",
-    cells: Array.from({ length: 25 }, (_, index) => ({
-      index,
-      text: index === 12 ? "自在格" : "",
-      shortLabel: "",
-      category: null,
-      sourceType: "manual" as const,
-      sourceId: null,
-      learning: null,
-      completion: { mode: "single" as const, target: 1, progress: index === 12 ? 1 : 0, unit: "次", requiresEvidence: false, criteria: "" },
-      evidenceNote: "",
-      completed: index === 12,
-      completedAt: index === 12 ? weekStart : null,
-      assignedDate: null,
-      assignedCategory: null,
-    })),
+    cells: Array.from({ length: 25 }, (_, index) => emptyBingoCell(index, weekStart)),
     rules: { planningDay: 0, crossColorLines: true, minimumLineColors: 2 },
     colorsConfirmedAt: null,
     reflection: { brightSpot: "", adjustment: "", nextFocus: "" },

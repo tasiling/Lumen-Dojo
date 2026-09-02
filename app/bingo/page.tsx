@@ -98,18 +98,26 @@ export default function BingoPage() {
   const [englishTrack, setEnglishTrack] = useState<LearningTrackRecord | null>(null);
   const [evidenceNote, setEvidenceNote] = useState("");
   const [shortLabelDraft, setShortLabelDraft] = useState("");
+  const [cellEditOpen, setCellEditOpen] = useState(false);
+  const [cellTextDraft, setCellTextDraft] = useState("");
+  const [criteriaDraft, setCriteriaDraft] = useState("");
+  const [targetDraft, setTargetDraft] = useState("1");
+  const [unitDraft, setUnitDraft] = useState("次");
+  const [boardSettingsOpen, setBoardSettingsOpen] = useState(false);
+  const [boardTitleDraft, setBoardTitleDraft] = useState("本週行光盤");
   const detailOpen = selected !== null && !editing;
 
   useBackableState(detailOpen, () => setSelected(null));
+  useBackableState(boardSettingsOpen, () => setBoardSettingsOpen(false));
 
   useEffect(() => {
-    if (!detailOpen) return;
+    if (!detailOpen && !boardSettingsOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [detailOpen]);
+  }, [detailOpen, boardSettingsOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +127,7 @@ export default function BingoPage() {
       setNotice(null);
       setSelected(null);
       setEditing(false);
+      setBoardSettingsOpen(false);
       try {
         const [boardResponse, learningResponse] = await Promise.all([
           fetch(`/api/dojo/bingo?week=${weekStart}`, { cache: "no-store" }),
@@ -128,6 +137,7 @@ export default function BingoPage() {
         const learning = await readResponse<{ tracks: LearningTrackRecord[] }>(learningResponse);
         if (!cancelled) {
           setBoard(json.board);
+          setBoardTitleDraft(json.board.title);
           setEnglishTrack(learning.tracks.find((track) => track.key === "english") ?? null);
         }
       } catch (caught) {
@@ -141,6 +151,18 @@ export default function BingoPage() {
       cancelled = true;
     };
   }, [weekStart]);
+
+  function openCell(index: number) {
+    const cell = board.cells[index];
+    setSelected(index);
+    setEvidenceNote(cell.evidenceNote);
+    setShortLabelDraft(bingoCellShortLabel(cell));
+    setCellTextDraft(cell.text);
+    setCriteriaDraft(cell.completion.criteria ?? "");
+    setTargetDraft(String(cell.completion.target));
+    setUnitDraft(cell.completion.unit);
+    setCellEditOpen(false);
+  }
 
   async function save(next: WeeklyBoard, message?: string) {
     setSaving(true);
@@ -159,6 +181,118 @@ export default function BingoPage() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
       throw caught;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeCells(indexes: number[], label: string) {
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/dojo/bingo", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "remove-cells", weekStart, cellIndexes: indexes }),
+      });
+      const json = await readResponse<{ board: WeeklyBoard; removed: number; preservedDailyTasks: number }>(response);
+      setBoard(json.board);
+      setSelected(null);
+      setCellEditOpen(false);
+      const preserved = json.preservedDailyTasks > 0 ? `；${json.preservedDailyTasks} 筆今天任務已保留並解除週盤連結` : "";
+      setNotice(`已從本週移除「${label}」${json.removed} 格${preserved}。`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+      throw caught;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveCellEdit() {
+    if (selected === null || board.archivedAt) return;
+    const text = cellTextDraft.trim();
+    const target = Math.max(1, Math.min(99, Math.round(Number(targetDraft) || 1)));
+    const unit = unitDraft.trim().slice(0, 20) || "次";
+    if (!text) {
+      setError("任務名稱不能留空；若不需要這格，請使用「從本週刪除」。");
+      return;
+    }
+    const next: WeeklyBoard = {
+      ...board,
+      colorsConfirmedAt: null,
+      cells: board.cells.map((cell) => {
+        if (cell.index !== selected) return cell;
+        const progress = Math.min(target, cell.completion.progress);
+        const completed = progress >= target;
+        return {
+          ...cell,
+          text: text.slice(0, 300),
+          shortLabel: shortLabelDraft.trim().slice(0, 12),
+          completion: {
+            ...cell.completion,
+            mode: target > 1 ? "count" : "single",
+            target,
+            progress,
+            unit,
+            criteria: criteriaDraft.trim().slice(0, 1000),
+          },
+          completed,
+          completedAt: completed ? (cell.completedAt ?? new Date().toISOString()) : null,
+        };
+      }),
+    };
+    try {
+      const saved = await save(next, "任務內容與完成條件已更新；請重新確認本週三色。");
+      const cell = saved.cells[selected];
+      setCellTextDraft(cell.text);
+      setShortLabelDraft(bingoCellShortLabel(cell));
+      setCriteriaDraft(cell.completion.criteria ?? "");
+      setTargetDraft(String(cell.completion.target));
+      setUnitDraft(cell.completion.unit);
+      setCellEditOpen(false);
+    } catch { /* save 已顯示錯誤 */ }
+  }
+
+  async function removeSelectedCell() {
+    if (selected === null || board.archivedAt) return;
+    const cell = board.cells[selected];
+    const detail = cell.assignedDate
+      ? "已排入今天的任務會保留，但會解除週盤連結。"
+      : cell.completed ? "已完成的生活與學習紀錄會保留。" : "";
+    if (!window.confirm(`確定從本週刪除「${bingoCellShortLabel(cell)}」嗎？${detail}`)) return;
+    try { await removeCells([selected], bingoCellShortLabel(cell)); } catch { /* removeCells 已顯示錯誤 */ }
+  }
+
+  async function saveBoardTitle() {
+    const title = boardTitleDraft.trim();
+    if (!title) { setError("週盤名稱不能留空。"); return; }
+    try {
+      await save({ ...board, title: title.slice(0, 200) }, "週盤名稱已更新。");
+      setBoardSettingsOpen(false);
+    } catch { /* save 已顯示錯誤 */ }
+  }
+
+  async function deleteBoard() {
+    if (board.archivedAt) return;
+    const contentCount = board.cells.filter((cell) => cell.index !== 12 && cell.text.trim()).length;
+    const confirmed = window.confirm(`確定刪除 ${fmtWeek(weekStart)} 的整張週盤嗎？目前有 ${contentCount} 個格子；今天任務與已完成紀錄會保留。`);
+    if (!confirmed) return;
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/dojo/bingo?week=${weekStart}`, { method: "DELETE" });
+      const json = await readResponse<{ board: WeeklyBoard; deleted: boolean; preservedDailyTasks: number }>(response);
+      setBoard(json.board);
+      setBoardTitleDraft(json.board.title);
+      setBoardSettingsOpen(false);
+      setSelected(null);
+      const preserved = json.preservedDailyTasks > 0 ? `，並保留 ${json.preservedDailyTasks} 筆今天任務` : "";
+      setNotice(json.deleted ? `本週週盤已移至 Notion 垃圾桶${preserved}。` : "本週原本就是空白週盤。");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setSaving(false);
     }
@@ -225,17 +359,6 @@ export default function BingoPage() {
     try { await save(next, `已設為「${DAILY_TASK_CATEGORIES[category].label}」。`); } catch { /* save 已顯示錯誤 */ }
   }
 
-  async function saveShortLabel() {
-    if (selected === null || board.archivedAt) return;
-    const next = {
-      ...board,
-      cells: board.cells.map((cell) => cell.index === selected
-        ? { ...cell, shortLabel: shortLabelDraft.trim().slice(0, 12) }
-        : cell),
-    };
-    try { await save(next, "盤面短名稱已儲存，完整任務內容保持不變。"); } catch { /* save 已顯示錯誤 */ }
-  }
-
   async function confirmColors() {
     const uncolored = board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && !cell.category).length;
     if (uncolored) { setError(`還有 ${uncolored} 個已填格子尚未定色。`); return; }
@@ -285,6 +408,9 @@ export default function BingoPage() {
   const uncoloredCount = board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && !cell.category).length;
   const hasAssignedCells = board.cells.some((cell) => Boolean(cell.assignedDate));
   const hasBoardContent = board.cells.some((cell) => cell.index !== 12 && Boolean(cell.text.trim()));
+  const clearedManagedCells = board.cells.filter((cell) =>
+    cell.index !== 12 && !cell.text.trim() && Boolean(cell.sourceId || cell.learning || cell.assignedDate || cell.completion.progress)
+  ).length;
 
   return (
     <section className="screen bingo-screen">
@@ -294,7 +420,10 @@ export default function BingoPage() {
           <h1>本週行光盤</h1>
           <p className="lead">把想推進的事放進一週，完成會同步回今天。</p>
         </div>
-        <button onClick={() => void loadArchive()}>{showArchive ? "收起封存" : "封存紀錄"}</button>
+        <div className="page-heading-actions">
+          {!board.archivedAt && <button disabled={loading} onClick={() => { setBoardTitleDraft(board.title); setBoardSettingsOpen(true); }}>週盤設定</button>}
+          <button onClick={() => void loadArchive()}>{showArchive ? "收起封存" : "封存紀錄"}</button>
+        </div>
       </div>
 
       <div className="week-switcher">
@@ -323,6 +452,26 @@ export default function BingoPage() {
         </section>
       )}
 
+      {boardSettingsOpen && !board.archivedAt && (
+        <div className="modal bingo-detail-modal" onClick={(event) => event.target === event.currentTarget && setBoardSettingsOpen(false)}>
+          <section className="sheet board-settings-sheet" role="dialog" aria-modal="true" aria-labelledby="board-settings-title">
+            <div className="bingo-detail-handle" aria-hidden="true" />
+            <div className="toolbar bingo-detail-heading">
+              <div><span className="eyebrow">{fmtWeek(weekStart)}</span><h2 id="board-settings-title">週盤設定</h2></div>
+              <button onClick={() => setBoardSettingsOpen(false)}>關閉</button>
+            </div>
+            <label htmlFor="board-settings-name">週盤名稱</label>
+            <input id="board-settings-name" className="field" maxLength={200} value={boardTitleDraft} onChange={(event) => setBoardTitleDraft(event.target.value)} />
+            <button type="button" className="primary" disabled={saving || !boardTitleDraft.trim() || boardTitleDraft.trim() === board.title} onClick={() => void saveBoardTitle()}>{saving ? "儲存中…" : "儲存名稱"}</button>
+            <div className="board-delete-zone">
+              <b>刪除整張週盤</b>
+              <p>週盤會移至 Notion 垃圾桶。已排入今天的任務與完成紀錄會保留，但不再連回這張週盤。</p>
+              <button type="button" className="danger-button" disabled={saving} onClick={() => void deleteBoard()}>刪除 {fmtWeek(weekStart)} 週盤</button>
+            </div>
+          </section>
+        </div>
+      )}
+
       {!loading && (
         <>
           {englishTrack && !board.archivedAt && (
@@ -331,6 +480,7 @@ export default function BingoPage() {
               english={englishTrack}
               disabled={saving}
               onApply={async (next) => { await save(next, "英文學習路徑已放入本週盤面，請完成本週定色。"); }}
+              onRemove={removeCells}
             />
           )}
 
@@ -339,6 +489,7 @@ export default function BingoPage() {
               board={board}
               disabled={saving}
               onApply={async (next, message) => { await save(next, message); }}
+              onRemove={removeCells}
             />
           )}
 
@@ -410,7 +561,7 @@ export default function BingoPage() {
                   <button
                     key={cell.index}
                     className={`bingo-cell ${cell.category ?? "uncolored"} ${cell.completed ? "done" : ""} ${selected === cell.index ? "selected" : ""} ${cell.index === 12 ? "free" : ""}`}
-                    onClick={() => { if (cell.index !== 12) { setSelected(cell.index); setEvidenceNote(cell.evidenceNote); setShortLabelDraft(bingoCellShortLabel(cell)); } }}
+                    onClick={() => { if (cell.index !== 12) openCell(cell.index); }}
                     disabled={cell.index !== 12 && !cell.text.trim()}
                     aria-label={cell.index === 12
                       ? "自在格，已完成"
@@ -427,9 +578,12 @@ export default function BingoPage() {
             </div>
 
             {editing && (
-              <button className="primary" disabled={saving} onClick={() => void save(board, "週盤格子已儲存。") }>
-                {saving ? "儲存中…" : "儲存週盤"}
-              </button>
+              <>
+                {clearedManagedCells > 0 && <p className="form-error">有 {clearedManagedCells} 格原有任務被清空，請先重新輸入名稱。若要移除，請保留名稱、完成編輯後再使用「從本週刪除」。</p>}
+                <button className="primary" disabled={saving || clearedManagedCells > 0} onClick={() => void save(board, "週盤格子已儲存。") }>
+                  {saving ? "儲存中…" : "儲存週盤"}
+                </button>
+              </>
             )}
           </section>
 
@@ -456,14 +610,26 @@ export default function BingoPage() {
 
                 {!board.archivedAt ? (
                   <>
-                    <div className="cell-short-label-editor">
-                      <label htmlFor="bingo-short-label">盤面短名稱</label>
-                      <div>
-                        <input id="bingo-short-label" className="field" maxLength={12} value={shortLabelDraft} onChange={(event) => setShortLabelDraft(event.target.value)} placeholder="最多 12 個字" />
-                        <button onClick={() => void saveShortLabel()} disabled={saving || shortLabelDraft.trim() === selectedCell.shortLabel}>儲存</button>
-                      </div>
-                      <small>只改盤面顯示，完整任務內容不會被縮寫覆蓋。</small>
+                    <div className="cell-management-actions">
+                      <button type="button" onClick={() => setCellEditOpen((value) => !value)}>{cellEditOpen ? "收起編輯" : "編輯任務"}</button>
+                      <button type="button" className="danger-button" disabled={saving} onClick={() => void removeSelectedCell()}>從本週刪除</button>
                     </div>
+                    {cellEditOpen && (
+                      <div className="cell-task-editor">
+                        <label htmlFor="bingo-task-name">任務名稱</label>
+                        <textarea id="bingo-task-name" className="field" rows={3} maxLength={300} value={cellTextDraft} onChange={(event) => setCellTextDraft(event.target.value)} />
+                        <label htmlFor="bingo-short-label">盤面短名稱</label>
+                        <input id="bingo-short-label" className="field" maxLength={12} value={shortLabelDraft} onChange={(event) => setShortLabelDraft(event.target.value)} placeholder="最多 12 個字" />
+                        <label htmlFor="bingo-completion-criteria">做到什麼才算完成？</label>
+                        <textarea id="bingo-completion-criteria" className="field" rows={3} maxLength={1000} value={criteriaDraft} onChange={(event) => setCriteriaDraft(event.target.value)} placeholder="例如：完成一章閱讀並留下三句重述" />
+                        <div className="cell-completion-editor">
+                          <label htmlFor="bingo-completion-target">目標數量<input id="bingo-completion-target" className="field" type="number" min="1" max="99" inputMode="numeric" value={targetDraft} onChange={(event) => setTargetDraft(event.target.value)} /></label>
+                          <label htmlFor="bingo-completion-unit">單位<input id="bingo-completion-unit" className="field" maxLength={20} value={unitDraft} onChange={(event) => setUnitDraft(event.target.value)} placeholder="次" /></label>
+                        </div>
+                        <button type="button" className="primary" disabled={saving || !cellTextDraft.trim()} onClick={() => void saveCellEdit()}>{saving ? "儲存中…" : "儲存任務修改"}</button>
+                        <small>來源企劃與既有進度不會因修改名稱而消失。</small>
+                      </div>
+                    )}
                     <div className="cell-color-picker">
                       <small>本週三色</small>
                       <div className="row">{CATEGORIES.map((category) => <button key={category} className={`task-category-button ${category} ${selectedCell.category === category ? "on" : ""}`} onClick={() => void setCellCategory(category)} disabled={saving || Boolean(selectedCell.assignedDate)}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")}</button>)}</div>
