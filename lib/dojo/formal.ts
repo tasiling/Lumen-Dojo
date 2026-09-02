@@ -115,6 +115,8 @@ export type BingoCell = {
     trackKey: LearningTrackKey;
     templateKey: string;
     skill: string;
+    path?: "practice" | "system";
+    practiceType?: string;
   } | null;
   completion: {
     mode: "single" | "count";
@@ -122,6 +124,7 @@ export type BingoCell = {
     progress: number;
     unit: string;
     requiresEvidence: boolean;
+    criteria?: string;
   };
   evidenceNote: string;
   completed: boolean;
@@ -497,7 +500,7 @@ export function emptyWeeklyBoard(weekStart: string): WeeklyBoard {
       sourceType: "manual" as const,
       sourceId: null,
       learning: null,
-      completion: { mode: "single" as const, target: 1, progress: index === 12 ? 1 : 0, unit: "次", requiresEvidence: false },
+      completion: { mode: "single" as const, target: 1, progress: index === 12 ? 1 : 0, unit: "次", requiresEvidence: false, criteria: "" },
       evidenceNote: "",
       completed: index === 12,
       completedAt: index === 12 ? weekStart : null,
@@ -541,6 +544,8 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
           trackKey: learningSource.trackKey,
           templateKey: stringValue(learningSource.templateKey).slice(0, 100),
           skill: stringValue(learningSource.skill).slice(0, 100),
+          path: learningSource.path === "system" ? "system" as const : "practice" as const,
+          practiceType: stringValue(learningSource.practiceType).slice(0, 100) || undefined,
         }
       : null;
     const completionSource = cell.completion && typeof cell.completion === "object" ? cell.completion : null;
@@ -562,6 +567,7 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
         progress,
         unit: stringValue(completionSource?.unit, "次").slice(0, 20),
         requiresEvidence: Boolean(completionSource?.requiresEvidence),
+        criteria: stringValue(completionSource?.criteria).slice(0, 1000),
       },
       evidenceNote: stringValue(cell.evidenceNote).slice(0, 2000),
       completed: progress >= target,

@@ -21,40 +21,55 @@ export const dynamic = "force-dynamic";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-async function completeWeeklySpeakingCell(round: TopicStudyRound): Promise<boolean> {
+async function syncWeeklyTopicCells(round: TopicStudyRound): Promise<boolean> {
   const weekStart = mondayOf(taipeiTodayISO());
   const row = await readJsonRecord(bingoRecordTitle(weekStart));
   if (!row) return false;
   const board = normalizeWeeklyBoard(row.value, weekStart);
-  const matching = (templateKey: string) => templateKey === "speaking-scenario" || templateKey === "speaking-maintenance";
-  const cellIndex = board.cells.findIndex((cell) =>
-    !cell.completed && cell.learning?.trackKey === "english" && matching(cell.learning.templateKey)
-  );
-  if (cellIndex < 0) {
-    const completed = board.cells.find((cell) =>
-      cell.completed && cell.learning?.trackKey === "english" && matching(cell.learning.templateKey)
+  const steps = [
+    { key: "topic-select-video", ready: Boolean(round.videoUrl), evidence: "已選片" },
+    { key: "topic-watch-absorb", ready: Boolean(round.summary.trim()), evidence: "已完成觀看吸收" },
+    { key: "topic-context-talk", ready: Boolean(round.completedAt), evidence: "已完成主題對談" },
+  ];
+  const legacySpeakingKeys = new Set(["speaking-scenario", "speaking-maintenance"]);
+  const completedAt = round.completedAt ?? new Date().toISOString();
+  const changed = [];
+  const cells = [...board.cells];
+  let finalSynced = false;
+
+  for (const step of steps) {
+    if (!step.ready) continue;
+    const matches = (cell: typeof cells[number]) => cell.learning?.trackKey === "english" && (
+      cell.learning.templateKey === step.key ||
+      (step.key === "topic-context-talk" && legacySpeakingKeys.has(cell.learning.templateKey))
     );
-    if (!completed) return false;
-    await syncLearningActivity({ weekStart, cell: completed });
-    return true;
+    const index = cells.findIndex((cell) => !cell.completed && matches(cell));
+    if (index < 0) {
+      if (step.key === "topic-context-talk" && cells.some((cell) => cell.completed && matches(cell))) finalSynced = true;
+      continue;
+    }
+    const cell = cells[index];
+    const completedCell = {
+      ...cell,
+      completion: { ...cell.completion, progress: cell.completion.target },
+      evidenceNote: `VoiceTube 主題修習・${round.topicTitle}・${step.evidence}`,
+      completed: true,
+      completedAt,
+    };
+    cells[index] = completedCell;
+    changed.push(completedCell);
+    if (step.key === "topic-context-talk") finalSynced = true;
   }
 
-  const cell = board.cells[cellIndex];
-  const completedAt = round.completedAt ?? new Date().toISOString();
-  const completedCell = {
-    ...cell,
-    completion: { ...cell.completion, progress: cell.completion.target },
-    evidenceNote: `VoiceTube 主題修習・${round.topicTitle}`,
-    completed: true,
-    completedAt,
-  };
-  await upsertJsonRecord(bingoRecordTitle(weekStart), {
-    ...board,
-    cells: board.cells.map((item, index) => index === cellIndex ? completedCell : item),
-    updatedAt: new Date().toISOString(),
-  });
-  await syncLearningActivity({ weekStart, cell: completedCell });
-  return true;
+  if (changed.length > 0) {
+    await upsertJsonRecord(bingoRecordTitle(weekStart), {
+      ...board,
+      cells,
+      updatedAt: new Date().toISOString(),
+    });
+    await Promise.all(changed.map((cell) => syncLearningActivity({ weekStart, cell })));
+  }
+  return finalSynced;
 }
 
 export async function GET() {
@@ -120,7 +135,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "請先貼上影片、留下一個重點，並完成一次對談紀錄" }, { status: 400 });
     }
     await upsertJsonRecord(title, candidate);
-    const weeklySynced = body.complete === true ? await completeWeeklySpeakingCell(candidate) : false;
+    const weeklySynced = await syncWeeklyTopicCells(candidate);
     return NextResponse.json({ ok: true, round: candidate, weeklySynced });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });

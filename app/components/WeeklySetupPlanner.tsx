@@ -9,6 +9,11 @@ type SetupTemplate = {
   shortLabel: string;
   category: DailyTaskCategory;
   sourceType: BingoCell["sourceType"];
+  completionCriteria: string;
+  learning?: NonNullable<BingoCell["learning"]>;
+  completionMode?: BingoCell["completion"]["mode"];
+  target?: number;
+  unit?: string;
 };
 
 type SetupGroup = {
@@ -20,30 +25,26 @@ type SetupGroup = {
   templates: SetupTemplate[];
 };
 
+const PAUSED_SANKO_TEMPLATES: SetupTemplate[] = [
+  { id: "sanko-topics", text: "決定兩天主題、題目與選項", shortLabel: "兩天題目", category: "important", sourceType: "routine", completionCriteria: "完成兩天份的主題、題目與選項。" },
+  { id: "sanko-cards", text: "完成兩天抽牌與素材整理", shortLabel: "抽牌整理", category: "important", sourceType: "routine", completionCriteria: "完成兩天份抽牌與素材整理。" },
+  { id: "sanko-draft-1", text: "完成第一天解牌成稿", shortLabel: "首日成稿", category: "important", sourceType: "routine", completionCriteria: "完成第一天解牌成稿。" },
+  { id: "sanko-draft-2", text: "完成第二天解牌成稿", shortLabel: "次日成稿", category: "important", sourceType: "routine", completionCriteria: "完成第二天解牌成稿。" },
+  { id: "sanko-publish", text: "完成兩天發布或排程", shortLabel: "發布排程", category: "important", sourceType: "routine", completionCriteria: "完成兩天份發布或排程。" },
+];
+
 const GROUPS: SetupGroup[] = [
   {
-    key: "sanko",
-    title: "日上三更・手動兩天版",
-    countLabel: "5 格重要",
-    note: "工具尚未完成，第一週只安排兩天份；每格都對應一段真實手工作業。",
-    tone: "sanko",
+    key: "english-system",
+    title: "英文系統建置",
+    countLabel: "4 格重要",
+    note: "只放本週能驗收的成果；建置格與真正的英文修習分開留下紀錄。",
+    tone: "system",
     templates: [
-      { id: "sanko-topics", text: "決定兩天主題、題目與選項", shortLabel: "兩天題目", category: "important", sourceType: "routine" },
-      { id: "sanko-cards", text: "完成兩天抽牌與素材整理", shortLabel: "抽牌整理", category: "important", sourceType: "routine" },
-      { id: "sanko-draft-1", text: "完成第一天解牌成稿", shortLabel: "首日成稿", category: "important", sourceType: "routine" },
-      { id: "sanko-draft-2", text: "完成第二天解牌成稿", shortLabel: "次日成稿", category: "important", sourceType: "routine" },
-      { id: "sanko-publish", text: "完成兩天發布或排程", shortLabel: "發布排程", category: "important", sourceType: "routine" },
-    ],
-  },
-  {
-    key: "reading-validation",
-    title: "閱讀萃取・真實驗證",
-    countLabel: "2 格重要",
-    note: "先讓現有流程跑完一輪，再依實際卡住的位置決定下一次開發。",
-    tone: "reading",
-    templates: [
-      { id: "reading-full-loop", text: "用一本真實書跑完閱讀紀錄、文獻筆記與我的洞察", shortLabel: "閱讀一輪", category: "important", sourceType: "project" },
-      { id: "reading-card-test", text: "立一張洞察卡並完成去向或回訪測試", shortLabel: "洞察驗證", category: "important", sourceType: "project" },
+      { id: "english-system-topic-mobile", text: "完成主題修習手機介面測試並整理問題", shortLabel: "主題介面測試", category: "important", sourceType: "project", completionCriteria: "用手機跑完一輪主題修習，留下需要修正的問題。", learning: { trackKey: "english", templateKey: "system-topic-mobile", skill: "系統建置", path: "system", practiceType: "system-build" } },
+      { id: "english-system-vocab-link", text: "完成 Lumen 傳送 VocabForge 流程測試或修正", shortLabel: "詞彙串接", category: "important", sourceType: "project", completionCriteria: "成功送出一筆測試資料，或完成一個已確認的串接修正。", learning: { trackKey: "english", templateKey: "system-vocab-link", skill: "系統建置", path: "system", practiceType: "system-build" } },
+      { id: "english-system-context-log", text: "建立英文語境聊天的紀錄格式第一版", shortLabel: "聊天紀錄格式", category: "important", sourceType: "project", completionCriteria: "定下能保存情境、成功句、卡點與下次補強的第一版格式。", learning: { trackKey: "english", templateKey: "system-context-log", skill: "系統建置", path: "system", practiceType: "system-build" } },
+      { id: "english-system-magic-tree", text: "整理 Magic Tree House 閱讀流程第一版", shortLabel: "故事閱讀流程", category: "important", sourceType: "project", completionCriteria: "完成閱讀、重述與表達去向的低負擔流程草案。", learning: { trackKey: "english", templateKey: "system-magic-tree", skill: "系統建置", path: "system", practiceType: "system-build" } },
     ],
   },
   {
@@ -53,37 +54,34 @@ const GROUPS: SetupGroup[] = [
     note: "先放入低壓範例，再到盤面把括號條件改成你這週真正做得到的量。",
     tone: "health",
     templates: [
-      { id: "health-stretch", text: "伸展或復健（2 次）", shortLabel: "伸展 ×2", category: "health", sourceType: "routine" },
-      { id: "health-movement", text: "正式運動（1 次）", shortLabel: "運動一次", category: "health", sourceType: "routine" },
-      { id: "health-sleep", text: "提早睡覺（2 晚）", shortLabel: "早睡 ×2", category: "health", sourceType: "routine" },
-      { id: "health-meals", text: "做菜或準備餐點（2 餐）", shortLabel: "備餐 ×2", category: "health", sourceType: "routine" },
-      { id: "health-rest", text: "保留一段完整休息（半天）", shortLabel: "休息半天", category: "health", sourceType: "routine" },
+      { id: "health-stretch", text: "伸展或復健（2 次）", shortLabel: "伸展 ×2", category: "health", sourceType: "routine", completionCriteria: "完成兩次伸展或復健。", completionMode: "count", target: 2, unit: "次" },
+      { id: "health-movement", text: "正式運動（1 次）", shortLabel: "運動一次", category: "health", sourceType: "routine", completionCriteria: "完成一次正式運動。" },
+      { id: "health-sleep", text: "提早睡覺（2 晚）", shortLabel: "早睡 ×2", category: "health", sourceType: "routine", completionCriteria: "完成兩晚自己設定的早睡條件。", completionMode: "count", target: 2, unit: "晚" },
+      { id: "health-meals", text: "做菜或準備餐點（2 餐）", shortLabel: "備餐 ×2", category: "health", sourceType: "routine", completionCriteria: "完成兩餐做菜或備餐。", completionMode: "count", target: 2, unit: "餐" },
+      { id: "health-rest", text: "保留一段完整休息（半天）", shortLabel: "休息半天", category: "health", sourceType: "routine", completionCriteria: "保留半天不安排推進型工作。", unit: "段" },
     ],
   },
   {
     key: "projects",
     title: "其他專案",
-    countLabel: "3 格重要",
-    note: "最多只讓兩個專案進場：主專案兩格，維持型專案一格。",
+    countLabel: "2 格重要",
+    note: "英文已是本週主專案，其他專案只保留兩個必要下一步。",
     tone: "project",
     templates: [
-      { id: "project-main-1", text: "主專案：第一個具體推進", shortLabel: "主專案一", category: "important", sourceType: "project" },
-      { id: "project-main-2", text: "主專案：第二個具體推進", shortLabel: "主專案二", category: "important", sourceType: "project" },
-      { id: "project-maintain", text: "維持型專案：完成一個下一步", shortLabel: "維持專案", category: "important", sourceType: "project" },
+      { id: "project-required-1", text: "其他必要專案：完成第一個明確下一步", shortLabel: "必要專案一", category: "important", sourceType: "project", completionCriteria: "把文字改成具體成果後，完成該成果一次。" },
+      { id: "project-required-2", text: "其他必要專案：完成第二個明確下一步", shortLabel: "必要專案二", category: "important", sourceType: "project", completionCriteria: "把文字改成具體成果後，完成該成果一次。" },
     ],
   },
   {
     key: "hobbies",
     title: "純粹喜歡",
-    countLabel: "5 格喜歡",
-    note: "這五格先保留給真正想做的事；加入後請改成你的內容，不拿工作補滿。",
+    countLabel: "3 格喜歡",
+    note: "保留給真正想做的事；加入後請改成你的內容，不拿英文建置補滿。",
     tone: "hobby",
     templates: [
-      { id: "hobby-1", text: "喜歡的事 1（週日填寫）", shortLabel: "喜歡一", category: "hobby", sourceType: "flexible" },
-      { id: "hobby-2", text: "喜歡的事 2（週日填寫）", shortLabel: "喜歡二", category: "hobby", sourceType: "flexible" },
-      { id: "hobby-3", text: "喜歡的事 3（週日填寫）", shortLabel: "喜歡三", category: "hobby", sourceType: "flexible" },
-      { id: "hobby-4", text: "喜歡的事 4（週日填寫）", shortLabel: "喜歡四", category: "hobby", sourceType: "flexible" },
-      { id: "hobby-5", text: "喜歡的事 5（週日填寫）", shortLabel: "喜歡五", category: "hobby", sourceType: "flexible" },
+      { id: "hobby-1", text: "喜歡的事 1（週日填寫）", shortLabel: "喜歡一", category: "hobby", sourceType: "flexible", completionCriteria: "改成這週真正想做的一件事後完成。" },
+      { id: "hobby-2", text: "喜歡的事 2（週日填寫）", shortLabel: "喜歡二", category: "hobby", sourceType: "flexible", completionCriteria: "改成這週真正想做的一件事後完成。" },
+      { id: "hobby-3", text: "喜歡的事 3（週日填寫）", shortLabel: "喜歡三", category: "hobby", sourceType: "flexible", completionCriteria: "改成這週真正想做的一件事後完成。" },
     ],
   },
 ];
@@ -126,8 +124,8 @@ export default function WeeklySetupPlanner({
           category: template.category,
           sourceType: template.sourceType,
           sourceId: `${SOURCE_PREFIX}${template.id}`,
-          learning: null,
-          completion: { mode: "single", target: 1, progress: 0, unit: "次", requiresEvidence: false },
+          learning: template.learning ?? null,
+          completion: { mode: template.completionMode ?? "single", target: template.target ?? 1, progress: 0, unit: template.unit ?? "次", requiresEvidence: false, criteria: template.completionCriteria },
           evidenceNote: "",
           completed: false,
           completedAt: null,
@@ -145,11 +143,15 @@ export default function WeeklySetupPlanner({
   return (
     <section className="ritual-card weekly-setup-planner">
       <button type="button" className="weekly-setup-head" onClick={() => setOpen((value) => !value)}>
-        <span><small>週日組盤</small><b>手動負擔版配置</b></span>
-        <em>20 格模板＋英文 4 格</em>
+        <span><small>週日組盤</small><b>英文集中週配置</b></span>
+        <em>14 格支援＋英文 10 格</em>
       </button>
       {open && <div className="weekly-setup-body">
-        <p>先依現在真正要手做的份量排入；工具完成後，再調高日上三更與英文的產量。</p>
+        <p>英文修習與英文系統建置分開排入；這週先停止日上三更自動填格，但不刪除原本模板與資料。</p>
+        <article className="weekly-paused-group">
+          <div><b>日上三更・暫緩</b><span>不加入本週盤面</span></div>
+          <p>原本 {PAUSED_SANKO_TEMPLATES.length} 格模板仍保留，之後恢復時可以重新啟用。</p>
+        </article>
         <div className="weekly-setup-groups">
           {GROUPS.map((group) => {
             const added = group.templates.filter((template) => existing.has(`${SOURCE_PREFIX}${template.id}`)).length;

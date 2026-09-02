@@ -45,38 +45,44 @@ async function completeWeeklyJournalCell(practice: EnglishJournalPractice): Prom
   const row = await readJsonRecord(bingoRecordTitle(weekStart));
   if (!row) return false;
   const board = normalizeWeeklyBoard(row.value, weekStart);
-  const cellIndex = board.cells.findIndex((cell) =>
-    !cell.completed &&
-    cell.learning?.trackKey === "english" &&
-    cell.learning.templateKey === "journal-translation"
+  const journalKeys = new Set(["journal-translation", "journal-translation-1", "journal-translation-2"]);
+  const completedSegments = practice.segments.filter((segment) => segment.status !== "skipped" && (
+    segment.finalVersion.trim() || segment.aiRevision.trim()
+  )).length;
+  const available = board.cells.filter((cell) =>
+    cell.learning?.trackKey === "english" && journalKeys.has(cell.learning.templateKey)
   );
-  if (cellIndex < 0) {
-    const completedCell = board.cells.find((cell) =>
-      cell.completed &&
-      cell.learning?.trackKey === "english" &&
-      cell.learning.templateKey === "journal-translation"
-    );
-    if (!completedCell) return false;
-    await syncLearningActivity({ weekStart, cell: completedCell });
-    return true;
-  }
-
+  if (available.length === 0) return false;
+  const limit = available.some((cell) => cell.learning?.templateKey === "journal-translation")
+    ? 1
+    : Math.min(2, completedSegments);
   const completedAt = practice.completedAt ?? new Date().toISOString();
-  const cell = board.cells[cellIndex];
-  const completedCell = {
-    ...cell,
-    completion: { ...cell.completion, progress: cell.completion.target },
-    evidenceNote: `英文自譯工作台・${practice.date} 日記`,
-    completed: true,
-    completedAt,
-  };
+  let remaining = Math.max(0, limit - available.filter((cell) => cell.completed).length);
+  const changed: typeof board.cells = [];
+  const cells = board.cells.map((cell) => {
+    if (remaining <= 0 || cell.completed || cell.learning?.trackKey !== "english" || !journalKeys.has(cell.learning.templateKey)) return cell;
+    remaining -= 1;
+    const completedCell = {
+      ...cell,
+      completion: { ...cell.completion, progress: cell.completion.target },
+      evidenceNote: `英文自譯工作台・${practice.date}・完成一個段落`,
+      completed: true,
+      completedAt,
+    };
+    changed.push(completedCell);
+    return completedCell;
+  });
+  if (changed.length === 0) {
+    await Promise.all(available.filter((cell) => cell.completed).map((cell) => syncLearningActivity({ weekStart, cell })));
+    return available.some((cell) => cell.completed);
+  }
   const updatedBoard = {
     ...board,
-    cells: board.cells.map((item, index) => index === cellIndex ? completedCell : item),
+    cells,
     updatedAt: new Date().toISOString(),
   };
   await upsertJsonRecord(bingoRecordTitle(weekStart), updatedBoard);
-  await syncLearningActivity({ weekStart, cell: completedCell });
+  await Promise.all(changed.map((cell) => syncLearningActivity({ weekStart, cell })));
   return true;
 }
 

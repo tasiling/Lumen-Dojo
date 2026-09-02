@@ -30,6 +30,16 @@ const ENGLISH_CELL_SHORT_LABELS: Record<string, string> = {
   "speaking-scenario": "情境對話",
   "shadowing-twice": "跟讀 ×2",
   "speaking-maintenance": "口說維持",
+  "topic-select-video": "主題選片",
+  "topic-watch-absorb": "觀看吸收",
+  "topic-context-talk": "主題對談",
+  "magic-tree-house-read": "故事閱讀",
+  "magic-tree-house-retell": "讀後重述",
+  "english-context-chat": "語境聊天",
+  "journal-translation-1": "自譯一段",
+  "journal-translation-2": "再譯一段",
+  "vocabforge-one-round": "詞彙一輪",
+  "work-expression-practice": "工作實戰",
 };
 
 function bingoCellShortLabel(cell: BingoCell) {
@@ -315,20 +325,20 @@ export default function BingoPage() {
 
       {!loading && (
         <>
-          {!board.archivedAt && (
-            <WeeklySetupPlanner
-              board={board}
-              disabled={saving}
-              onApply={async (next, message) => { await save(next, message); }}
-            />
-          )}
-
           {englishTrack && !board.archivedAt && (
             <EnglishWeeklyPlanner
               board={board}
               english={englishTrack}
               disabled={saving}
               onApply={async (next) => { await save(next, "英文學習路徑已放入本週盤面，請完成本週定色。"); }}
+            />
+          )}
+
+          {!board.archivedAt && (
+            <WeeklySetupPlanner
+              board={board}
+              disabled={saving}
+              onApply={async (next, message) => { await save(next, message); }}
             />
           )}
 
@@ -434,8 +444,9 @@ export default function BingoPage() {
                   </div>
                   <button onClick={() => setSelected(null)}>關閉</button>
                 </div>
-                {selectedCell.learning && <p className="learning-cell-source">修習所・{selectedCell.learning.trackKey === "english" ? "英文到 C1" : selectedCell.learning.trackKey}・{selectedCell.learning.skill}</p>}
+                {selectedCell.learning && <p className="learning-cell-source">修習所・{selectedCell.learning.trackKey === "english" ? "英文到 C1" : selectedCell.learning.trackKey}・{selectedCell.learning.path === "system" ? "系統建置" : "英文修習"}・{selectedCell.learning.skill}</p>}
                 {selectedCell.sourceType === "reading" && <p className="learning-cell-source">閱讀萃取・執行型洞察</p>}
+                {selectedCell.completion.criteria && <p className="cell-completion-criteria"><b>做到什麼才算完成？</b>{selectedCell.completion.criteria}</p>}
 
                 <div className="cell-detail-facts">
                   <span><small>盤面名稱</small><b>{bingoCellShortLabel(selectedCell)}</b></span>

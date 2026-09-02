@@ -23,6 +23,8 @@ export async function syncLearningActivity(params: {
     cellIndex: cell.index,
     templateKey: cell.learning.templateKey,
     skill: cell.learning.skill,
+    path: cell.learning.path ?? "practice",
+    practiceType: cell.learning.practiceType,
     progress: cell.completion.progress,
     target: cell.completion.target,
     unit: cell.completion.unit,

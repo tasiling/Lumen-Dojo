@@ -7,7 +7,7 @@ import {
   type WeeklyBoard,
 } from "@/lib/dojo/formal";
 import {
-  englishManualWeeklyCandidates,
+  englishFocusWeeklyCandidates,
   type LearningTrackRecord,
 } from "@/lib/dojo/learning";
 
@@ -24,10 +24,8 @@ export default function EnglishWeeklyPlanner({
   disabled: boolean;
   onApply: (board: WeeklyBoard) => Promise<void>;
 }) {
-  const candidates = useMemo(
-    () => englishManualWeeklyCandidates(english.english?.weeklyMode ?? "foundation-writing"),
-    [english.english?.weeklyMode]
-  );
+  const candidates = useMemo(() => englishFocusWeeklyCandidates(), []);
+  const groups = useMemo(() => [...new Set(candidates.map((item) => item.group))], [candidates]);
   const [colors, setColors] = useState<Record<string, DailyTaskCategory>>(() =>
     Object.fromEntries(candidates.map((item) => [item.templateKey, item.defaultCategory]))
   );
@@ -47,6 +45,7 @@ export default function EnglishWeeklyPlanner({
     const next: WeeklyBoard = {
       ...board,
       version: 2,
+      colorsConfirmedAt: null,
       rules: { planningDay: 0, crossColorLines: true, minimumLineColors: 2 },
       cells: board.cells.map((cell) => {
         const candidate = byIndex.get(cell.index);
@@ -58,13 +57,20 @@ export default function EnglishWeeklyPlanner({
           category: colors[candidate.templateKey] ?? candidate.defaultCategory,
           sourceType: "learning",
           sourceId: "english",
-          learning: { trackKey: "english", templateKey: candidate.templateKey, skill: candidate.skill },
+          learning: {
+            trackKey: "english",
+            templateKey: candidate.templateKey,
+            skill: candidate.skill,
+            path: candidate.path,
+            practiceType: candidate.practiceType,
+          },
           completion: {
             mode: candidate.completionMode,
             target: candidate.target,
             progress: 0,
             unit: candidate.unit,
             requiresEvidence: candidate.requiresEvidence,
+            criteria: candidate.completionCriteria,
           },
           evidenceNote: "",
           completed: false,
@@ -84,35 +90,38 @@ export default function EnglishWeeklyPlanner({
   return (
     <section className="ritual-card english-week-planner">
       <button type="button" className="english-week-planner-head" onClick={() => setOpen((value) => !value)}>
-        <span><small>修習所・英文到 C1</small><b>本週英文四格・手動版</b></span>
-        <em>{existingCount}/4 已放入</em>
+        <span><small>英文修習・實際讀聽寫說</small><b>英文集中週・10 格修習鏈</b></span>
+        <em>{existingCount}/{candidates.length} 已放入</em>
       </button>
       {open && (
         <div className="english-week-planner-body">
-          <p>{english.english?.weeklyMode === "vocabulary-growth" ? "後三個月：維持自譯，詞彙增加到兩輪。" : "前三個月：日記自譯是唯一新增習慣，其餘維持低量。"}</p>
-          {candidates.map((candidate) => (
-            <article key={candidate.templateKey} className={existing.has(candidate.templateKey) ? "already-added" : ""}>
-              <div><b>{candidate.title}</b><small>{candidate.skill} · {candidate.completionMode === "count" ? `${candidate.target} ${candidate.unit}` : candidate.unit}</small></div>
-              {existing.has(candidate.templateKey) ? <span>已在盤面</span> : (
-                <div className="candidate-colors" aria-label={`${candidate.title}的三色分類`}>
-                  {CATEGORIES.map((category) => (
-                    <button
-                      type="button"
-                      key={category}
-                      className={`${category} ${colors[candidate.templateKey] === category ? "on" : ""}`}
-                      onClick={() => setColors((current) => ({ ...current, [candidate.templateKey]: category }))}
-                    >{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")}</button>
-                  ))}
-                </div>
-              )}
-            </article>
-          ))}
+          <p>課程主題、閱讀、語境聊天、分段自譯與詞彙實戰各自成格；完成一格只代表一份真實練習，不會因匯入素材連帶完成其他格。目前階段：{english.english?.weeklyMode === "vocabulary-growth" ? "後三個月・詞彙擴充" : "前三個月・書面習慣建立"}。</p>
+          {groups.map((group) => <section className="english-candidate-group" key={group}>
+            <h3>{group}</h3>
+            {candidates.filter((candidate) => candidate.group === group).map((candidate) => (
+              <article key={candidate.templateKey} className={existing.has(candidate.templateKey) ? "already-added" : ""}>
+                <div><b>{candidate.title}</b><small>{candidate.skill} · {candidate.completionCriteria}</small></div>
+                {existing.has(candidate.templateKey) ? <span>已在盤面</span> : (
+                  <div className="candidate-colors" aria-label={`${candidate.title}的三色分類`}>
+                    {CATEGORIES.map((category) => (
+                      <button
+                        type="button"
+                        key={category}
+                        className={`${category} ${colors[candidate.templateKey] === category ? "on" : ""}`}
+                        onClick={() => setColors((current) => ({ ...current, [candidate.templateKey]: category }))}
+                      >{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")}</button>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </section>)}
           {error && <p className="form-error">{error}</p>}
           {missing.length > 0 ? (
             <button type="button" className="primary english-week-apply" disabled={disabled} onClick={() => void apply()}>
               加入尚未放入的 {missing.length} 格
             </button>
-          ) : <p className="save-notice">本週英文四格已全部放入。</p>}
+          ) : <p className="save-notice">本週英文 10 格已全部放入。</p>}
         </div>
       )}
     </section>
