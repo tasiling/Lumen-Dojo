@@ -68,8 +68,9 @@ export default function ReadingVisitsPage() {
 }
 
 function VisitCard({ card, todayISO, onResolved }: { card: InsightCardWithBook; todayISO: string; onResolved: () => void }) {
-  const [panel, setPanel] = useState<"result" | "abandon" | "stuck" | null>(null);
+  const [panel, setPanel] = useState<"result" | "observe" | "abandon" | "stuck" | null>(null);
   const [result, setResult] = useState("");
+  const [observation, setObservation] = useState("");
   const [resultStatus, setResultStatus] = useState<"已驗證" | "不成立">("已驗證");
   const [reason, setReason] = useState("");
   const [reframedAction, setReframedAction] = useState(card.action);
@@ -106,6 +107,11 @@ function VisitCard({ card, todayISO, onResolved }: { card: InsightCardWithBook; 
     if (json) onResolved();
   }
 
+  async function saveObservation() {
+    const json = await patch({ actionName: "observe", observation });
+    if (json) onResolved();
+  }
+
   async function abandon() {
     const json = await patch({ actionName: "abandon", reason });
     if (json) onResolved();
@@ -136,10 +142,20 @@ function VisitCard({ card, todayISO, onResolved }: { card: InsightCardWithBook; 
 
       {panel === null && (
         <div className="reading-visit-actions">
-          <button className="primary" onClick={() => setPanel("result")}>有結果了</button>
-          <button onClick={() => void postpone()} disabled={saving}>還沒做／還在觀察</button>
+          <button className="primary" onClick={() => setPanel("result")}>有明確結果</button>
+          <button onClick={() => setPanel("observe")}>留下本次觀察</button>
+          <button onClick={() => void postpone()} disabled={saving}>尚未進行，順延</button>
           <button onClick={() => setPanel("abandon")}>這張放棄</button>
           {card.actionType === "執行型" && card.status === "待行動" && <button className="reading-start-action" onClick={() => void startAction()} disabled={saving}>開始做這個行動</button>}
+        </div>
+      )}
+
+      {panel === "observe" && (
+        <div className="reading-visit-panel">
+          <label>這一輪觀察到什麼？</label>
+          <textarea rows={4} value={observation} onChange={(event) => setObservation(event.target.value)} placeholder="先記下變化、線索或仍在發展的狀況，不必急著判定成立。" />
+          <p>保存後，觀察型會在兩週後再回來；執行型會在一週後再回來。這不會算成順延。</p>
+          <div className="reading-panel-actions"><button onClick={() => setPanel(null)}>返回</button><button className="primary" disabled={saving || !observation.trim()} onClick={() => void saveObservation()}>{saving ? "儲存中…" : "保存這次觀察"}</button></div>
         </div>
       )}
 

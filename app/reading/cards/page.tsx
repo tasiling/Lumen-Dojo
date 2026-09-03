@@ -21,6 +21,7 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 type View = "due" | "program" | "topics" | "stuck";
+type InsightSource = { sourceNoteId: string; sourceText: string };
 
 export default function ReadingCardsPage() {
   const router = useRouter();
@@ -233,6 +234,9 @@ function LibraryCard({
 }) {
   const [organizing, setOrganizing] = useState(false);
   const [stuckPanel, setStuckPanel] = useState(false);
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [source, setSource] = useState<InsightSource | null | undefined>(undefined);
+  const [sourceLoading, setSourceLoading] = useState(false);
   const [topics, setTopics] = useState<InsightTopic[]>(card.topics);
   const [programApplication, setProgramApplication] = useState<ProgramApplication>(card.programApplication);
   const [nextAction, setNextAction] = useState(card.action);
@@ -265,6 +269,24 @@ function LibraryCard({
     if (await patch({ actionName: "organize", topics, programApplication })) setOrganizing(false);
   }
 
+  async function toggleSource() {
+    if (sourceOpen) { setSourceOpen(false); return; }
+    setSourceOpen(true);
+    if (source !== undefined) return;
+    setSourceLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/dojo/reading/cards/${card.id}`, { cache: "no-store" });
+      const json = await readJson<{ source: InsightSource | null }>(response);
+      setSource(json.source);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+      setSourceOpen(false);
+    } finally {
+      setSourceLoading(false);
+    }
+  }
+
   async function resolveStuck(actionName: "downgrade" | "reframe" | "abandon") {
     const ok = await patch({ actionName, nextAction, reason: actionName === "abandon" ? abandonReason : undefined });
     if (ok) {
@@ -285,9 +307,14 @@ function LibraryCard({
     </div>
     <div className="reading-library-actions">
       {selectable && <button className={selected ? "reading-select-card on" : "reading-select-card"} onClick={() => onSelect?.(card.id)}>{selected ? "已選入企劃" : "選入內容企劃"}</button>}
+      <button disabled={sourceLoading} onClick={() => void toggleSource()}>{sourceLoading ? "讀取來源…" : sourceOpen ? "收起來源" : "查看來源"}</button>
       <button onClick={() => setOrganizing((value) => !value)}>整理標籤</button>
       {stuck && <button className="danger" onClick={() => setStuckPanel((value) => !value)}>處理卡住狀態</button>}
     </div>
+
+    {sourceOpen && <div className="reading-library-source">
+      {source ? <><small>建立洞察時保存的來源快照</small><p>{source.sourceText}</p></> : <p>這是舊卡片，當時尚未保存來源快照；仍可由書名回到原閱讀筆記。</p>}
+    </div>}
 
     {organizing && <div className="reading-organize-panel">
       <label>主題標籤</label>

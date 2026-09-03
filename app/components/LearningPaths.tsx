@@ -91,8 +91,8 @@ export default function LearningPaths() {
   return <section className="learning-paths">
     <div className="learning-heading"><div><span className="eyebrow">心・知</span><h2>學習路徑</h2><p>知道正在學什麼、下一步做什麼，也能接住野採送來的材料。</p></div></div>
     <div className="reading-module-entry">
-      <div><span className="eyebrow">獨立閱讀流程</span><h3>閱讀萃取</h3><p>先留下文獻紀錄，再把自己的理解提煉成可行動的洞察。</p></div>
-      <div><Link className="primary" href="/reading">打開書架</Link><Link href="/reading/visits">今日回訪</Link></div>
+      <div><span className="eyebrow">讀前・閱讀中・讀後</span><h3>閱讀筆記</h3><p>從小預習、Readmoo 摘錄，到讀後復盤，保存完整的閱讀脈絡。</p></div>
+      <div><Link className="primary" href="/reading">打開閱讀筆記</Link><Link href="/add?mode=reading">快速摘錄</Link></div>
     </div>
     <div className="learning-track-grid">{(Object.keys(LEARNING_TRACKS) as LearningTrackKey[]).map((key) => {
       const config = LEARNING_TRACKS[key]; const track = tracks.find((item) => item.key === key); const materialCount = materials.filter((item) => item.learningTracks.includes(key)).length;

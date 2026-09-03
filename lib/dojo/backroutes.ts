@@ -45,7 +45,7 @@ export const ROUTE_LABEL: Record<string, string> = {
   "/review": "回看",
   "/assistant": "執事",
   "/practice": "修習所",
-  "/reading": "閱讀萃取",
+  "/reading": "閱讀筆記",
   "/reading/visits": "今日回訪",
   "/reading/cards": "洞察卡片庫",
   "/forage": "野採",

@@ -48,10 +48,29 @@ export type ReadingBook = {
   createdAt: string;
 };
 
+export const READING_NOTE_KINDS = ["free", "excerpt", "thought", "preview", "review"] as const;
+export type ReadingNoteKind = (typeof READING_NOTE_KINDS)[number];
+
+export type ReadingNoteMetadata = {
+  source?: string;
+  sourceBookTitle?: string;
+  chapter?: string;
+  location?: string;
+  reflection?: string;
+  currentUnderstanding?: string;
+  verificationFocus?: string;
+  changedUnderstanding?: string;
+  openQuestion?: string;
+  nextStep?: string;
+};
+
 export type ReadingNote = {
   id: string;
   text: string;
   editable: boolean;
+  kind: ReadingNoteKind;
+  metadata: ReadingNoteMetadata;
+  createdAt: string;
 };
 
 export type InsightCard = {

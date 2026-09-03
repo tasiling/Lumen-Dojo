@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateInsightCard } from "@/lib/notion/mutations";
-import { getInsightCard } from "@/lib/notion/queries";
+import { getInsightCard, getInsightCardSource } from "@/lib/notion/queries";
 import { taipeiTodayISO } from "@/lib/dojo/formal";
 import {
   addDaysISO,
@@ -11,6 +11,16 @@ import {
 } from "@/lib/reading/types";
 
 export const dynamic = "force-dynamic";
+
+export async function GET(_req: NextRequest, context: RouteContext<"/api/dojo/reading/cards/[id]">) {
+  try {
+    const { id } = await context.params;
+    const [card, source] = await Promise.all([getInsightCard(id), getInsightCardSource(id)]);
+    return NextResponse.json({ card, source });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  }
+}
 
 export async function PATCH(req: NextRequest, context: RouteContext<"/api/dojo/reading/cards/[id]">) {
   try {
@@ -27,6 +37,17 @@ export async function PATCH(req: NextRequest, context: RouteContext<"/api/dojo/r
         postponementCount: count,
       });
       return NextResponse.json({ ok: true, card: await getInsightCard(id), stuck: count >= 3 });
+    }
+
+    if (actionName === "observe") {
+      const observation = typeof body.observation === "string" ? body.observation.trim() : "";
+      if (!observation) return NextResponse.json({ error: "請先留下這次觀察到的內容" }, { status: 400 });
+      await updateInsightCard(id, {
+        result: appendResult(card.result, `階段觀察：${observation}`, todayISO),
+        nextVisitAt: addDaysISO(todayISO, card.actionType === "觀察型" ? 14 : 7),
+        postponementCount: 0,
+      });
+      return NextResponse.json({ ok: true, card: await getInsightCard(id) });
     }
 
     if (actionName === "result") {

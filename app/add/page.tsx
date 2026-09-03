@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import ReadingQuickCapture from "@/app/components/ReadingQuickCapture";
 import { SPACES, type SpaceKey } from "@/lib/dojo/constants";
 import {
   CAPTURE_CATEGORIES,
@@ -19,7 +20,13 @@ async function responseJson<T>(response: Response): Promise<T> {
 }
 
 export default function AddPage() {
-  const [mode, setMode] = useState<"capture" | "calendar">("capture");
+  const [mode, setMode] = useState<"capture" | "reading" | "calendar">("capture");
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("mode") !== "reading") return;
+    const timer = window.setTimeout(() => setMode("reading"), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <section className="screen add-screen">
@@ -27,11 +34,13 @@ export default function AddPage() {
         <span className="capture-spark" aria-hidden="true">✦</span>
         <div>
           <span className="eyebrow">新增</span>
-          <h1>{mode === "capture" ? "擷取" : "排入行程"}</h1>
+          <h1>{mode === "capture" ? "擷取" : mode === "reading" ? "閱讀摘錄" : "排入行程"}</h1>
           <p>
             {mode === "capture"
               ? "先把一閃而過的素材接住，分類與關聯留到野採。"
-              : "把已經確定時間的事情，放進行事曆。"}
+              : mode === "reading"
+                ? "把 Readmoo 的原文與自己的想法分開，直接存回正在閱讀的書。"
+                : "把已經確定時間的事情，放進行事曆。"}
           </p>
         </div>
       </div>
@@ -40,12 +49,15 @@ export default function AddPage() {
         <button type="button" className={mode === "capture" ? "on" : ""} onClick={() => setMode("capture")}>
           ✦ 擷取
         </button>
+        <button type="button" className={mode === "reading" ? "on" : ""} onClick={() => setMode("reading")}>
+          閱讀摘錄
+        </button>
         <button type="button" className={mode === "calendar" ? "on" : ""} onClick={() => setMode("calendar")}>
           ◷ 排入行程
         </button>
       </div>
 
-      {mode === "capture" ? <CaptureForm /> : <CalendarForm />}
+      {mode === "capture" ? <CaptureForm /> : mode === "reading" ? <ReadingQuickCapture /> : <CalendarForm />}
     </section>
   );
 }
