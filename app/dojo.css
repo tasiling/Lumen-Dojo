@@ -3621,8 +3621,8 @@
   margin-top: 12px;
 }
 .dojo .english-segment-heading > span { color: #45657d; font-size: 11px; font-weight: 800; }
-.dojo .english-segment-heading > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 7px; }
-.dojo .english-segment-heading > div .text-link { min-height: 0; padding: 3px 0; font-size: 8.5px; }
+.dojo .english-segment-heading > div { width: min(100%, 270px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.dojo .english-segment-heading > div .text-link { min-width: 0; min-height: 32px; padding: 5px 3px; border: 1px solid #d7c9ad; border-radius: 9px; background: #fffdf8; font-size: 8.5px; line-height: 1.2; white-space: nowrap; }
 .dojo .english-source-card {
   margin-top: 8px;
   padding: 12px;
@@ -3790,7 +3790,7 @@
 .dojo .english-context-seed-list article button { min-width: 0; padding: 7px; font-size: 9px; }
 @media (max-width: 390px) {
   .dojo .english-segment-heading { align-items: flex-start; flex-direction: column; }
-  .dojo .english-segment-heading > div { justify-content: flex-start; }
+  .dojo .english-segment-heading > div { width: 100%; }
 }
 .dojo .english-source-block {
   margin-top: 10px;

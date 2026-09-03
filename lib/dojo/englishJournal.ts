@@ -110,8 +110,13 @@ export function vocabForgeCandidateKey(expression: string): string {
 function phraseParts(line: string): { expression: string; meaning: string } | null {
   const clean = line
     .replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "")
+    .replace(/^\s*(?:單字|word)\s*[：:]\s*/i, "")
     .trim();
   if (!clean) return null;
+  const parenthetical = clean.match(/^([A-Za-z]+(?:['’-][A-Za-z]+)*)\s*[（(]([^）)]+)[）)]\s*$/);
+  if (parenthetical) {
+    return { expression: parenthetical[1].slice(0, 240), meaning: parenthetical[2].trim().slice(0, 500) };
+  }
   const [expression = "", ...meaningParts] = clean.split(/\s*(?:\||｜|—|–|：|\s-\s)\s*/);
   const normalizedExpression = expression.trim().replace(/^['“”「」]|['“”「」]$/g, "");
   if (!normalizedExpression) return null;
@@ -147,23 +152,56 @@ function contextCandidateKey(kind: string, focus: string): string {
     .slice(0, 220);
 }
 
+function contextNoteBlocks(value: string): string[] {
+  const clean = value.trim();
+  if (!clean) return [];
+  const blankLineBlocks = clean.split(/\n\s*\n+/).map((part) => part.trim()).filter(Boolean);
+  if (blankLineBlocks.length > 1) return blankLineBlocks.slice(0, 2);
+  const lines = clean.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const explicitStarts = lines.reduce<number[]>((indexes, line, index) => {
+    if (/^(?:[-*•]|\d+[.)、])?\s*(?:句型|語法)\s*(?:\||｜|：|:)/.test(line)) indexes.push(index);
+    return indexes;
+  }, []);
+  if (explicitStarts.length <= 1) return [clean];
+  return explicitStarts.slice(0, 2).map((start, index) => lines.slice(start, explicitStarts[index + 1] ?? lines.length).join("\n"));
+}
+
+function contextParts(block: string): { kind: "sentence-pattern" | "grammar"; focus: string; note: string } | null {
+  const lines = block.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return null;
+  const explicit = lines[0].replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "").split(/\s*(?:\||｜)\s*/);
+  if (explicit[0] === "句型" || explicit[0] === "語法") {
+    const focus = (explicit[1] ?? "").trim().slice(0, 500);
+    if (!focus) return null;
+    return {
+      kind: explicit[0] === "語法" ? "grammar" : "sentence-pattern",
+      focus,
+      note: [...explicit.slice(2), ...lines.slice(1)].join(" — ").trim().slice(0, 800),
+    };
+  }
+  const first = lines[0]
+    .replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "")
+    .replace(/^(?:句型|語法)\s*[：:]\s*/, "")
+    .replace(/\s*[（(][^）)]*[）)]\s*$/, "")
+    .trim();
+  if (!first || !/[A-Za-z]/.test(first)) return null;
+  const kind = /(?:語法|grammar|修正|時態|語序|→)/i.test(block) ? "grammar" as const : "sentence-pattern" as const;
+  return { kind, focus: first.slice(0, 500), note: lines.slice(1).join(" — ").slice(0, 800) };
+}
+
 export function englishJournalContextCandidates(practice: EnglishJournalPractice): EnglishContextCandidate[] {
   const candidates = practice.segments.flatMap((segment) => {
     if (segment.status === "skipped") return [];
     const correctedSentence = segment.finalVersion.trim() || segment.aiRevision.trim();
-    return segment.contextNotes.split(/\r?\n/).flatMap((line) => {
-      const clean = line.replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "").trim();
-      if (!clean) return [];
-      const [type = "", focus = "", ...noteParts] = clean.split(/\s*(?:\||｜)\s*/);
-      const kind = type.trim() === "語法" ? "grammar" as const : type.trim() === "句型" ? "sentence-pattern" as const : null;
-      const normalizedFocus = focus.trim().slice(0, 500);
-      if (!kind || !normalizedFocus) return [];
+    return contextNoteBlocks(segment.contextNotes).flatMap((block) => {
+      const parsed = contextParts(block);
+      if (!parsed) return [];
       return [{
-        key: contextCandidateKey(kind, normalizedFocus),
+        key: contextCandidateKey(parsed.kind, parsed.focus),
         segmentId: segment.id,
-        kind,
-        focus: normalizedFocus,
-        note: noteParts.join(" — ").trim().slice(0, 800),
+        kind: parsed.kind,
+        focus: parsed.focus,
+        note: parsed.note,
         sourceText: segment.sourceText,
         originalSentence: segment.draft.trim(),
         correctedSentence,
