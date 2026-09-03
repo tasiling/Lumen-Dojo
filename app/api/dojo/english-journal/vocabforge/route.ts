@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       : [];
     if (!date) return NextResponse.json({ error: "日記日期不正確" }, { status: 400 });
     if (!requestedKeys.length || requestedKeys.length > 3) {
-      return NextResponse.json({ error: "每篇請選擇 1–3 個真正想留下的表達" }, { status: 400 });
+      return NextResponse.json({ error: "每篇請選擇 1–3 個真正想記住的英文單字" }, { status: 400 });
     }
 
     const title = englishJournalRecordTitle(date);
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const candidates = englishJournalVocabCandidates(practice);
     const selected = requestedKeys.flatMap((key) => candidates.find((candidate) => candidate.key === key) ?? []);
     if (selected.length !== requestedKeys.length || selected.some((candidate) => !candidate.finalSentence.trim())) {
-      return NextResponse.json({ error: "候選表達已變更，請重新整理後再送出" }, { status: 409 });
+      return NextResponse.json({ error: "候選單字已變更，請重新整理後再送出" }, { status: 409 });
     }
 
     const response = await fetch(endpoint, {

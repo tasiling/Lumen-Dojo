@@ -5,6 +5,7 @@ import {
   canCompleteEnglishJournal,
   canCompleteSegment,
   englishJournalCoachPrompt,
+  englishJournalContextCandidates,
   englishJournalFinalText,
   englishJournalVocabCandidates,
   type EnglishJournalPractice,
@@ -20,6 +21,13 @@ const STATUS_LABELS = {
   completed: "已完成",
 } as const;
 
+function practiceStateLabel(practice: EnglishJournalPractice): string {
+  if (practice.status === "completed") return "已完成";
+  const completed = practice.segments.filter((segment) => Boolean(segment.completedAt)).length;
+  if (completed > 0) return `已完成 ${completed} 段`;
+  return STATUS_LABELS[practice.status];
+}
+
 async function responseJson<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error((json as { error?: string }).error ?? `操作失敗（${response.status}）`);
@@ -33,6 +41,7 @@ function formatDate(date: string): string {
 
 function segmentStateLabel(segment: EnglishJournalSegment): string {
   if (segment.status === "skipped") return "已略過";
+  if (segment.completedAt) return "已完成";
   if (canCompleteSegment(segment)) return "已對照";
   if (segment.aiRevision.trim() || segment.promptCopiedAt) return "對照中";
   if (segment.draft.trim()) return "已有初稿";
@@ -58,6 +67,8 @@ export default function EnglishJournalWorkbench({
   const [error, setError] = useState<string | null>(null);
   const [selectedVocabKeys, setSelectedVocabKeys] = useState<string[]>([]);
   const [sendingToVocabForge, setSendingToVocabForge] = useState(false);
+  const [selectedContextKeys, setSelectedContextKeys] = useState<string[]>([]);
+  const [sendingToContextRoom, setSendingToContextRoom] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,10 +123,12 @@ export default function EnglishJournalWorkbench({
   const completed = useMemo(() => practices.filter((practice) => practice.status === "completed"), [practices]);
   const currentSegment = draft?.segments[activeSegment] ?? null;
   const handledSegments = draft?.segments.filter((segment) =>
-    segment.status === "skipped" || canCompleteSegment(segment)
+    segment.status === "skipped" || Boolean(segment.completedAt)
   ).length ?? 0;
   const vocabCandidates = useMemo(() => draft ? englishJournalVocabCandidates(draft) : [], [draft]);
   const exportedVocabKeys = useMemo(() => new Set(draft?.vocabForgeExports.map((item) => item.key) ?? []), [draft]);
+  const contextCandidates = useMemo(() => draft ? englishJournalContextCandidates(draft) : [], [draft]);
+  const exportedContextKeys = useMemo(() => new Set(draft?.contextExports.map((item) => item.key) ?? []), [draft]);
 
   function selectPractice(practice: EnglishJournalPractice) {
     setSelectedDate(practice.date);
@@ -125,6 +138,7 @@ export default function EnglishJournalWorkbench({
     setNotice(null);
     setError(null);
     setSelectedVocabKeys([]);
+    setSelectedContextKeys([]);
   }
 
   function updateSegment(changes: Partial<EnglishJournalSegment>) {
@@ -163,7 +177,7 @@ export default function EnglishJournalWorkbench({
     }
   }
 
-  async function savePractice(options?: { promptCopied?: boolean; complete?: boolean }, override?: EnglishJournalPractice) {
+  async function savePractice(options?: { promptCopied?: boolean; complete?: boolean; completeSegment?: boolean }, override?: EnglishJournalPractice) {
     const practice = override ?? draft;
     if (!practice) return null;
     setSaving(true);
@@ -178,19 +192,46 @@ export default function EnglishJournalWorkbench({
           practice: { segments: practice.segments },
           promptCopied: options?.promptCopied === true ? practice.segments[activeSegment]?.id : null,
           complete: options?.complete === true,
+          completeSegmentId: options?.completeSegment === true ? practice.segments[activeSegment]?.id : null,
         }),
       });
       const result = await responseJson<{ practice: EnglishJournalPractice; weeklySynced: boolean }>(response);
       setDraft(structuredClone(result.practice));
       setPractices((current) => current.map((item) => item.date === result.practice.date ? result.practice : item));
-      setNotice(options?.complete
+      setNotice(options?.completeSegment
+        ? result.weeklySynced ? "這一段已完成，也已同步本週週盤。" : "這一段已完成；本週沒有尚未完成的自譯格。"
+        : options?.complete
         ? result.weeklySynced ? "英文自譯已完成，也已同步本週週盤。" : "英文自譯已完成；本週沒有對應格，因此未變更週盤。"
         : options?.promptCopied ? "這一段的指令已複製；取得 AI 回覆後貼回同一段。" : "這一段的進度已儲存。");
-      if (options?.complete) await onCompleted?.();
+      if (options?.complete || options?.completeSegment) await onCompleted?.();
       return result.practice;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
       return null;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function adjustStructure(type: "merge-next" | "split-auto") {
+    if (!draft || !currentSegment) return;
+    const saved = await savePractice();
+    if (!saved) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/dojo/english-journal", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: saved.date, structure: { type, segmentId: currentSegment.id } }),
+      });
+      const result = await responseJson<{ practice: EnglishJournalPractice }>(response);
+      setDraft(structuredClone(result.practice));
+      setPractices((current) => current.map((item) => item.date === result.practice.date ? result.practice : item));
+      setActiveSegment((index) => Math.min(index, result.practice.segments.length - 1));
+      setNotice(type === "merge-next" ? "已與下一段合併，原本寫下的內容都已保留。" : "已從自然停頓處拆成兩段。");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setSaving(false);
     }
@@ -242,6 +283,19 @@ export default function EnglishJournalWorkbench({
     });
   }
 
+  function toggleContextCandidate(key: string) {
+    if (exportedContextKeys.has(key)) return;
+    setError(null);
+    setSelectedContextKeys((current) => {
+      if (current.includes(key)) return current.filter((item) => item !== key);
+      if (current.length >= 2) {
+        setError("每篇先選最多 2 個真正想換情境再練的句型或語法。");
+        return current;
+      }
+      return [...current, key];
+    });
+  }
+
   async function sendToVocabForge() {
     if (!draft || !selectedVocabKeys.length) return;
     setSendingToVocabForge(true);
@@ -272,6 +326,32 @@ export default function EnglishJournalWorkbench({
     }
   }
 
+  async function sendToContextRoom() {
+    if (!draft || !selectedContextKeys.length) return;
+    setSendingToContextRoom(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const saved = await savePractice();
+      if (!saved) return;
+      const response = await fetch("/api/dojo/english-journal/context-seeds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: saved.date, keys: selectedContextKeys }),
+      });
+      const result = await responseJson<{ practice: EnglishJournalPractice; created: number; existing: number }>(response);
+      setDraft(structuredClone(result.practice));
+      setPractices((current) => current.map((item) => item.date === result.practice.date ? result.practice : item));
+      setSelectedContextKeys([]);
+      window.dispatchEvent(new Event("lumen-context-seeds-updated"));
+      setNotice(`已放進語境修習候選匣：新增 ${result.created} 項${result.existing ? `；${result.existing} 項原本已存在` : ""}。`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSendingToContextRoom(false);
+    }
+  }
+
   return (
     <section className="english-journal-workbench">
       <div className="english-journal-head">
@@ -298,7 +378,7 @@ export default function EnglishJournalWorkbench({
                 onClick={() => selectPractice(practice)}
               >
                 <small>{formatDate(practice.date)}</small>
-                <b>{STATUS_LABELS[practice.status]}</b>
+                <b>{practiceStateLabel(practice)}</b>
               </button>
             ))}
             {pending.length === 0 && <p className="muted-note">目前沒有待處理的日記。</p>}
@@ -320,7 +400,7 @@ export default function EnglishJournalWorkbench({
                     type="button"
                     key={segment.id}
                     className={index === activeSegment && !reviewing ? "on" : ""}
-                    data-state={segment.status === "skipped" ? "skipped" : canCompleteSegment(segment) ? "ready" : "open"}
+                    data-state={segment.status === "skipped" ? "skipped" : segment.completedAt ? "ready" : "open"}
                     aria-label={`前往第 ${index + 1} 段：${segmentStateLabel(segment)}`}
                     onClick={() => { setActiveSegment(index); setReviewing(false); }}
                   >
@@ -332,10 +412,8 @@ export default function EnglishJournalWorkbench({
               {!reviewing && currentSegment && (
                 <>
                   <div className="english-segment-heading">
-                    <span>{currentSegment.label}</span>
-                    <button type="button" className="text-link" onClick={toggleSkip}>
-                      {currentSegment.status === "skipped" ? "恢復這段" : "略過這段"}
-                    </button>
+                    <span>{currentSegment.label}{currentSegment.completedAt ? "・已完成" : ""}</span>
+                    <div><button type="button" className="text-link" disabled={saving || activeSegment >= draft.segments.length - 1} onClick={() => void adjustStructure("merge-next")}>合併下一段</button><button type="button" className="text-link" disabled={saving || Boolean(currentSegment.draft.trim() || currentSegment.aiRevision.trim() || currentSegment.finalVersion.trim())} onClick={() => void adjustStructure("split-auto")}>拆小一點</button><button type="button" className="text-link" onClick={toggleSkip}>{currentSegment.status === "skipped" ? "恢復這段" : "略過這段"}</button></div>
                   </div>
 
                   {currentSegment.status === "skipped" ? (
@@ -383,16 +461,30 @@ export default function EnglishJournalWorkbench({
                           placeholder="整理成你真正想保留的英文；也可以暫時採用 AI 修正版。"
                         />
 
-                        <label>這段想帶走的表達（選填，最多 1–2 個）</label>
+                        <label>這段想記住的生詞（選填，最多 1–3 個）</label>
                         <textarea
                           className="field"
                           rows={3}
                           value={currentSegment.phrases}
                           onChange={(event) => updateSegment({ phrases: event.target.value })}
-                          placeholder={"每行一個，例如：\nfeel at ease｜感到安心\nwhat stood out to me｜最令我印象深刻的是"}
+                          placeholder={"每行一個單字，例如：\nreflective｜沉思的\nprioritize｜排定優先順序"}
                         />
-                        <small className="field-help">格式：英文表達｜中文意思。這裡留下的內容才會出現在 VocabForge 候選匣。</small>
+                        <small className="field-help">格式：英文單字｜中文意思。只有單字會出現在 VocabForge 候選匣。</small>
+
+                        <label>想換情境再練的句型／語法（選填，最多 1–2 個）</label>
+                        <textarea
+                          className="field"
+                          rows={4}
+                          value={currentSegment.contextNotes}
+                          onChange={(event) => updateSegment({ contextNotes: event.target.value })}
+                          placeholder={"每行一項，例如：\n句型｜I feel that ... works better for me｜比較不同學習方式\n語法｜try → tried｜敘述今天已發生的事"}
+                        />
+                        <small className="field-help">句型與語法不進豆倉，會送到語境修習候選匣。</small>
                       </details>
+
+                      <button type="button" className="primary english-segment-complete" disabled={saving || Boolean(currentSegment.completedAt) || !canCompleteSegment(currentSegment)} onClick={() => void savePractice({ completeSegment: true })}>
+                        {currentSegment.completedAt ? "這一段已完成" : "完成這一段"}
+                      </button>
                     </>
                   )}
 
@@ -422,10 +514,10 @@ export default function EnglishJournalWorkbench({
               {vocabCandidates.length > 0 && (
                 <section className="vocabforge-candidate-tray">
                   <div className="subsection-title">
-                    <div><small>語言素材出口</small><h4>送往 VocabForge</h4></div>
+                    <div><small>單字記憶出口</small><h4>送往 VocabForge</h4></div>
                     <span>{selectedVocabKeys.length}/3 已選</span>
                   </div>
-                  <p>只挑真正想再用一次的表達；匯入不會自動完成 VocabForge 週盤格。</p>
+                  <p>只挑真正想記住的英文單字；句型和語法留給語境修習室。</p>
                   <div className="vocabforge-candidate-list">
                     {vocabCandidates.map((candidate) => {
                       const exported = exportedVocabKeys.has(candidate.key);
@@ -451,8 +543,23 @@ export default function EnglishJournalWorkbench({
                     disabled={!selectedVocabKeys.length || sendingToVocabForge || saving}
                     onClick={() => void sendToVocabForge()}
                   >
-                    {sendingToVocabForge ? "正在送往 VocabForge…" : `送出 ${selectedVocabKeys.length} 項至行光日記豆倉`}
+                    {sendingToVocabForge ? "正在送往 VocabForge…" : `送出 ${selectedVocabKeys.length} 個單字至行光日記豆倉`}
                   </button>
+                </section>
+              )}
+
+              {contextCandidates.length > 0 && (
+                <section className="vocabforge-candidate-tray context-candidate-tray">
+                  <div className="subsection-title"><div><small>主動使用出口</small><h4>送往語境修習候選匣</h4></div><span>{selectedContextKeys.length}/2 已選</span></div>
+                  <p>挑一句真正想換情境再用的句型，或一個會反覆犯錯的語法。</p>
+                  <div className="vocabforge-candidate-list">
+                    {contextCandidates.map((candidate) => {
+                      const exported = exportedContextKeys.has(candidate.key);
+                      const selected = selectedContextKeys.includes(candidate.key);
+                      return <button type="button" key={`${candidate.segmentId}:${candidate.key}`} className={selected ? "on" : ""} disabled={exported || sendingToContextRoom} onClick={() => toggleContextCandidate(candidate.key)}><span>{selected || exported ? "✓" : "○"}</span><div><b>{candidate.kind === "grammar" ? "語法" : "句型"}・{candidate.focus}</b><small>{candidate.note || "尚未填練習情境"}</small></div><em>{exported ? "已送出" : "待選"}</em></button>;
+                    })}
+                  </div>
+                  <button type="button" className="primary vocabforge-send-button" disabled={!selectedContextKeys.length || sendingToContextRoom || saving} onClick={() => void sendToContextRoom()}>{sendingToContextRoom ? "正在加入候選匣…" : `加入 ${selectedContextKeys.length} 項語境素材`}</button>
                 </section>
               )}
 
@@ -460,16 +567,9 @@ export default function EnglishJournalWorkbench({
                 <button type="button" onClick={() => setReviewing((value) => !value)}>
                   {reviewing ? "回到逐段練習" : "全文中英回看"}
                 </button>
-                <button
-                  type="button"
-                  className="primary"
-                  disabled={saving || !canCompleteEnglishJournal(draft)}
-                  onClick={() => void savePractice({ complete: true })}
-                >
-                  完成本篇
-                </button>
+                <span className="english-journal-rest-note">不用一次翻完，完成一段就可以先休息。</span>
               </div>
-              {!canCompleteEnglishJournal(draft) && <small className="completion-help">每個未略過的段落都要有英文初稿，以及 AI 修正版或自己的定稿。</small>}
+              {canCompleteEnglishJournal(draft) && <small className="completion-help">這篇所有保留段落都已完成。</small>}
             </article>
           )}
 

@@ -3621,6 +3621,8 @@
   margin-top: 12px;
 }
 .dojo .english-segment-heading > span { color: #45657d; font-size: 11px; font-weight: 800; }
+.dojo .english-segment-heading > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 7px; }
+.dojo .english-segment-heading > div .text-link { min-height: 0; padding: 3px 0; font-size: 8.5px; }
 .dojo .english-source-card {
   margin-top: 8px;
   padding: 12px;
@@ -3677,6 +3679,7 @@
   font-size: 8.5px;
   line-height: 1.55;
 }
+.dojo .english-segment-complete { width: 100%; margin-top: 10px; font-size: 10px; }
 .dojo .english-segment-nav,
 .dojo .english-journal-finish {
   display: grid;
@@ -3687,6 +3690,7 @@
 .dojo .english-segment-nav button,
 .dojo .english-journal-finish button { min-width: 0; padding: 8px; font-size: 10px; }
 .dojo .english-journal-finish { padding-top: 11px; border-top: 1px solid #d9e1e6; }
+.dojo .english-journal-rest-note { align-self: center; color: var(--muted); font-size: 9px; line-height: 1.5; text-align: center; }
 .dojo .english-review-summary {
   display: flex;
   align-items: center;
@@ -3760,6 +3764,34 @@
 .dojo .vocabforge-candidate-list button small { margin-top: 2px; color: var(--muted); font-size: 8.5px; }
 .dojo .vocabforge-candidate-list button em { color: #927949; font-size: 8px; font-style: normal; white-space: nowrap; }
 .dojo .vocabforge-send-button { width: 100%; margin-top: 9px; font-size: 9.5px; }
+.dojo .context-candidate-tray { border-color: #b9c9d6; background: #eef4f7; }
+.dojo .context-candidate-tray .subsection-title small,
+.dojo .context-candidate-tray .subsection-title > span,
+.dojo .context-candidate-tray .vocabforge-candidate-list button > span,
+.dojo .context-candidate-tray .vocabforge-candidate-list button em { color: #45657d; }
+.dojo .context-candidate-tray .vocabforge-candidate-list > button { border-color: #c6d4dd; background: #fbfdfe; }
+.dojo .context-candidate-tray .vocabforge-candidate-list > button.on { border-color: #56728d; background: #dfeaf0; }
+.dojo .english-context-inbox {
+  margin-top: 16px;
+  padding: 13px;
+  border: 1px solid #bdcbbf;
+  border-radius: 15px;
+  background: linear-gradient(150deg, #f7faf7, #edf4ef);
+}
+.dojo .english-context-inbox > p { margin: 6px 0 0; color: var(--muted); font-size: 9.5px; line-height: 1.55; }
+.dojo .english-context-seed-list { display: grid; gap: 8px; margin-top: 11px; }
+.dojo .english-context-seed-list article { padding: 10px; border: 1px solid #ced8cf; border-radius: 12px; background: #fffdfa; }
+.dojo .english-context-seed-list article > div:first-child small,
+.dojo .english-context-seed-list article > div:first-child b { display: block; }
+.dojo .english-context-seed-list article > div:first-child small { color: #587360; font-size: 8.5px; font-weight: 750; }
+.dojo .english-context-seed-list article > div:first-child b { margin-top: 3px; font-size: 11px; line-height: 1.5; }
+.dojo .english-context-seed-list article > div:first-child p { margin: 4px 0 0; color: var(--muted); font-size: 9px; }
+.dojo .english-context-seed-list article > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
+.dojo .english-context-seed-list article button { min-width: 0; padding: 7px; font-size: 9px; }
+@media (max-width: 390px) {
+  .dojo .english-segment-heading { align-items: flex-start; flex-direction: column; }
+  .dojo .english-segment-heading > div { justify-content: flex-start; }
+}
 .dojo .english-source-block {
   margin-top: 10px;
   border: 1px solid #d5dee4;
