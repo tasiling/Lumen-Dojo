@@ -31,6 +31,7 @@ import {
   type ReadingBook,
   type ReadingNote,
 } from "@/lib/reading/types";
+import { parseInsightSource, parseStoredReadingNote } from "@/lib/reading/notes";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type QueryFilter = any;
@@ -110,6 +111,7 @@ type NoteRichText = { plain_text?: string };
 type ReadingBlock = {
   id: string;
   type: string;
+  created_time?: string;
   [key: string]: unknown;
 };
 
@@ -141,7 +143,15 @@ export async function listReadingNotes(bookId: string): Promise<ReadingNote[]> {
       if (!NOTE_BLOCK_TYPES.has(block.type)) continue;
       const text = readingBlockText(block);
       if (!text.trim()) continue;
-      notes.push({ id: block.id, text, editable: block.type === "paragraph" });
+      const parsed = parseStoredReadingNote(text);
+      notes.push({
+        id: block.id,
+        text: parsed.text,
+        editable: block.type === "paragraph",
+        kind: parsed.kind,
+        metadata: parsed.metadata,
+        createdAt: block.created_time ?? "",
+      });
     }
     cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined;
   } while (cursor);
@@ -187,6 +197,23 @@ export async function getInsightCard(cardId: string): Promise<InsightCard> {
   const page = await withNotionRateLimit(() => notion().pages.retrieve({ page_id: cardId }));
   if (!("properties" in page)) throw new Error("找不到這張洞察卡片");
   return mapInsightCard(page as NotionPage);
+}
+
+export async function getInsightCardSource(cardId: string): Promise<{ sourceNoteId: string; sourceText: string } | null> {
+  let cursor: string | undefined;
+  do {
+    const response = await withNotionRateLimit(() =>
+      notion().blocks.children.list({ block_id: cardId, start_cursor: cursor, page_size: 100 })
+    );
+    for (const raw of response.results) {
+      const block = raw as unknown as ReadingBlock;
+      if (!NOTE_BLOCK_TYPES.has(block.type)) continue;
+      const parsed = parseInsightSource(readingBlockText(block));
+      if (parsed) return parsed;
+    }
+    cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined;
+  } while (cursor);
+  return null;
 }
 
 export async function listDueInsightCards(todayISO: string): Promise<InsightCard[]> {

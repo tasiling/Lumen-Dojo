@@ -55,12 +55,16 @@ export default function ReadingShelfPage() {
     <section className="screen reading-screen">
       <div className="reading-hero">
         <span className="eyebrow">修習所・心知</span>
-        <h1>閱讀萃取</h1>
-        <p>帶著問題閱讀，先留下文獻與反應，再把自己的想法提煉成可行動的洞察。</p>
+        <h1>閱讀筆記</h1>
+        <p>讀前帶著問題預習，閱讀中分開保存原文與想法，讀後再收束成自己的理解。</p>
         <div className="reading-hero-actions">
           <button className="primary" onClick={() => setForm({ mode: "start" })}>開始一本書</button>
           <button onClick={() => setForm({ mode: "wait" })}>先放入待讀</button>
         </div>
+        <button className="reading-capture-entry" onClick={() => router.push("/add?mode=reading")}>
+          <span>正在 Readmoo 閱讀？</span>
+          <b>貼上摘錄／記下想法 <i>→</i></b>
+        </button>
         <div className="reading-shortcuts">
           <button onClick={() => router.push("/reading/visits")}>今日回訪</button>
           <button onClick={() => router.push("/reading/cards")}>洞察卡片庫</button>

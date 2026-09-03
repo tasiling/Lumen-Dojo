@@ -48,6 +48,7 @@ import type {
   ProgramApplication,
   ReadingSubject,
 } from "@/lib/reading/types";
+import { serializeInsightSource } from "@/lib/reading/notes";
 
 // Session 編號格式:S-YYYYMMDD-流水號(總綱 DB-03)。流水號以當日已存在筆數 +1 計算。
 export async function nextSessionCode(dateISO: string): Promise<string> {
@@ -629,6 +630,8 @@ export async function createInsightCard(params: {
   actionType: InsightActionType;
   todayISO: string;
   nextVisitISO: string;
+  sourceNoteId?: string;
+  sourceText?: string;
 }) {
   const status: InsightStatus = params.actionType === "觀察型" ? "觀察中" : "待行動";
   const page = await withNotionRateLimit(() =>
@@ -645,6 +648,17 @@ export async function createInsightCard(params: {
         萃取日期: dateProp(params.todayISO),
         順延次數: numberProp(0),
       },
+      ...(params.sourceNoteId && params.sourceText?.trim() ? {
+        children: [
+          {
+            object: "block" as const,
+            type: "quote" as const,
+            quote: {
+              rich_text: richTextProp(serializeInsightSource(params.sourceNoteId, params.sourceText.trim())).rich_text,
+            },
+          },
+        ],
+      } : {}),
     })
   );
   return { id: page.id };
