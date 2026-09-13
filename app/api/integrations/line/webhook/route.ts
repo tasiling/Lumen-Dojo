@@ -15,10 +15,11 @@ import {
   routeEnglishImage,
   saveEnglishImageEntry,
 } from "@/lib/dojo/englishImageStore";
-import { englishImageVocabCandidates, exportEnglishImageVocab, prepareEnglishImageForContextRoom } from "@/lib/dojo/englishImageDispatch";
+import { englishImageVocabCandidates, exportEnglishImageVocab, listVocabForgeBooks, prepareEnglishImageForContextRoom } from "@/lib/dojo/englishImageDispatch";
 import {
   clipQuickReply,
   contextRoomQuickReply,
+  englishImageBookQuickReply,
   englishImageOrganizeQuickReply,
   englishImageVocabQuickReply,
   extractFirstUrl,
@@ -242,7 +243,8 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
             await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。可以先修正內容或重新分析。", target === "both" ? contextRoomQuickReply(current.id, current.contextRoomUrl) : englishImageOrganizeQuickReply(current.id));
             return;
           }
-          await replyLineMessage(event.replyToken ?? "", target === "both" ? "語境素材已備妥。再選擇要送進 VocabForge 的單字（最多三個）。" : "請選擇真正想留下的單字；每按一個就會立即送入 VocabForge。", englishImageVocabQuickReply(current.id, candidates, current.vocabForgeExports.map((item) => item.key), current.contextRoomUrl));
+          const books = await listVocabForgeBooks();
+          await replyLineMessage(event.replyToken ?? "", target === "both" ? "語境素材已備妥。請先選擇這批單字要放進哪個豆倉。" : "請先選擇要放入的 VocabForge 豆倉。", englishImageBookQuickReply(current.id, books));
           return;
         }
         await replyLineMessage(event.replyToken ?? "", "語境素材已備妥。開啟語境修習室後可繼續建立修習專案；野採母紀錄會保留。", contextRoomQuickReply(current.id, current.contextRoomUrl));
@@ -251,14 +253,37 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
       }
       return;
     }
+    if (action === "imageVocabBooks") {
+      try {
+        const books = await listVocabForgeBooks();
+        const requestedPage = Number(params.get("page") ?? 0);
+        const page = Number.isFinite(requestedPage) ? Math.max(0, Math.floor(requestedPage)) : 0;
+        await replyLineMessage(event.replyToken ?? "", `請選擇要放入的豆倉（第 ${page + 1} 頁）。`, englishImageBookQuickReply(entry.id, books, page));
+      } catch (error) {
+        await replyLineMessage(event.replyToken ?? "", `豆倉清單暫時無法讀取：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+      }
+      return;
+    }
+    if (action === "imageVocabBook") {
+      const vocabBook = params.get("book")?.trim() ?? "";
+      try {
+        const candidates = englishImageVocabCandidates(entry);
+        if (!candidates.length) throw new Error("目前沒有適合送入 VocabForge 的單字");
+        await replyLineMessage(event.replyToken ?? "", `已選擇「${vocabBook}」。請挑選真正想留下的單字（最多三個）；每按一個就會立即送入。`, englishImageVocabQuickReply(entry.id, vocabBook, candidates, entry.vocabForgeExports.map((item) => item.key), entry.contextRoomUrl));
+      } catch (error) {
+        await replyLineMessage(event.replyToken ?? "", `無法開始挑選單字：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+      }
+      return;
+    }
     if (action === "imageVocab") {
       const key = params.get("key") ?? "";
+      const vocabBook = params.get("book")?.trim() ?? "";
       try {
-        const result = await exportEnglishImageVocab(entry.id, key);
+        const result = await exportEnglishImageVocab(entry.id, key, vocabBook);
         const candidates = englishImageVocabCandidates(result.entry);
         const exportedKeys = result.entry.vocabForgeExports.map((item) => item.key);
         const remaining = candidates.filter((item) => !exportedKeys.includes(item.key));
-        await replyLineMessage(event.replyToken ?? "", `「${result.exported.expression}」已${result.exported.result === "existing" ? "存在於" : "送入"} VocabForge。${remaining.length && exportedKeys.length < 3 ? "還可以繼續選擇。" : "這筆候選單字已處理完成。"}`, englishImageVocabQuickReply(result.entry.id, candidates, exportedKeys, result.entry.contextRoomUrl));
+        await replyLineMessage(event.replyToken ?? "", `「${result.exported.expression}」已${result.exported.result === "existing" ? "存在於" : "送入"}豆倉「${result.exported.vocabBook || vocabBook}」。${remaining.length && exportedKeys.length < 3 ? "還可以繼續選擇。" : "這筆候選單字已處理完成。"}`, englishImageVocabQuickReply(result.entry.id, vocabBook, candidates, exportedKeys, result.entry.contextRoomUrl));
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
       }

@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import type { CaptureClipPurpose } from "./formal";
-import type { EnglishImageVocabCandidate } from "./englishImageDispatch";
+import type { EnglishImageVocabCandidate, VocabForgeBook } from "./englishImageDispatch";
 
 export type LineWebhookEvent = {
   type: "message" | "postback" | string;
@@ -173,6 +173,10 @@ function quickReplyItem(label: string, data: string): LineQuickReplyItem {
   return { type: "action", action: { type: "postback", label, data, displayText: label } };
 }
 
+function lineLabel(value: string): string {
+  return Array.from(value.trim()).slice(0, 20).join("") || "未命名豆倉";
+}
+
 function uriQuickReplyItem(label: string, uri: string): LineQuickReplyItem {
   return { type: "action", action: { type: "uri", label, uri } };
 }
@@ -198,12 +202,26 @@ export function englishImageOrganizeQuickReply(entryId: string) {
   ] };
 }
 
-export function englishImageVocabQuickReply(entryId: string, candidates: EnglishImageVocabCandidate[], exportedKeys: string[], contextRoomUrl = "") {
+export function englishImageBookQuickReply(entryId: string, books: VocabForgeBook[], page = 0) {
+  const pageSize = 10;
+  const lastPage = Math.max(0, Math.ceil(books.length / pageSize) - 1);
+  const safePage = Math.min(Math.max(0, page), lastPage);
+  const items = books.slice(safePage * pageSize, (safePage + 1) * pageSize).map((book) => quickReplyItem(
+    lineLabel(book.name),
+    new URLSearchParams({ action: "imageVocabBook", entryId, book: book.name }).toString(),
+  ));
+  if (safePage > 0) items.push(quickReplyItem("上一頁", new URLSearchParams({ action: "imageVocabBooks", entryId, page: String(safePage - 1) }).toString()));
+  if (safePage < lastPage) items.push(quickReplyItem("下一頁", new URLSearchParams({ action: "imageVocabBooks", entryId, page: String(safePage + 1) }).toString()));
+  items.push(quickReplyItem("先留野採", new URLSearchParams({ action: "imageKeep", entryId }).toString()));
+  return { items };
+}
+
+export function englishImageVocabQuickReply(entryId: string, vocabBook: string, candidates: EnglishImageVocabCandidate[], exportedKeys: string[], contextRoomUrl = "") {
   const exported = new Set(exportedKeys);
   const remainingSlots = Math.max(0, 3 - exportedKeys.length);
   const items: LineQuickReplyItem[] = candidates.filter((candidate) => !exported.has(candidate.key)).slice(0, remainingSlots).map((candidate) => quickReplyItem(
     candidate.expression.slice(0, 20),
-    new URLSearchParams({ action: "imageVocab", entryId, key: candidate.key }).toString(),
+    new URLSearchParams({ action: "imageVocab", entryId, key: candidate.key, book: vocabBook }).toString(),
   ));
   if (contextRoomUrl) items.push(uriQuickReplyItem("開啟語境修習室", contextRoomUrl));
   items.push(quickReplyItem("完成", new URLSearchParams({ action: "imageKeep", entryId }).toString()));
@@ -231,13 +249,43 @@ export function clipQuickReply(captureId: string, includeScreenshot: boolean) {
 
 type LineQuickReply = { items: LineQuickReplyItem[] };
 
+export function splitLineText(text: string): string[] {
+  const limit = 5000;
+  const maxMessages = 5;
+  const overflowNote = "\n\n（內容超過 LINE 回覆上限，完整紀錄請至野採查看。）";
+  let remaining = text.trim() || " ";
+  const chunks: string[] = [];
+  while (Array.from(remaining).length > limit && chunks.length < maxMessages - 1) {
+    const characters = Array.from(remaining);
+    const window = characters.slice(0, limit).join("");
+    const newline = window.lastIndexOf("\n");
+    const splitAt = newline >= Math.floor(limit * 0.5) ? Array.from(window.slice(0, newline + 1)).length : limit;
+    chunks.push(characters.slice(0, splitAt).join("").trimEnd());
+    remaining = characters.slice(splitAt).join("").trimStart();
+  }
+  const remainingCharacters = Array.from(remaining);
+  if (remainingCharacters.length > limit) {
+    chunks.push(remainingCharacters.slice(0, limit - Array.from(overflowNote).length).join("").trimEnd() + overflowNote);
+  } else {
+    chunks.push(remaining);
+  }
+  return chunks;
+}
+
 export async function replyLineMessage(replyToken: string, text: string, quickReply?: LineQuickReply): Promise<void> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token || !replyToken) return;
   const response = await fetch("https://api.line.me/v2/bot/message/reply", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ replyToken, messages: [{ type: "text", text: text.slice(0, 5000), ...(quickReply ? { quickReply } : {}) }] }),
+    body: JSON.stringify({
+      replyToken,
+      messages: splitLineText(text).map((chunk, index, chunks) => ({
+        type: "text",
+        text: chunk,
+        ...(quickReply && index === chunks.length - 1 ? { quickReply } : {}),
+      })),
+    }),
   });
   if (!response.ok) throw new Error(`LINE 回覆失敗（${response.status}）`);
 }

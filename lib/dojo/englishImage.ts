@@ -9,6 +9,7 @@ export type EnglishImageLineInputMode = "context" | "ocr" | null;
 export type EnglishImageVocabExport = {
   key: string;
   expression: string;
+  vocabBook: string;
   result: "created" | "existing";
   syncedAt: string;
 };
@@ -142,7 +143,13 @@ export function normalizeEnglishImageEntry(
       const key = text(value.key, 180);
       const syncedAt = text(value.syncedAt, 80);
       if (!expression || !key || !syncedAt) return [];
-      return [{ key, expression, result: value.result === "existing" ? "existing" as const : "created" as const, syncedAt }];
+      return [{
+        key,
+        expression,
+        vocabBook: text(value.vocabBook, 200),
+        result: value.result === "existing" ? "existing" as const : "created" as const,
+        syncedAt,
+      }];
     }) : [],
     analysisStatus,
     analysisConfidence: confidence,
