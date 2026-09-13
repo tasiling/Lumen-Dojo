@@ -23,14 +23,14 @@ export default function WeavingCaptureInbox() {
     try {
       const response = await fetch("/api/dojo/captures", { cache: "no-store" });
       const result = await json<{ captures: CaptureEntry[] }>(response);
-      setCaptures((result.captures ?? []).filter((capture) => capture.status === "adopted" && capture.processingDepth !== "raw" && capture.destinations.includes("weaving")));
+      setCaptures((result.captures ?? []).filter((capture) => capture.status === "adopted" && (capture.creativeMaturity === "C2" || capture.creativeMaturity === "C3") && capture.destinations.includes("weaving")));
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
 
   return <section className="weaving-inbox">
-    <div className="section-heading weaving-inbox-heading"><div><span className="eyebrow">野採之後</span><h2>可製作素材</h2><p className="lead">只有已採用、完成輕整理並送往織光堂的材料會出現。</p></div><span className="weaving-count">{captures.length}</span></div>
+    <div className="section-heading weaving-inbox-heading"><div><span className="eyebrow">野採之後</span><h2>可製作素材</h2><p className="lead">只有已採用、創作成熟度達 C2 以上並送往織光堂的材料會出現。</p></div><span className="weaving-count">{captures.length}</span></div>
     {loading && <div className="empty">正在打開素材匣…</div>}
     {error && <p className="form-error">{error}</p>}
     {!loading && !error && captures.length === 0 && <div className="weaving-empty"><span>✦</span><b>目前沒有可製作素材</b><p>尚未成熟的材料可以先留在原處。</p><Link href="/forage">前往野採</Link></div>}

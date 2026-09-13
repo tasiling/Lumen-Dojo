@@ -98,13 +98,13 @@ async function captureSource(id: string) {
   const row = await getKnowledgeEntry(id);
   if (!row.標題.startsWith(CAPTURE_TITLE_PREFIX)) throw new Error("素材類型不符");
   const capture = normalizeCaptureEntry(parseJson(row.內容), { id });
-  if (!capture || capture.status !== "adopted" || !capture.destinations.includes("weaving") || capture.processingDepth === "raw") {
-    throw new Error("這份素材尚未完成整理或尚未送往織光堂");
+  if (!capture || capture.status !== "adopted" || !capture.destinations.includes("weaving") || (capture.creativeMaturity !== "C2" && capture.creativeMaturity !== "C3")) {
+    throw new Error("這份素材尚未達 C2，或尚未採用並送往織光堂");
   }
   return {
     sourceType: "forage_capture", sourceId: id,
     sourceRefs: [{ sourceType: "forage_capture", sourceId: id }],
-    sourceSnapshot: [capture.forageSummary || capture.excerpt, capture.note && `擷取時的想法：${capture.note}`, capture.sourceUrl && `來源：${capture.sourceUrl}`].filter(Boolean).join("\n\n"),
+    sourceSnapshot: [capture.forageSummary || capture.excerpt, capture.note && `擷取時的想法：${capture.note}`, capture.sourceUrl && `來源：${capture.sourceUrl}`, capture.sourceLocator && `定位：${capture.sourceLocator}`].filter(Boolean).join("\n\n"),
     fallbackTitle: capture.weaving.projectTitle || capture.title,
     legacyDraft: capture.weaving.productionNote, legacyOutputUrl: capture.weaving.outputUrl,
   };

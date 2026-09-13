@@ -18,6 +18,7 @@ import {
   CREATIVE_ROLE_TITLE,
   MANIFESTATION_MILESTONE_TITLE_PREFIX,
 } from "./manifestation";
+import { KNOWLEDGE_CLAIM_TITLE_PREFIX } from "./knowledgeClaims";
 
 export { ENGLISH_JOURNAL_TITLE_PREFIX };
 export { CONTEXT_ROOM_RESULT_TITLE_PREFIX };
@@ -48,6 +49,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   CREATIVE_ROLE_TITLE,
   MANIFESTATION_MILESTONE_TITLE_PREFIX,
   CREATIVE_PRACTICE_TITLE_PREFIX,
+  KNOWLEDGE_CLAIM_TITLE_PREFIX,
 ] as const;
 
 export const TAIPEI_TIME_ZONE = "Asia/Taipei";
@@ -277,6 +279,8 @@ export const CAPTURE_CONTENT_TYPES = {
 export type CaptureContentType = keyof typeof CAPTURE_CONTENT_TYPES;
 export type CaptureStatus = "pending" | "adopted" | "faded";
 export type CaptureProcessingDepth = "raw" | "light" | "deep";
+export type CreativeMaturity = "C0" | "C1" | "C2" | "C3";
+export type CaptureLlmMaterialUse = "disabled" | "inspiration_only";
 export type CaptureDestination = "practice" | "weaving" | "dao";
 export type LearningTrackKey = "english" | "massage" | "yijing" | "ziwei" | "qimen";
 export type KnowledgeRelation = "supports" | "extends" | "contradicts" | "example" | "question";
@@ -293,6 +297,13 @@ export type CaptureKnowledgeLink = {
   id: string;
   label: string;
   relation: KnowledgeRelation;
+};
+
+export type CaptureClaimRelation = "source" | "supports" | "contradicts" | "example" | "inspiration";
+
+export type CaptureClaimRef = {
+  claimId: string;
+  relation: CaptureClaimRelation;
 };
 
 export const WEAVING_OUTPUT_TYPES = {
@@ -327,6 +338,10 @@ export type CaptureEntry = {
   clip: CaptureClipMeta;
   status: CaptureStatus;
   processingDepth: CaptureProcessingDepth;
+  creativeMaturity: CreativeMaturity;
+  sourceLocator: string;
+  claimRefs: CaptureClaimRef[];
+  llmMaterialUse: CaptureLlmMaterialUse;
   contentType: CaptureContentType | null;
   forageSummary: string;
   forageReason: string;
@@ -859,6 +874,10 @@ export function normalizeCaptureEntry(
       : legacyPrepared
         ? (contentType || legacyWeavingNote ? "deep" : "light")
         : "raw";
+  const creativeMaturity: CreativeMaturity =
+    source.creativeMaturity === "C1" || source.creativeMaturity === "C2" || source.creativeMaturity === "C3"
+      ? source.creativeMaturity
+      : processingDepth === "raw" ? "C0" : "C1";
   const destinations = Array.isArray(source.destinations)
     ? source.destinations.filter((item): item is CaptureDestination =>
         item === "practice" || item === "weaving" || item === "dao")
@@ -879,6 +898,17 @@ export function normalizeCaptureEntry(
             : "extends";
         return label ? [{ id: stringValue(link.id, crypto.randomUUID()), label, relation }] : [];
       }).slice(0, 30)
+    : [];
+  const claimRefs = Array.isArray(source.claimRefs)
+    ? source.claimRefs.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const ref = item as Partial<CaptureClaimRef>;
+        const claimId = stringValue(ref.claimId).trim().slice(0, 300);
+        const relation: CaptureClaimRelation = ref.relation === "supports" || ref.relation === "contradicts" || ref.relation === "example" || ref.relation === "inspiration"
+          ? ref.relation
+          : "source";
+        return claimId ? [{ claimId, relation }] : [];
+      }).filter((ref, index, refs) => refs.findIndex((other) => other.claimId === ref.claimId && other.relation === ref.relation) === index).slice(0, 30)
     : [];
   const sourceWeaving: Partial<CaptureWeavingState> = source.weaving && typeof source.weaving === "object" ? source.weaving : {};
   const outputType = typeof sourceWeaving.outputType === "string" && sourceWeaving.outputType in WEAVING_OUTPUT_TYPES
@@ -928,6 +958,10 @@ export function normalizeCaptureEntry(
     },
     status,
     processingDepth,
+    creativeMaturity,
+    sourceLocator: stringValue(source.sourceLocator).trim().slice(0, 1000),
+    claimRefs,
+    llmMaterialUse: source.llmMaterialUse === "inspiration_only" ? "inspiration_only" : "disabled",
     contentType,
     forageSummary: stringValue(source.forageSummary, legacyWeavingNote).trim().slice(0, 5000),
     forageReason: stringValue(source.forageReason).trim().slice(0, 3000),
@@ -962,6 +996,10 @@ export function captureContent(entry: CaptureEntry): FormalCaptureContent {
     clip: entry.clip,
     status: entry.status,
     processingDepth: entry.processingDepth,
+    creativeMaturity: entry.creativeMaturity,
+    sourceLocator: entry.sourceLocator,
+    claimRefs: entry.claimRefs,
+    llmMaterialUse: entry.llmMaterialUse,
     contentType: entry.contentType,
     forageSummary: entry.forageSummary,
     forageReason: entry.forageReason,

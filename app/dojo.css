@@ -5295,3 +5295,66 @@
   .dojo .weaving-project-row > span { padding: 8px 0 0; border-top: 1px solid #d9e1e4; border-left: 0; }
   .dojo .publication-save-actions { grid-template-columns: 1fr; }
 }
+
+/* 知識主張：收在道藏之下，不另建平行首頁。 */
+.dojo .knowledge-entry-link { display: grid; gap: 3px; margin: 0 0 14px; padding: 15px; border: 1px solid #c9bca5; border-radius: 18px; background: linear-gradient(145deg, #fffaf0, #f5eee1); color: inherit; text-decoration: none; }
+.dojo .knowledge-entry-link span { color: #8b6941; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.dojo .knowledge-entry-link b { font: 650 16px "Noto Serif TC", serif; }
+.dojo .knowledge-entry-link small { color: var(--muted); line-height: 1.5; }
+.dojo .knowledge-workbench { display: grid; gap: 14px; }
+.dojo .knowledge-intro h2 { margin: 4px 0 6px; font: 650 20px "Noto Serif TC", serif; }
+.dojo .knowledge-intro > p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.65; }
+.dojo .knowledge-intro details { margin-top: 13px; padding-top: 11px; border-top: 1px solid #e2d8c8; }
+.dojo .knowledge-intro summary { cursor: pointer; color: #765631; font-weight: 750; }
+.dojo .knowledge-intro details > label,
+.dojo .knowledge-claim-card > label,
+.dojo .knowledge-create-grid label { display: grid; gap: 5px; margin-top: 10px; color: #665d50; font-size: 10px; font-weight: 700; }
+.dojo .knowledge-intro details > .primary { width: 100%; margin-top: 11px; }
+.dojo .knowledge-create-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.dojo .knowledge-tabs { grid-template-columns: repeat(4, 1fr); }
+.dojo .knowledge-claim-list { display: grid; gap: 11px; }
+.dojo .knowledge-claim-card { border-left: 4px solid #c6ad82; }
+.dojo .knowledge-claim-card.status-active { border-left-color: #718d73; }
+.dojo .knowledge-claim-card.status-disputed,
+.dojo .knowledge-claim-card.status-partial { border-left-color: #b28a50; }
+.dojo .knowledge-claim-card.status-refuted,
+.dojo .knowledge-claim-card.status-superseded { border-left-color: #9a8580; }
+.dojo .knowledge-claim-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.dojo .knowledge-claim-meta span,
+.dojo .knowledge-use-row span { padding: 4px 7px; border-radius: 999px; background: #f0e8da; color: #6f5a3b; font-size: 8.5px; font-weight: 750; }
+.dojo .knowledge-claim-card h3 { margin: 11px 0 6px; font: 650 16px/1.65 "Noto Serif TC", serif; }
+.dojo .knowledge-claim-card > p { margin: 5px 0; color: var(--muted); font-size: 9.5px; line-height: 1.55; }
+.dojo .knowledge-boundary { margin: 10px 0; padding: 10px; border-radius: 12px; background: #f7f3ea; }
+.dojo .knowledge-boundary b { font-size: 9px; color: #725f45; }
+.dojo .knowledge-boundary p { margin: 4px 0 0; font-size: 10px; line-height: 1.55; }
+.dojo .knowledge-source-line { overflow-wrap: anywhere; }
+.dojo .knowledge-use-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.dojo .knowledge-card-actions,
+.dojo .knowledge-review-actions,
+.dojo .knowledge-secondary-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.dojo .knowledge-card-actions button,
+.dojo .knowledge-review-actions button { flex: 1 1 110px; }
+.dojo .knowledge-secondary-actions .danger { margin-left: auto; color: #925c52; }
+.dojo .knowledge-uses { display: grid; gap: 7px; margin-top: 11px; padding: 11px; border: 1px solid #ded3c1; border-radius: 12px; }
+.dojo .knowledge-uses legend { padding: 0 5px; color: #665d50; font-size: 10px; font-weight: 700; }
+.dojo .knowledge-sources { margin-top: 11px; }
+.dojo .knowledge-sources > div { display: grid; gap: 3px; margin-top: 8px; padding: 9px; border-radius: 10px; background: #f7f3eb; }
+.dojo .knowledge-sources b,
+.dojo .knowledge-sources span { font-size: 9px; }
+.dojo .knowledge-sources p { margin: 3px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; white-space: pre-wrap; }
+.dojo .knowledge-source-add { display: grid; gap: 7px; margin-top: 9px; padding-top: 9px; border-top: 1px solid #ded3c1; }
+.dojo .creative-maturity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.dojo .creative-maturity-grid button { display: grid; gap: 3px; padding: 9px; border: 1px solid #d7ccba; border-radius: 11px; background: #fffdfa; text-align: left; }
+.dojo .creative-maturity-grid button.on { border-color: #8f7452; background: #f3eadb; box-shadow: inset 0 0 0 1px #8f7452; }
+.dojo .creative-maturity-grid b { font-size: 10px; }
+.dojo .creative-maturity-grid small { color: var(--muted); font-size: 8.5px; line-height: 1.4; }
+.dojo .claim-bridge { display: grid; gap: 8px; margin-top: 13px; padding: 12px; border: 1px solid #d5c6ae; border-radius: 14px; background: #fbf7ef; }
+.dojo .claim-bridge > b { font: 650 14px "Noto Serif TC", serif; }
+.dojo .claim-bridge > p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+
+@media (max-width: 520px) {
+  .dojo .knowledge-tabs { grid-template-columns: 1fr 1fr; }
+  .dojo .knowledge-create-grid,
+  .dojo .creative-maturity-grid { grid-template-columns: 1fr; }
+  .dojo .knowledge-link-add { grid-template-columns: 1fr; }
+}
