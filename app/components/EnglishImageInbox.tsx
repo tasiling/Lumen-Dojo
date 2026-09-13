@@ -51,7 +51,7 @@ export default function EnglishImageInbox() {
 
   async function action(entry: EnglishImageEntry, name: "analyze" | "moveToCapture") {
     if (name === "analyze" && entry.analysisAttempts > 0 && !window.confirm("重新分析會再次使用 API 額度，確定要繼續嗎？")) return;
-    if (name === "moveToCapture" && !window.confirm("確定將這張圖片改送野採？英文影像匣中的紀錄會轉成一般剪藏。")) return;
+    if (name === "moveToCapture" && !window.confirm("確定將這張英文影像轉成一般野採素材？原圖與已產生的文字仍會保留。")) return;
     setBusy(entry.id); setError("");
     try {
       const result = await json<{ entry?: EnglishImageEntry }>(await fetch("/api/dojo/english-images", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: entry.id, action: name }) }));
@@ -75,8 +75,8 @@ export default function EnglishImageInbox() {
   }
 
   return <div className="english-image-inbox learning-resources">
-    <div className="subsection-title"><div><span className="eyebrow">LINE 專屬入口</span><h4>英文影像匣</h4></div><span>{entries.length}</span></div>
-    <p className="muted-note">遊戲畫面與日常照片留在這裡，不會混進野採。AI 只在分類後分析一次。</p>
+    <div className="subsection-title"><div><span className="eyebrow">野採・LINE 專屬入口</span><h4>英文影像匣</h4></div><span>{entries.length}</span></div>
+    <p className="muted-note">遊戲畫面與日常照片先留在野採的英文影像區；完成辨識與初步分類後，再決定是否連到修習所。AI 只在分類後分析一次。</p>
     <div className="english-image-tabs">{ROUTES.map((item) => <button key={item.key} className={filter === item.key ? "on" : ""} onClick={() => setFilter(item.key)}>{item.label}</button>)}</div>
     {error && <p className="form-error">{error}</p>}
     {shown.length === 0 ? <p className="muted-note">目前沒有這一類圖片。</p> : shown.map((entry) => {
@@ -91,7 +91,7 @@ export default function EnglishImageInbox() {
           {entry.learningPhrases && <details><summary>可學詞句</summary><p>{entry.learningPhrases}</p></details>}
           {entry.analyzedAt && <small className="english-image-usage">{entry.analysisModel}・{entry.inputTokens + entry.outputTokens} tokens・約 US${entry.estimatedCostUsd.toFixed(4)}</small>}
           {entry.route === "pending" && <div className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>{busy === entry.id ? "分析中…" : "遊戲英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "daily")}>{busy === entry.id ? "分析中…" : "英文日常並分析"}</button></div>}
-          <div className="english-image-actions"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>整理</button>{entry.route !== "pending" && <button disabled={busy === entry.id} onClick={() => void action(entry, "analyze")}>{busy === entry.id ? "處理中…" : entry.analysisAttempts ? "重新分析" : "AI 分析"}</button>}<button className="text-link" disabled={busy === entry.id} onClick={() => void action(entry, "moveToCapture")}>改送野採</button></div>
+          <div className="english-image-actions"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>整理</button>{entry.route !== "pending" && <button disabled={busy === entry.id} onClick={() => void action(entry, "analyze")}>{busy === entry.id ? "處理中…" : entry.analysisAttempts ? "重新分析" : "AI 分析"}</button>}<button className="text-link" disabled={busy === entry.id} onClick={() => void action(entry, "moveToCapture")}>轉為一般素材</button></div>
         </> : <div className="english-image-editor">
           <label>類型</label><select className="field" value={draft.route} onChange={(event) => setDraft({ ...draft, route: event.target.value as EnglishImageRoute })}><option value="pending">待分類</option><option value="game">遊戲英文</option><option value="daily">英文日常</option></select>
           <label>標題／遊戲或場景</label><input className="field" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
