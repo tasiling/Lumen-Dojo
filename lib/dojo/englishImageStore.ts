@@ -14,12 +14,12 @@ import {
 } from "./englishImage";
 import { listJsonRecords, updateJsonRecordById } from "./notionStore";
 
-export async function listEnglishImageEntries(): Promise<EnglishImageEntry[]> {
+export async function listEnglishImageEntries(options: { includeMerged?: boolean } = {}): Promise<EnglishImageEntry[]> {
   const rows = await listJsonRecords(ENGLISH_IMAGE_TITLE_PREFIX);
   return rows.flatMap((row) => {
     const entry = normalizeEnglishImageEntry(row.value, { id: row.id });
     return entry ? [entry] : [];
-  }).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+  }).filter((entry) => options.includeMerged || !entry.mergedIntoId).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
 }
 
 export async function getEnglishImageEntry(id: string): Promise<{ entry: EnglishImageEntry; title: string }> {
@@ -85,20 +85,46 @@ export async function routeEnglishImage(entry: EnglishImageEntry, route: Exclude
   });
 }
 
+export async function mergeEnglishImageIntoPrevious(current: EnglishImageEntry): Promise<EnglishImageEntry> {
+  const entries = await listEnglishImageEntries();
+  const previous = entries.find((entry) => entry.id !== current.id && entry.capturedAt < current.capturedAt);
+  if (!previous) throw new Error("找不到可以合併的上一張圖片");
+  if (Date.now() - new Date(previous.capturedAt).getTime() > 30 * 60_000) throw new Error("上一張圖片已超過三十分鐘，請到網頁手動整理");
+  const sourceIds = new Set(previous.attachments.map((item) => item.sourceMessageId));
+  const attachments = [...previous.attachments, ...current.attachments.filter((item) => !sourceIds.has(item.sourceMessageId))].slice(0, 6);
+  const parent = await saveEnglishImageEntry({
+    ...previous,
+    attachments,
+    attachment: attachments[0],
+    analysisStatus: previous.analysisAttempts ? "idle" : previous.analysisStatus,
+    analysisReviewReason: previous.analysisAttempts ? "圖片已合併，請重新分析完整情境。" : previous.analysisReviewReason,
+  });
+  await saveEnglishImageEntry({ ...current, mergedIntoId: parent.id, status: "organized", lineInputMode: null, lineInputUntil: null });
+  return parent;
+}
+
 export async function englishImageUrl(entry: EnglishImageEntry): Promise<string> {
-  const block = await withNotionRateLimit(() => notion().blocks.retrieve({ block_id: entry.attachment.blockId }));
+  return englishImageAttachmentUrl(entry.attachment);
+}
+
+export async function englishImageAttachmentUrl(attachment: EnglishImageEntry["attachment"]): Promise<string> {
+  const block = await withNotionRateLimit(() => notion().blocks.retrieve({ block_id: attachment.blockId }));
   if (!("type" in block) || block.type !== "image" || !("image" in block)) throw new Error("找不到英文影像");
   if (block.image.type !== "file" || !block.image.file?.url) throw new Error("英文影像網址尚未可用");
   return block.image.file.url;
 }
 
 export async function englishImageBytes(entry: EnglishImageEntry): Promise<{ bytes: ArrayBuffer; mimeType: string }> {
-  const url = await englishImageUrl(entry);
+  return englishImageAttachmentBytes(entry.attachment);
+}
+
+export async function englishImageAttachmentBytes(attachment: EnglishImageEntry["attachment"]): Promise<{ bytes: ArrayBuffer; mimeType: string }> {
+  const url = await englishImageAttachmentUrl(attachment);
   const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
   if (!response.ok) throw new Error(`英文影像讀取失敗（${response.status}）`);
   const bytes = await response.arrayBuffer();
   if (bytes.byteLength > 20 * 1024 * 1024) throw new Error("圖片超過 20 MB，暫時無法分析");
-  return { bytes, mimeType: (response.headers.get("content-type") ?? entry.attachment.mimeType).split(";")[0] };
+  return { bytes, mimeType: (response.headers.get("content-type") ?? attachment.mimeType).split(";")[0] };
 }
 
 export async function moveEnglishImageToCapture(entry: EnglishImageEntry) {
@@ -112,7 +138,7 @@ export async function moveEnglishImageToCapture(entry: EnglishImageEntry) {
       origin: "line", purpose: "saveFirst", sourceKind: "screenshot", platform: "LINE 截圖",
       externalEventId: entry.externalEventId, externalMessageId: entry.externalMessageId,
       awaitingScreenshotUntil: null, webPreview: { description: "", imageUrl: "", fetchedAt: null, status: "none" },
-      attachments: [{ id: crypto.randomUUID(), kind: "image", storage: "notion", ...entry.attachment }],
+      attachments: entry.attachments.map((attachment) => ({ id: crypto.randomUUID(), kind: "image" as const, storage: "notion" as const, ...attachment })),
     },
   }, { id: entry.id, capturedAt: entry.capturedAt, touch: true });
   if (!capture) throw new Error("無法轉成一般剪藏");

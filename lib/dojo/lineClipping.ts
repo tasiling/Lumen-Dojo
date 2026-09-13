@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import type { CaptureClipPurpose } from "./formal";
+import type { EnglishImageVocabCandidate } from "./englishImageDispatch";
 
 export type LineWebhookEvent = {
   type: "message" | "postback" | string;
@@ -166,8 +167,14 @@ export async function fetchWebPreview(sourceUrl: string): Promise<WebPreview> {
   }
 }
 
-function quickReplyItem(label: string, data: string) {
+type LineQuickReplyItem = { type: "action"; action: { type: "postback"; label: string; data: string; displayText: string } | { type: "uri"; label: string; uri: string } };
+
+function quickReplyItem(label: string, data: string): LineQuickReplyItem {
   return { type: "action", action: { type: "postback", label, data, displayText: label } };
+}
+
+function uriQuickReplyItem(label: string, uri: string): LineQuickReplyItem {
+  return { type: "action", action: { type: "uri", label, uri } };
 }
 
 export function imageRouteQuickReply(entryId: string) {
@@ -175,6 +182,39 @@ export function imageRouteQuickReply(entryId: string) {
     quickReplyItem("遊戲英文", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
     quickReplyItem("英文日常", new URLSearchParams({ action: "imageRoute", entryId, route: "daily" }).toString()),
     quickReplyItem("一般剪藏", new URLSearchParams({ action: "imageRoute", entryId, route: "capture" }).toString()),
+  ] };
+}
+
+export function englishImageOrganizeQuickReply(entryId: string) {
+  return { items: [
+    quickReplyItem("補充情境", new URLSearchParams({ action: "imageInput", entryId, mode: "context" }).toString()),
+    quickReplyItem("修正原文", new URLSearchParams({ action: "imageInput", entryId, mode: "ocr" }).toString()),
+    quickReplyItem("重新分析", new URLSearchParams({ action: "imageAnalyze", entryId }).toString()),
+    quickReplyItem("合併上一張", new URLSearchParams({ action: "imageMergePrevious", entryId }).toString()),
+    quickReplyItem("送語境修習室", new URLSearchParams({ action: "imageDispatch", entryId, target: "context" }).toString()),
+    quickReplyItem("送 VocabForge", new URLSearchParams({ action: "imageDispatch", entryId, target: "vocab" }).toString()),
+    quickReplyItem("兩邊都送", new URLSearchParams({ action: "imageDispatch", entryId, target: "both" }).toString()),
+    quickReplyItem("先留野採", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
+  ] };
+}
+
+export function englishImageVocabQuickReply(entryId: string, candidates: EnglishImageVocabCandidate[], exportedKeys: string[], contextRoomUrl = "") {
+  const exported = new Set(exportedKeys);
+  const remainingSlots = Math.max(0, 3 - exportedKeys.length);
+  const items: LineQuickReplyItem[] = candidates.filter((candidate) => !exported.has(candidate.key)).slice(0, remainingSlots).map((candidate) => quickReplyItem(
+    candidate.expression.slice(0, 20),
+    new URLSearchParams({ action: "imageVocab", entryId, key: candidate.key }).toString(),
+  ));
+  if (contextRoomUrl) items.push(uriQuickReplyItem("開啟語境修習室", contextRoomUrl));
+  items.push(quickReplyItem("完成", new URLSearchParams({ action: "imageKeep", entryId }).toString()));
+  return { items };
+}
+
+export function contextRoomQuickReply(entryId: string, url: string) {
+  return { items: [
+    uriQuickReplyItem("開啟語境修習室", url),
+    quickReplyItem("送 VocabForge", new URLSearchParams({ action: "imageDispatch", entryId, target: "vocab" }).toString()),
+    quickReplyItem("先留野採", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
   ] };
 }
 
@@ -189,7 +229,7 @@ export function clipQuickReply(captureId: string, includeScreenshot: boolean) {
   return { items };
 }
 
-type LineQuickReply = { items: ReturnType<typeof quickReplyItem>[] };
+type LineQuickReply = { items: LineQuickReplyItem[] };
 
 export async function replyLineMessage(replyToken: string, text: string, quickReply?: LineQuickReply): Promise<void> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
