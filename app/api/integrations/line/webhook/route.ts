@@ -17,12 +17,15 @@ import {
 } from "@/lib/dojo/englishImageStore";
 import { englishImageVocabCandidates, exportEnglishImageVocab, listVocabForgeBooks, prepareEnglishImageForContextRoom } from "@/lib/dojo/englishImageDispatch";
 import {
+  basicLineMenuQuickReply,
+  captureImageQuickReply,
   clipQuickReply,
   contextRoomQuickReply,
   englishImageBookQuickReply,
   englishImageOrganizeQuickReply,
   englishImageVocabQuickReply,
   extractFirstUrl,
+  forageQuickReply,
   fetchLineImage,
   fetchWebPreview,
   imageRouteQuickReply,
@@ -70,9 +73,77 @@ function lineLearningSummary(entry: EnglishImageEntry, intro: string): string {
   return sections.filter(Boolean).join("\n\n");
 }
 
+function forageUrl(): string {
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://lumen-dojo.up.railway.app";
+  try { return new URL("/forage", base).toString(); }
+  catch { return "https://lumen-dojo.up.railway.app/forage"; }
+}
+
+async function handleLineCommand(event: LineWebhookEvent, command: string): Promise<boolean> {
+  const replyToken = event.replyToken ?? "";
+  if (command === "野採圖片") {
+    await replyLineMessage(replyToken, "請拍照或從相簿選擇一張圖片。收到後，我會先保存到野採，再請你選擇素材類型。", captureImageQuickReply());
+    return true;
+  }
+  if (command === "剪藏網址" || command === "貼網址") {
+    await replyLineMessage(replyToken, "請直接貼上完整網頁網址；也可以在同一則訊息補上一句收藏原因。\n\n例如：\nhttps://example.com\n喜歡這篇的觀點切入方式。", basicLineMenuQuickReply());
+    return true;
+  }
+  if (command === "最近一筆") {
+    const [images, captures] = await Promise.all([listEnglishImageEntries(), listCaptureEntries()]);
+    const image = images[0];
+    const capture = captures[0];
+    if (!image && !capture) {
+      await replyLineMessage(replyToken, "野採目前還沒有素材。可以先傳一張圖片或貼上一個網址。", captureImageQuickReply());
+      return true;
+    }
+    if (image && (!capture || image.capturedAt >= capture.capturedAt)) {
+      const status = image.route === "pending" ? "待分類" : image.analysisStatus === "completed" ? "AI 已完成" : image.analysisStatus === "needs-review" ? "需要確認" : "尚待整理";
+      await replyLineMessage(replyToken, `最近一筆｜英文影像\n「${image.title}」\n狀態：${status}`, image.route === "pending" ? imageRouteQuickReply(image.id) : englishImageOrganizeQuickReply(image.id));
+      return true;
+    }
+    if (capture) {
+      await replyLineMessage(replyToken, `最近一筆｜一般素材\n「${capture.title}」\n${capture.sourceUrl || "圖片素材"}`, clipQuickReply(capture.id, capture.clip.attachments.length === 0 && Boolean(capture.sourceUrl)));
+      return true;
+    }
+  }
+  if (command === "待整理") {
+    const [images, captures] = await Promise.all([listEnglishImageEntries(), listCaptureEntries()]);
+    const pendingImages = images.filter((item) => item.status === "inbox").length;
+    const pendingCaptures = captures.filter((item) => item.status === "pending").length;
+    await replyLineMessage(replyToken, `野採目前共有 ${pendingImages + pendingCaptures} 筆待整理素材：\n\n英文影像：${pendingImages} 筆\n一般素材：${pendingCaptures} 筆`, forageQuickReply(forageUrl()));
+    return true;
+  }
+  if (command === "豆倉") {
+    try {
+      const books = await listVocabForgeBooks();
+      const rows = books.map((book) => `・${book.name}（${book.count}）`).join("\n");
+      await replyLineMessage(replyToken, `VocabForge 目前可用的豆倉：\n\n${rows}\n\n要放入單字時，請先叫出「最近一筆」，再按「送 VocabForge」。`, basicLineMenuQuickReply());
+    } catch (error) {
+      await replyLineMessage(replyToken, `豆倉清單暫時無法讀取：${error instanceof Error ? error.message : String(error)}`, basicLineMenuQuickReply());
+    }
+    return true;
+  }
+  if (command === "幫助" || command === "選單") {
+    await replyLineMessage(replyToken, [
+      "行光野採｜LINE 指令",
+      "",
+      "野採圖片：拍照或從相簿選擇",
+      "剪藏網址：保存網頁與摘要",
+      "最近一筆：叫回最近素材的整理按鈕",
+      "待整理：查看野採待處理數量",
+      "豆倉：查看 VocabForge 單字本",
+      "幫助／選單：再次顯示這份說明",
+    ].join("\n"), basicLineMenuQuickReply());
+    return true;
+  }
+  return false;
+}
+
 async function handleText(event: LineWebhookEvent, userId: string): Promise<void> {
   const messageId = event.message?.id ?? "";
   const text = event.message?.text?.trim() ?? "";
+  if (await handleLineCommand(event, text)) return;
   const foundUrl = extractFirstUrl(text);
   if (!foundUrl) {
     const images = await listEnglishImageEntries();
@@ -96,7 +167,7 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
       await replyLineMessage(event.replyToken ?? "", "情境說明已補進野採英文影像。AI 不會自動重跑；需要時可在影像匣按「重新分析」。", englishImageOrganizeQuickReply(recent.id));
       return;
     }
-    await replyLineMessage(event.replyToken ?? "", "這個入口目前接收網頁網址與截圖。把網址直接貼過來，或傳送一張截圖即可。");
+    await replyLineMessage(event.replyToken ?? "", "我目前沒有辨識到網址或操作指令。你可以直接傳圖片、貼網址，或從下方選擇功能。", basicLineMenuQuickReply());
     return;
   }
 

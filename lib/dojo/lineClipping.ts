@@ -167,7 +167,14 @@ export async function fetchWebPreview(sourceUrl: string): Promise<WebPreview> {
   }
 }
 
-type LineQuickReplyItem = { type: "action"; action: { type: "postback"; label: string; data: string; displayText: string } | { type: "uri"; label: string; uri: string } };
+type LineQuickReplyItem = {
+  type: "action";
+  action:
+    | { type: "postback"; label: string; data: string; displayText: string }
+    | { type: "uri"; label: string; uri: string }
+    | { type: "message"; label: string; text: string }
+    | { type: "camera" | "cameraRoll"; label: string };
+};
 
 function quickReplyItem(label: string, data: string): LineQuickReplyItem {
   return { type: "action", action: { type: "postback", label, data, displayText: label } };
@@ -179,6 +186,36 @@ function lineLabel(value: string): string {
 
 function uriQuickReplyItem(label: string, uri: string): LineQuickReplyItem {
   return { type: "action", action: { type: "uri", label, uri } };
+}
+
+function messageQuickReplyItem(label: string, text: string): LineQuickReplyItem {
+  return { type: "action", action: { type: "message", label, text } };
+}
+
+export function captureImageQuickReply() {
+  return { items: [
+    { type: "action" as const, action: { type: "cameraRoll" as const, label: "從相簿選擇" } },
+    { type: "action" as const, action: { type: "camera" as const, label: "開啟相機" } },
+    messageQuickReplyItem("取消", "選單"),
+  ] };
+}
+
+export function basicLineMenuQuickReply() {
+  return { items: [
+    messageQuickReplyItem("野採圖片", "野採圖片"),
+    messageQuickReplyItem("剪藏網址", "剪藏網址"),
+    messageQuickReplyItem("最近一筆", "最近一筆"),
+    messageQuickReplyItem("待整理", "待整理"),
+    messageQuickReplyItem("豆倉", "豆倉"),
+  ] };
+}
+
+export function forageQuickReply(url: string) {
+  return { items: [
+    uriQuickReplyItem("開啟野採", url),
+    messageQuickReplyItem("最近一筆", "最近一筆"),
+    messageQuickReplyItem("選單", "選單"),
+  ] };
 }
 
 export function imageRouteQuickReply(entryId: string) {
