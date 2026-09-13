@@ -33,6 +33,7 @@ import {
   type LineWebhookEvent,
 } from "@/lib/dojo/lineClipping";
 import { CAPTURE_CLIP_PURPOSES, type CaptureClipMeta, type CaptureClipPurpose } from "@/lib/dojo/formal";
+import type { EnglishImageEntry } from "@/lib/dojo/englishImage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -55,6 +56,17 @@ function emptyClip(overrides: Partial<CaptureClipMeta>): CaptureClipMeta {
 function imageFilename(messageId: string, mimeType: string): string {
   const extension = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
   return `line-${messageId.replace(/[^a-zA-Z0-9_-]/g, "").slice(-40) || Date.now()}.${extension}`;
+}
+
+function lineLearningSummary(entry: EnglishImageEntry, intro: string): string {
+  const sections = [intro, entry.title ? `「${entry.title}」` : ""];
+  if (entry.englishRecord) sections.push(`【英文事件紀錄】\n${entry.englishRecord.slice(0, 900)}`);
+  if (entry.chineseExplanation) sections.push(`【中文理解】\n${entry.chineseExplanation.slice(0, 900)}`);
+  if (entry.learningPhrases) sections.push(`【可學詞句】\n${entry.learningPhrases.slice(0, 1300)}`);
+  if (entry.vocabularyWords) sections.push(`【單字候選】\n${entry.vocabularyWords.slice(0, 900)}`);
+  if (entry.analysisStatus === "needs-review") sections.push(`⚠️ 需要確認：${entry.analysisReviewReason || "部分文字辨識信心較低"}`);
+  sections.push("接下來可以補充、修正，或派送到學習系統。");
+  return sections.filter(Boolean).join("\n\n");
 }
 
 async function handleText(event: LineWebhookEvent, userId: string): Promise<void> {
@@ -200,7 +212,7 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
       }
       const analyzed = await analyzeEnglishImage(entry.id, { force: true });
       const summary = analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review"
-        ? `重新分析完成。\n\n${analyzed.englishRecord.slice(0, 1200)}`
+        ? lineLearningSummary(analyzed, "重新分析完成｜野採英文影像")
         : `重新分析尚未完成：${analyzed.analysisError || "請稍後再試"}`;
       await replyLineMessage(event.replyToken ?? "", summary, englishImageOrganizeQuickReply(analyzed.id));
       return;
@@ -272,8 +284,7 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
       const analyzed = await analyzeEnglishImage(routed.id);
       const label = route === "game" ? "遊戲英文" : "英文日常";
       if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
-        const review = analyzed.analysisStatus === "needs-review" ? "\n辨識信心較低，請到英文影像匣確認。" : "";
-        await replyLineMessage(event.replyToken ?? "", `已放進「${label}」並完成 AI 整理。\n\n${analyzed.englishRecord.slice(0, 1200)}${review}\n\n接下來可以補充、修正，或派送到學習系統。`, englishImageOrganizeQuickReply(analyzed.id));
+        await replyLineMessage(event.replyToken ?? "", lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id));
       } else {
         await replyLineMessage(event.replyToken ?? "", `已放進「${label}」，原圖已保存。\nAI 暫時未完成：${analyzed.analysisError || "稍後可在英文影像匣重新分析"}`, englishImageOrganizeQuickReply(analyzed.id));
       }
