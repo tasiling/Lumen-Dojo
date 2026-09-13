@@ -5,6 +5,7 @@ import {
   getEnglishImageEntry,
   listEnglishImageEntries,
   moveEnglishImageToCapture,
+  routeEnglishImage,
   saveEnglishImageEntry,
 } from "@/lib/dojo/englishImageStore";
 
@@ -33,6 +34,13 @@ export async function POST(req: NextRequest) {
     const id = typeof body.id === "string" ? body.id : "";
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
     if (body.action === "analyze") return NextResponse.json({ entry: await analyzeEnglishImage(id, { force: true }) });
+    if (body.action === "routeAndAnalyze") {
+      const route = body.route === "game" || body.route === "daily" ? body.route : null;
+      if (!route) return NextResponse.json({ error: "請選擇遊戲英文或英文日常" }, { status: 400 });
+      const { entry } = await getEnglishImageEntry(id);
+      const routed = await routeEnglishImage(entry, route);
+      return NextResponse.json({ entry: await analyzeEnglishImage(routed.id) });
+    }
     if (body.action === "moveToCapture") {
       const { entry } = await getEnglishImageEntry(id);
       return NextResponse.json({ capture: await moveEnglishImageToCapture(entry) });
