@@ -3718,6 +3718,8 @@
 .dojo .english-image-usage { color: var(--muted); font-size: 7.5px; }
 .dojo .english-image-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .dojo .english-image-actions button { min-width: 0; font-size: 9px; }
+.dojo .english-image-route-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.dojo .english-image-route-actions button { min-width: 0; padding: 9px 6px; font-size: 9px; }
 .dojo .english-image-editor { display: grid; gap: 6px; }
 .dojo .english-image-editor > label { margin-top: 5px; color: #655b4d; font-size: 9px; font-weight: 750; }
 

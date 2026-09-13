@@ -32,12 +32,19 @@ export default function EnglishImageInbox() {
   }, [load]);
   const shown = useMemo(() => filter === "all" ? entries : entries.filter((entry) => entry.route === filter), [entries, filter]);
 
-  async function save() {
+  async function save(analyzeAfterSave = false) {
     if (!draft) return;
     setBusy(draft.id); setError("");
     try {
       const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: draft.id, entry: draft }) }));
-      setEntries((old) => old.map((entry) => entry.id === result.entry.id ? result.entry : entry)); setEditing(null); setDraft(null);
+      let saved = result.entry;
+      if (analyzeAfterSave && saved.route !== "pending") {
+        saved = (await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: saved.id, action: "analyze" }),
+        }))).entry;
+      }
+      setEntries((old) => old.map((entry) => entry.id === saved.id ? saved : entry)); setEditing(null); setDraft(null);
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setBusy(null); }
   }
@@ -50,6 +57,19 @@ export default function EnglishImageInbox() {
       const result = await json<{ entry?: EnglishImageEntry }>(await fetch("/api/dojo/english-images", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: entry.id, action: name }) }));
       if (name === "moveToCapture") setEntries((old) => old.filter((item) => item.id !== entry.id));
       else if (result.entry) setEntries((old) => old.map((item) => item.id === entry.id ? result.entry! : item));
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setBusy(null); }
+  }
+
+  async function routeAndAnalyze(entry: EnglishImageEntry, route: "game" | "daily") {
+    if (entry.analysisAttempts > 0 && !window.confirm("這張圖片曾經分析過；再次執行會使用 API 額度，確定要繼續嗎？")) return;
+    setBusy(entry.id); setError("");
+    try {
+      const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "routeAndAnalyze", route }),
+      }));
+      setEntries((old) => old.map((item) => item.id === entry.id ? result.entry : item));
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setBusy(null); }
   }
@@ -70,6 +90,7 @@ export default function EnglishImageInbox() {
           {entry.chineseExplanation && <div className="english-image-result"><small>中文理解</small><p>{entry.chineseExplanation}</p></div>}
           {entry.learningPhrases && <details><summary>可學詞句</summary><p>{entry.learningPhrases}</p></details>}
           {entry.analyzedAt && <small className="english-image-usage">{entry.analysisModel}・{entry.inputTokens + entry.outputTokens} tokens・約 US${entry.estimatedCostUsd.toFixed(4)}</small>}
+          {entry.route === "pending" && <div className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>{busy === entry.id ? "分析中…" : "遊戲英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "daily")}>{busy === entry.id ? "分析中…" : "英文日常並分析"}</button></div>}
           <div className="english-image-actions"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>整理</button>{entry.route !== "pending" && <button disabled={busy === entry.id} onClick={() => void action(entry, "analyze")}>{busy === entry.id ? "處理中…" : entry.analysisAttempts ? "重新分析" : "AI 分析"}</button>}<button className="text-link" disabled={busy === entry.id} onClick={() => void action(entry, "moveToCapture")}>改送野採</button></div>
         </> : <div className="english-image-editor">
           <label>類型</label><select className="field" value={draft.route} onChange={(event) => setDraft({ ...draft, route: event.target.value as EnglishImageRoute })}><option value="pending">待分類</option><option value="game">遊戲英文</option><option value="daily">英文日常</option></select>
@@ -80,7 +101,7 @@ export default function EnglishImageInbox() {
           <label>中文解釋</label><textarea className="field" rows={4} value={draft.chineseExplanation} onChange={(event) => setDraft({ ...draft, chineseExplanation: event.target.value })} />
           <label>可學詞句</label><textarea className="field" rows={5} value={draft.learningPhrases} onChange={(event) => setDraft({ ...draft, learningPhrases: event.target.value })} />
           <label className="check"><input type="checkbox" checked={draft.status === "organized"} onChange={(event) => setDraft({ ...draft, status: event.target.checked ? "organized" : "inbox" })} />已整理完成</label>
-          <div className="english-image-actions"><button onClick={() => { setEditing(null); setDraft(null); }}>取消</button><button className="primary" disabled={busy === entry.id} onClick={() => void save()}>{busy === entry.id ? "儲存中…" : "儲存"}</button></div>
+          <div className="english-image-actions"><button onClick={() => { setEditing(null); setDraft(null); }}>取消</button><button className="primary" disabled={busy === entry.id} onClick={() => void save(entry.route === "pending" && draft.route !== "pending")}>{busy === entry.id ? (draft.route === "pending" ? "儲存中…" : "分析中…") : entry.route === "pending" && draft.route !== "pending" ? "儲存並分析" : "儲存"}</button></div>
         </div>}
       </article>;
     })}
