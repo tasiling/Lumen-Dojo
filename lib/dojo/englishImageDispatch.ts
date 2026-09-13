@@ -11,6 +11,11 @@ export type EnglishImageVocabCandidate = {
   finalSentence: string;
 };
 
+export type VocabForgeBook = {
+  name: string;
+  count: number;
+};
+
 function candidateKey(expression: string): string {
   return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/\s+/g, "_").slice(0, 180);
 }
@@ -59,17 +64,45 @@ export async function prepareEnglishImageForContextRoom(id: string): Promise<Eng
 
 type ImportResult = { key: string; expression: string; result: "created" | "existing" };
 
-function vocabForgeEndpoint(): URL | null {
+function vocabForgeEndpoint(pathname: string): URL | null {
   const base = process.env.VOCABFORGE_INTEGRATION_URL?.trim();
   if (!base) return null;
-  try { return new URL("/api/integrations/lumen/import", base); }
+  try { return new URL(pathname, base); }
   catch { return null; }
 }
 
-export async function exportEnglishImageVocab(id: string, requestedKey: string): Promise<{ entry: EnglishImageEntry; exported: EnglishImageVocabExport }> {
-  const endpoint = vocabForgeEndpoint();
-  const secret = process.env.LUMEN_VOCABFORGE_SYNC_SECRET?.trim();
+function vocabForgeSecret(): string {
+  return process.env.LUMEN_VOCABFORGE_SYNC_SECRET?.trim() ?? "";
+}
+
+export async function listVocabForgeBooks(): Promise<VocabForgeBook[]> {
+  const endpoint = vocabForgeEndpoint("/api/integrations/lumen/vocab-books");
+  const secret = vocabForgeSecret();
   if (!endpoint || !secret) throw new Error("VocabForge 串接尚未完成 Railway 設定");
+  const response = await fetch(endpoint, {
+    headers: { Authorization: `Bearer ${secret}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
+  });
+  const result = await response.json().catch(() => ({})) as { error?: string; books?: unknown[] };
+  if (!response.ok) throw new Error(result.error ?? `無法讀取 VocabForge 豆倉（${response.status}）`);
+  const books = (result.books ?? []).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const value = item as { name?: unknown; count?: unknown };
+    const name = typeof value.name === "string" ? value.name.trim().slice(0, 200) : "";
+    if (!name) return [];
+    return [{ name, count: Number.isFinite(value.count) ? Math.max(0, Math.floor(Number(value.count))) : 0 }];
+  });
+  if (!books.length) throw new Error("VocabForge 目前沒有可選擇的豆倉");
+  return books;
+}
+
+export async function exportEnglishImageVocab(id: string, requestedKey: string, vocabBook: string): Promise<{ entry: EnglishImageEntry; exported: EnglishImageVocabExport }> {
+  const endpoint = vocabForgeEndpoint("/api/integrations/lumen/import");
+  const secret = vocabForgeSecret();
+  if (!endpoint || !secret) throw new Error("VocabForge 串接尚未完成 Railway 設定");
+  const selectedBook = vocabBook.trim().slice(0, 200);
+  if (!selectedBook) throw new Error("請先選擇要放入的豆倉");
   const { entry } = await getEnglishImageEntry(id);
   const candidate = englishImageVocabCandidates(entry).find((item) => item.key === requestedKey);
   if (!candidate) throw new Error("找不到這個候選單字，請重新整理後再選擇");
@@ -86,17 +119,23 @@ export async function exportEnglishImageVocab(id: string, requestedKey: string):
       sourceDate: entry.capturedAt.slice(0, 10),
       sourceRecordId: entry.id,
       topicTitle: entry.title,
-      vocabBook: entry.route === "game" ? "遊戲英文" : "英文日常",
+      vocabBook: selectedBook,
       items: [candidate],
     }),
     cache: "no-store",
     signal: AbortSignal.timeout(20_000),
   });
-  const result = await response.json().catch(() => ({})) as { error?: string; items?: ImportResult[] };
+  const result = await response.json().catch(() => ({})) as { error?: string; items?: Array<ImportResult & { vocabBook?: string }> };
   if (!response.ok) throw new Error(result.error ?? `VocabForge 接收失敗（${response.status}）`);
   const imported = result.items?.find((item) => item.key === candidate.key);
   if (!imported || (imported.result !== "created" && imported.result !== "existing")) throw new Error("VocabForge 回傳的接收結果不完整");
-  const exported: EnglishImageVocabExport = { key: candidate.key, expression: candidate.expression, result: imported.result, syncedAt: new Date().toISOString() };
+  const exported: EnglishImageVocabExport = {
+    key: candidate.key,
+    expression: candidate.expression,
+    vocabBook: imported.vocabBook?.trim() || selectedBook,
+    result: imported.result,
+    syncedAt: new Date().toISOString(),
+  };
   const updated = await saveEnglishImageEntry({ ...entry, vocabForgeExports: [...entry.vocabForgeExports, exported] });
   return { entry: updated, exported };
 }
