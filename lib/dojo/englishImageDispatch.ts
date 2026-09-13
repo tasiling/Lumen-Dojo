@@ -16,7 +16,8 @@ function candidateKey(expression: string): string {
 }
 
 export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishImageVocabCandidate[] {
-  const candidates = entry.learningPhrases.split(/\r?\n/).flatMap((line) => {
+  const source = entry.vocabularyWords.trim() || entry.learningPhrases;
+  const candidates = source.split(/\r?\n/).flatMap((line) => {
     const clean = line.replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "").trim();
     if (!clean) return [];
     const [rawExpression = "", ...meaningParts] = clean.split(/\s*(?:\||｜|—|–|：|\s-\s)\s*/);

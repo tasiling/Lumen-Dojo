@@ -12,6 +12,7 @@ type AnalysisResult = {
   englishRecord: string;
   chineseExplanation: string;
   learningPhrases: string;
+  vocabularyWords: string;
   confidence: "high" | "medium" | "low";
   needsReview: boolean;
   reviewReason: string;
@@ -40,7 +41,7 @@ function analysisPrompt(entry: EnglishImageEntry): string {
   const context = entry.contextNote ? `\n使用者補充情境：${entry.contextNote}` : "";
   const route = entry.route === "game" ? "英文遊戲畫面" : "英文日常畫面";
   const group = entry.attachments.length > 1 ? `這是同一段情境的 ${entry.attachments.length} 張連續圖片，請合併理解。` : "";
-  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境；挑最多 5 個值得學的項目，其中優先包含 1–3 個適合單字庫的單字，其餘可為片語或句型。每行格式為「英文｜中文｜簡短用法」。若資訊不足，保守描述並標記需要確認。${context}`;
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 export async function analyzeEnglishImage(id: string, options: { force?: boolean } = {}): Promise<EnglishImageEntry> {
@@ -76,7 +77,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
         model,
         store: false,
         reasoning: { effort: "none" },
-        max_output_tokens: 1200,
+        max_output_tokens: 1600,
         input: [{ role: "user", content: [
           { type: "input_text", text: analysisPrompt(entry) },
           ...images.map((image) => ({ type: "input_image", image_url: `data:${image.mimeType};base64,${Buffer.from(image.bytes).toString("base64")}`, detail: "high" })),
@@ -88,13 +89,14 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
           schema: {
             type: "object",
             additionalProperties: false,
-            required: ["sourceLabel", "ocrText", "englishRecord", "chineseExplanation", "learningPhrases", "confidence", "needsReview", "reviewReason"],
+            required: ["sourceLabel", "ocrText", "englishRecord", "chineseExplanation", "learningPhrases", "vocabularyWords", "confidence", "needsReview", "reviewReason"],
             properties: {
               sourceLabel: { type: "string" },
               ocrText: { type: "string" },
               englishRecord: { type: "string" },
               chineseExplanation: { type: "string" },
               learningPhrases: { type: "string" },
+              vocabularyWords: { type: "string" },
               confidence: { type: "string", enum: ["high", "medium", "low"] },
               needsReview: { type: "boolean" },
               reviewReason: { type: "string" },
@@ -121,6 +123,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
       englishRecord: result.englishRecord,
       chineseExplanation: result.chineseExplanation,
       learningPhrases: result.learningPhrases,
+      vocabularyWords: result.vocabularyWords,
       analysisStatus: result.needsReview || result.confidence === "low" ? "needs-review" : "completed",
       analysisConfidence: result.confidence,
       analysisReviewReason: result.reviewReason,

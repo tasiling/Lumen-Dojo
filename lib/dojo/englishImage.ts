@@ -34,6 +34,7 @@ export type EnglishImageEntry = {
   englishRecord: string;
   chineseExplanation: string;
   learningPhrases: string;
+  vocabularyWords: string;
   externalEventId: string;
   externalMessageId: string;
   awaitingContextUntil: string | null;
@@ -122,6 +123,7 @@ export function normalizeEnglishImageEntry(
     englishRecord: text(source.englishRecord, 12000),
     chineseExplanation: text(source.chineseExplanation, 12000),
     learningPhrases: text(source.learningPhrases, 12000),
+    vocabularyWords: text(source.vocabularyWords, 12000),
     externalEventId: text(source.externalEventId, 200),
     externalMessageId: text(source.externalMessageId, 200),
     awaitingContextUntil: source.awaitingContextUntil ? iso(source.awaitingContextUntil, now) : null,
