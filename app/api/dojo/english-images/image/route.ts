@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { englishImageUrl, getEnglishImageEntry } from "@/lib/dojo/englishImageStore";
+import { englishImageAttachmentUrl, getEnglishImageEntry } from "@/lib/dojo/englishImageStore";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get("id") ?? "";
+    const index = Math.max(0, Number.parseInt(req.nextUrl.searchParams.get("index") ?? "0", 10) || 0);
     const { entry } = await getEnglishImageEntry(id);
-    return NextResponse.redirect(await englishImageUrl(entry), { status: 307 });
+    const attachment = entry.attachments[index];
+    if (!attachment) throw new Error("找不到指定圖片");
+    return NextResponse.redirect(await englishImageAttachmentUrl(attachment), { status: 307 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 404 });
   }

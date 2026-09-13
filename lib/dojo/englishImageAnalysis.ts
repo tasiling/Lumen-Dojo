@@ -1,6 +1,6 @@
 import "server-only";
 
-import { englishImageBytes, getEnglishImageEntry, listEnglishImageEntries, saveEnglishImageEntry, currentMonthEstimatedSpend } from "./englishImageStore";
+import { englishImageAttachmentBytes, getEnglishImageEntry, listEnglishImageEntries, saveEnglishImageEntry, currentMonthEstimatedSpend } from "./englishImageStore";
 import type { EnglishImageEntry } from "./englishImage";
 
 const INPUT_USD_PER_MILLION = 0.2;
@@ -39,7 +39,8 @@ function outputText(payload: Record<string, unknown>): string {
 function analysisPrompt(entry: EnglishImageEntry): string {
   const context = entry.contextNote ? `\n使用者補充情境：${entry.contextNote}` : "";
   const route = entry.route === "game" ? "英文遊戲畫面" : "英文日常畫面";
-  return `分析這張${route}。忠實抄錄可辨識的英文，不可猜測模糊文字。用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境；挑最多 5 個值得學的詞句，每行格式為「英文｜中文｜簡短用法」。若資訊不足，保守描述並標記需要確認。${context}`;
+  const group = entry.attachments.length > 1 ? `這是同一段情境的 ${entry.attachments.length} 張連續圖片，請合併理解。` : "";
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境；挑最多 5 個值得學的項目，其中優先包含 1–3 個適合單字庫的單字，其餘可為片語或句型。每行格式為「英文｜中文｜簡短用法」。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 export async function analyzeEnglishImage(id: string, options: { force?: boolean } = {}): Promise<EnglishImageEntry> {
@@ -65,7 +66,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
     analysisAttempts: entry.analysisAttempts + 1,
   });
   try {
-    const image = await englishImageBytes(entry);
+    const images = await Promise.all(entry.attachments.slice(0, 6).map(englishImageAttachmentBytes));
     const model = process.env.OPENAI_ENGLISH_IMAGE_MODEL ?? "gpt-5.6-luna";
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -78,7 +79,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
         max_output_tokens: 1200,
         input: [{ role: "user", content: [
           { type: "input_text", text: analysisPrompt(entry) },
-          { type: "input_image", image_url: `data:${image.mimeType};base64,${Buffer.from(image.bytes).toString("base64")}`, detail: "high" },
+          ...images.map((image) => ({ type: "input_image", image_url: `data:${image.mimeType};base64,${Buffer.from(image.bytes).toString("base64")}`, detail: "high" })),
         ] }],
         text: { format: {
           type: "json_schema",

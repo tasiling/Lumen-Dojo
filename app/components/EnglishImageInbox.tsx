@@ -82,8 +82,9 @@ export default function EnglishImageInbox() {
     {shown.length === 0 ? <p className="muted-note">目前沒有這一類圖片。</p> : shown.map((entry) => {
       const open = editing === entry.id && draft;
       return <article className="english-image-card" key={entry.id}>
-        <Image src={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}`} alt={entry.title} width={720} height={480} unoptimized />
+        <div className={`english-image-gallery ${entry.attachments.length > 1 ? "multiple" : ""}`}>{entry.attachments.map((attachment, index) => <Image key={attachment.blockId} src={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}&index=${index}`} alt={`${entry.title} ${index + 1}`} width={720} height={480} unoptimized />)}</div>
         <div className="english-image-head"><div><small>{entry.route === "game" ? "遊戲英文" : entry.route === "daily" ? "英文日常" : "待分類"}</small><b>{entry.title}</b></div><span className={`analysis-${entry.analysisStatus}`}>{entry.analysisStatus === "completed" ? "AI 已完成" : entry.analysisStatus === "needs-review" ? "需要確認" : entry.analysisStatus === "processing" ? "分析中" : entry.analysisStatus === "failed" ? "分析失敗" : "尚未分析"}</span></div>
+        <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>VocabForge {entry.vocabForgeExports.length} 字</span>}</div>
         {entry.analysisError && <p className="form-error">{entry.analysisError}</p>}
         {!open ? <>
           {entry.englishRecord && <div className="english-image-result"><small>英文事件紀錄</small><p>{entry.englishRecord}</p></div>}

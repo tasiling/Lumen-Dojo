@@ -4,6 +4,14 @@ export type EnglishImageRoute = "pending" | "game" | "daily";
 export type EnglishImageStatus = "inbox" | "organized";
 export type EnglishImageAnalysisStatus = "idle" | "processing" | "completed" | "needs-review" | "failed";
 export type EnglishImageConfidence = "high" | "medium" | "low" | null;
+export type EnglishImageLineInputMode = "context" | "ocr" | null;
+
+export type EnglishImageVocabExport = {
+  key: string;
+  expression: string;
+  result: "created" | "existing";
+  syncedAt: string;
+};
 
 export type EnglishImageAttachment = {
   blockId: string;
@@ -14,7 +22,7 @@ export type EnglishImageAttachment = {
 };
 
 export type EnglishImageEntry = {
-  version: 1;
+  version: 2;
   recordType: "english-image-entry";
   id: string;
   route: EnglishImageRoute;
@@ -30,6 +38,14 @@ export type EnglishImageEntry = {
   externalMessageId: string;
   awaitingContextUntil: string | null;
   attachment: EnglishImageAttachment;
+  attachments: EnglishImageAttachment[];
+  mergedIntoId: string;
+  lineInputMode: EnglishImageLineInputMode;
+  lineInputUntil: string | null;
+  contextRoomStatus: "idle" | "ready";
+  contextRoomPreparedAt: string | null;
+  contextRoomUrl: string;
+  vocabForgeExports: EnglishImageVocabExport[];
   analysisStatus: EnglishImageAnalysisStatus;
   analysisConfidence: EnglishImageConfidence;
   analysisError: string;
@@ -62,12 +78,26 @@ export function normalizeEnglishImageEntry(
 ): EnglishImageEntry | null {
   if (!value || typeof value !== "object") return null;
   const source = value as Partial<EnglishImageEntry>;
+  const now = new Date().toISOString();
   const attachmentSource = source.attachment && typeof source.attachment === "object"
     ? source.attachment as Partial<EnglishImageAttachment>
     : {};
-  const blockId = text(attachmentSource.blockId, 100);
+  const attachmentValues = Array.isArray(source.attachments) ? source.attachments : [attachmentSource];
+  const attachments = attachmentValues.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const attachment = item as Partial<EnglishImageAttachment>;
+    const itemBlockId = text(attachment.blockId, 100);
+    if (!itemBlockId) return [];
+    return [{
+      blockId: itemBlockId,
+      filename: text(attachment.filename, 300) || "line-image.jpg",
+      mimeType: text(attachment.mimeType, 100) || "image/jpeg",
+      sourceMessageId: text(attachment.sourceMessageId, 200),
+      createdAt: iso(attachment.createdAt, params.capturedAt ?? now),
+    }];
+  });
+  const blockId = attachments[0]?.blockId ?? "";
   if (!blockId) return null;
-  const now = new Date().toISOString();
   const capturedAt = iso(source.capturedAt, params.capturedAt ?? now);
   const route: EnglishImageRoute = source.route === "game" || source.route === "daily" ? source.route : "pending";
   const analysisStatus: EnglishImageAnalysisStatus =
@@ -80,7 +110,7 @@ export function normalizeEnglishImageEntry(
       ? source.analysisConfidence
       : null;
   return {
-    version: 1,
+    version: 2,
     recordType: "english-image-entry",
     id: params.id,
     route,
@@ -95,13 +125,23 @@ export function normalizeEnglishImageEntry(
     externalEventId: text(source.externalEventId, 200),
     externalMessageId: text(source.externalMessageId, 200),
     awaitingContextUntil: source.awaitingContextUntil ? iso(source.awaitingContextUntil, now) : null,
-    attachment: {
-      blockId,
-      filename: text(attachmentSource.filename, 300) || "line-image.jpg",
-      mimeType: text(attachmentSource.mimeType, 100) || "image/jpeg",
-      sourceMessageId: text(attachmentSource.sourceMessageId, 200),
-      createdAt: iso(attachmentSource.createdAt, capturedAt),
-    },
+    attachment: attachments[0],
+    attachments,
+    mergedIntoId: text(source.mergedIntoId, 100),
+    lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" ? source.lineInputMode : null,
+    lineInputUntil: source.lineInputUntil ? iso(source.lineInputUntil, now) : null,
+    contextRoomStatus: source.contextRoomStatus === "ready" ? "ready" : "idle",
+    contextRoomPreparedAt: source.contextRoomPreparedAt ? iso(source.contextRoomPreparedAt, now) : null,
+    contextRoomUrl: text(source.contextRoomUrl, 3000),
+    vocabForgeExports: Array.isArray(source.vocabForgeExports) ? source.vocabForgeExports.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const value = item as Partial<EnglishImageVocabExport>;
+      const expression = text(value.expression, 240);
+      const key = text(value.key, 180);
+      const syncedAt = text(value.syncedAt, 80);
+      if (!expression || !key || !syncedAt) return [];
+      return [{ key, expression, result: value.result === "existing" ? "existing" as const : "created" as const, syncedAt }];
+    }) : [],
     analysisStatus,
     analysisConfidence: confidence,
     analysisError: text(source.analysisError, 3000),

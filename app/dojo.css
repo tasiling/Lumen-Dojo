@@ -3699,7 +3699,10 @@
 .dojo .english-image-tabs button { flex: 0 0 auto; padding: 7px 10px; font-size: 9px; }
 .dojo .english-image-tabs button.on { border-color: var(--practice); background: #eef0df; font-weight: 750; }
 .dojo .english-image-card { display: grid; gap: 10px; margin-top: 10px; padding: 11px; border: 1px solid var(--line); border-radius: 14px; background: #fffefa; }
-.dojo .english-image-card > img { width: 100%; height: auto; max-height: 440px; object-fit: contain; border-radius: 10px; background: #f3f0e7; }
+.dojo .english-image-gallery { display: grid; gap: 7px; }
+.dojo .english-image-gallery.multiple { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dojo .english-image-gallery img { width: 100%; height: auto; max-height: 440px; object-fit: contain; border-radius: 10px; background: #f3f0e7; }
+.dojo .english-image-gallery.multiple img { aspect-ratio: 3 / 4; object-fit: cover; }
 .dojo .english-image-head { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
 .dojo .english-image-head small,
 .dojo .english-image-head b { display: block; }
@@ -3709,6 +3712,9 @@
 .dojo .english-image-head > span.analysis-completed { background: #e5efe4; color: #3f6747; }
 .dojo .english-image-head > span.analysis-needs-review,
 .dojo .english-image-head > span.analysis-failed { background: #f8e8db; color: #8a5039; }
+.dojo .english-image-destinations { display: flex; flex-wrap: wrap; gap: 5px; }
+.dojo .english-image-destinations span,
+.dojo .english-image-destinations a { padding: 4px 7px; border-radius: 999px; background: #f1ede3; color: #665d50; font-size: 8px; text-decoration: none; }
 .dojo .english-image-result { padding: 9px 10px; border-left: 3px solid #99a777; background: #f4f5e9; }
 .dojo .english-image-result small { color: #66704e; font-size: 8px; font-weight: 750; }
 .dojo .english-image-result p,
