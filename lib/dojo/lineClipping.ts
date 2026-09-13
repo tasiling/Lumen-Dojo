@@ -170,6 +170,14 @@ function quickReplyItem(label: string, data: string) {
   return { type: "action", action: { type: "postback", label, data, displayText: label } };
 }
 
+export function imageRouteQuickReply(entryId: string) {
+  return { items: [
+    quickReplyItem("遊戲英文", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
+    quickReplyItem("英文日常", new URLSearchParams({ action: "imageRoute", entryId, route: "daily" }).toString()),
+    quickReplyItem("一般剪藏", new URLSearchParams({ action: "imageRoute", entryId, route: "capture" }).toString()),
+  ] };
+}
+
 export function clipQuickReply(captureId: string, includeScreenshot: boolean) {
   const items = PURPOSE_ACTIONS.map((purpose) => quickReplyItem(
     purpose.label,
@@ -181,7 +189,9 @@ export function clipQuickReply(captureId: string, includeScreenshot: boolean) {
   return { items };
 }
 
-export async function replyLineMessage(replyToken: string, text: string, quickReply?: ReturnType<typeof clipQuickReply>): Promise<void> {
+type LineQuickReply = { items: ReturnType<typeof quickReplyItem>[] };
+
+export async function replyLineMessage(replyToken: string, text: string, quickReply?: LineQuickReply): Promise<void> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token || !replyToken) return;
   const response = await fetch("https://api.line.me/v2/bot/message/reply", {
