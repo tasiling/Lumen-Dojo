@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/setup-line-rich-menu.mjs --allow-failure && next start",
+    "line:rich-menu": "node scripts/setup-line-rich-menu.mjs",
     "lint": "eslint"
   },
   "dependencies": {
