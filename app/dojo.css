@@ -3693,7 +3693,7 @@
   .dojo .creative-practice-card .section-heading { gap: 6px; }
 }
 
-/* LINE 英文影像匣：與野採分流，保留原圖、AI 結果與人工修訂。 */
+/* LINE 英文影像匣：位於野採、資料仍獨立，保留原圖、AI 結果與人工修訂。 */
 .dojo .english-image-inbox { margin-top: 14px; }
 .dojo .english-image-tabs { display: flex; gap: 6px; margin: 10px 0; overflow-x: auto; }
 .dojo .english-image-tabs button { flex: 0 0 auto; padding: 7px 10px; font-size: 9px; }

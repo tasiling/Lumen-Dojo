@@ -150,7 +150,7 @@ async function handleImage(event: LineWebhookEvent): Promise<void> {
     sourceMessageId: messageId,
     externalEventId: event.webhookEventId ?? "",
   });
-  await replyLineMessage(event.replyToken ?? "", "圖片已保存，尚未放進野採。這張比較像哪一類？", imageRouteQuickReply(entry.id));
+  await replyLineMessage(event.replyToken ?? "", "圖片已保存到野採的英文影像區。這張比較像哪一類？", imageRouteQuickReply(entry.id));
 }
 
 async function handlePostback(event: LineWebhookEvent): Promise<void> {
@@ -166,7 +166,7 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
     }
     if (route === "capture") {
       const capture = await moveEnglishImageToCapture(entry);
-      await replyLineMessage(event.replyToken ?? "", "已轉成一般剪藏並送進野採。", clipQuickReply(capture.id, false));
+      await replyLineMessage(event.replyToken ?? "", "已轉成一般素材，並留在野採採集匣。", clipQuickReply(capture.id, false));
       return;
     }
     if (route === "game" || route === "daily") {
