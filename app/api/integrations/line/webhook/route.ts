@@ -5,11 +5,20 @@ import {
   listCaptureEntries,
   saveCaptureEntry,
 } from "@/lib/dojo/captureStore";
+import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
+import {
+  createEnglishImageEntry,
+  listEnglishImageEntries,
+  moveEnglishImageToCapture,
+  routeEnglishImage,
+  saveEnglishImageEntry,
+} from "@/lib/dojo/englishImageStore";
 import {
   clipQuickReply,
   extractFirstUrl,
   fetchLineImage,
   fetchWebPreview,
+  imageRouteQuickReply,
   normalizeClipUrl,
   platformFromUrl,
   replyLineMessage,
@@ -37,18 +46,6 @@ function emptyClip(overrides: Partial<CaptureClipMeta>): CaptureClipMeta {
   };
 }
 
-function screenshotTitle(now = new Date()): string {
-  const stamp = new Intl.DateTimeFormat("zh-TW", {
-    timeZone: "Asia/Taipei",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(now);
-  return `截圖・${stamp}`;
-}
-
 function imageFilename(messageId: string, mimeType: string): string {
   const extension = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
   return `line-${messageId.replace(/[^a-zA-Z0-9_-]/g, "").slice(-40) || Date.now()}.${extension}`;
@@ -59,6 +56,15 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
   const text = event.message?.text?.trim() ?? "";
   const foundUrl = extractFirstUrl(text);
   if (!foundUrl) {
+    const images = await listEnglishImageEntries();
+    const recent = images.find((entry) =>
+      entry.route !== "pending" && entry.awaitingContextUntil && new Date(entry.awaitingContextUntil).getTime() > Date.now()
+    );
+    if (recent) {
+      await saveEnglishImageEntry({ ...recent, contextNote: [recent.contextNote, text].filter(Boolean).join("\n"), awaitingContextUntil: null });
+      await replyLineMessage(event.replyToken ?? "", "情境說明已補進英文影像匣。AI 不會自動重跑；需要時可在影像匣按「重新分析」。");
+      return;
+    }
     await replyLineMessage(event.replyToken ?? "", "這個入口目前接收網頁網址與截圖。把網址直接貼過來，或傳送一張截圖即可。");
     return;
   }
@@ -113,9 +119,15 @@ async function handleImage(event: LineWebhookEvent): Promise<void> {
   const messageId = event.message?.id ?? "";
   if (!messageId) throw new Error("LINE 圖片缺少 message id");
   const captures = await listCaptureEntries();
-  const duplicate = captures.find((capture) => capture.clip.attachments.some((item) => item.sourceMessageId === messageId));
-  if (duplicate) {
-    await replyLineMessage(event.replyToken ?? "", `這張截圖已經保存於「${duplicate.title}」。`, clipQuickReply(duplicate.id, false));
+  const englishImages = await listEnglishImageEntries();
+  const duplicateCapture = captures.find((capture) => capture.clip.attachments.some((item) => item.sourceMessageId === messageId));
+  const duplicateEnglish = englishImages.find((entry) => entry.externalMessageId === messageId || entry.attachment.sourceMessageId === messageId);
+  if (duplicateCapture) {
+    await replyLineMessage(event.replyToken ?? "", `這張截圖已經保存於「${duplicateCapture.title}」。`, clipQuickReply(duplicateCapture.id, false));
+    return;
+  }
+  if (duplicateEnglish) {
+    await replyLineMessage(event.replyToken ?? "", `這張圖片已經保存於英文影像匣「${duplicateEnglish.title}」。`, imageRouteQuickReply(duplicateEnglish.id));
     return;
   }
 
@@ -125,41 +137,52 @@ async function handleImage(event: LineWebhookEvent): Promise<void> {
     item.clip.awaitingScreenshotUntil !== null &&
     new Date(item.clip.awaitingScreenshotUntil).getTime() > now.getTime()
   );
-  if (!capture) {
-    capture = await createCaptureEntry({
-      title: screenshotTitle(now),
-      category: null,
-      excerpt: "",
-      sourceUrl: "",
-      note: "",
-      clip: emptyClip({
-        sourceKind: "screenshot",
-        platform: "LINE 截圖",
-        externalEventId: event.webhookEventId ?? "",
-        externalMessageId: messageId,
-      }),
-    });
-  }
-
   const image = await fetchLineImage(messageId);
-  capture = await appendCaptureImage({
-    capture,
+  if (capture) {
+    capture = await appendCaptureImage({ capture, bytes: image.bytes, mimeType: image.mimeType, filename: imageFilename(messageId, image.mimeType), sourceMessageId: messageId });
+    await replyLineMessage(event.replyToken ?? "", `截圖已補到「${capture.title}」，網址與原圖保存在同一筆素材。`, clipQuickReply(capture.id, false));
+    return;
+  }
+  const entry = await createEnglishImageEntry({
     bytes: image.bytes,
     mimeType: image.mimeType,
     filename: imageFilename(messageId, image.mimeType),
     sourceMessageId: messageId,
+    externalEventId: event.webhookEventId ?? "",
   });
-  await replyLineMessage(
-    event.replyToken ?? "",
-    capture.sourceUrl
-      ? `截圖已補到「${capture.title}」，網址與原圖保存在同一筆素材。`
-      : "截圖已保存，並送進野採採集匣。可以順手標記用途，也可以先不處理。",
-    clipQuickReply(capture.id, false)
-  );
+  await replyLineMessage(event.replyToken ?? "", "圖片已保存，尚未放進野採。這張比較像哪一類？", imageRouteQuickReply(entry.id));
 }
 
 async function handlePostback(event: LineWebhookEvent): Promise<void> {
   const params = new URLSearchParams(event.postback?.data ?? "");
+  if (params.get("action") === "imageRoute") {
+    const entryId = params.get("entryId") ?? "";
+    const route = params.get("route");
+    const images = await listEnglishImageEntries();
+    const entry = images.find((item) => item.id === entryId);
+    if (!entry) {
+      await replyLineMessage(event.replyToken ?? "", "找不到這筆英文影像，可能已經被移動或移除。");
+      return;
+    }
+    if (route === "capture") {
+      const capture = await moveEnglishImageToCapture(entry);
+      await replyLineMessage(event.replyToken ?? "", "已轉成一般剪藏並送進野採。", clipQuickReply(capture.id, false));
+      return;
+    }
+    if (route === "game" || route === "daily") {
+      const routed = await routeEnglishImage(entry, route);
+      const analyzed = await analyzeEnglishImage(routed.id);
+      const label = route === "game" ? "遊戲英文" : "英文日常";
+      if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
+        const review = analyzed.analysisStatus === "needs-review" ? "\n辨識信心較低，請到英文影像匣確認。" : "";
+        await replyLineMessage(event.replyToken ?? "", `已放進「${label}」並完成 AI 整理。\n\n${analyzed.englishRecord.slice(0, 1200)}${review}\n\n十分鐘內再傳一句文字，可補充這張圖的情境。`);
+      } else {
+        await replyLineMessage(event.replyToken ?? "", `已放進「${label}」，原圖已保存。\nAI 暫時未完成：${analyzed.analysisError || "稍後可在英文影像匣重新分析"}`);
+      }
+      return;
+    }
+    return;
+  }
   const captureId = params.get("captureId") ?? "";
   const action = params.get("action");
   if (!captureId) return;
