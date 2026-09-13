@@ -14,6 +14,37 @@ import {
 } from "./englishImage";
 import { listJsonRecords, updateJsonRecordById } from "./notionStore";
 
+async function firstImageBlockId(pageId: string): Promise<string | null> {
+  let cursor: string | undefined;
+  do {
+    const response = await withNotionRateLimit(() => notion().blocks.children.list({ block_id: pageId, start_cursor: cursor, page_size: 100 }));
+    const image = response.results.find((block) => "type" in block && block.type === "image");
+    if (image) return image.id;
+    cursor = response.has_more && response.next_cursor ? response.next_cursor : undefined;
+  } while (cursor);
+  return null;
+}
+
+async function repairPendingAttachments(entry: EnglishImageEntry, title: string): Promise<EnglishImageEntry> {
+  if (!entry.attachments.some((attachment) => attachment.blockId === "pending")) return entry;
+  const rows = await listJsonRecords(ENGLISH_IMAGE_TITLE_PREFIX);
+  const mergedChildren = rows.flatMap((row) => {
+    const child = normalizeEnglishImageEntry(row.value, { id: row.id });
+    return child?.mergedIntoId === entry.id ? [child] : [];
+  }).sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
+  const owners = [entry, ...mergedChildren];
+  const recovered = await Promise.all(owners.map(async (owner) => {
+    const blockId = await firstImageBlockId(owner.id);
+    return blockId ? { ...owner.attachment, blockId } : null;
+  }));
+  const attachments = recovered.filter((attachment): attachment is NonNullable<typeof attachment> => Boolean(attachment));
+  if (!attachments.length) throw new Error("原圖仍在，但暫時找不到 Notion 圖片區塊；請稍後再試");
+  const repaired = normalizeEnglishImageEntry({ ...entry, attachment: attachments[0], attachments }, { id: entry.id, capturedAt: entry.capturedAt, touch: true });
+  if (!repaired) throw new Error("英文影像紀錄自動修復失敗");
+  await updateKnowledgeEntry(entry.id, { 標題: title, 內容: JSON.stringify(englishImageContent(repaired)) });
+  return repaired;
+}
+
 export async function listEnglishImageEntries(options: { includeMerged?: boolean } = {}): Promise<EnglishImageEntry[]> {
   const rows = await listJsonRecords(ENGLISH_IMAGE_TITLE_PREFIX);
   return rows.flatMap((row) => {
@@ -27,8 +58,9 @@ export async function getEnglishImageEntry(id: string): Promise<{ entry: English
   if (!row.標題.startsWith(ENGLISH_IMAGE_TITLE_PREFIX)) throw new Error("紀錄類型不符");
   let value: unknown;
   try { value = JSON.parse(row.內容); } catch { value = null; }
-  const entry = normalizeEnglishImageEntry(value, { id });
+  let entry = normalizeEnglishImageEntry(value, { id });
   if (!entry) throw new Error("英文影像紀錄無法讀取");
+  entry = await repairPendingAttachments(entry, row.標題);
   return { entry, title: row.標題 };
 }
 
@@ -72,7 +104,8 @@ export async function createEnglishImageEntry(params: {
   }));
   const block = response.results[0];
   if (!block) throw new Error("圖片沒有成功附加到英文影像紀錄");
-  const entry = { ...seed, id: created.id, attachment: { ...seed.attachment, blockId: block.id } };
+  const attachment = { ...seed.attachment, blockId: block.id };
+  const entry = { ...seed, id: created.id, attachment, attachments: [attachment] };
   return saveEnglishImageEntry(entry);
 }
 
