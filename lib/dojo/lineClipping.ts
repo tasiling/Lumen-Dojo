@@ -11,7 +11,12 @@ export type LineWebhookEvent = {
   webhookEventId?: string;
   replyToken?: string;
   source?: { type?: string; userId?: string };
-  message?: { id?: string; type?: string; text?: string };
+  message?: {
+    id?: string;
+    type?: string;
+    text?: string;
+    imageSet?: { id?: string; index?: number; total?: number };
+  };
   postback?: { data?: string };
 };
 
@@ -194,10 +199,24 @@ function messageQuickReplyItem(label: string, text: string): LineQuickReplyItem 
 
 export function captureImageQuickReply() {
   return { items: [
-    { type: "action" as const, action: { type: "cameraRoll" as const, label: "從相簿選擇" } },
-    { type: "action" as const, action: { type: "camera" as const, label: "開啟相機" } },
+    { type: "action" as const, action: { type: "cameraRoll" as const, label: "開啟相簿" } },
+    quickReplyItem("分次收一組", new URLSearchParams({ action: "imageBatchStart" }).toString()),
+    { type: "action" as const, action: { type: "camera" as const, label: "拍攝單張" } },
     messageQuickReplyItem("取消", "選單"),
   ] };
+}
+
+export function imageBatchCollectQuickReply(entryId?: string) {
+  const items: LineQuickReplyItem[] = [
+    { type: "action", action: { type: "cameraRoll", label: "繼續選圖" } },
+    { type: "action", action: { type: "camera", label: "繼續拍照" } },
+  ];
+  if (entryId) {
+    items.push(quickReplyItem("完成這組", new URLSearchParams({ action: "imageBatchFinish", entryId }).toString()));
+  } else {
+    items.push(quickReplyItem("停止收圖", new URLSearchParams({ action: "imageBatchCancel" }).toString()));
+  }
+  return { items };
 }
 
 export function basicLineMenuQuickReply() {
@@ -222,7 +241,16 @@ export function imageRouteQuickReply(entryId: string) {
   return { items: [
     quickReplyItem("遊戲英文", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
     quickReplyItem("英文日常", new URLSearchParams({ action: "imageRoute", entryId, route: "daily" }).toString()),
+    quickReplyItem("課堂英文", new URLSearchParams({ action: "imageRoute", entryId, route: "classroom" }).toString()),
     quickReplyItem("一般剪藏", new URLSearchParams({ action: "imageRoute", entryId, route: "capture" }).toString()),
+  ] };
+}
+
+export function imageDraftQuickReply(entryId: string) {
+  return { items: [
+    ...imageRouteQuickReply(entryId).items,
+    quickReplyItem("繼續補這組", new URLSearchParams({ action: "imageBatchContinue", entryId }).toString()),
+    quickReplyItem("撤銷誤合併", new URLSearchParams({ action: "imageUndoMerge", entryId }).toString()),
   ] };
 }
 
@@ -231,7 +259,7 @@ export function englishImageOrganizeQuickReply(entryId: string) {
     quickReplyItem("補充情境", new URLSearchParams({ action: "imageInput", entryId, mode: "context" }).toString()),
     quickReplyItem("修正原文", new URLSearchParams({ action: "imageInput", entryId, mode: "ocr" }).toString()),
     quickReplyItem("重新分析", new URLSearchParams({ action: "imageAnalyze", entryId }).toString()),
-    quickReplyItem("合併上一張", new URLSearchParams({ action: "imageMergePrevious", entryId }).toString()),
+    quickReplyItem("撤銷誤合併", new URLSearchParams({ action: "imageUndoMerge", entryId }).toString()),
     quickReplyItem("送語境修習室", new URLSearchParams({ action: "imageDispatch", entryId, target: "context" }).toString()),
     quickReplyItem("送 VocabForge", new URLSearchParams({ action: "imageDispatch", entryId, target: "vocab" }).toString()),
     quickReplyItem("兩邊都送", new URLSearchParams({ action: "imageDispatch", entryId, target: "both" }).toString()),

@@ -39,14 +39,17 @@ function outputText(payload: Record<string, unknown>): string {
 
 function analysisPrompt(entry: EnglishImageEntry): string {
   const context = entry.contextNote ? `\n使用者補充情境：${entry.contextNote}` : "";
-  const route = entry.route === "game" ? "英文遊戲畫面" : "英文日常畫面";
+  const route = entry.route === "game" ? "英文遊戲畫面" : entry.route === "classroom" ? "英文課堂教材或白板畫面" : "英文日常畫面";
   const group = entry.attachments.length > 1 ? `這是同一段情境的 ${entry.attachments.length} 張連續圖片，請合併理解。` : "";
-  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。若資訊不足，保守描述並標記需要確認。${context}`;
+  const task = entry.route === "classroom"
+    ? "辨識課堂主題、老師的問題或作業要求、文法重點，並在 englishRecord 提供一段 B1–B2、可直接拿來回答或練習的英文內容；chineseExplanation 要用中文分別說明課堂任務與文法重點。"
+    : "用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。";
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 export async function analyzeEnglishImage(id: string, options: { force?: boolean } = {}): Promise<EnglishImageEntry> {
   let { entry } = await getEnglishImageEntry(id);
-  if (entry.route === "pending") throw new Error("請先選擇遊戲英文或英文日常");
+  if (entry.route === "pending") throw new Error("請先選擇遊戲英文、英文日常或課堂英文");
   if (!options.force && (entry.analysisStatus === "completed" || entry.analysisStatus === "needs-review")) return entry;
   const processingIsFresh = entry.analysisStatus === "processing" && Date.now() - new Date(entry.updatedAt).getTime() < 2 * 60_000;
   if (processingIsFresh) throw new Error("這張圖片正在分析中");
@@ -67,7 +70,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
     analysisAttempts: entry.analysisAttempts + 1,
   });
   try {
-    const images = await Promise.all(entry.attachments.slice(0, 6).map(englishImageAttachmentBytes));
+    const images = await Promise.all(entry.attachments.slice(0, 10).map(englishImageAttachmentBytes));
     const model = process.env.OPENAI_ENGLISH_IMAGE_MODEL ?? "gpt-5.6-luna";
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",

@@ -1,6 +1,6 @@
 export const ENGLISH_IMAGE_TITLE_PREFIX = "行光英文影像-";
 
-export type EnglishImageRoute = "pending" | "game" | "daily";
+export type EnglishImageRoute = "pending" | "game" | "daily" | "classroom";
 export type EnglishImageStatus = "inbox" | "organized";
 export type EnglishImageAnalysisStatus = "idle" | "processing" | "completed" | "needs-review" | "failed";
 export type EnglishImageConfidence = "high" | "medium" | "low" | null;
@@ -31,6 +31,7 @@ export type EnglishImageAttachment = {
   mimeType: string;
   sourceMessageId: string;
   createdAt: string;
+  batchIndex: number | null;
 };
 
 export type EnglishImageEntry = {
@@ -53,6 +54,10 @@ export type EnglishImageEntry = {
   attachment: EnglishImageAttachment;
   attachments: EnglishImageAttachment[];
   mergedIntoId: string;
+  lineImageSetId: string;
+  lineImageSetTotal: number;
+  lineBatchState: "open" | "closed";
+  lineBatchUntil: string | null;
   lineInputMode: EnglishImageLineInputMode;
   lineInputUntil: string | null;
   contextRoomStatus: "idle" | "ready" | "synced";
@@ -108,12 +113,13 @@ export function normalizeEnglishImageEntry(
       mimeType: text(attachment.mimeType, 100) || "image/jpeg",
       sourceMessageId: text(attachment.sourceMessageId, 200),
       createdAt: iso(attachment.createdAt, params.capturedAt ?? now),
+      batchIndex: Number.isFinite(attachment.batchIndex) ? Math.max(1, Math.floor(Number(attachment.batchIndex))) : null,
     }];
-  });
+  }).sort((a, b) => (a.batchIndex ?? Number.MAX_SAFE_INTEGER) - (b.batchIndex ?? Number.MAX_SAFE_INTEGER));
   const blockId = attachments[0]?.blockId ?? "";
   if (!blockId) return null;
   const capturedAt = iso(source.capturedAt, params.capturedAt ?? now);
-  const route: EnglishImageRoute = source.route === "game" || source.route === "daily" ? source.route : "pending";
+  const route: EnglishImageRoute = source.route === "game" || source.route === "daily" || source.route === "classroom" ? source.route : "pending";
   const analysisStatus: EnglishImageAnalysisStatus =
     source.analysisStatus === "processing" || source.analysisStatus === "completed" ||
     source.analysisStatus === "needs-review" || source.analysisStatus === "failed"
@@ -129,7 +135,7 @@ export function normalizeEnglishImageEntry(
     id: params.id,
     route,
     status: source.status === "organized" ? "organized" : "inbox",
-    title: text(source.title, 300) || (route === "game" ? "遊戲英文" : route === "daily" ? "英文日常" : "待分類英文影像"),
+    title: text(source.title, 300) || (route === "game" ? "遊戲英文" : route === "daily" ? "英文日常" : route === "classroom" ? "課堂英文" : "待分類英文影像"),
     sourceLabel: text(source.sourceLabel, 300),
     contextNote: text(source.contextNote, 8000),
     ocrText: text(source.ocrText, 30000),
@@ -143,6 +149,10 @@ export function normalizeEnglishImageEntry(
     attachment: attachments[0],
     attachments,
     mergedIntoId: text(source.mergedIntoId, 100),
+    lineImageSetId: text(source.lineImageSetId, 200),
+    lineImageSetTotal: Number.isFinite(source.lineImageSetTotal) ? Math.max(0, Math.floor(Number(source.lineImageSetTotal))) : 0,
+    lineBatchState: source.lineBatchState === "open" ? "open" : "closed",
+    lineBatchUntil: source.lineBatchUntil ? iso(source.lineBatchUntil, now) : null,
     lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" ? source.lineInputMode : null,
     lineInputUntil: source.lineInputUntil ? iso(source.lineInputUntil, now) : null,
     contextRoomStatus: source.contextRoomStatus === "synced" ? "synced" : source.contextRoomStatus === "ready" ? "ready" : "idle",
