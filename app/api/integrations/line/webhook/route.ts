@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import {
   appendCaptureImage,
   createCaptureEntry,
@@ -447,11 +447,16 @@ export async function POST(req: NextRequest) {
   try { body = JSON.parse(rawBody) as LineWebhookBody; }
   catch { return NextResponse.json({ error: "LINE webhook JSON 格式錯誤" }, { status: 400 }); }
 
-  try {
-    for (const event of body.events ?? []) await handleEvent(event, allowedUserId);
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("LINE clipping webhook failed", error instanceof Error ? error.message : String(error));
-    return NextResponse.json({ error: "LINE 剪藏處理失敗" }, { status: 500 });
-  }
+  // LINE expects the webhook endpoint to acknowledge receipt within about two
+  // seconds. Image analysis and external integrations can take longer, so keep
+  // the work alive after the HTTP response has already been returned.
+  after(async () => {
+    try {
+      for (const event of body.events ?? []) await handleEvent(event, allowedUserId);
+    } catch (error) {
+      console.error("LINE clipping webhook background processing failed", error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  return NextResponse.json({ ok: true });
 }
