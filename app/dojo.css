@@ -3728,6 +3728,30 @@
 .dojo .english-image-route-actions button { min-width: 0; padding: 9px 6px; font-size: 9px; }
 .dojo .english-image-editor { display: grid; gap: 6px; }
 .dojo .english-image-editor > label { margin-top: 5px; color: #655b4d; font-size: 9px; font-weight: 750; }
+.dojo .english-image-learning-route { display: grid; gap: 8px; padding: 10px; border: 1px solid #c9d4c1; border-radius: 12px; background: #f4f7ef; }
+.dojo .english-image-learning-route small,
+.dojo .english-image-learning-route b { display: block; }
+.dojo .english-image-learning-route small { color: #668064; font-size: 8px; font-weight: 750; }
+.dojo .english-image-learning-route b { margin-top: 3px; font-size: 10px; line-height: 1.5; }
+.dojo .english-image-context-dispatch { display: grid; gap: 9px; padding: 12px; border: 1px solid #9eb09b; border-radius: 14px; background: #fbfcf7; }
+.dojo .english-image-context-head { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.dojo .english-image-context-head small { color: #668064; font-size: 8px; font-weight: 750; }
+.dojo .english-image-context-head h5 { margin: 2px 0 0; font-size: 13px; }
+.dojo .english-image-context-dispatch > label { display: grid; gap: 4px; color: #655b4d; font-size: 9px; font-weight: 750; }
+.dojo .english-image-context-dispatch fieldset { display: grid; gap: 7px; margin: 0; padding: 0; border: 0; }
+.dojo .english-image-context-dispatch legend { margin-bottom: 6px; color: #655b4d; font-size: 9px; font-weight: 750; }
+.dojo .english-image-context-choice { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 7px; align-items: start; padding: 9px; border: 1px solid #e1e3d9; border-radius: 11px; background: #fff; }
+.dojo .english-image-context-choice input { margin-top: 2px; accent-color: #58705d; }
+.dojo .english-image-context-choice span,
+.dojo .english-image-context-choice small,
+.dojo .english-image-context-choice b,
+.dojo .english-image-context-choice em,
+.dojo .english-image-context-choice i { display: block; min-width: 0; }
+.dojo .english-image-context-choice small { color: #779077; font-size: 7px; font-weight: 750; }
+.dojo .english-image-context-choice b { margin-top: 2px; overflow-wrap: anywhere; font-size: 10px; }
+.dojo .english-image-context-choice em,
+.dojo .english-image-context-choice i { margin-top: 2px; color: #786f62; font-size: 8px; font-style: normal; line-height: 1.45; }
+.dojo .english-image-context-choice i { color: #5e715f; }
 
 /* 修習所・英文：獨立語境修習室入口與 Notion／手動成果接收。只保存精簡回傳摘要，
    不在行光道場複製練習介面。 */

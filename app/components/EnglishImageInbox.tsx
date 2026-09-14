@@ -15,12 +15,36 @@ const ROUTES: { key: "all" | EnglishImageRoute; label: string }[] = [
   { key: "game", label: "遊戲英文" }, { key: "daily", label: "英文日常" },
 ];
 
+type ContextCandidate = {
+  key: string;
+  text: string;
+  meaning: string;
+  usage: string;
+  kind: "chunk" | "pattern" | "repair" | "usage";
+};
+
+type ContextDispatchDraft = {
+  entryId: string;
+  materialTitle: string;
+  eventTitle: string;
+  candidateKeys: string[];
+  candidates: ContextCandidate[];
+};
+
+const CONTEXT_KIND_LABEL: Record<ContextCandidate["kind"], string> = {
+  chunk: "片語／語塊",
+  pattern: "句型",
+  repair: "修復策略",
+  usage: "用法／語氣",
+};
+
 export default function EnglishImageInbox() {
   const [entries, setEntries] = useState<EnglishImageEntry[]>([]);
   const [filter, setFilter] = useState<(typeof ROUTES)[number]["key"]>("all");
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<EnglishImageEntry | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [contextDraft, setContextDraft] = useState<ContextDispatchDraft | null>(null);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
     try { setEntries((await json<{ entries: EnglishImageEntry[] }>(await fetch("/api/dojo/english-images", { cache: "no-store" }))).entries); }
@@ -74,6 +98,44 @@ export default function EnglishImageInbox() {
     finally { setBusy(null); }
   }
 
+  async function openContextDispatch(entry: EnglishImageEntry) {
+    setBusy(entry.id); setError("");
+    try {
+      const result = await json<{
+        candidates: ContextCandidate[];
+        defaults: { materialTitle: string; eventTitle: string };
+      }>(await fetch(`/api/dojo/english-images/context-room?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" }));
+      setContextDraft({
+        entryId: entry.id,
+        materialTitle: result.defaults.materialTitle,
+        eventTitle: result.defaults.eventTitle,
+        candidateKeys: result.candidates.map((item) => item.key).slice(0, 3),
+        candidates: result.candidates,
+      });
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setBusy(null); }
+  }
+
+  async function sendContextDispatch() {
+    if (!contextDraft) return;
+    setBusy(contextDraft.entryId); setError("");
+    try {
+      const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images/context-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: contextDraft.entryId,
+          materialTitle: contextDraft.materialTitle,
+          eventTitle: contextDraft.eventTitle,
+          candidateKeys: contextDraft.candidateKeys,
+        }),
+      }));
+      setEntries((old) => old.map((item) => item.id === result.entry.id ? result.entry : item));
+      setContextDraft(null);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setBusy(null); }
+  }
+
   return <div className="english-image-inbox learning-resources">
     <div className="subsection-title"><div><span className="eyebrow">野採・LINE 專屬入口</span><h4>英文影像匣</h4></div><span>{entries.length}</span></div>
     <p className="muted-note">遊戲畫面與日常照片先留在野採的英文影像區；完成辨識與初步分類後，再決定是否連到修習所。AI 只在分類後分析一次。</p>
@@ -84,13 +146,34 @@ export default function EnglishImageInbox() {
       return <article className="english-image-card" key={entry.id}>
         <div className={`english-image-gallery ${entry.attachments.length > 1 ? "multiple" : ""}`}>{entry.attachments.map((attachment, index) => <Image key={attachment.blockId} src={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}&index=${index}`} alt={`${entry.title} ${index + 1}`} width={720} height={480} unoptimized />)}</div>
         <div className="english-image-head"><div><small>{entry.route === "game" ? "遊戲英文" : entry.route === "daily" ? "英文日常" : "待分類"}</small><b>{entry.title}</b></div><span className={`analysis-${entry.analysisStatus}`}>{entry.analysisStatus === "completed" ? "AI 已完成" : entry.analysisStatus === "needs-review" ? "需要確認" : entry.analysisStatus === "processing" ? "分析中" : entry.analysisStatus === "failed" ? "分析失敗" : "尚未分析"}</span></div>
-        <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>VocabForge {entry.vocabForgeExports.length} 字</span>}</div>
+        <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.contextRoomStatus === "synced" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">已送語境修習室・{entry.contextRoomExport?.expressionCount ?? 0} 項 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>VocabForge {entry.vocabForgeExports.length} 字</span>}</div>
         {entry.analysisError && <p className="form-error">{entry.analysisError}</p>}
         {!open ? <>
           {entry.englishRecord && <div className="english-image-result"><small>英文事件紀錄</small><p>{entry.englishRecord}</p></div>}
           {entry.chineseExplanation && <div className="english-image-result"><small>中文理解</small><p>{entry.chineseExplanation}</p></div>}
           {entry.learningPhrases && <details><summary>可學詞句</summary><p>{entry.learningPhrases}</p></details>}
           {entry.vocabularyWords && <details><summary>單字候選</summary><p>{entry.vocabularyWords}</p></details>}
+          {entry.route !== "pending" && entry.analysisStatus !== "idle" && <div className="english-image-learning-route">
+            <div><small>學習分流</small><b>單字留給 VocabForge；用法與句型送往語境修習室</b></div>
+            <button className="primary" disabled={busy === entry.id} onClick={() => void openContextDispatch(entry)}>{busy === entry.id ? "讀取中…" : entry.contextRoomStatus === "synced" ? "查看／重新派送語境" : "選擇語境表達"}</button>
+          </div>}
+          {contextDraft?.entryId === entry.id && <div className="english-image-context-dispatch">
+            <div className="english-image-context-head"><div><small>語境修習室</small><h5>建立遊戲事件</h5></div><button className="text-link" onClick={() => setContextDraft(null)}>關閉</button></div>
+            <label>素材專案／遊戲名稱<input className="field" value={contextDraft.materialTitle} onChange={(event) => setContextDraft({ ...contextDraft, materialTitle: event.target.value })} placeholder="例如：Animal Crossing" /></label>
+            <label>這次事件名稱<input className="field" value={contextDraft.eventTitle} onChange={(event) => setContextDraft({ ...contextDraft, eventTitle: event.target.value })} placeholder="例如：評論角色的穿搭" /></label>
+            <fieldset>
+              <legend>選擇真正想留下的表達（最多 5 項）</legend>
+              {contextDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的片語、句型或用法；單一單字不會出現在這裡。</p> : contextDraft.candidates.map((candidate) => {
+                const checked = contextDraft.candidateKeys.includes(candidate.key);
+                return <label className="english-image-context-choice" key={candidate.key}>
+                  <input type="checkbox" checked={checked} disabled={!checked && contextDraft.candidateKeys.length >= 5} onChange={(event) => setContextDraft({ ...contextDraft, candidateKeys: event.target.checked ? [...contextDraft.candidateKeys, candidate.key] : contextDraft.candidateKeys.filter((key) => key !== candidate.key) })} />
+                  <span><small>{CONTEXT_KIND_LABEL[candidate.kind]}</small><b>{candidate.text}</b>{candidate.meaning && <em>{candidate.meaning}</em>}{candidate.usage && <i>{candidate.usage}</i>}</span>
+                </label>;
+              })}
+            </fieldset>
+            <p className="muted-note">只會送出你勾選的項目；未勾選的 AI 建議仍留在原始影像紀錄。</p>
+            <button className="primary" disabled={busy === entry.id || !contextDraft.materialTitle.trim() || !contextDraft.eventTitle.trim()} onClick={() => void sendContextDispatch()}>{busy === entry.id ? "派送中…" : `建立事件並留下 ${contextDraft.candidateKeys.length} 項表達`}</button>
+          </div>}
           {entry.analyzedAt && <small className="english-image-usage">{entry.analysisModel}・{entry.inputTokens + entry.outputTokens} tokens・約 US${entry.estimatedCostUsd.toFixed(4)}</small>}
           {entry.route === "pending" && <div className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>{busy === entry.id ? "分析中…" : "遊戲英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "daily")}>{busy === entry.id ? "分析中…" : "英文日常並分析"}</button></div>}
           <div className="english-image-actions"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>整理</button>{entry.route !== "pending" && <button disabled={busy === entry.id} onClick={() => void action(entry, "analyze")}>{busy === entry.id ? "處理中…" : entry.analysisAttempts ? "重新分析" : "AI 分析"}</button>}<button className="text-link" disabled={busy === entry.id} onClick={() => void action(entry, "moveToCapture")}>轉為一般素材</button></div>
