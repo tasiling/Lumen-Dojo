@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 44777)
+Total output lines: 5443
+
 /* 行光道場介面雛形 v1 移植(擁有者提供的 HTML 原型)。
    直接沿用雛形的 CSS 變數、版面結構、元件樣式,不重新設計、不「順手優化」。
    唯一調整:所有選擇器加上 .dojo 前綴做範圍限定,避免影響尚未重新編排進場域的
@@ -3172,507 +3175,7 @@
 }
 .dojo .weaving-editor > label {
   display: block;
-  color: #5f7078;
-  font-size: 12px;
-  font-weight: 700;
-}
-.dojo .weaving-editor .field {
-  margin-top: 6px;
-  background: #fff;
-}
-.dojo .weaving-editor-actions {
-  display: grid;
-  grid-template-columns: 0.9fr 1.2fr;
-  gap: 8px;
-  margin-top: 10px;
-}
-.dojo .weaving-editor-actions button {
-  min-height: 45px;
-  padding: 7px;
-  font-size: 11.5px;
-}
-.dojo .woven-history {
-  margin-top: 13px;
-  border-top: 1px solid #cbd7db;
-}
-.dojo .woven-history > summary {
-  padding: 13px 2px 9px;
-  color: #526b76;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 750;
-}
-.dojo .woven-history > summary span {
-  display: inline-grid;
-  min-width: 23px;
-  height: 23px;
-  place-items: center;
-  margin-left: 4px;
-  border-radius: 999px;
-  background: #dfe8e7;
-  font-size: 10px;
-}
-
-/* 野採：狀態、整理深度、使用去向分開，輕整理可在十秒內完成。 */
-.dojo .forage-inbox {
-  margin: 15px 0 18px;
-  padding: 15px;
-  border: 1px solid #e1c996;
-  border-radius: 20px;
-  background: linear-gradient(150deg, #fffaf0, #f4ead5);
-  box-shadow: 0 5px 18px #7a5c2010;
-}
-.dojo .forage-heading {
-  align-items: center;
-  margin-bottom: 12px;
-}
-.dojo .forage-heading h2 {
-  margin: 1px 0;
-  font: 600 21px "Noto Serif TC", serif;
-}
-.dojo .forage-heading .lead {
-  margin: 3px 0 0;
-  line-height: 1.5;
-}
-.dojo .forage-capture-link {
-  flex: 0 0 auto;
-  padding: 8px 10px;
-  border: 1px solid #c9a96a;
-  border-radius: 11px;
-  color: #765925;
-  font-size: 11px;
-  font-weight: 750;
-  text-decoration: none;
-}
-.dojo .forage-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.dojo .forage-tabs button {
-  min-width: 0;
-  padding: 7px 4px;
-  border-color: #d9c7a4;
-  color: #756951;
-  font-size: 11px;
-}
-.dojo .forage-tabs button span {
-  display: inline-grid;
-  min-width: 19px;
-  height: 19px;
-  place-items: center;
-  margin-left: 4px;
-  border-radius: 999px;
-  background: #ede2cd;
-  font-size: 9px;
-}
-.dojo .forage-tabs button.on {
-  border-color: #b78c40;
-  background: #e9d7b6;
-  color: #5f471e;
-}
-.dojo .forage-fade-note,
-.dojo .muted-note {
-  margin: 0 2px 11px;
-  color: var(--muted);
-  font-size: 10.5px;
-  line-height: 1.6;
-}
-.dojo .forage-list {
-  display: grid;
-  gap: 10px;
-}
-.dojo .forage-card {
-  padding: 14px;
-  border: 1px solid #ddc99f;
-  border-radius: 16px;
-  background: #fffefa;
-}
-.dojo .forage-card h3 {
-  margin: 9px 0 5px;
-  font: 650 17px "Noto Serif TC", serif;
-}
-.dojo .forage-card .weaving-capture-meta span {
-  background: #f3e7cd;
-  color: #765925;
-}
-.dojo .forage-clip-source {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin: 6px 0 8px;
-}
-.dojo .forage-clip-source span {
-  padding: 4px 7px;
-  border-radius: 999px;
-  background: #eef1e7;
-  color: #586452;
-  font-size: 9.5px;
-  font-weight: 700;
-}
-.dojo .forage-clip-images {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  margin: 9px 0;
-}
-.dojo .forage-clip-images a {
-  display: block;
-  overflow: hidden;
-  border: 1px solid #e1d3b7;
-  border-radius: 11px;
-  background: #f3ead9;
-}
-.dojo .forage-clip-images img {
-  display: block;
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-}
-@media (max-width: 520px) {
-  .dojo .forage-clip-images { grid-template-columns: 1fr; }
-  .dojo .forage-clip-images img { height: 210px; }
-}
-.dojo .forage-result {
-  margin-top: 10px;
-  padding: 9px;
-  border-radius: 11px;
-  background: #eef2e8;
-}
-.dojo .forage-result div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.dojo .forage-result span,
-.dojo .production-badges span {
-  padding: 4px 7px;
-  border-radius: 999px;
-  background: #dce7da;
-  color: #48604d;
-  font-size: 10px;
-  font-weight: 750;
-}
-.dojo .forage-result p {
-  margin: 7px 1px 0;
-  font-size: 12px;
-  line-height: 1.6;
-}
-.dojo .forage-editor {
-  margin-top: 13px;
-  padding-top: 13px;
-  border-top: 1px solid #e1d3b7;
-}
-.dojo .forage-editor > label,
-.dojo .deep-forage label,
-.dojo .learning-editor label {
-  display: block;
-  margin: 12px 0 5px;
-  color: #695d49;
-  font-size: 11.5px;
-  font-weight: 750;
-}
-.dojo .forage-editor .field,
-.dojo .deep-forage .field,
-.dojo .learning-editor .field {
-  background: #fff;
-}
-.dojo .destination-grid,
-.dojo .output-type-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-.dojo .destination-grid button {
-  min-width: 0;
-  min-height: 66px;
-  padding: 7px 4px;
-}
-.dojo .destination-grid b,
-.dojo .destination-grid small {
-  display: block;
-}
-.dojo .destination-grid b { font-size: 11.5px; }
-.dojo .destination-grid small { margin-top: 3px; color: var(--muted); font-size: 8.5px; }
-.dojo .destination-grid button.on,
-.dojo .learning-chip-row button.on,
-.dojo .output-type-grid button.on {
-  border-color: #b88d43;
-  background: #ead9b9;
-  color: #5d461f;
-}
-.dojo .learning-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.dojo .learning-chip-row button {
-  min-height: 36px;
-  padding: 6px 8px;
-  font-size: 10.5px;
-}
-.dojo .forage-editor label.forage-pin {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  margin-top: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: #f7efdf;
-  font-size: 10.5px;
-}
-.dojo .forage-pin input { width: 17px; height: 17px; accent-color: #a77d36; }
-.dojo .deep-forage {
-  margin-top: 14px;
-  padding-top: 10px;
-  border-top: 1px solid #e0d2b5;
-}
-.dojo .deep-forage summary {
-  color: #715820;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 750;
-}
-.dojo .deep-forage summary small {
-  display: block;
-  margin: 2px 0 0 19px;
-  color: var(--muted);
-  font-weight: 400;
-}
-.dojo .knowledge-link-add {
-  display: grid;
-  grid-template-columns: 1.4fr 0.85fr auto;
-  gap: 5px;
-}
-.dojo .knowledge-link-add button { padding: 6px 8px; font-size: 10px; }
-.dojo .knowledge-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 8px;
-}
-.dojo .knowledge-links span {
-  padding: 5px 4px 5px 8px;
-  border-radius: 999px;
-  background: #e6ebdf;
-  color: #4f6049;
-  font-size: 10px;
-}
-.dojo .knowledge-links button {
-  min-width: 24px;
-  min-height: 24px;
-  margin-left: 3px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-.dojo .forage-actions,
-.dojo .learning-editor-actions,
-.dojo .learning-actions {
-  display: grid;
-  grid-template-columns: 0.9fr 1.35fr;
-  gap: 7px;
-  margin-top: 13px;
-}
-.dojo .forage-actions button { min-height: 46px; padding: 6px; font-size: 10.5px; }
-.dojo .forage-fade-action {
-  width: 100%;
-  min-height: 32px;
-  margin-top: 5px;
-  padding: 3px;
-  border: 0;
-  background: transparent;
-  color: #8a7960;
-  font-size: 9.5px;
-}
-
-/* 織光堂只顯示已由野採送入的材料，並保存實際成品進度。 */
-.dojo .production-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 10px;
-}
-.dojo .production-badges span {
-  background: #e4ecef;
-  color: #45616d;
-}
-.dojo .output-type-grid { grid-template-columns: repeat(2, 1fr); margin: 6px 0 12px; }
-.dojo .output-type-grid button { min-width: 0; min-height: 42px; padding: 6px; font-size: 10.5px; }
-.dojo .production-save { width: 100%; margin-top: 12px; }
-.dojo .weaving-capture-card.production-completed { border-color: #aebfae; background: #f5f8f3; }
-
-/* 修習所・心知：五條共用學習路徑，英文先使用完整 CEFR 試行欄位。 */
-.dojo .learning-paths { margin-top: 12px; }
-.dojo .learning-heading h2 {
-  margin: 2px 0;
-  font: 600 22px "Noto Serif TC", serif;
-}
-.dojo .learning-heading p { margin: 3px 0 12px; color: var(--muted); font-size: 11.5px; line-height: 1.6; }
-.dojo .learning-track-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.dojo .learning-track-grid > button {
-  min-width: 0;
-  min-height: 122px;
-  padding: 11px;
-  border-color: #ddd3bd;
-  text-align: left;
-}
-.dojo .learning-track-grid > button > span {
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--track-color) 18%, white);
-  color: var(--track-color);
-  font-weight: 800;
-}
-.dojo .learning-track-grid b,
-.dojo .learning-track-grid small,
-.dojo .learning-track-grid em { display: block; }
-.dojo .learning-track-grid b { margin-top: 7px; font-size: 13px; }
-.dojo .learning-track-grid small { margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.4; }
-.dojo .learning-track-grid em { margin-top: 6px; color: var(--track-color); font-size: 9px; font-style: normal; font-weight: 700; }
-.dojo .learning-track-grid button.on { border-color: var(--track-color); background: color-mix(in srgb, var(--track-color) 9%, white); box-shadow: 0 0 0 2px color-mix(in srgb, var(--track-color) 14%, transparent); }
-.dojo .learning-detail {
-  margin-top: 11px;
-  padding: 15px;
-  border: 1px solid color-mix(in srgb, var(--track-color) 48%, white);
-  border-radius: 19px;
-  background: #fffefa;
-  box-shadow: 0 4px 16px #5949270c;
-}
-.dojo .learning-detail-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-.dojo .learning-detail-head h3 { margin: 2px 0 9px; font: 650 20px "Noto Serif TC", serif; }
-.dojo .learning-detail-head button { min-height: 0; padding: 3px; border: 0; background: transparent; color: var(--track-color); font-size: 10.5px; }
-.dojo .learning-facts { display: grid; gap: 7px; }
-.dojo .learning-facts > div { padding: 9px 10px; border-radius: 11px; background: #f5f2e9; }
-.dojo .learning-facts > div.next { background: color-mix(in srgb, var(--track-color) 10%, white); }
-.dojo .learning-facts small { color: var(--muted); font-size: 9px; }
-.dojo .learning-facts p { margin: 3px 0 0; font-size: 11.5px; line-height: 1.55; }
-.dojo .english-pilot {
-  display: grid;
-  grid-template-columns: 82px 1fr;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 11px;
-  border-radius: 13px;
-  background: #eaf0f4;
-}
-.dojo .cefr-route { display: flex; align-items: center; justify-content: center; gap: 4px; }
-.dojo .cefr-route span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px; background: #fff; color: #49677e; font-weight: 800; }
-.dojo .cefr-route i { color: #7890a0; font-style: normal; }
-.dojo .english-pilot small { color: #68808f; font-size: 9px; }
-.dojo .english-pilot p { margin: 2px 0 7px; font-size: 10.5px; line-height: 1.45; }
-.dojo .learning-actions button { min-width: 0; padding: 7px; font-size: 10.5px; }
-.dojo .learning-resources { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e4dccb; }
-.dojo .subsection-title { display: flex; align-items: center; justify-content: space-between; }
-.dojo .subsection-title h4 { margin: 0 0 7px; font-size: 12px; }
-.dojo .subsection-title span { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 999px; background: #ece6d9; font-size: 9px; }
-.dojo .learning-material { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid #eee7d9; }
-.dojo .learning-material:first-of-type { border-top: 0; }
-.dojo .learning-material b,
-.dojo .learning-material small { display: block; }
-.dojo .learning-material b { font-size: 11.5px; }
-.dojo .learning-material small { max-height: 3em; overflow: hidden; margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.5; }
-.dojo .learning-material a { flex: 0 0 auto; color: var(--track-color); font-size: 9.5px; }
-
-/* 修習所・心・意：雙角色創現書寫。角色設定低頻更新，里程碑與每日紀錄分開保存。 */
-.dojo .creative-role-studio { display: grid; gap: 12px; margin-top: 12px; }
-.dojo .creative-principle-card,
-.dojo .creative-role-card,
-.dojo .creative-milestone-card {
-  padding: 14px;
-  border: 1px solid #d8c9a7;
-  border-radius: 16px;
-  background: #fffaf0;
-}
-.dojo .creative-principle-card { background: linear-gradient(145deg, #fff8e9, #f2ead7); }
-.dojo .creative-principle-card .label { color: #9a722e; }
-.dojo .creative-principle-card b { display: block; margin: 5px 0; font: 650 16px "Noto Serif TC", serif; }
-.dojo .creative-principle-card p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.65; }
-.dojo .creative-role-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
-.dojo .creative-role-pair span { padding: 8px; border: 1px solid #dfd1b4; border-radius: 10px; background: rgba(255,255,255,.55); color: var(--muted); font-size: 8.5px; line-height: 1.45; }
-.dojo .creative-role-pair b { margin: 0 0 2px; color: var(--ink); font-size: 9.5px; font-weight: 800; line-height: 1.3; }
-.dojo .creative-method-map { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.dojo .creative-method-map span,
-.dojo .creative-method-map a { min-width: 0; padding: 8px 6px; border: 1px solid #ddd0b5; border-radius: 11px; background: #fffdf8; color: var(--muted); font-size: 7.8px; line-height: 1.4; text-decoration: none; }
-.dojo .creative-method-map b { display: block; margin-bottom: 2px; color: #80642f; font-size: 9px; }
-.dojo .creative-role-card h3,
-.dojo .creative-milestone-card h3,
-.dojo .creative-practice-card h3 { margin: 2px 0 0; font-size: 17px; }
-.dojo .creative-role-card > label,
-.dojo .creative-milestone-card > label { display: block; margin: 11px 0 5px; font-size: 10px; font-weight: 800; }
-.dojo .creative-role-card > .field,
-.dojo .creative-milestone-card > .field { margin: 0; background: #fff; }
-.dojo .creative-role-card > small { display: block; margin-top: 5px; color: var(--muted); font-size: 8.5px; line-height: 1.5; }
-.dojo .creative-role-card > .primary,
-.dojo .creative-milestone-card > .primary { width: 100%; margin-top: 12px; }
-.dojo .creative-milestone-history { padding: 0 12px; border: 1px solid #dfd3ba; border-radius: 14px; background: #fffdf8; }
-.dojo .creative-milestone-history summary { padding: 11px 0; color: #80642f; cursor: pointer; font-size: 10px; font-weight: 800; }
-.dojo .creative-milestone-history article { padding: 9px 0; border-top: 1px dashed #ddd0b6; }
-.dojo .creative-milestone-history small,
-.dojo .creative-milestone-history b { display: block; }
-.dojo .creative-milestone-history small { color: #9a8258; font-size: 8px; }
-.dojo .creative-milestone-history b { margin-top: 3px; font-size: 10px; line-height: 1.5; }
-.dojo .creative-milestone-history p { margin: 4px 0 0; color: var(--muted); font-size: 9px; }
-.dojo .creative-role-loading { margin-top: 12px; }
-.dojo .creative-practice-card { padding: 14px; border: 1px solid #c8d2c1; border-radius: 16px; background: linear-gradient(145deg, #fbfdf9, #edf2e9); }
-.dojo .creative-practice-card.vision-practice { margin-top: 12px; border-color: #c7c5db; background: linear-gradient(145deg, #fbfafc, #eeedf5); }
-.dojo .creative-practice-card .section-heading { align-items: flex-start; }
-.dojo .creative-practice-card .section-heading > small { max-width: 88px; color: var(--muted); font-size: 7.5px; line-height: 1.4; text-align: right; }
-.dojo .creative-practice-intro { margin: 7px 0 9px; color: var(--muted); font-size: 9px; line-height: 1.6; }
-.dojo .practice-moment-list { margin: 8px 0 11px; padding: 0 9px; border: 1px dashed #c9c3b4; border-radius: 10px; background: rgba(255,255,255,.55); }
-.dojo .practice-moment-list summary { padding: 8px 0; color: #76633e; cursor: pointer; font-size: 8.5px; font-weight: 800; }
-.dojo .practice-moment-list ul { margin: 0 0 9px; padding-left: 16px; color: var(--muted); font-size: 8px; line-height: 1.65; }
-.dojo .creative-practice-card > label,
-.dojo .creative-practice-reflection label { display: block; margin: 10px 0 5px; font-size: 9px; font-weight: 800; }
-.dojo .creative-practice-card > .field,
-.dojo .creative-practice-reflection .field { margin: 0; background: rgba(255,255,255,.84); }
-.dojo .creative-practice-card > .primary { width: 100%; margin-top: 11px; }
-.dojo .creative-practice-card > .ghost.compact { width: 100%; margin-top: 7px; padding: 7px; font-size: 8.5px; }
-.dojo .creative-practice-card .field-help { display: block; margin-top: 5px; color: var(--muted); font-size: 8px; line-height: 1.45; }
-.dojo .creative-focus-stage { padding: 13px; border: 1px solid #b6c3af; border-radius: 14px; background: rgba(255,255,255,.72); text-align: center; }
-.dojo .creative-focus-stage .focus-clock { display: block; color: #536a59; font: 700 30px/1.2 ui-monospace, monospace; }
-.dojo .focus-statements { margin: 12px 0; }
-.dojo .focus-statements p { margin: 8px 0; font: 650 13px/1.7 "Noto Serif TC", serif; }
-.dojo .affirm-count { display: grid; width: 100%; min-height: 58px; margin: 10px 0; place-items: center; border-color: #aebeaa; background: #eef4eb; }
-.dojo .affirm-count b { font-size: 17px; }
-.dojo .affirm-count span { color: var(--muted); font-size: 8px; }
-.dojo .creative-focus-stage .two,
-.dojo .creative-practice-reflection .two { margin-top: 11px; }
-.dojo .creative-practice-reflection > p { margin: 0 0 7px; color: #667061; font-size: 9px; font-weight: 800; }
-.dojo .vision-source-note { margin: 5px 0 0; padding: 7px; border-radius: 8px; background: rgba(255,255,255,.62); color: var(--muted); font-size: 8px; line-height: 1.45; }
-.dojo .vision-focus > small { display: block; margin-top: 10px; color: #747088; font-size: 8px; }
-.dojo .vision-scene { margin: 7px 0 14px; font: 650 12px/1.7 "Noto Serif TC", serif; white-space: pre-wrap; }
-.dojo .review-creative-practices { display: grid; gap: 8px; }
-.dojo .review-creative-practices article { padding: 10px; border-left: 3px solid #708875; border-radius: 10px; background: #f2f6ef; }
-.dojo .review-creative-practices article.vision { border-color: #7a7694; background: #f2f1f7; }
-.dojo .review-creative-practices small,
-.dojo .review-creative-practices b { display: block; }
-.dojo .review-creative-practices small { margin-bottom: 4px; color: #657269; font-size: 8px; font-weight: 800; }
-.dojo .review-creative-practices b { font-size: 10px; line-height: 1.55; }
-.dojo .review-creative-practices b + b { margin-top: 4px; }
-.dojo .review-creative-practices p { margin: 5px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
-.dojo .morning-creative-anchor { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 11px 0; padding: 10px; border: 1px solid #dbc99f; border-radius: 12px; background: #fff9eb; }
-.dojo .morning-creative-anchor small,
-.dojo .morning-creative-anchor b,
-.dojo .morning-creative-anchor span { display: block; }
-.dojo .morning-creative-anchor small { color: #9a722e; font-size: 8px; }
-.dojo .morning-creative-anchor b { margin: 2px 0; font-size: 10.5px; }
-.dojo .morning-creative-anchor span { color: var(--muted); font-size: 8.5px; }
-.dojo .morning-creative-anchor a,
-.dojo .morning-creative-setup { color: #83611f; font-size: 9px; font-weight: 800; text-decoration: none; }
-.dojo .morning-creative-setup { display: block; margin: 10px 0; padding: 9px; border: 1px dashed #d7c49a; border-radius: 10px; background: #fffbf2; text-align: center; }
-
-.dojo .evening-milestone-capture { margin-bottom: 14px; border: 1px solid #d7c39b; border-radius: 13px; background: #fff9ed; }
-.dojo .evening-milestone-capture summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px; cursor: pointer; }
+  color…4777 tokens truncated…sor: pointer; }
 .dojo .evening-milestone-capture summary span { font-size: 10px; font-weight: 800; }
 .dojo .evening-milestone-capture summary small { color: var(--muted); font-size: 8px; }
 .dojo .evening-milestone-capture > div { padding: 0 11px 11px; border-top: 1px solid #eadfc8; }
@@ -3691,6 +3194,78 @@
 @media (max-width: 390px) {
   .dojo .evening-milestone-capture summary { align-items: flex-start; flex-direction: column; }
   .dojo .creative-practice-card .section-heading { gap: 6px; }
+}
+
+/* LINE 英文影像匣：位於野採、資料仍獨立，保留原圖、AI 結果與人工修訂。 */
+.dojo .english-image-inbox { margin-top: 14px; }
+.dojo .english-image-tabs { display: flex; gap: 6px; margin: 10px 0; overflow-x: auto; }
+.dojo .english-image-tabs button { flex: 0 0 auto; padding: 7px 10px; font-size: 9px; }
+.dojo .english-image-tabs button.on { border-color: var(--practice); background: #eef0df; font-weight: 750; }
+.dojo .english-image-card { display: grid; gap: 10px; margin-top: 10px; padding: 11px; border: 1px solid var(--line); border-radius: 14px; background: #fffefa; }
+.dojo .english-image-gallery { display: grid; gap: 7px; }
+.dojo .english-image-gallery.multiple { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dojo .english-image-gallery img { width: 100%; height: auto; max-height: 440px; object-fit: contain; border-radius: 10px; background: #f3f0e7; }
+.dojo .english-image-gallery.multiple img { aspect-ratio: 3 / 4; object-fit: cover; }
+.dojo .english-image-head { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+.dojo .english-image-head small,
+.dojo .english-image-head b { display: block; }
+.dojo .english-image-head small { color: var(--muted); font-size: 8px; }
+.dojo .english-image-head b { margin-top: 3px; font-size: 12px; }
+.dojo .english-image-head > span { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; background: #eee9df; font-size: 8px; }
+.dojo .english-image-head > span.analysis-completed { background: #e5efe4; color: #3f6747; }
+.dojo .english-image-head > span.analysis-needs-review,
+.dojo .english-image-head > span.analysis-failed { background: #f8e8db; color: #8a5039; }
+.dojo .english-image-destinations { display: flex; flex-wrap: wrap; gap: 5px; }
+.dojo .english-image-destinations span,
+.dojo .english-image-destinations a { padding: 4px 7px; border-radius: 999px; background: #f1ede3; color: #665d50; font-size: 8px; text-decoration: none; }
+.dojo .english-image-result { padding: 9px 10px; border-left: 3px solid #99a777; background: #f4f5e9; }
+.dojo .english-image-result small { color: #66704e; font-size: 8px; font-weight: 750; }
+.dojo .english-image-result p,
+.dojo .english-image-card details p { margin: 4px 0 0; font-size: 10px; line-height: 1.65; white-space: pre-wrap; }
+.dojo .english-image-card details { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.dojo .english-image-card summary { cursor: pointer; font-size: 9px; font-weight: 750; }
+.dojo .english-image-usage { color: var(--muted); font-size: 7.5px; }
+.dojo .english-image-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.dojo .english-image-actions button { min-width: 0; font-size: 9px; }
+.dojo .english-image-route-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.dojo .english-image-route-actions button { min-width: 0; padding: 9px 6px; font-size: 9px; }
+.dojo .english-image-editor { display: grid; gap: 6px; }
+.dojo .english-image-editor > label { margin-top: 5px; color: #655b4d; font-size: 9px; font-weight: 750; }
+.dojo .english-image-learning-route { display: grid; gap: 8px; padding: 10px; border: 1px solid #c9d4c1; border-radius: 12px; background: #f4f7ef; }
+.dojo .english-image-learning-route small,
+.dojo .english-image-learning-route b { display: block; }
+.dojo .english-image-learning-route small { color: #668064; font-size: 8px; font-weight: 750; }
+.dojo .english-image-learning-route b { margin-top: 3px; font-size: 10px; line-height: 1.5; }
+.dojo .english-image-route-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.dojo .english-image-route-buttons button { min-width: 0; padding-inline: 8px; font-size: 9px; line-height: 1.35; }
+.dojo .english-image-context-dispatch,
+.dojo .english-image-vocab-dispatch { display: grid; gap: 9px; padding: 12px; border: 1px solid #9eb09b; border-radius: 14px; background: #fbfcf7; }
+.dojo .english-image-vocab-dispatch { border-color: #d4bb87; background: #fffaf0; }
+.dojo .english-image-context-head { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.dojo .english-image-context-head small { color: #668064; font-size: 8px; font-weight: 750; }
+.dojo .english-image-context-head h5 { margin: 2px 0 0; font-size: 13px; }
+.dojo .english-image-context-dispatch > label,
+.dojo .english-image-vocab-dispatch > label { display: grid; gap: 4px; color: #655b4d; font-size: 9px; font-weight: 750; }
+.dojo .english-image-context-dispatch fieldset,
+.dojo .english-image-vocab-dispatch fieldset { display: grid; gap: 7px; margin: 0; padding: 0; border: 0; }
+.dojo .english-image-context-dispatch legend,
+.dojo .english-image-vocab-dispatch legend { margin-bottom: 6px; color: #655b4d; font-size: 9px; font-weight: 750; }
+.dojo .english-image-context-choice { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 7px; align-items: start; padding: 9px; border: 1px solid #e1e3d9; border-radius: 11px; background: #fff; }
+.dojo .english-image-context-choice input { margin-top: 2px; accent-color: #58705d; }
+.dojo .english-image-context-choice span,
+.dojo .english-image-context-choice small,
+.dojo .english-image-context-choice b,
+.dojo .english-image-context-choice em,
+.dojo .english-image-context-choice i { display: block; min-width: 0; }
+.dojo .english-image-context-choice small { color: #779077; font-size: 7px; font-weight: 750; }
+.dojo .english-image-context-choice b { margin-top: 2px; overflow-wrap: anywhere; font-size: 10px; }
+.dojo .english-image-context-choice em,
+.dojo .english-image-context-choice i { margin-top: 2px; color: #786f62; font-size: 8px; font-style: normal; line-height: 1.45; }
+.dojo .english-image-context-choice i { color: #5e715f; }
+.dojo .english-image-context-choice.is-exported { border-color: #c8d4c5; background: #eef4eb; opacity: .8; }
+
+@media (max-width: 390px) {
+  .dojo .english-image-route-buttons { grid-template-columns: 1fr; }
 }
 
 /* 修習所・英文：獨立語境修習室入口與 Notion／手動成果接收。只保存精簡回傳摘要，
@@ -5348,13 +4923,24 @@
 .dojo .creative-maturity-grid button.on { border-color: #8f7452; background: #f3eadb; box-shadow: inset 0 0 0 1px #8f7452; }
 .dojo .creative-maturity-grid b { font-size: 10px; }
 .dojo .creative-maturity-grid small { color: var(--muted); font-size: 8.5px; line-height: 1.4; }
+.dojo .knowledge-source-maturity { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.dojo .knowledge-source-maturity button { display: grid; gap: 3px; padding: 9px; border: 1px solid #cfc8ba; border-radius: 11px; background: #fffdfa; text-align: left; }
+.dojo .knowledge-source-maturity button.on { border-color: #6f806f; background: #edf3eb; box-shadow: inset 0 0 0 1px #6f806f; }
+.dojo .knowledge-source-maturity b { font-size: 10px; }
+.dojo .knowledge-source-maturity small { color: var(--muted); font-size: 8.5px; line-height: 1.4; }
 .dojo .claim-bridge { display: grid; gap: 8px; margin-top: 13px; padding: 12px; border: 1px solid #d5c6ae; border-radius: 14px; background: #fbf7ef; }
 .dojo .claim-bridge > b { font: 650 14px "Noto Serif TC", serif; }
 .dojo .claim-bridge > p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.dojo .claim-candidate-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.dojo .claim-candidate-entry small { color: #58705c; font-size: 9px; }
+.dojo .claim-candidate-composer { display: grid; gap: 8px; margin-top: 10px; padding: 12px; border: 1px solid #d5c6ae; border-radius: 14px; background: #fbf7ef; }
+.dojo .claim-candidate-composer p { margin: 3px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.dojo .knowledge-active-note { margin: 10px 0; padding: 10px; border-left: 3px solid #8a765d; border-radius: 0 10px 10px 0; background: #f5eee4; }
+.dojo .knowledge-active-note p { margin: 4px 0 0; font-size: 10px; line-height: 1.6; }
 
 @media (max-width: 520px) {
   .dojo .knowledge-tabs { grid-template-columns: 1fr 1fr; }
   .dojo .knowledge-create-grid,
-  .dojo .creative-maturity-grid { grid-template-columns: 1fr; }
+  .dojo .creative-maturity-grid, .dojo .knowledge-source-maturity { grid-template-columns: 1fr; }
   .dojo .knowledge-link-add { grid-template-columns: 1fr; }
 }

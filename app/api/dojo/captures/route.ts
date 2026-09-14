@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         status: "pending",
         processingDepth: "raw",
         creativeMaturity: "C0",
+        sourceKnowledgeMaturity: "K0",
         sourceLocator: "",
         claimRefs: [],
         llmMaterialUse: "disabled",

@@ -13,6 +13,7 @@ import {
 } from "./constants";
 import { ENGLISH_JOURNAL_TITLE_PREFIX } from "./englishJournal";
 import { CONTEXT_ROOM_RESULT_TITLE_PREFIX } from "./contextRoomResult";
+import { ENGLISH_IMAGE_TITLE_PREFIX } from "./englishImage";
 import {
   CREATIVE_PRACTICE_TITLE_PREFIX,
   CREATIVE_ROLE_TITLE,
@@ -22,6 +23,7 @@ import { KNOWLEDGE_CLAIM_TITLE_PREFIX } from "./knowledgeClaims";
 
 export { ENGLISH_JOURNAL_TITLE_PREFIX };
 export { CONTEXT_ROOM_RESULT_TITLE_PREFIX };
+export { ENGLISH_IMAGE_TITLE_PREFIX };
 
 export const DAILY_TITLE_PREFIX = "行光今日-";
 export const BINGO_TITLE_PREFIX = "行光週盤-";
@@ -46,6 +48,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   LIAOJIE_PROJECT_TITLE_PREFIX,
   ENGLISH_JOURNAL_TITLE_PREFIX,
   CONTEXT_ROOM_RESULT_TITLE_PREFIX,
+  ENGLISH_IMAGE_TITLE_PREFIX,
   CREATIVE_ROLE_TITLE,
   MANIFESTATION_MILESTONE_TITLE_PREFIX,
   CREATIVE_PRACTICE_TITLE_PREFIX,
@@ -280,6 +283,7 @@ export type CaptureContentType = keyof typeof CAPTURE_CONTENT_TYPES;
 export type CaptureStatus = "pending" | "adopted" | "faded";
 export type CaptureProcessingDepth = "raw" | "light" | "deep";
 export type CreativeMaturity = "C0" | "C1" | "C2" | "C3";
+export type SourceKnowledgeMaturity = "K0" | "K1";
 export type CaptureLlmMaterialUse = "disabled" | "inspiration_only";
 export type CaptureDestination = "practice" | "weaving" | "dao";
 export type LearningTrackKey = "english" | "massage" | "yijing" | "ziwei" | "qimen";
@@ -339,6 +343,7 @@ export type CaptureEntry = {
   status: CaptureStatus;
   processingDepth: CaptureProcessingDepth;
   creativeMaturity: CreativeMaturity;
+  sourceKnowledgeMaturity: SourceKnowledgeMaturity;
   sourceLocator: string;
   claimRefs: CaptureClaimRef[];
   llmMaterialUse: CaptureLlmMaterialUse;
@@ -878,6 +883,7 @@ export function normalizeCaptureEntry(
     source.creativeMaturity === "C1" || source.creativeMaturity === "C2" || source.creativeMaturity === "C3"
       ? source.creativeMaturity
       : processingDepth === "raw" ? "C0" : "C1";
+  const sourceKnowledgeMaturity: SourceKnowledgeMaturity = source.sourceKnowledgeMaturity === "K1" ? "K1" : "K0";
   const destinations = Array.isArray(source.destinations)
     ? source.destinations.filter((item): item is CaptureDestination =>
         item === "practice" || item === "weaving" || item === "dao")
@@ -959,6 +965,7 @@ export function normalizeCaptureEntry(
     status,
     processingDepth,
     creativeMaturity,
+    sourceKnowledgeMaturity,
     sourceLocator: stringValue(source.sourceLocator).trim().slice(0, 1000),
     claimRefs,
     llmMaterialUse: source.llmMaterialUse === "inspiration_only" ? "inspiration_only" : "disabled",
@@ -997,6 +1004,7 @@ export function captureContent(entry: CaptureEntry): FormalCaptureContent {
     status: entry.status,
     processingDepth: entry.processingDepth,
     creativeMaturity: entry.creativeMaturity,
+    sourceKnowledgeMaturity: entry.sourceKnowledgeMaturity,
     sourceLocator: entry.sourceLocator,
     claimRefs: entry.claimRefs,
     llmMaterialUse: entry.llmMaterialUse,

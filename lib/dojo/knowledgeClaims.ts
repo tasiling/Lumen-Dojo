@@ -66,6 +66,7 @@ export type KnowledgeClaim = {
   type: KnowledgeClaimType;
   allowedUses: KnowledgeUse[];
   currentVersionId: string;
+  activeVersionId: string | null;
   versions: KnowledgeClaimVersion[];
   createdAt: string;
   updatedAt: string;
@@ -81,6 +82,17 @@ const SOURCE_TYPES: KnowledgeSourceRef["sourceType"][] = ["forage_capture", "rea
 
 function text(value: unknown, limit: number): string {
   return typeof value === "string" ? value.trim().slice(0, limit) : "";
+}
+
+function safeHttpUrl(value: unknown): string {
+  const candidate = text(value, 2000);
+  if (!candidate) return "";
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
 }
 
 function iso(value: unknown, fallback: string): string {
@@ -101,7 +113,7 @@ function normalizeSource(value: unknown): KnowledgeSourceRef | null {
     sourceId,
     label,
     locator: text(source.locator, 1000),
-    url: text(source.url, 2000),
+    url: safeHttpUrl(source.url),
     snapshot: text(source.snapshot, 12000),
   };
 }
@@ -138,6 +150,17 @@ export function currentClaimVersion(claim: KnowledgeClaim): KnowledgeClaimVersio
   return claim.versions.find((version) => version.id === claim.currentVersionId) ?? claim.versions[claim.versions.length - 1];
 }
 
+export function activeClaimVersion(claim: KnowledgeClaim): KnowledgeClaimVersion | null {
+  if (!claim.activeVersionId) return null;
+  const version = claim.versions.find((item) => item.id === claim.activeVersionId) ?? null;
+  return version?.maturity === "K4" && version.status === "active" ? version : null;
+}
+
+export function knowledgeClaimCanUse(claim: KnowledgeClaim, use: KnowledgeUse): boolean {
+  const version = activeClaimVersion(claim);
+  return Boolean(version && version.adoptedBy === "Crystal" && claim.allowedUses.includes(use));
+}
+
 export function normalizeKnowledgeClaim(
   value: unknown,
   options: { id: string; createdAt?: string; touch?: boolean },
@@ -155,6 +178,11 @@ export function normalizeKnowledgeClaim(
     ? String(source.currentVersionId)
     : versions[versions.length - 1].id;
   const current = versions.find((version) => version.id === currentVersionId) ?? versions[versions.length - 1];
+  const requestedActive = text(source.activeVersionId, 100);
+  const inferredActive = [...versions].reverse().find((version) => version.maturity === "K4" && version.status === "active")?.id ?? null;
+  const activeVersionId = requestedActive && versions.some((version) => version.id === requestedActive && version.maturity === "K4" && version.status === "active")
+    ? requestedActive
+    : inferredActive;
   return {
     version: 1,
     recordType: "knowledge-claim",
@@ -165,6 +193,7 @@ export function normalizeKnowledgeClaim(
       ? [...new Set(source.allowedUses.filter((use): use is KnowledgeUse => CLAIM_USES.includes(use as KnowledgeUse)))]
       : [],
     currentVersionId,
+    activeVersionId,
     versions,
     createdAt,
     updatedAt: options.touch ? now : iso(source.updatedAt, now),
@@ -179,6 +208,11 @@ export function newKnowledgeClaim(input: {
   claimant?: unknown;
   generatedBy?: unknown;
   sources?: unknown;
+  supportingEvidence?: unknown;
+  contradictingEvidence?: unknown;
+  scope?: unknown;
+  qualifier?: unknown;
+  rebuttal?: unknown;
 }): KnowledgeClaim | null {
   const now = new Date().toISOString();
   const versionId = crypto.randomUUID();
@@ -189,6 +223,7 @@ export function newKnowledgeClaim(input: {
     type: input.type,
     allowedUses: ["inspiration"],
     currentVersionId: versionId,
+    activeVersionId: null,
     versions: [{
       id: versionId,
       number: 1,
@@ -199,11 +234,11 @@ export function newKnowledgeClaim(input: {
       generatedBy: input.generatedBy,
       adoptedBy: null,
       sources: input.sources,
-      supportingEvidence: "",
-      contradictingEvidence: "",
-      scope: "",
-      qualifier: "",
-      rebuttal: "",
+      supportingEvidence: input.supportingEvidence,
+      contradictingEvidence: input.contradictingEvidence,
+      scope: input.scope,
+      qualifier: input.qualifier,
+      rebuttal: input.rebuttal,
       versionNote: "建立候選主張",
       createdAt: now,
       adoptedAt: null,

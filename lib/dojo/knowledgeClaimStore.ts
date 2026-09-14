@@ -39,6 +39,11 @@ export async function createKnowledgeClaim(input: unknown): Promise<KnowledgeCla
     claimant: source.claimant,
     generatedBy: source.generatedBy,
     sources: source.sources,
+    supportingEvidence: source.supportingEvidence,
+    contradictingEvidence: source.contradictingEvidence,
+    scope: source.scope,
+    qualifier: source.qualifier,
+    rebuttal: source.rebuttal,
   });
   if (!claim) throw new Error("請先寫下一句完整主張");
   const created = await createKnowledgeEntry({

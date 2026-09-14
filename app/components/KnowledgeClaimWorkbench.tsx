@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   KNOWLEDGE_CLAIM_TYPES,
+  activeClaimVersion,
   currentClaimVersion,
   type Claimant,
   type KnowledgeClaim,
@@ -58,6 +59,11 @@ function claimView(claim: KnowledgeClaim): ClaimView {
   return "candidate";
 }
 
+function matchesClaimView(claim: KnowledgeClaim, view: ClaimView): boolean {
+  if (view === "current") return activeClaimVersion(claim) !== null;
+  return claimView(claim) === view;
+}
+
 export default function KnowledgeClaimWorkbench() {
   const [claims, setClaims] = useState<KnowledgeClaim[]>([]);
   const [view, setView] = useState<ClaimView>("candidate");
@@ -79,8 +85,8 @@ export default function KnowledgeClaimWorkbench() {
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
 
-  const counts = useMemo(() => Object.fromEntries((Object.keys(VIEW_LABELS) as ClaimView[]).map((key) => [key, claims.filter((claim) => claimView(claim) === key).length])) as Record<ClaimView, number>, [claims]);
-  const visible = claims.filter((claim) => claimView(claim) === view);
+  const counts = useMemo(() => Object.fromEntries((Object.keys(VIEW_LABELS) as ClaimView[]).map((key) => [key, claims.filter((claim) => matchesClaimView(claim, key)).length])) as Record<ClaimView, number>, [claims]);
+  const visible = claims.filter((claim) => matchesClaimView(claim, view));
 
   async function createClaim() {
     if (!statement.trim()) return;
@@ -112,11 +118,11 @@ export default function KnowledgeClaimWorkbench() {
     {loading && <div className="empty">正在整理主張…</div>}
     {error && <p className="form-error">{error}<button className="text-link" onClick={() => void load()}>重新讀取</button></p>}
     {!loading && !error && visible.length === 0 && <div className="weaving-empty"><span>◇</span><b>這一區還沒有主張</b><p>沒有內容也沒關係；材料不必被迫成為知識。</p></div>}
-    <div className="knowledge-claim-list">{visible.map((claim) => <KnowledgeClaimCard key={`${claim.id}-${claim.updatedAt}`} claim={claim} onSaved={(next) => setClaims((all) => all.map((item) => item.id === next.id ? next : item))} onArchived={() => setClaims((all) => all.filter((item) => item.id !== claim.id))} />)}</div>
+    <div className="knowledge-claim-list">{visible.map((claim) => <KnowledgeClaimCard key={`${claim.id}-${claim.updatedAt}-${view}`} claim={claim} displayActive={view === "current"} onSaved={(next) => setClaims((all) => all.map((item) => item.id === next.id ? next : item))} onArchived={() => setClaims((all) => all.filter((item) => item.id !== claim.id))} />)}</div>
   </section>;
 }
 
-function KnowledgeClaimCard({ claim, onSaved, onArchived }: { claim: KnowledgeClaim; onSaved: (claim: KnowledgeClaim) => void; onArchived: () => void }) {
+function KnowledgeClaimCard({ claim, displayActive, onSaved, onArchived }: { claim: KnowledgeClaim; displayActive: boolean; onSaved: (claim: KnowledgeClaim) => void; onArchived: () => void }) {
   const [draft, setDraft] = useState(claim);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -124,7 +130,10 @@ function KnowledgeClaimCard({ claim, onSaved, onArchived }: { claim: KnowledgeCl
   const [sourceLabel, setSourceLabel] = useState("");
   const [sourceLocator, setSourceLocator] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
-  const current = currentClaimVersion(draft);
+  const working = currentClaimVersion(draft);
+  const active = activeClaimVersion(draft);
+  const current = displayActive ? (active ?? working) : working;
+  const hasPendingRevision = Boolean(active && active.id !== working.id);
   const versionLocked = current.status === "active" || current.status === "refuted" || current.status === "superseded";
 
   function updateVersion(values: Partial<typeof current>) {
@@ -189,7 +198,9 @@ function KnowledgeClaimCard({ claim, onSaved, onArchived }: { claim: KnowledgeCl
       {current.sources.length > 0 && <p className="knowledge-source-line">來源：{current.sources.map((source) => source.label || source.sourceId).join("、")}</p>}
       <div className="knowledge-use-row">{draft.allowedUses.map((use) => <span key={use}>{USE_LABELS[use]}</span>)}</div>
       {draft.versions.length > 1 && <details className="knowledge-sources"><summary>版本歷史（{draft.versions.length}）</summary>{[...draft.versions].reverse().map((version) => <div key={version.id}><b>v{version.number} · {STATUS_LABELS[version.status]}</b><p>{version.statement}</p>{version.versionNote && <span>{version.versionNote}</span>}</div>)}</details>}
-      <div className="knowledge-card-actions">{!versionLocked && <button onClick={() => setEditing(true)}>審閱這項主張</button>}<button className="text-link" disabled={saving} onClick={() => void createVersion()}>建立新版</button>{current.status === "active" && <button className="text-link" disabled={saving} onClick={() => void refuteCurrent()}>標記反證</button>}</div>
+      {!displayActive && active && active.id !== current.id && <div className="knowledge-active-note"><b>正式採用中的版本仍為 v{active.number}</b><p>{active.statement}</p></div>}
+      {displayActive && hasPendingRevision && <p className="muted-note">另有 v{working.number} 正在審閱；目前回答仍使用此正式版本。</p>}
+      <div className="knowledge-card-actions">{!displayActive && !versionLocked && <button onClick={() => setEditing(true)}>審閱這項主張</button>}{!hasPendingRevision && <button className="text-link" disabled={saving} onClick={() => void createVersion()}>建立新版</button>}{current.status === "active" && !hasPendingRevision && <button className="text-link" disabled={saving} onClick={() => void refuteCurrent()}>標記反證</button>}</div>
     </> : <>
       <label>主張</label><textarea className="field" rows={3} value={current.statement} onChange={(event) => updateVersion({ statement: event.target.value })} />
       <div className="knowledge-create-grid"><label>知識類型<select className="field" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as KnowledgeClaimType })}>{Object.entries(KNOWLEDGE_CLAIM_TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>誰在主張？<select className="field" value={current.claimant} onChange={(event) => updateVersion({ claimant: event.target.value as Claimant })}>{Object.entries(CLAIMANT_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>

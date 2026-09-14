@@ -60,6 +60,8 @@ const CLAIM_RELATIONS: Record<CaptureClaimRelation, string> = {
 export default function ForageCaptureInbox() {
   const [captures, setCaptures] = useState<CaptureEntry[]>([]);
   const [claims, setClaims] = useState<KnowledgeClaim[]>([]);
+  const [claimsLoaded, setClaimsLoaded] = useState(false);
+  const [claimsLoading, setClaimsLoading] = useState(false);
   const [tab, setTab] = useState<InboxTab>("pending");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,14 +79,16 @@ export default function ForageCaptureInbox() {
   }, []);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/dojo/knowledge-claims", { cache: "no-store" })
-      .then((response) => responseJson<{ claims: KnowledgeClaim[] }>(response))
-      .then((result) => { if (!cancelled) setClaims(result.claims ?? []); })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-  }, []);
+  const loadClaims = useCallback(async () => {
+    if (claimsLoaded || claimsLoading) return;
+    setClaimsLoading(true);
+    try {
+      const result = await responseJson<{ claims: KnowledgeClaim[] }>(await fetch("/api/dojo/knowledge-claims", { cache: "no-store" }));
+      setClaims(result.claims ?? []); setClaimsLoaded(true);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally { setClaimsLoading(false); }
+  }, [claimsLoaded, claimsLoading]);
 
   const counts = useMemo(() => ({
     pending: captures.filter((capture) => capture.status === "pending").length,
@@ -128,9 +132,10 @@ export default function ForageCaptureInbox() {
       <div className="forage-list">
         {visible.map((capture) => (
           <ForageCard key={`${capture.id}-${capture.updatedAt}`} capture={capture} editing={editingId === capture.id}
-            claims={claims}
-            onEdit={() => setEditingId(capture.id)} onCancel={() => setEditingId(null)}
+            claims={claims} claimsLoading={claimsLoading}
+            onEdit={() => { setEditingId(capture.id); void loadClaims(); }} onCancel={() => setEditingId(null)}
             onClaimCreated={(claim) => setClaims((current) => [claim, ...current])}
+            onCaptureUpdated={replaceCapture}
             onSaved={(next) => { replaceCapture(next); setEditingId(null); if (next.status !== tab) setTab(next.status); }} />
         ))}
       </div>
@@ -138,8 +143,8 @@ export default function ForageCaptureInbox() {
   );
 }
 
-function ForageCard({ capture, claims, editing, onEdit, onCancel, onSaved, onClaimCreated }: {
-  capture: CaptureEntry; claims: KnowledgeClaim[]; editing: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void;
+function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel, onSaved, onClaimCreated, onCaptureUpdated }: {
+  capture: CaptureEntry; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
 }) {
   const [draft, setDraft] = useState(capture);
   const [linkLabel, setLinkLabel] = useState("");
@@ -180,20 +185,24 @@ function ForageCard({ capture, claims, editing, onEdit, onCancel, onSaved, onCla
 
   async function createCandidateClaim() {
     if (!candidateStatement.trim()) return;
+    if (draft.sourceKnowledgeMaturity !== "K1") {
+      setError("建立 K2 前，請先確認這份材料已有可回找的來源或經驗紀錄（K1）。"); return;
+    }
     setSaving(true); setError(null);
     try {
-      const result = await responseJson<{ claim: KnowledgeClaim }>(await fetch("/api/dojo/knowledge-claims", {
+      const result = await responseJson<{ claim: KnowledgeClaim; capture: CaptureEntry }>(await fetch("/api/dojo/knowledge-claims", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "create_from_capture",
+          captureId: capture.id,
+          capture: draft,
           statement: candidateStatement,
           title: candidateStatement.slice(0, 80),
           type: candidateType,
           claimant: candidateClaimant,
-          generatedBy: "human",
-          sources: [{ sourceType: "forage_capture", sourceId: capture.id, label: capture.title, locator: draft.sourceLocator, url: capture.sourceUrl, snapshot: capture.forageSummary || capture.excerpt }],
         }),
       }));
-      setDraft((current) => ({ ...current, claimRefs: [...current.claimRefs, { claimId: result.claim.id, relation: "source" }] }));
+      setDraft(result.capture); onCaptureUpdated(result.capture);
       onClaimCreated(result.claim); setCandidateStatement("");
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setSaving(false); }
@@ -208,7 +217,7 @@ function ForageCard({ capture, claims, editing, onEdit, onCancel, onSaved, onCla
     }
     setSaving(true); setError(null);
     const now = new Date().toISOString();
-    const hasDeepWork = Boolean(draft.forageSummary || draft.forageReason || draft.contentType || draft.knowledgeLinks.length || draft.claimRefs.length || draft.sourceLocator || draft.creativeMaturity !== "C0");
+    const hasDeepWork = Boolean(draft.forageSummary || draft.forageReason || draft.contentType || draft.knowledgeLinks.length || draft.claimRefs.length || draft.sourceLocator || draft.creativeMaturity !== "C0" || draft.sourceKnowledgeMaturity !== "K0");
     const next: CaptureEntry = {
       ...draft,
       status,
@@ -234,7 +243,7 @@ function ForageCard({ capture, claims, editing, onEdit, onCancel, onSaved, onCla
       {capture.excerpt && <p className="weaving-excerpt">{capture.excerpt}</p>}
       {capture.note && <div className="weaving-original-note"><b>擷取時的想法</b><p>{capture.note}</p></div>}
       {capture.sourceUrl && <a className="weaving-source" href={capture.sourceUrl} target="_blank" rel="noreferrer">↗ {sourceHost(capture.sourceUrl)}</a>}
-      {!editing && capture.status === "adopted" && <div className="forage-result"><div><span>{capture.creativeMaturity}</span>{capture.destinations.map((key) => <span key={key}>{DESTINATIONS.find((item) => item.key === key)?.label}</span>)}</div>{capture.forageSummary && <p>{capture.forageSummary}</p>}</div>}
+      {!editing && capture.status === "adopted" && <div className="forage-result"><div><span>{capture.creativeMaturity}</span><span>{capture.sourceKnowledgeMaturity}</span>{capture.destinations.map((key) => <span key={key}>{DESTINATIONS.find((item) => item.key === key)?.label}</span>)}</div>{capture.forageSummary && <p>{capture.forageSummary}</p>}</div>}
 
       {!editing ? (
         <button type="button" className="weaving-edit-button" onClick={onEdit}>{capture.status === "faded" ? "恢復並整理" : capture.status === "adopted" ? "調整整理" : "開始十秒整理"}</button>
@@ -260,6 +269,7 @@ function ForageCard({ capture, claims, editing, onEdit, onCancel, onSaved, onCla
             <label>這份材料在說什麼？</label><textarea className="field" rows={3} value={draft.forageSummary} onChange={(event) => setDraft({ ...draft, forageSummary: event.target.value })} placeholder="用自己的話留下一段摘要" />
             <label>為什麼值得留下？</label><textarea className="field" rows={2} value={draft.forageReason} onChange={(event) => setDraft({ ...draft, forageReason: event.target.value })} placeholder="可能的用途、疑問或個人理解" />
             <label>創作成熟度</label><div className="creative-maturity-grid">{(Object.keys(CREATIVE_MATURITY) as CreativeMaturity[]).map((key) => <button type="button" key={key} className={draft.creativeMaturity === key ? "on" : ""} onClick={() => setDraft({ ...draft, creativeMaturity: key })}><b>{CREATIVE_MATURITY[key].label}</b><small>{CREATIVE_MATURITY[key].hint}</small></button>)}</div>
+            <label>來源成熟度</label><div className="knowledge-source-maturity"><button type="button" className={draft.sourceKnowledgeMaturity === "K0" ? "on" : ""} onClick={() => setDraft({ ...draft, sourceKnowledgeMaturity: "K0" })}><b>K0 未處理來源</b><small>來源或上下文仍不足，只保存</small></button><button type="button" className={draft.sourceKnowledgeMaturity === "K1" ? "on" : ""} onClick={() => setDraft({ ...draft, sourceKnowledgeMaturity: "K1" })}><b>K1 可追溯來源</b><small>能由網址、位置或經驗日期回找</small></button></div>
             <label>可定位來源</label><input className="field" value={draft.sourceLocator} onChange={(event) => setDraft({ ...draft, sourceLocator: event.target.value })} placeholder="頁碼、段落、時間碼，或其他可回找位置" />
             <label>這份材料可否交給日後的知識工具？</label><select className="field" value={draft.llmMaterialUse} onChange={(event) => setDraft({ ...draft, llmMaterialUse: event.target.value as CaptureEntry["llmMaterialUse"] })}><option value="disabled">禁用：不放入知識脈絡</option><option value="inspiration_only">僅靈感：不可寫成確定事實</option></select>
             <label>舊式知識標籤</label>
@@ -269,6 +279,7 @@ function ForageCard({ capture, claims, editing, onEdit, onCancel, onSaved, onCla
               <textarea className="field" rows={2} value={candidateStatement} onChange={(event) => setCandidateStatement(event.target.value)} placeholder="寫成一句完整、可判斷的候選主張" />
               <div className="knowledge-create-grid"><select className="field" value={candidateType} onChange={(event) => setCandidateType(event.target.value as KnowledgeClaimType)}>{Object.entries(KNOWLEDGE_CLAIM_TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><select className="field" value={candidateClaimant} onChange={(event) => setCandidateClaimant(event.target.value as Claimant)}><option value="crystal">Crystal 的主張</option><option value="external_author">來源作者的主張</option><option value="shared">共同形成</option><option value="unknown">尚未確認</option></select></div>
               <button type="button" disabled={saving || !candidateStatement.trim()} onClick={() => void createCandidateClaim()}>建立 K2 候選</button>
+              {claimsLoading && <p className="muted-note">需要時才載入既有知識主張…</p>}
               {claims.length > 0 && <div className="knowledge-link-add"><select className="field" value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}><option value="">連到既有主張…</option>{claims.map((claim) => <option key={claim.id} value={claim.id}>{currentClaimVersion(claim).statement.slice(0, 60)}</option>)}</select><select className="field" value={claimRelation} onChange={(event) => setClaimRelation(event.target.value as CaptureClaimRelation)}>{Object.entries(CLAIM_RELATIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><button type="button" onClick={linkExistingClaim}>連結</button></div>}
               {draft.claimRefs.length > 0 && <div className="knowledge-links">{draft.claimRefs.map((ref) => { const linked = claims.find((claim) => claim.id === ref.claimId); return <span key={`${ref.claimId}-${ref.relation}`}>{CLAIM_RELATIONS[ref.relation]}・{linked ? currentClaimVersion(linked).statement.slice(0, 36) : ref.claimId}<button type="button" aria-label="移除主張關聯" onClick={() => setDraft({ ...draft, claimRefs: draft.claimRefs.filter((item) => item !== ref) })}>×</button></span>; })}</div>}
             </div>
