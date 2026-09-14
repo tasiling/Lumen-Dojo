@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCaptureEntry, saveCaptureEntry } from "@/lib/dojo/captureStore";
-import { normalizeCaptureEntry, type CaptureEntry } from "@/lib/dojo/formal";
+import { CAPTURE_KNOWLEDGE_ORIGINS, normalizeCaptureEntry, type CaptureEntry } from "@/lib/dojo/formal";
 import { archiveJsonRecordById } from "@/lib/dojo/notionStore";
 import { createKnowledgeClaim, getKnowledgeClaim, listKnowledgeClaims, saveKnowledgeClaim } from "@/lib/dojo/knowledgeClaimStore";
 import {
@@ -62,24 +62,31 @@ export async function POST(req: NextRequest) {
         sourceLocator: incoming.sourceLocator,
         claimRefs: incoming.claimRefs,
         llmMaterialUse: incoming.llmMaterialUse,
+        knowledgeOrigin: incoming.knowledgeOrigin,
       }, { id: storedCapture.id, capturedAt: storedCapture.capturedAt });
       if (!capture) return NextResponse.json({ error: "野採素材無法讀取" }, { status: 409 });
       if (capture.sourceKnowledgeMaturity !== "K1") {
         return NextResponse.json({ error: "建立 K2 前，請先確認來源已達 K1 並可回找" }, { status: 400 });
+      }
+      if (capture.knowledgeOrigin === "unknown") {
+        return NextResponse.json({ error: "建立 K2 前，請先確認這段內容從哪裡來" }, { status: 400 });
+      }
+      if (!capture.sourceLocator && !(capture.knowledgeOrigin === "published_source" && capture.sourceUrl)) {
+        return NextResponse.json({ error: "建立 K2 前，請補上教導者、日期、頁碼或其他可定位來源" }, { status: 400 });
       }
       const claim = await createKnowledgeClaim({
         statement: body.statement,
         title: body.title,
         type: body.type,
         claimant: body.claimant,
-        generatedBy: "human",
+        generatedBy: capture.knowledgeOrigin === "ai_candidate" ? "llm_assisted" : "human",
         sources: [{
           sourceType: "forage_capture",
           sourceId: capture.id,
-          label: capture.title,
+          label: `${capture.title}・${CAPTURE_KNOWLEDGE_ORIGINS[capture.knowledgeOrigin][0]}`,
           locator: capture.sourceLocator,
           url: capture.sourceUrl,
-          snapshot: capture.forageSummary || capture.excerpt || capture.note,
+          snapshot: [`來源型態：${CAPTURE_KNOWLEDGE_ORIGINS[capture.knowledgeOrigin][0]}`, capture.forageSummary || capture.excerpt || capture.note].filter(Boolean).join("\n"),
         }],
       });
       try {

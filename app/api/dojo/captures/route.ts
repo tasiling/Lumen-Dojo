@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
         sourceLocator: "",
         claimRefs: [],
         llmMaterialUse: "disabled",
+        knowledgeOrigin: "unknown",
         contentType: null,
         forageSummary: "",
         forageReason: "",

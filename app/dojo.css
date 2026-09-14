@@ -47,7 +47,7 @@
   margin: auto;
   min-height: 100dvh;
   background: var(--bg);
-  padding-bottom: 88px;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
   position: relative;
 }
 .dojo .top {
@@ -3441,6 +3441,16 @@
   color: var(--muted);
   font-weight: 400;
 }
+.dojo .knowledge-origin-guide {
+  margin-top: 8px;
+  padding: 10px 11px;
+  border-left: 3px solid #9b8158;
+  border-radius: 0 11px 11px 0;
+  background: #f4ecdd;
+}
+.dojo .knowledge-origin-guide b { color: #6f5735; font-size: 10.5px; }
+.dojo .knowledge-origin-guide p,
+.dojo .knowledge-field-hint { margin: 4px 0 0; color: var(--muted); font-size: 9.5px; line-height: 1.6; }
 .dojo .knowledge-link-add {
   display: grid;
   grid-template-columns: 1.4fr 0.85fr auto;

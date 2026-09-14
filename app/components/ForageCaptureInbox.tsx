@@ -7,12 +7,12 @@ import {
   CAPTURE_CATEGORIES,
   CAPTURE_CLIP_PURPOSES,
   CAPTURE_CONTENT_TYPES,
-  KNOWLEDGE_RELATIONS,
+  CAPTURE_KNOWLEDGE_ORIGINS,
   type CaptureDestination,
   type CaptureEntry,
   type CaptureClaimRelation,
   type CreativeMaturity,
-  type KnowledgeRelation,
+  type CaptureKnowledgeOrigin,
   type LearningTrackKey,
 } from "@/lib/dojo/formal";
 import { LEARNING_TRACKS } from "@/lib/dojo/learning";
@@ -49,12 +49,35 @@ const CREATIVE_MATURITY: Record<CreativeMaturity, { label: string; hint: string 
   C3: { label: "C3 創作就緒", hint: "已有作品問題與明確去向" },
 };
 
-const CLAIM_RELATIONS: Record<CaptureClaimRelation, string> = {
+const CLAIM_RELATIONS = {
   source: "由此形成",
   supports: "支持",
-  contradicts: "反駁",
-  example: "作為案例",
-  inspiration: "啟發",
+  extends: "延伸",
+  contradicts: "矛盾",
+  example: "案例",
+  question: "待解問題",
+} as const satisfies Record<Exclude<CaptureClaimRelation, "inspiration">, string>;
+
+type EditableClaimRelation = keyof typeof CLAIM_RELATIONS;
+
+const ORIGIN_LOCATOR_HINTS: Record<CaptureKnowledgeOrigin, string> = {
+  unknown: "先記下你還缺少什麼來源資訊",
+  direct_teaching: "教導者、日期與情境，例如：經理 Alex・2026-09-14・肩頸按摩交接",
+  self_observation: "日期、地點與實作情境，例如：2026-09-14・按摩工作・第 3 位客人",
+  published_source: "書名頁碼、文章段落或影片時間碼",
+  conversation_feedback: "對話對象、日期與情境；私人內容請只留必要摘要",
+  ai_candidate: "工具／對話名稱、日期與可回找位置；仍需人工核對",
+};
+
+const CONTENT_TYPE_CLAIM_HINTS: Partial<Record<NonNullable<CaptureEntry["contentType"]>, string>> = {
+  atomic: "若要升格，通常建立「理解知識」。",
+  method: "若包含可重複步驟，通常建立「方法知識」。",
+  observation: "若是你親自觀察或實作，通常建立「經驗知識」。",
+  case: "案例先連到主張，不必把整件事件直接升格成知識。",
+  insight: "若是你目前採用的解釋或判斷，可建立「立場知識」。",
+  question: "問題本身不是知識，請用「待解問題」連到相關主張。",
+  inspiration: "可以送往織光杼；事實不足時只能作靈感。",
+  material: "先保留來源；從材料中另外抽取一句 Claim。",
 };
 
 export default function ForageCaptureInbox() {
@@ -147,13 +170,11 @@ function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel,
   capture: CaptureEntry; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
 }) {
   const [draft, setDraft] = useState(capture);
-  const [linkLabel, setLinkLabel] = useState("");
-  const [linkRelation, setLinkRelation] = useState<KnowledgeRelation>("extends");
   const [candidateStatement, setCandidateStatement] = useState("");
   const [candidateType, setCandidateType] = useState<KnowledgeClaimType>("understanding");
   const [candidateClaimant, setCandidateClaimant] = useState<Claimant>("crystal");
   const [selectedClaimId, setSelectedClaimId] = useState("");
-  const [claimRelation, setClaimRelation] = useState<CaptureClaimRelation>("supports");
+  const [claimRelation, setClaimRelation] = useState<EditableClaimRelation>("supports");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const categoryLabel = capture.category ? CAPTURE_CATEGORIES[capture.category] : "未分類";
@@ -171,10 +192,19 @@ function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel,
       : [...current.learningTracks, track] }));
   }
 
-  function addKnowledgeLink() {
-    const label = linkLabel.trim(); if (!label) return;
-    setDraft((current) => ({ ...current, knowledgeLinks: [...current.knowledgeLinks, { id: crypto.randomUUID(), label, relation: linkRelation }] }));
-    setLinkLabel("");
+  function selectKnowledgeOrigin(origin: CaptureKnowledgeOrigin) {
+    setDraft((current) => ({ ...current, knowledgeOrigin: origin }));
+    if (origin === "direct_teaching" || origin === "published_source" || origin === "conversation_feedback") setCandidateClaimant("external_author");
+    if (origin === "self_observation") setCandidateClaimant("crystal");
+    if (origin === "ai_candidate" || origin === "unknown") setCandidateClaimant("unknown");
+  }
+
+  function selectContentType(contentType: CaptureEntry["contentType"]) {
+    setDraft((current) => ({ ...current, contentType }));
+    if (contentType === "atomic") setCandidateType("understanding");
+    if (contentType === "method") setCandidateType("procedure");
+    if (contentType === "observation") setCandidateType("experience");
+    if (contentType === "insight") setCandidateType("perspective");
   }
 
   function linkExistingClaim() {
@@ -187,6 +217,12 @@ function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel,
     if (!candidateStatement.trim()) return;
     if (draft.sourceKnowledgeMaturity !== "K1") {
       setError("建立 K2 前，請先確認這份材料已有可回找的來源或經驗紀錄（K1）。"); return;
+    }
+    if (draft.knowledgeOrigin === "unknown") {
+      setError("建立 K2 前，請先選擇這段內容從哪裡來。"); return;
+    }
+    if (!draft.sourceLocator.trim() && !(draft.knowledgeOrigin === "published_source" && draft.sourceUrl)) {
+      setError(`請補上可定位來源：${ORIGIN_LOCATOR_HINTS[draft.knowledgeOrigin]}`); return;
     }
     setSaving(true); setError(null);
     try {
@@ -217,7 +253,7 @@ function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel,
     }
     setSaving(true); setError(null);
     const now = new Date().toISOString();
-    const hasDeepWork = Boolean(draft.forageSummary || draft.forageReason || draft.contentType || draft.knowledgeLinks.length || draft.claimRefs.length || draft.sourceLocator || draft.creativeMaturity !== "C0" || draft.sourceKnowledgeMaturity !== "K0");
+    const hasDeepWork = Boolean(draft.forageSummary || draft.forageReason || draft.contentType || draft.knowledgeOrigin !== "unknown" || draft.claimRefs.length || draft.sourceLocator || draft.creativeMaturity !== "C0" || draft.sourceKnowledgeMaturity !== "K0");
     const next: CaptureEntry = {
       ...draft,
       status,
@@ -262,26 +298,29 @@ function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel,
 
           <details className="deep-forage" open={draft.processingDepth === "deep"}>
             <summary>深入整理（選填）<small>提煉理解與知識關聯</small></summary>
-            <label>內容類型</label>
-            <select className="field" value={draft.contentType ?? ""} onChange={(event) => setDraft({ ...draft, contentType: event.target.value ? event.target.value as CaptureEntry["contentType"] : null })}>
+            <label>這段內容從哪裡來？</label>
+            <select className="field" value={draft.knowledgeOrigin} onChange={(event) => selectKnowledgeOrigin(event.target.value as CaptureKnowledgeOrigin)}>
+              {Object.entries(CAPTURE_KNOWLEDGE_ORIGINS).map(([key, value]) => <option key={key} value={key}>{value[0]}｜{value[1]}</option>)}
+            </select>
+            {draft.knowledgeOrigin === "direct_teaching" && <div className="knowledge-origin-guide"><b>經理教我的內容放這裡</b><p>操作步驟選「方法／操作」並建立「方法知識」；原理解釋選「概念／原理」並建立「理解知識」。來源請留下教導者、日期與工作情境。</p></div>}
+            <label>這段內容扮演什麼角色？</label>
+            <select className="field" value={draft.contentType ?? ""} onChange={(event) => selectContentType(event.target.value ? event.target.value as CaptureEntry["contentType"] : null)}>
               <option value="">暫不判斷</option>{Object.entries(CAPTURE_CONTENT_TYPES).map(([key, value]) => <option key={key} value={key}>{value[0]}｜{value[1]}</option>)}
             </select>
+            {draft.contentType && CONTENT_TYPE_CLAIM_HINTS[draft.contentType] && <p className="knowledge-field-hint">{CONTENT_TYPE_CLAIM_HINTS[draft.contentType]}</p>}
             <label>這份材料在說什麼？</label><textarea className="field" rows={3} value={draft.forageSummary} onChange={(event) => setDraft({ ...draft, forageSummary: event.target.value })} placeholder="用自己的話留下一段摘要" />
             <label>為什麼值得留下？</label><textarea className="field" rows={2} value={draft.forageReason} onChange={(event) => setDraft({ ...draft, forageReason: event.target.value })} placeholder="可能的用途、疑問或個人理解" />
             <label>創作成熟度</label><div className="creative-maturity-grid">{(Object.keys(CREATIVE_MATURITY) as CreativeMaturity[]).map((key) => <button type="button" key={key} className={draft.creativeMaturity === key ? "on" : ""} onClick={() => setDraft({ ...draft, creativeMaturity: key })}><b>{CREATIVE_MATURITY[key].label}</b><small>{CREATIVE_MATURITY[key].hint}</small></button>)}</div>
             <label>來源成熟度</label><div className="knowledge-source-maturity"><button type="button" className={draft.sourceKnowledgeMaturity === "K0" ? "on" : ""} onClick={() => setDraft({ ...draft, sourceKnowledgeMaturity: "K0" })}><b>K0 未處理來源</b><small>來源或上下文仍不足，只保存</small></button><button type="button" className={draft.sourceKnowledgeMaturity === "K1" ? "on" : ""} onClick={() => setDraft({ ...draft, sourceKnowledgeMaturity: "K1" })}><b>K1 可追溯來源</b><small>能由網址、位置或經驗日期回找</small></button></div>
-            <label>可定位來源</label><input className="field" value={draft.sourceLocator} onChange={(event) => setDraft({ ...draft, sourceLocator: event.target.value })} placeholder="頁碼、段落、時間碼，或其他可回找位置" />
+            <label>可定位來源</label><input className="field" value={draft.sourceLocator} onChange={(event) => setDraft({ ...draft, sourceLocator: event.target.value })} placeholder={ORIGIN_LOCATOR_HINTS[draft.knowledgeOrigin]} />
             <label>這份材料可否交給日後的知識工具？</label><select className="field" value={draft.llmMaterialUse} onChange={(event) => setDraft({ ...draft, llmMaterialUse: event.target.value as CaptureEntry["llmMaterialUse"] })}><option value="disabled">禁用：不放入知識脈絡</option><option value="inspiration_only">僅靈感：不可寫成確定事實</option></select>
-            <label>舊式知識標籤</label>
-            <div className="knowledge-link-add"><input className="field" value={linkLabel} onChange={(event) => setLinkLabel(event.target.value)} placeholder="例如：八卦・坎卦" /><select className="field" value={linkRelation} onChange={(event) => setLinkRelation(event.target.value as KnowledgeRelation)}>{Object.entries(KNOWLEDGE_RELATIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><button type="button" onClick={addKnowledgeLink}>加入</button></div>
-            {draft.knowledgeLinks.length > 0 && <div className="knowledge-links">{draft.knowledgeLinks.map((link) => <span key={link.id}>{KNOWLEDGE_RELATIONS[link.relation]}・{link.label}<button type="button" aria-label={`移除 ${link.label}`} onClick={() => setDraft({ ...draft, knowledgeLinks: draft.knowledgeLinks.filter((item) => item.id !== link.id) })}>×</button></span>)}</div>}
             <div className="claim-bridge"><b>知識主張</b><p>材料不會自動升格。你可以明確建立 K2 候選，或連到既有主張。</p>
               <textarea className="field" rows={2} value={candidateStatement} onChange={(event) => setCandidateStatement(event.target.value)} placeholder="寫成一句完整、可判斷的候選主張" />
-              <div className="knowledge-create-grid"><select className="field" value={candidateType} onChange={(event) => setCandidateType(event.target.value as KnowledgeClaimType)}>{Object.entries(KNOWLEDGE_CLAIM_TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><select className="field" value={candidateClaimant} onChange={(event) => setCandidateClaimant(event.target.value as Claimant)}><option value="crystal">Crystal 的主張</option><option value="external_author">來源作者的主張</option><option value="shared">共同形成</option><option value="unknown">尚未確認</option></select></div>
+              <div className="knowledge-create-grid"><select className="field" value={candidateType} onChange={(event) => setCandidateType(event.target.value as KnowledgeClaimType)}>{Object.entries(KNOWLEDGE_CLAIM_TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><select className="field" value={candidateClaimant} onChange={(event) => setCandidateClaimant(event.target.value as Claimant)}><option value="crystal">Crystal 的主張</option><option value="external_author">來源人物／作者的主張</option><option value="shared">共同形成</option><option value="unknown">尚未確認</option></select></div>
               <button type="button" disabled={saving || !candidateStatement.trim()} onClick={() => void createCandidateClaim()}>建立 K2 候選</button>
               {claimsLoading && <p className="muted-note">需要時才載入既有知識主張…</p>}
-              {claims.length > 0 && <div className="knowledge-link-add"><select className="field" value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}><option value="">連到既有主張…</option>{claims.map((claim) => <option key={claim.id} value={claim.id}>{currentClaimVersion(claim).statement.slice(0, 60)}</option>)}</select><select className="field" value={claimRelation} onChange={(event) => setClaimRelation(event.target.value as CaptureClaimRelation)}>{Object.entries(CLAIM_RELATIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><button type="button" onClick={linkExistingClaim}>連結</button></div>}
-              {draft.claimRefs.length > 0 && <div className="knowledge-links">{draft.claimRefs.map((ref) => { const linked = claims.find((claim) => claim.id === ref.claimId); return <span key={`${ref.claimId}-${ref.relation}`}>{CLAIM_RELATIONS[ref.relation]}・{linked ? currentClaimVersion(linked).statement.slice(0, 36) : ref.claimId}<button type="button" aria-label="移除主張關聯" onClick={() => setDraft({ ...draft, claimRefs: draft.claimRefs.filter((item) => item !== ref) })}>×</button></span>; })}</div>}
+              {claims.length > 0 && <div className="knowledge-link-add"><select className="field" value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}><option value="">連到既有主張…</option>{claims.map((claim) => <option key={claim.id} value={claim.id}>{currentClaimVersion(claim).statement.slice(0, 60)}</option>)}</select><select className="field" value={claimRelation} onChange={(event) => setClaimRelation(event.target.value as EditableClaimRelation)}>{Object.entries(CLAIM_RELATIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><button type="button" onClick={linkExistingClaim}>連結</button></div>}
+              {draft.claimRefs.length > 0 && <div className="knowledge-links">{draft.claimRefs.map((ref) => { const linked = claims.find((claim) => claim.id === ref.claimId); const relationLabel = ref.relation === "inspiration" ? "延伸" : CLAIM_RELATIONS[ref.relation]; return <span key={`${ref.claimId}-${ref.relation}`}>{relationLabel}・{linked ? currentClaimVersion(linked).statement.slice(0, 36) : ref.claimId}<button type="button" aria-label="移除主張關聯" onClick={() => setDraft({ ...draft, claimRefs: draft.claimRefs.filter((item) => item !== ref) })}>×</button></span>; })}</div>}
             </div>
           </details>
           {error && <p className="form-error">{error}</p>}

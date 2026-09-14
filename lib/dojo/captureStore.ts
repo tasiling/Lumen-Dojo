@@ -41,6 +41,7 @@ export async function createCaptureEntry(input: unknown): Promise<CaptureEntry> 
       sourceLocator: "",
       claimRefs: [],
       llmMaterialUse: "disabled",
+      knowledgeOrigin: "unknown",
       contentType: null,
       forageSummary: "",
       forageReason: "",
