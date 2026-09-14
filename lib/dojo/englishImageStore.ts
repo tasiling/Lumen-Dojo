@@ -78,6 +78,11 @@ export async function createEnglishImageEntry(params: {
   filename: string;
   sourceMessageId: string;
   externalEventId: string;
+  batchIndex?: number | null;
+  lineImageSetId?: string;
+  lineImageSetTotal?: number;
+  lineBatchState?: "open" | "closed";
+  lineBatchUntil?: string | null;
 }): Promise<EnglishImageEntry> {
   if (!params.mimeType.startsWith("image/")) throw new Error("LINE 傳入的檔案不是圖片");
   if (params.bytes.byteLength > 20 * 1024 * 1024) throw new Error("圖片超過 20 MB，暫時無法保存");
@@ -86,9 +91,13 @@ export async function createEnglishImageEntry(params: {
     title: "待分類英文影像",
     externalEventId: params.externalEventId,
     externalMessageId: params.sourceMessageId,
+    lineImageSetId: params.lineImageSetId ?? "",
+    lineImageSetTotal: params.lineImageSetTotal ?? 0,
+    lineBatchState: params.lineBatchState ?? "closed",
+    lineBatchUntil: params.lineBatchUntil ?? null,
     capturedAt: now,
     updatedAt: now,
-    attachment: { blockId: "pending", filename: params.filename, mimeType: params.mimeType, sourceMessageId: params.sourceMessageId, createdAt: now },
+    attachment: { blockId: "pending", filename: params.filename, mimeType: params.mimeType, sourceMessageId: params.sourceMessageId, createdAt: now, batchIndex: params.batchIndex ?? null },
   }, { id: "pending" });
   if (!seed) throw new Error("無法建立英文影像紀錄");
   const created = await createKnowledgeEntry({ 標題: englishImageRecordTitle(crypto.randomUUID()), 內容: JSON.stringify(englishImageContent(seed)) });
@@ -109,31 +118,83 @@ export async function createEnglishImageEntry(params: {
   return saveEnglishImageEntry(entry);
 }
 
+export async function appendEnglishImageAttachment(params: {
+  entry: EnglishImageEntry;
+  bytes: ArrayBuffer;
+  mimeType: string;
+  filename: string;
+  sourceMessageId: string;
+  batchIndex?: number | null;
+}): Promise<EnglishImageEntry> {
+  if (!params.mimeType.startsWith("image/")) throw new Error("LINE 傳入的檔案不是圖片");
+  if (params.bytes.byteLength > 20 * 1024 * 1024) throw new Error("圖片超過 20 MB，暫時無法保存");
+  if (params.entry.attachments.some((item) => item.sourceMessageId === params.sourceMessageId)) return params.entry;
+  const now = new Date().toISOString();
+  const upload = await withNotionRateLimit(() => notion().fileUploads.create({ mode: "single_part", filename: params.filename, content_type: params.mimeType }));
+  await withNotionRateLimit(() => notion().fileUploads.send({
+    file_upload_id: upload.id,
+    file: { filename: params.filename, data: new Blob([params.bytes], { type: params.mimeType }) },
+  }));
+  const response = await withNotionRateLimit(() => notion().blocks.children.append({
+    block_id: params.entry.id,
+    children: [{ object: "block", type: "image", image: { type: "file_upload", file_upload: { id: upload.id }, caption: [{ type: "text", text: { content: "LINE 英文影像原圖" } }] } }],
+  }));
+  const block = response.results[0];
+  if (!block) throw new Error("圖片沒有成功附加到英文影像紀錄");
+  const attachment: EnglishImageEntry["attachment"] = {
+    blockId: block.id,
+    filename: params.filename,
+    mimeType: params.mimeType,
+    sourceMessageId: params.sourceMessageId,
+    createdAt: now,
+    batchIndex: params.batchIndex ?? null,
+  };
+  const attachments = [...params.entry.attachments, attachment]
+    .sort((a, b) => (a.batchIndex ?? Number.MAX_SAFE_INTEGER) - (b.batchIndex ?? Number.MAX_SAFE_INTEGER));
+  return saveEnglishImageEntry({
+    ...params.entry,
+    attachment: attachments[0],
+    attachments,
+    analysisStatus: params.entry.analysisAttempts ? "idle" : params.entry.analysisStatus,
+    analysisReviewReason: params.entry.analysisAttempts ? "圖片組已更新，請重新分析完整情境。" : params.entry.analysisReviewReason,
+  });
+}
+
 export async function routeEnglishImage(entry: EnglishImageEntry, route: Exclude<EnglishImageRoute, "pending">): Promise<EnglishImageEntry> {
   return saveEnglishImageEntry({
     ...entry,
     route,
+    lineBatchState: "closed",
+    lineBatchUntil: null,
     title: route === "game" ? "遊戲英文" : "英文日常",
     awaitingContextUntil: new Date(Date.now() + 10 * 60_000).toISOString(),
   });
 }
 
-export async function mergeEnglishImageIntoPrevious(current: EnglishImageEntry): Promise<EnglishImageEntry> {
-  const entries = await listEnglishImageEntries();
-  const previous = entries.find((entry) => entry.id !== current.id && entry.capturedAt < current.capturedAt);
-  if (!previous) throw new Error("找不到可以合併的上一張圖片");
-  if (Date.now() - new Date(previous.capturedAt).getTime() > 30 * 60_000) throw new Error("上一張圖片已超過三十分鐘，請到網頁手動整理");
-  const sourceIds = new Set(previous.attachments.map((item) => item.sourceMessageId));
-  const attachments = [...previous.attachments, ...current.attachments.filter((item) => !sourceIds.has(item.sourceMessageId))].slice(0, 6);
-  const parent = await saveEnglishImageEntry({
-    ...previous,
-    attachments,
+export async function undoLatestEnglishImageMerge(parent: EnglishImageEntry): Promise<{ parent: EnglishImageEntry; restored: EnglishImageEntry }> {
+  const entries = await listEnglishImageEntries({ includeMerged: true });
+  const child = entries
+    .filter((entry) => entry.mergedIntoId === parent.id)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+  if (!child) throw new Error("這筆素材沒有可撤銷的舊式合併紀錄");
+  const childMessageIds = new Set(child.attachments.map((item) => item.sourceMessageId));
+  const attachments = parent.attachments.filter((item) => !childMessageIds.has(item.sourceMessageId));
+  if (!attachments.length) throw new Error("無法撤銷：主素材缺少原始圖片");
+  const restoredParent = await saveEnglishImageEntry({
+    ...parent,
     attachment: attachments[0],
-    analysisStatus: previous.analysisAttempts ? "idle" : previous.analysisStatus,
-    analysisReviewReason: previous.analysisAttempts ? "圖片已合併，請重新分析完整情境。" : previous.analysisReviewReason,
+    attachments,
+    analysisStatus: parent.analysisAttempts ? "idle" : parent.analysisStatus,
+    analysisReviewReason: parent.analysisAttempts ? "已撤銷誤合併，請重新分析正確圖片。" : parent.analysisReviewReason,
   });
-  await saveEnglishImageEntry({ ...current, mergedIntoId: parent.id, status: "organized", lineInputMode: null, lineInputUntil: null });
-  return parent;
+  const restored = await saveEnglishImageEntry({
+    ...child,
+    mergedIntoId: "",
+    status: "inbox",
+    lineBatchState: "closed",
+    lineBatchUntil: null,
+  });
+  return { parent: restoredParent, restored };
 }
 
 export async function englishImageUrl(entry: EnglishImageEntry): Promise<string> {

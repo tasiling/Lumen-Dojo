@@ -67,7 +67,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
     analysisAttempts: entry.analysisAttempts + 1,
   });
   try {
-    const images = await Promise.all(entry.attachments.slice(0, 6).map(englishImageAttachmentBytes));
+    const images = await Promise.all(entry.attachments.slice(0, 10).map(englishImageAttachmentBytes));
     const model = process.env.OPENAI_ENGLISH_IMAGE_MODEL ?? "gpt-5.6-luna";
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",

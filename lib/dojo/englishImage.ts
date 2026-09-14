@@ -31,6 +31,7 @@ export type EnglishImageAttachment = {
   mimeType: string;
   sourceMessageId: string;
   createdAt: string;
+  batchIndex: number | null;
 };
 
 export type EnglishImageEntry = {
@@ -53,6 +54,10 @@ export type EnglishImageEntry = {
   attachment: EnglishImageAttachment;
   attachments: EnglishImageAttachment[];
   mergedIntoId: string;
+  lineImageSetId: string;
+  lineImageSetTotal: number;
+  lineBatchState: "open" | "closed";
+  lineBatchUntil: string | null;
   lineInputMode: EnglishImageLineInputMode;
   lineInputUntil: string | null;
   contextRoomStatus: "idle" | "ready" | "synced";
@@ -108,8 +113,9 @@ export function normalizeEnglishImageEntry(
       mimeType: text(attachment.mimeType, 100) || "image/jpeg",
       sourceMessageId: text(attachment.sourceMessageId, 200),
       createdAt: iso(attachment.createdAt, params.capturedAt ?? now),
+      batchIndex: Number.isFinite(attachment.batchIndex) ? Math.max(1, Math.floor(Number(attachment.batchIndex))) : null,
     }];
-  });
+  }).sort((a, b) => (a.batchIndex ?? Number.MAX_SAFE_INTEGER) - (b.batchIndex ?? Number.MAX_SAFE_INTEGER));
   const blockId = attachments[0]?.blockId ?? "";
   if (!blockId) return null;
   const capturedAt = iso(source.capturedAt, params.capturedAt ?? now);
@@ -143,6 +149,10 @@ export function normalizeEnglishImageEntry(
     attachment: attachments[0],
     attachments,
     mergedIntoId: text(source.mergedIntoId, 100),
+    lineImageSetId: text(source.lineImageSetId, 200),
+    lineImageSetTotal: Number.isFinite(source.lineImageSetTotal) ? Math.max(0, Math.floor(Number(source.lineImageSetTotal))) : 0,
+    lineBatchState: source.lineBatchState === "open" ? "open" : "closed",
+    lineBatchUntil: source.lineBatchUntil ? iso(source.lineBatchUntil, now) : null,
     lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" ? source.lineInputMode : null,
     lineInputUntil: source.lineInputUntil ? iso(source.lineInputUntil, now) : null,
     contextRoomStatus: source.contextRoomStatus === "synced" ? "synced" : source.contextRoomStatus === "ready" ? "ready" : "idle",

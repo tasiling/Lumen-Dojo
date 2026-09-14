@@ -7,13 +7,14 @@ import {
 } from "@/lib/dojo/captureStore";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
 import {
+  appendEnglishImageAttachment,
   createEnglishImageEntry,
   getEnglishImageEntry,
   listEnglishImageEntries,
-  mergeEnglishImageIntoPrevious,
   moveEnglishImageToCapture,
   routeEnglishImage,
   saveEnglishImageEntry,
+  undoLatestEnglishImageMerge,
 } from "@/lib/dojo/englishImageStore";
 import { englishImageVocabCandidates, exportEnglishImageVocab, listVocabForgeBooks, prepareEnglishImageForContextRoom } from "@/lib/dojo/englishImageDispatch";
 import {
@@ -28,6 +29,8 @@ import {
   forageQuickReply,
   fetchLineImage,
   fetchWebPreview,
+  imageBatchCollectQuickReply,
+  imageDraftQuickReply,
   imageRouteQuickReply,
   normalizeClipUrl,
   platformFromUrl,
@@ -41,6 +44,19 @@ import type { EnglishImageEntry } from "@/lib/dojo/englishImage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const IMAGE_BATCH_WINDOW_MS = 10 * 60_000;
+type ManualImageBatch = { entryId: string; expiresAt: number };
+const manualImageBatches = new Map<string, ManualImageBatch>();
+const imageSetLocks = new Map<string, Promise<void>>();
+
+async function withImageSetLock(key: string, task: () => Promise<void>): Promise<void> {
+  const previous = imageSetLocks.get(key) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(task);
+  imageSetLocks.set(key, current);
+  try { await current; }
+  finally { if (imageSetLocks.get(key) === current) imageSetLocks.delete(key); }
+}
 
 function emptyClip(overrides: Partial<CaptureClipMeta>): CaptureClipMeta {
   return {
@@ -82,7 +98,7 @@ function forageUrl(): string {
 async function handleLineCommand(event: LineWebhookEvent, command: string): Promise<boolean> {
   const replyToken = event.replyToken ?? "";
   if (command === "野採圖片") {
-    await replyLineMessage(replyToken, "請拍照或從相簿選擇一張圖片。收到後，我會先保存到野採，再請你選擇素材類型。", captureImageQuickReply());
+    await replyLineMessage(replyToken, "如果圖片彼此相關，可以在相簿一次勾選多張送出；系統會自動收成同一組。若需要分次拍攝，請先按「分次收一組」。", captureImageQuickReply());
     return true;
   }
   if (command === "剪藏網址" || command === "貼網址") {
@@ -99,7 +115,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
     }
     if (image && (!capture || image.capturedAt >= capture.capturedAt)) {
       const status = image.route === "pending" ? "待分類" : image.analysisStatus === "completed" ? "AI 已完成" : image.analysisStatus === "needs-review" ? "需要確認" : "尚待整理";
-      await replyLineMessage(replyToken, `最近一筆｜英文影像\n「${image.title}」\n狀態：${status}`, image.route === "pending" ? imageRouteQuickReply(image.id) : englishImageOrganizeQuickReply(image.id));
+      await replyLineMessage(replyToken, `最近一筆｜英文影像\n「${image.title}」\n${image.attachments.length} 張圖片\n狀態：${status}`, image.route === "pending" ? imageDraftQuickReply(image.id) : englishImageOrganizeQuickReply(image.id));
       return true;
     }
     if (capture) {
@@ -128,7 +144,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
     await replyLineMessage(replyToken, [
       "行光野採｜LINE 指令",
       "",
-      "野採圖片：拍照或從相簿選擇",
+      "野採圖片：單張、相簿多選，或分次收成一組",
       "剪藏網址：保存網頁與摘要",
       "最近一筆：叫回最近素材的整理按鈕",
       "待整理：查看野採待處理數量",
@@ -217,7 +233,7 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
   void userId;
 }
 
-async function handleImage(event: LineWebhookEvent): Promise<void> {
+async function handleImage(event: LineWebhookEvent, userId: string): Promise<void> {
   const messageId = event.message?.id ?? "";
   if (!messageId) throw new Error("LINE 圖片缺少 message id");
   const captures = await listCaptureEntries();
@@ -230,7 +246,7 @@ async function handleImage(event: LineWebhookEvent): Promise<void> {
   }
   if (duplicateEnglish) {
     const entryId = duplicateEnglish.mergedIntoId || duplicateEnglish.id;
-    await replyLineMessage(event.replyToken ?? "", `這張圖片已經保存於野採英文影像「${duplicateEnglish.title}」。`, duplicateEnglish.route === "pending" ? imageRouteQuickReply(entryId) : englishImageOrganizeQuickReply(entryId));
+    await replyLineMessage(event.replyToken ?? "", `這張圖片已經保存於野採英文影像「${duplicateEnglish.title}」。`, duplicateEnglish.route === "pending" ? imageDraftQuickReply(entryId) : englishImageOrganizeQuickReply(entryId));
     return;
   }
 
@@ -246,21 +262,108 @@ async function handleImage(event: LineWebhookEvent): Promise<void> {
     await replyLineMessage(event.replyToken ?? "", `截圖已補到「${capture.title}」，網址與原圖保存在同一筆素材。`, clipQuickReply(capture.id, false));
     return;
   }
+
+  const rawImageSet = event.message?.imageSet;
+  const imageSetId = rawImageSet?.id?.trim() ?? "";
+  const imageSetIndex = Number.isFinite(rawImageSet?.index) ? Math.max(1, Math.floor(Number(rawImageSet?.index))) : null;
+  const imageSetTotal = Number.isFinite(rawImageSet?.total) ? Math.max(1, Math.floor(Number(rawImageSet?.total))) : 0;
+  if (imageSetId && imageSetTotal > 1) {
+    manualImageBatches.delete(userId);
+    await withImageSetLock(imageSetId, async () => {
+      const currentEntries = await listEnglishImageEntries({ includeMerged: true });
+      let entry = currentEntries.find((item) => item.lineImageSetId === imageSetId && !item.mergedIntoId);
+      if (entry) {
+        entry = await appendEnglishImageAttachment({
+          entry,
+          bytes: image.bytes,
+          mimeType: image.mimeType,
+          filename: imageFilename(messageId, image.mimeType),
+          sourceMessageId: messageId,
+          batchIndex: imageSetIndex,
+        });
+      } else {
+        entry = await createEnglishImageEntry({
+          bytes: image.bytes,
+          mimeType: image.mimeType,
+          filename: imageFilename(messageId, image.mimeType),
+          sourceMessageId: messageId,
+          externalEventId: event.webhookEventId ?? "",
+          batchIndex: imageSetIndex,
+          lineImageSetId: imageSetId,
+          lineImageSetTotal: imageSetTotal,
+          lineBatchState: "open",
+          lineBatchUntil: new Date(Date.now() + IMAGE_BATCH_WINDOW_MS).toISOString(),
+        });
+      }
+      if (entry.attachments.length >= imageSetTotal) {
+        entry = await saveEnglishImageEntry({ ...entry, lineBatchState: "closed", lineBatchUntil: null });
+        await replyLineMessage(event.replyToken ?? "", `已收到完整圖片組，共 ${entry.attachments.length} 張。請選擇這組素材的類型；選擇後才會開始 AI 分析。`, imageDraftQuickReply(entry.id));
+      }
+    });
+    return;
+  }
+
+  const manualBatch = manualImageBatches.get(userId);
+  if (manualBatch && manualBatch.expiresAt > Date.now()) {
+    await withImageSetLock(`manual:${userId}`, async () => {
+      const currentBatch = manualImageBatches.get(userId) ?? manualBatch;
+      let entry: EnglishImageEntry | null = null;
+      if (currentBatch.entryId) {
+        try { entry = (await getEnglishImageEntry(currentBatch.entryId)).entry; }
+        catch { entry = null; }
+      }
+      if (entry) {
+        entry = await appendEnglishImageAttachment({
+          entry,
+          bytes: image.bytes,
+          mimeType: image.mimeType,
+          filename: imageFilename(messageId, image.mimeType),
+          sourceMessageId: messageId,
+        });
+      } else {
+        entry = await createEnglishImageEntry({
+          bytes: image.bytes,
+          mimeType: image.mimeType,
+          filename: imageFilename(messageId, image.mimeType),
+          sourceMessageId: messageId,
+          externalEventId: event.webhookEventId ?? "",
+          lineBatchState: "open",
+          lineBatchUntil: new Date(Date.now() + IMAGE_BATCH_WINDOW_MS).toISOString(),
+        });
+      }
+      const expiresAt = Date.now() + IMAGE_BATCH_WINDOW_MS;
+      entry = await saveEnglishImageEntry({ ...entry, lineBatchState: "open", lineBatchUntil: new Date(expiresAt).toISOString() });
+      manualImageBatches.set(userId, { entryId: entry.id, expiresAt });
+      await replyLineMessage(event.replyToken ?? "", `已加入目前圖片組，現在共有 ${entry.attachments.length} 張。全部傳完後請按「完成這組」。`, imageBatchCollectQuickReply(entry.id));
+    });
+    return;
+  }
+  manualImageBatches.delete(userId);
+
   const entry = await createEnglishImageEntry({
     bytes: image.bytes,
     mimeType: image.mimeType,
     filename: imageFilename(messageId, image.mimeType),
     sourceMessageId: messageId,
     externalEventId: event.webhookEventId ?? "",
+    lineBatchState: "closed",
   });
-  await replyLineMessage(event.replyToken ?? "", "圖片已保存到野採的英文影像區。這張比較像哪一類？若是連續畫面，也可以先按「合併上一張」。", {
-    items: [...imageRouteQuickReply(entry.id).items, ...englishImageOrganizeQuickReply(entry.id).items.filter((item) => item.action.type === "postback" && item.action.label === "合併上一張")],
-  });
+  await replyLineMessage(event.replyToken ?? "", "圖片已獨立保存到野採。若還有相關畫面，請按「繼續補這組」；否則直接選擇素材類型。系統不會再自動合併上一張。", imageDraftQuickReply(entry.id));
 }
 
-async function handlePostback(event: LineWebhookEvent): Promise<void> {
+async function handlePostback(event: LineWebhookEvent, userId: string): Promise<void> {
   const params = new URLSearchParams(event.postback?.data ?? "");
   const action = params.get("action");
+  if (action === "imageBatchStart") {
+    manualImageBatches.set(userId, { entryId: "", expiresAt: Date.now() + IMAGE_BATCH_WINDOW_MS });
+    await replyLineMessage(event.replyToken ?? "", "已開啟新的圖片組。接下來傳送的圖片會加入同一組；全部傳完後按「完成這組」。", imageBatchCollectQuickReply());
+    return;
+  }
+  if (action === "imageBatchCancel") {
+    manualImageBatches.delete(userId);
+    await replyLineMessage(event.replyToken ?? "", "已停止收圖，尚未上傳任何圖片。", basicLineMenuQuickReply());
+    return;
+  }
   if (action?.startsWith("image") && action !== "imageRoute") {
     const entryId = params.get("entryId") ?? "";
     if (!entryId) return;
@@ -268,6 +371,19 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
     try { entry = (await getEnglishImageEntry(entryId)).entry; }
     catch {
       await replyLineMessage(event.replyToken ?? "", "找不到這筆英文影像，可能已經被移動或移除。");
+      return;
+    }
+    if (action === "imageBatchContinue") {
+      const expiresAt = Date.now() + IMAGE_BATCH_WINDOW_MS;
+      const updated = await saveEnglishImageEntry({ ...entry, lineBatchState: "open", lineBatchUntil: new Date(expiresAt).toISOString() });
+      manualImageBatches.set(userId, { entryId: updated.id, expiresAt });
+      await replyLineMessage(event.replyToken ?? "", `已開啟「${updated.title}」的補圖模式，目前 ${updated.attachments.length} 張。接下來只會加入這一組。`, imageBatchCollectQuickReply(updated.id));
+      return;
+    }
+    if (action === "imageBatchFinish") {
+      const updated = await saveEnglishImageEntry({ ...entry, lineBatchState: "closed", lineBatchUntil: null });
+      manualImageBatches.delete(userId);
+      await replyLineMessage(event.replyToken ?? "", `這組已完成，共 ${updated.attachments.length} 張。請選擇素材類型；選擇後才會開始 AI 分析。`, imageDraftQuickReply(updated.id));
       return;
     }
     if (action === "imageInput") {
@@ -289,12 +405,12 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
       await replyLineMessage(event.replyToken ?? "", summary, englishImageOrganizeQuickReply(analyzed.id));
       return;
     }
-    if (action === "imageMergePrevious") {
+    if (action === "imageUndoMerge") {
       try {
-        const merged = await mergeEnglishImageIntoPrevious(entry);
-        await replyLineMessage(event.replyToken ?? "", `已合併到上一筆「${merged.title}」，目前共有 ${merged.attachments.length} 張連續圖片。`, merged.route === "pending" ? imageRouteQuickReply(merged.id) : englishImageOrganizeQuickReply(merged.id));
+        const result = await undoLatestEnglishImageMerge(entry);
+        await replyLineMessage(event.replyToken ?? "", `已撤銷最近一次誤合併。\n「${result.parent.title}」保留 ${result.parent.attachments.length} 張；另一筆 ${result.restored.attachments.length} 張圖片已恢復為獨立素材。`, result.parent.route === "pending" ? imageDraftQuickReply(result.parent.id) : englishImageOrganizeQuickReply(result.parent.id));
       } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", error instanceof Error ? error.message : "圖片合併失敗");
+        await replyLineMessage(event.replyToken ?? "", error instanceof Error ? error.message : "無法撤銷圖片合併");
       }
       return;
     }
@@ -370,6 +486,7 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
       await replyLineMessage(event.replyToken ?? "", "找不到這筆英文影像，可能已經被移動或移除。");
       return;
     }
+    manualImageBatches.delete(userId);
     if (route === "capture") {
       const capture = await moveEnglishImageToCapture(entry);
       await replyLineMessage(event.replyToken ?? "", "已轉成一般素材，並留在野採採集匣。", clipQuickReply(capture.id, false));
@@ -423,8 +540,8 @@ async function handleEvent(event: LineWebhookEvent, allowedUserId: string): Prom
   }
   if (userId !== allowedUserId) return;
   if (event.type === "message" && event.message?.type === "text") return handleText(event, userId);
-  if (event.type === "message" && event.message?.type === "image") return handleImage(event);
-  if (event.type === "postback") return handlePostback(event);
+  if (event.type === "message" && event.message?.type === "image") return handleImage(event, userId);
+  if (event.type === "postback") return handlePostback(event, userId);
   if (event.type === "message") {
     await replyLineMessage(event.replyToken ?? "", "目前只接收網頁網址與截圖。其他素材可以先留在原本的 LINE 收藏處。");
   }
