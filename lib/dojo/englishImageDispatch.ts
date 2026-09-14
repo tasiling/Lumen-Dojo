@@ -16,6 +16,10 @@ export type VocabForgeBook = {
   count: number;
 };
 
+const VOCAB_BOOK_CACHE_TTL_MS = 10 * 60_000;
+let vocabBookCache: { books: VocabForgeBook[]; expiresAt: number } | null = null;
+let vocabBookRequest: Promise<VocabForgeBook[]> | null = null;
+
 export type EnglishImageContextCandidate = {
   key: string;
   text: string;
@@ -181,7 +185,7 @@ function vocabForgeSecret(): string {
   return process.env.LUMEN_VOCABFORGE_SYNC_SECRET?.trim() ?? "";
 }
 
-export async function listVocabForgeBooks(): Promise<VocabForgeBook[]> {
+async function fetchVocabForgeBooks(): Promise<VocabForgeBook[]> {
   const endpoint = vocabForgeEndpoint("/api/integrations/lumen/vocab-books");
   const secret = vocabForgeSecret();
   if (!endpoint || !secret) throw new Error("VocabForge 串接尚未完成 Railway 設定");
@@ -200,7 +204,18 @@ export async function listVocabForgeBooks(): Promise<VocabForgeBook[]> {
     return [{ name, count: Number.isFinite(value.count) ? Math.max(0, Math.floor(Number(value.count))) : 0 }];
   });
   if (!books.length) throw new Error("VocabForge 目前沒有可選擇的豆倉");
+  vocabBookCache = { books, expiresAt: Date.now() + VOCAB_BOOK_CACHE_TTL_MS };
   return books;
+}
+
+export async function listVocabForgeBooks(): Promise<VocabForgeBook[]> {
+  if (vocabBookCache && vocabBookCache.expiresAt > Date.now()) return vocabBookCache.books;
+  if (!vocabBookRequest) {
+    vocabBookRequest = fetchVocabForgeBooks().finally(() => {
+      vocabBookRequest = null;
+    });
+  }
+  return vocabBookRequest;
 }
 
 export async function exportEnglishImageVocab(id: string, requestedKey: string, vocabBook: string): Promise<{ entry: EnglishImageEntry; exported: EnglishImageVocabExport }> {
