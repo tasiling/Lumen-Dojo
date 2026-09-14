@@ -14,6 +14,17 @@ export type EnglishImageVocabExport = {
   syncedAt: string;
 };
 
+export type EnglishImageContextExport = {
+  sourceRecordId: string;
+  materialId: string;
+  batchId: string;
+  materialTitle: string;
+  eventTitle: string;
+  expressionCount: number;
+  duplicate: boolean;
+  syncedAt: string;
+};
+
 export type EnglishImageAttachment = {
   blockId: string;
   filename: string;
@@ -44,9 +55,10 @@ export type EnglishImageEntry = {
   mergedIntoId: string;
   lineInputMode: EnglishImageLineInputMode;
   lineInputUntil: string | null;
-  contextRoomStatus: "idle" | "ready";
+  contextRoomStatus: "idle" | "ready" | "synced";
   contextRoomPreparedAt: string | null;
   contextRoomUrl: string;
+  contextRoomExport: EnglishImageContextExport | null;
   vocabForgeExports: EnglishImageVocabExport[];
   analysisStatus: EnglishImageAnalysisStatus;
   analysisConfidence: EnglishImageConfidence;
@@ -133,9 +145,27 @@ export function normalizeEnglishImageEntry(
     mergedIntoId: text(source.mergedIntoId, 100),
     lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" ? source.lineInputMode : null,
     lineInputUntil: source.lineInputUntil ? iso(source.lineInputUntil, now) : null,
-    contextRoomStatus: source.contextRoomStatus === "ready" ? "ready" : "idle",
+    contextRoomStatus: source.contextRoomStatus === "synced" ? "synced" : source.contextRoomStatus === "ready" ? "ready" : "idle",
     contextRoomPreparedAt: source.contextRoomPreparedAt ? iso(source.contextRoomPreparedAt, now) : null,
     contextRoomUrl: text(source.contextRoomUrl, 3000),
+    contextRoomExport: source.contextRoomExport && typeof source.contextRoomExport === "object" ? (() => {
+      const value = source.contextRoomExport as Partial<EnglishImageContextExport>;
+      const sourceRecordId = text(value.sourceRecordId, 200);
+      const materialId = text(value.materialId, 200);
+      const batchId = text(value.batchId, 200);
+      const syncedAt = text(value.syncedAt, 80);
+      if (!sourceRecordId || !materialId || !batchId || !syncedAt) return null;
+      return {
+        sourceRecordId,
+        materialId,
+        batchId,
+        materialTitle: text(value.materialTitle, 300),
+        eventTitle: text(value.eventTitle, 300),
+        expressionCount: Number.isFinite(value.expressionCount) ? Math.max(0, Math.floor(Number(value.expressionCount))) : 0,
+        duplicate: value.duplicate === true,
+        syncedAt,
+      };
+    })() : null,
     vocabForgeExports: Array.isArray(source.vocabForgeExports) ? source.vocabForgeExports.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const value = item as Partial<EnglishImageVocabExport>;
