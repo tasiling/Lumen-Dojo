@@ -241,6 +241,7 @@ export function imageRouteQuickReply(entryId: string) {
   return { items: [
     quickReplyItem("遊戲英文", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
     quickReplyItem("英文日常", new URLSearchParams({ action: "imageRoute", entryId, route: "daily" }).toString()),
+    quickReplyItem("課堂英文", new URLSearchParams({ action: "imageRoute", entryId, route: "classroom" }).toString()),
     quickReplyItem("一般剪藏", new URLSearchParams({ action: "imageRoute", entryId, route: "capture" }).toString()),
   ] };
 }

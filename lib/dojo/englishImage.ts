@@ -1,6 +1,6 @@
 export const ENGLISH_IMAGE_TITLE_PREFIX = "行光英文影像-";
 
-export type EnglishImageRoute = "pending" | "game" | "daily";
+export type EnglishImageRoute = "pending" | "game" | "daily" | "classroom";
 export type EnglishImageStatus = "inbox" | "organized";
 export type EnglishImageAnalysisStatus = "idle" | "processing" | "completed" | "needs-review" | "failed";
 export type EnglishImageConfidence = "high" | "medium" | "low" | null;
@@ -119,7 +119,7 @@ export function normalizeEnglishImageEntry(
   const blockId = attachments[0]?.blockId ?? "";
   if (!blockId) return null;
   const capturedAt = iso(source.capturedAt, params.capturedAt ?? now);
-  const route: EnglishImageRoute = source.route === "game" || source.route === "daily" ? source.route : "pending";
+  const route: EnglishImageRoute = source.route === "game" || source.route === "daily" || source.route === "classroom" ? source.route : "pending";
   const analysisStatus: EnglishImageAnalysisStatus =
     source.analysisStatus === "processing" || source.analysisStatus === "completed" ||
     source.analysisStatus === "needs-review" || source.analysisStatus === "failed"
@@ -135,7 +135,7 @@ export function normalizeEnglishImageEntry(
     id: params.id,
     route,
     status: source.status === "organized" ? "organized" : "inbox",
-    title: text(source.title, 300) || (route === "game" ? "遊戲英文" : route === "daily" ? "英文日常" : "待分類英文影像"),
+    title: text(source.title, 300) || (route === "game" ? "遊戲英文" : route === "daily" ? "英文日常" : route === "classroom" ? "課堂英文" : "待分類英文影像"),
     sourceLabel: text(source.sourceLabel, 300),
     contextNote: text(source.contextNote, 8000),
     ocrText: text(source.ocrText, 30000),

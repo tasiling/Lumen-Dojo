@@ -80,7 +80,7 @@ function imageFilename(messageId: string, mimeType: string): string {
 
 function lineLearningSummary(entry: EnglishImageEntry, intro: string): string {
   const sections = [intro, entry.title ? `「${entry.title}」` : ""];
-  if (entry.englishRecord) sections.push(`【英文事件紀錄】\n${entry.englishRecord.slice(0, 900)}`);
+  if (entry.englishRecord) sections.push(`【${entry.route === "classroom" ? "課堂回答整理" : "英文事件紀錄"}】\n${entry.englishRecord.slice(0, 900)}`);
   if (entry.chineseExplanation) sections.push(`【中文理解】\n${entry.chineseExplanation.slice(0, 900)}`);
   if (entry.learningPhrases) sections.push(`【可學詞句】\n${entry.learningPhrases.slice(0, 1300)}`);
   if (entry.vocabularyWords) sections.push(`【單字候選】\n${entry.vocabularyWords.slice(0, 900)}`);
@@ -395,7 +395,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageAnalyze") {
       if (entry.route === "pending") {
-        await replyLineMessage(event.replyToken ?? "", "請先選擇遊戲英文或英文日常。", imageRouteQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", "請先選擇遊戲英文、英文日常或課堂英文。", imageRouteQuickReply(entry.id));
         return;
       }
       const analyzed = await analyzeEnglishImage(entry.id, { force: true });
@@ -492,10 +492,10 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       await replyLineMessage(event.replyToken ?? "", "已轉成一般素材，並留在野採採集匣。", clipQuickReply(capture.id, false));
       return;
     }
-    if (route === "game" || route === "daily") {
+    if (route === "game" || route === "daily" || route === "classroom") {
       const routed = await routeEnglishImage(entry, route);
       const analyzed = await analyzeEnglishImage(routed.id);
-      const label = route === "game" ? "遊戲英文" : "英文日常";
+      const label = route === "game" ? "遊戲英文" : route === "classroom" ? "課堂英文" : "英文日常";
       if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
         await replyLineMessage(event.replyToken ?? "", lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id));
       } else {

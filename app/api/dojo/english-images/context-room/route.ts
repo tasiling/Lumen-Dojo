@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       candidates: englishImageContextCandidates(entry),
       defaults: {
-        materialTitle: entry.contextRoomExport?.materialTitle || entry.sourceLabel || (entry.route === "game" ? "英文遊戲旅程" : "英文日常"),
+        materialTitle: entry.contextRoomExport?.materialTitle || entry.sourceLabel || (entry.route === "game" ? "英文遊戲旅程" : entry.route === "classroom" ? "英文課堂" : "英文日常"),
         eventTitle: entry.contextRoomExport?.eventTitle || entry.title,
       },
     });

@@ -166,7 +166,7 @@ export async function routeEnglishImage(entry: EnglishImageEntry, route: Exclude
     route,
     lineBatchState: "closed",
     lineBatchUntil: null,
-    title: route === "game" ? "遊戲英文" : "英文日常",
+    title: route === "game" ? "遊戲英文" : route === "classroom" ? "課堂英文" : "英文日常",
     awaitingContextUntil: new Date(Date.now() + 10 * 60_000).toISOString(),
   });
 }
