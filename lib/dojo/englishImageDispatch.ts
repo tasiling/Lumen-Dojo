@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { EnglishImageEntry, EnglishImageVocabExport } from "./englishImage";
+import type { EnglishImageContextExport, EnglishImageEntry, EnglishImageVocabExport } from "./englishImage";
 import { getEnglishImageEntry, saveEnglishImageEntry } from "./englishImageStore";
 
 export type EnglishImageVocabCandidate = {
@@ -16,8 +16,38 @@ export type VocabForgeBook = {
   count: number;
 };
 
+export type EnglishImageContextCandidate = {
+  key: string;
+  text: string;
+  meaning: string;
+  usage: string;
+  kind: "chunk" | "pattern" | "repair" | "usage";
+};
+
 function candidateKey(expression: string): string {
   return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/\s+/g, "_").slice(0, 180);
+}
+
+function contextKind(text: string, usage: string): EnglishImageContextCandidate["kind"] {
+  const joined = `${text} ${usage}`.toLocaleLowerCase("en");
+  if (/repair|修復|想不起|換句話/.test(joined)) return "repair";
+  if (/\.{3}|…|\[[^\]]+\]|\{[^}]+\}/.test(text)) return "pattern";
+  if (/語氣|用法|搭配|委婉|正式|非正式|difference|usage|tone/.test(joined)) return "usage";
+  return "chunk";
+}
+
+export function englishImageContextCandidates(entry: EnglishImageEntry): EnglishImageContextCandidate[] {
+  const candidates = entry.learningPhrases.split(/\r?\n/).flatMap((line) => {
+    const clean = line.replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "").trim();
+    if (!clean) return [];
+    const [rawText = "", rawMeaning = "", ...usageParts] = clean.split(/\s*(?:\||｜)\s*/);
+    const value = rawText.trim().replace(/^[\s'“”「」]+|[\s'“”「」]+$/g, "").slice(0, 500);
+    if (!value || /^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(value)) return [];
+    const meaning = rawMeaning.trim().slice(0, 1000);
+    const usage = usageParts.join("｜").trim().slice(0, 1000);
+    return [{ key: candidateKey(value), text: value, meaning, usage, kind: contextKind(value, usage) }];
+  });
+  return [...new Map(candidates.map((candidate) => [candidate.key, candidate])).values()].slice(0, 8);
 }
 
 export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishImageVocabCandidate[] {
@@ -41,7 +71,11 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
 }
 
 function contextRoomBaseUrl(): string {
-  return process.env.CONTEXT_ROOM_URL?.trim() || "https://lumen-context-room-production-4a2c.up.railway.app";
+  return process.env.CONTEXT_ROOM_INTEGRATION_URL?.trim() || process.env.CONTEXT_ROOM_URL?.trim() || "https://lumen-context-room-production-4a2c.up.railway.app";
+}
+
+function contextRoomSecret(): string {
+  return process.env.LUMEN_CONTEXT_ROOM_SYNC_SECRET?.trim() ?? "";
 }
 
 export async function prepareEnglishImageForContextRoom(id: string): Promise<EnglishImageEntry> {
@@ -59,6 +93,75 @@ export async function prepareEnglishImageForContextRoom(id: string): Promise<Eng
     contextRoomStatus: "ready",
     contextRoomPreparedAt: new Date().toISOString(),
     contextRoomUrl: url,
+  });
+}
+
+export async function exportEnglishImageContext(params: {
+  id: string;
+  materialTitle: string;
+  eventTitle: string;
+  candidateKeys: string[];
+}): Promise<EnglishImageEntry> {
+  const base = contextRoomBaseUrl();
+  const secret = contextRoomSecret();
+  if (!base || !secret) throw new Error("語境修習室串接尚未完成 Railway 設定");
+  const { entry } = await getEnglishImageEntry(params.id);
+  if (entry.route === "pending") throw new Error("請先把圖片分類為遊戲英文或英文日常");
+  if (!entry.englishRecord.trim() && !entry.ocrText.trim()) throw new Error("請先完成 AI 分析或補上英文原文");
+  const materialTitle = params.materialTitle.trim().slice(0, 300);
+  const eventTitle = params.eventTitle.trim().slice(0, 300);
+  if (!materialTitle || !eventTitle) throw new Error("請填寫素材專案與事件名稱");
+  const allCandidates = englishImageContextCandidates(entry);
+  const requested = [...new Set(params.candidateKeys)].slice(0, 5);
+  const selected = requested.flatMap((key) => allCandidates.find((item) => item.key === key) ?? []);
+  if (selected.length !== requested.length) throw new Error("表達候選已變更，請重新整理後再選擇");
+
+  const endpoint = new URL("/api/integrations/lumen/import", base);
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+    body: JSON.stringify({
+      sourceRecordId: entry.id,
+      sourceType: entry.route === "game" ? "game_image" : "daily_image",
+      materialTitle,
+      eventTitle,
+      capturedOn: entry.capturedAt.slice(0, 10),
+      englishOriginal: entry.ocrText,
+      englishRecord: entry.englishRecord,
+      chineseUnderstanding: entry.chineseExplanation,
+      contextNote: entry.contextNote,
+      uncertaintyNote: entry.analysisReviewReason,
+      expressions: selected,
+    }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
+  });
+  const result = await response.json().catch(() => ({})) as {
+    error?: string;
+    materialId?: string;
+    batchId?: string;
+    expressionCount?: number;
+    duplicate?: boolean;
+  };
+  if (!response.ok) throw new Error(result.error ?? `語境修習室接收失敗（${response.status}）`);
+  if (!result.materialId || !result.batchId) throw new Error("語境修習室回傳的接收結果不完整");
+  const contextRoomUrl = base.replace(/\/$/, "");
+  const contextRoomExport: EnglishImageContextExport = {
+    sourceRecordId: entry.id,
+    materialId: result.materialId,
+    batchId: result.batchId,
+    materialTitle,
+    eventTitle,
+    expressionCount: Math.max(0, Math.floor(Number(result.expressionCount) || 0)),
+    duplicate: result.duplicate === true,
+    syncedAt: new Date().toISOString(),
+  };
+  return saveEnglishImageEntry({
+    ...entry,
+    contextRoomStatus: "synced",
+    contextRoomPreparedAt: contextRoomExport.syncedAt,
+    contextRoomUrl,
+    contextRoomExport,
   });
 }
 
