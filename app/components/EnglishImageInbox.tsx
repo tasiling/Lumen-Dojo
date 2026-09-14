@@ -31,6 +31,23 @@ type ContextDispatchDraft = {
   candidates: ContextCandidate[];
 };
 
+type VocabCandidate = {
+  key: string;
+  expression: string;
+  meaning: string;
+};
+
+type VocabBook = { name: string; count: number };
+
+type VocabDispatchDraft = {
+  entryId: string;
+  vocabBook: string;
+  candidateKeys: string[];
+  candidates: VocabCandidate[];
+  exportedKeys: string[];
+  books: VocabBook[];
+};
+
 const CONTEXT_KIND_LABEL: Record<ContextCandidate["kind"], string> = {
   chunk: "片語／語塊",
   pattern: "句型",
@@ -45,6 +62,7 @@ export default function EnglishImageInbox() {
   const [draft, setDraft] = useState<EnglishImageEntry | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [contextDraft, setContextDraft] = useState<ContextDispatchDraft | null>(null);
+  const [vocabDraft, setVocabDraft] = useState<VocabDispatchDraft | null>(null);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
     try { setEntries((await json<{ entries: EnglishImageEntry[] }>(await fetch("/api/dojo/english-images", { cache: "no-store" }))).entries); }
@@ -112,6 +130,47 @@ export default function EnglishImageInbox() {
         candidateKeys: result.candidates.map((item) => item.key).slice(0, 3),
         candidates: result.candidates,
       });
+      setVocabDraft(null);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setBusy(null); }
+  }
+
+  async function openVocabDispatch(entry: EnglishImageEntry) {
+    setBusy(entry.id); setError("");
+    try {
+      const result = await json<{
+        candidates: VocabCandidate[];
+        books: VocabBook[];
+        exports: { key: string; vocabBook: string }[];
+      }>(await fetch(`/api/dojo/english-images/vocabforge?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" }));
+      setVocabDraft({
+        entryId: entry.id,
+        vocabBook: "",
+        candidateKeys: [],
+        candidates: result.candidates,
+        exportedKeys: result.exports.map((item) => item.key),
+        books: result.books,
+      });
+      setContextDraft(null);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setBusy(null); }
+  }
+
+  async function sendVocabDispatch() {
+    if (!vocabDraft) return;
+    setBusy(vocabDraft.entryId); setError("");
+    try {
+      const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images/vocabforge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: vocabDraft.entryId,
+          vocabBook: vocabDraft.vocabBook,
+          candidateKeys: vocabDraft.candidateKeys,
+        }),
+      }));
+      setEntries((old) => old.map((item) => item.id === result.entry.id ? result.entry : item));
+      setVocabDraft(null);
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setBusy(null); }
   }
@@ -155,7 +214,33 @@ export default function EnglishImageInbox() {
           {entry.vocabularyWords && <details><summary>單字候選</summary><p>{entry.vocabularyWords}</p></details>}
           {entry.route !== "pending" && entry.analysisStatus !== "idle" && <div className="english-image-learning-route">
             <div><small>學習分流</small><b>單字留給 VocabForge；用法與句型送往語境修習室</b></div>
-            <button className="primary" disabled={busy === entry.id} onClick={() => void openContextDispatch(entry)}>{busy === entry.id ? "讀取中…" : entry.contextRoomStatus === "synced" ? "查看／重新派送語境" : "選擇語境表達"}</button>
+            <div className="english-image-route-buttons">
+              <button disabled={busy === entry.id} onClick={() => void openVocabDispatch(entry)}>{busy === entry.id ? "讀取中…" : entry.vocabForgeExports.length ? "查看／繼續選字" : "選擇 VocabForge 單字"}</button>
+              <button className="primary" disabled={busy === entry.id} onClick={() => void openContextDispatch(entry)}>{busy === entry.id ? "讀取中…" : entry.contextRoomStatus === "synced" ? "查看／重新派送語境" : "選擇語境表達"}</button>
+            </div>
+          </div>}
+          {vocabDraft?.entryId === entry.id && <div className="english-image-vocab-dispatch">
+            <div className="english-image-context-head"><div><small>VocabForge</small><h5>挑選要記住的單字</h5></div><button className="text-link" onClick={() => setVocabDraft(null)}>關閉</button></div>
+            <label>選擇豆倉
+              <select className="field" value={vocabDraft.vocabBook} onChange={(event) => setVocabDraft({ ...vocabDraft, vocabBook: event.target.value })}>
+                <option value="">請選擇要放入的豆倉</option>
+                {vocabDraft.books.map((book) => <option key={book.name} value={book.name}>{book.name}（{book.count} 字）</option>)}
+              </select>
+            </label>
+            <fieldset>
+              <legend>選擇真正想複習的單字（每筆素材最多 3 字）</legend>
+              {vocabDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的單一英文單字；可以先整理候選內容或重新分析。</p> : vocabDraft.candidates.map((candidate) => {
+                const exported = vocabDraft.exportedKeys.includes(candidate.key);
+                const checked = vocabDraft.candidateKeys.includes(candidate.key);
+                const remaining = Math.max(0, 3 - vocabDraft.exportedKeys.length);
+                return <label className={`english-image-context-choice ${exported ? "is-exported" : ""}`} key={candidate.key}>
+                  <input type="checkbox" checked={checked || exported} disabled={exported || (!checked && vocabDraft.candidateKeys.length >= remaining)} onChange={(event) => setVocabDraft({ ...vocabDraft, candidateKeys: event.target.checked ? [...vocabDraft.candidateKeys, candidate.key] : vocabDraft.candidateKeys.filter((key) => key !== candidate.key) })} />
+                  <span><small>{exported ? "已送出" : "單字"}</small><b>{candidate.expression}</b>{candidate.meaning && <em>{candidate.meaning}</em>}</span>
+                </label>;
+              })}
+            </fieldset>
+            <p className="muted-note">只會送出這次勾選的單字；已存在於 VocabForge 的資料會回報「已存在」，不建立重複卡片。</p>
+            <button className="primary" disabled={busy === entry.id || !vocabDraft.vocabBook || vocabDraft.candidateKeys.length === 0} onClick={() => void sendVocabDispatch()}>{busy === entry.id ? "派送中…" : `送出 ${vocabDraft.candidateKeys.length} 字至 VocabForge`}</button>
           </div>}
           {contextDraft?.entryId === entry.id && <div className="english-image-context-dispatch">
             <div className="english-image-context-head"><div><small>語境修習室</small><h5>建立遊戲事件</h5></div><button className="text-link" onClick={() => setContextDraft(null)}>關閉</button></div>

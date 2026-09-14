@@ -51,7 +51,10 @@ export function englishImageContextCandidates(entry: EnglishImageEntry): English
 }
 
 export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishImageVocabCandidate[] {
-  const source = entry.vocabularyWords.trim() || entry.learningPhrases;
+  // AI may place a useful single word in either section. Merge both sources so
+  // a word such as "outfit" is not lost merely because a separate candidate
+  // list also exists.
+  const source = [entry.vocabularyWords, entry.learningPhrases].filter((value) => value.trim()).join("\n");
   const candidates = source.split(/\r?\n/).flatMap((line) => {
     const clean = line.replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "").trim();
     if (!clean) return [];
@@ -201,17 +204,31 @@ export async function listVocabForgeBooks(): Promise<VocabForgeBook[]> {
 }
 
 export async function exportEnglishImageVocab(id: string, requestedKey: string, vocabBook: string): Promise<{ entry: EnglishImageEntry; exported: EnglishImageVocabExport }> {
+  const result = await exportEnglishImageVocabs(id, [requestedKey], vocabBook);
+  const exported = result.exports.find((item) => item.key === requestedKey);
+  if (!exported) throw new Error("VocabForge 回傳的接收結果不完整");
+  return { entry: result.entry, exported };
+}
+
+export async function exportEnglishImageVocabs(id: string, requestedKeys: string[], vocabBook: string): Promise<{ entry: EnglishImageEntry; exports: EnglishImageVocabExport[] }> {
   const endpoint = vocabForgeEndpoint("/api/integrations/lumen/import");
   const secret = vocabForgeSecret();
   if (!endpoint || !secret) throw new Error("VocabForge 串接尚未完成 Railway 設定");
   const selectedBook = vocabBook.trim().slice(0, 200);
   if (!selectedBook) throw new Error("請先選擇要放入的豆倉");
   const { entry } = await getEnglishImageEntry(id);
-  const candidate = englishImageVocabCandidates(entry).find((item) => item.key === requestedKey);
-  if (!candidate) throw new Error("找不到這個候選單字，請重新整理後再選擇");
-  const existing = entry.vocabForgeExports.find((item) => item.key === candidate.key);
-  if (existing) return { entry, exported: existing };
-  if (entry.vocabForgeExports.length >= 3) throw new Error("每筆素材最多送出三個單字，避免詞庫一次增加太多");
+  const requested = [...new Set(requestedKeys)].slice(0, 3);
+  if (!requested.length) throw new Error("請至少選擇一個要送入 VocabForge 的單字");
+  const allCandidates = englishImageVocabCandidates(entry);
+  const selected = requested.flatMap((key) => allCandidates.find((item) => item.key === key) ?? []);
+  if (selected.length !== requested.length) throw new Error("候選單字已變更，請重新整理後再選擇");
+  const existingByKey = new Map(entry.vocabForgeExports.map((item) => [item.key, item]));
+  const pending = selected.filter((candidate) => !existingByKey.has(candidate.key));
+  if (entry.vocabForgeExports.length + pending.length > 3) throw new Error("每筆素材最多送出三個單字，避免詞庫一次增加太多");
+
+  if (!pending.length) {
+    return { entry, exports: selected.flatMap((candidate) => existingByKey.get(candidate.key) ?? []) };
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -223,22 +240,27 @@ export async function exportEnglishImageVocab(id: string, requestedKey: string, 
       sourceRecordId: entry.id,
       topicTitle: entry.title,
       vocabBook: selectedBook,
-      items: [candidate],
+      items: pending,
     }),
     cache: "no-store",
     signal: AbortSignal.timeout(20_000),
   });
   const result = await response.json().catch(() => ({})) as { error?: string; items?: Array<ImportResult & { vocabBook?: string }> };
   if (!response.ok) throw new Error(result.error ?? `VocabForge 接收失敗（${response.status}）`);
-  const imported = result.items?.find((item) => item.key === candidate.key);
-  if (!imported || (imported.result !== "created" && imported.result !== "existing")) throw new Error("VocabForge 回傳的接收結果不完整");
-  const exported: EnglishImageVocabExport = {
-    key: candidate.key,
-    expression: candidate.expression,
-    vocabBook: imported.vocabBook?.trim() || selectedBook,
-    result: imported.result,
-    syncedAt: new Date().toISOString(),
-  };
-  const updated = await saveEnglishImageEntry({ ...entry, vocabForgeExports: [...entry.vocabForgeExports, exported] });
-  return { entry: updated, exported };
+  const now = new Date().toISOString();
+  const importedByKey = new Map((result.items ?? []).map((item) => [item.key, item]));
+  const newExports = pending.map((candidate): EnglishImageVocabExport => {
+    const imported = importedByKey.get(candidate.key);
+    if (!imported || (imported.result !== "created" && imported.result !== "existing")) throw new Error("VocabForge 回傳的接收結果不完整");
+    return {
+      key: candidate.key,
+      expression: candidate.expression,
+      vocabBook: imported.vocabBook?.trim() || selectedBook,
+      result: imported.result,
+      syncedAt: now,
+    };
+  });
+  const updated = await saveEnglishImageEntry({ ...entry, vocabForgeExports: [...entry.vocabForgeExports, ...newExports] });
+  const updatedByKey = new Map(updated.vocabForgeExports.map((item) => [item.key, item]));
+  return { entry: updated, exports: selected.flatMap((candidate) => updatedByKey.get(candidate.key) ?? []) };
 }
