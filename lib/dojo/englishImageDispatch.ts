@@ -233,14 +233,14 @@ export async function exportEnglishImageVocabs(id: string, requestedKeys: string
   const selectedBook = vocabBook.trim().slice(0, 200);
   if (!selectedBook) throw new Error("請先選擇要放入的豆倉");
   const { entry } = await getEnglishImageEntry(id);
-  const requested = [...new Set(requestedKeys)].slice(0, 3);
+  const requested = [...new Set(requestedKeys)].slice(0, 5);
   if (!requested.length) throw new Error("請至少選擇一個要送入 VocabForge 的單字");
   const allCandidates = englishImageVocabCandidates(entry);
   const selected = requested.flatMap((key) => allCandidates.find((item) => item.key === key) ?? []);
   if (selected.length !== requested.length) throw new Error("候選單字已變更，請重新整理後再選擇");
   const existingByKey = new Map(entry.vocabForgeExports.map((item) => [item.key, item]));
   const pending = selected.filter((candidate) => !existingByKey.has(candidate.key));
-  if (entry.vocabForgeExports.length + pending.length > 3) throw new Error("每筆素材最多送出三個單字，避免詞庫一次增加太多");
+  if (entry.vocabForgeExports.length + pending.length > 5) throw new Error("每筆素材最多送出五個單字，避免詞庫一次增加太多");
 
   if (!pending.length) {
     return { entry, exports: selected.flatMap((candidate) => existingByKey.get(candidate.key) ?? []) };
