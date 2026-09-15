@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get("id")?.trim() || "";
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
-    const [{ entry }, books] = await Promise.all([getEnglishImageEntry(id), listVocabForgeBooks()]);
+    const [{ entry }, books] = await Promise.all([getEnglishImageEntry(id), listVocabForgeBooks({ forceRefresh: true })]);
     return NextResponse.json({
       candidates: englishImageVocabCandidates(entry),
       books,
