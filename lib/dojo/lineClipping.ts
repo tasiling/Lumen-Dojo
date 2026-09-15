@@ -283,7 +283,7 @@ export function englishImageBookQuickReply(entryId: string, books: VocabForgeBoo
 
 export function englishImageVocabQuickReply(entryId: string, vocabBook: string, candidates: EnglishImageVocabCandidate[], exportedKeys: string[], contextRoomUrl = "") {
   const exported = new Set(exportedKeys);
-  const remainingSlots = Math.max(0, 3 - exportedKeys.length);
+  const remainingSlots = Math.max(0, 5 - exportedKeys.length);
   const items: LineQuickReplyItem[] = candidates.filter((candidate) => !exported.has(candidate.key)).slice(0, remainingSlots).map((candidate) => quickReplyItem(
     candidate.expression.slice(0, 20),
     new URLSearchParams({ action: "imageVocab", entryId, key: candidate.key, book: vocabBook }).toString(),
