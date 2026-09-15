@@ -14,6 +14,13 @@ type AnalysisResult = {
   chineseExplanation: string;
   learningPhrases: string;
   vocabularyWords: string;
+  vocabularyCandidates: Array<{
+    expression: string;
+    meaning: string;
+    usage: string;
+    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+    suggestedFocusDecks: string[];
+  }>;
   confidence: "high" | "medium" | "low";
   needsReview: boolean;
   reviewReason: string;
@@ -28,7 +35,7 @@ type AnalysisCallResult = {
 const ANALYSIS_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["sourceLabel", "ocrText", "englishRecord", "chineseExplanation", "learningPhrases", "vocabularyWords", "confidence", "needsReview", "reviewReason"],
+  required: ["sourceLabel", "ocrText", "englishRecord", "chineseExplanation", "learningPhrases", "vocabularyWords", "vocabularyCandidates", "confidence", "needsReview", "reviewReason"],
   properties: {
     sourceLabel: { type: "string" },
     ocrText: { type: "string" },
@@ -36,6 +43,26 @@ const ANALYSIS_SCHEMA = {
     chineseExplanation: { type: "string" },
     learningPhrases: { type: "string" },
     vocabularyWords: { type: "string" },
+    vocabularyCandidates: {
+      type: "array",
+      maxItems: 5,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["expression", "meaning", "usage", "cefrLevel", "suggestedFocusDecks"],
+        properties: {
+          expression: { type: "string" },
+          meaning: { type: "string" },
+          usage: { type: "string" },
+          cefrLevel: { type: "string", enum: ["A1", "A2", "B1", "B2", "C1", "C2"] },
+          suggestedFocusDecks: {
+            type: "array",
+            maxItems: 2,
+            items: { type: "string", enum: ["日常啟動", "按摩工作", "JRPG／冒險遊戲", "生活模擬遊戲", "故事閱讀", "影音口語"] },
+          },
+        },
+      },
+    },
     confidence: { type: "string", enum: ["high", "medium", "low"] },
     needsReview: { type: "boolean" },
     reviewReason: { type: "string" },
@@ -70,7 +97,7 @@ function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total:
   const task = entry.route === "classroom"
     ? "辨識課堂主題、老師的問題或作業要求、文法重點，並在 englishRecord 提供一段 B1–B2、可直接拿來回答或練習的英文內容；chineseExplanation 要用中文分別說明課堂任務與文法重點。"
     : "用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。";
-  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。若資訊不足，保守描述並標記需要確認。${context}`;
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR 難度與 1–2 個常駐專注豆倉建議；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 async function requestAnalysis(params: {
@@ -115,7 +142,7 @@ async function requestAnalysis(params: {
 }
 
 function synthesisPrompt(entry: EnglishImageEntry, parts: AnalysisResult[]): string {
-  return `以下是同一組 ${entry.attachments.length} 張連續圖片分批辨識後的 JSON。請依批次順序合併成一份完整結果，刪除重複內容，但不要遺漏不同畫面出現的事件或英文。ocrText 保留重要原文；englishRecord 寫成連貫的 B1–B2 紀錄；learningPhrases 與 vocabularyWords 各精選最多 5 項，每行維持「英文｜中文｜簡短用法」。任何批次信心不足時，整體 needsReview 必須為 true 並說明原因。不可補寫原結果沒有的畫面資訊。\n\n${JSON.stringify(parts)}`;
+  return `以下是同一組 ${entry.attachments.length} 張連續圖片分批辨識後的 JSON。請依批次順序合併成一份完整結果，刪除重複內容，但不要遺漏不同畫面出現的事件或英文。ocrText 保留重要原文；englishRecord 寫成連貫的 B1–B2 紀錄；learningPhrases 與 vocabularyWords 各精選最多 5 項，每行維持「英文｜中文｜簡短用法」。vocabularyCandidates 必須與最後的 vocabularyWords 完全對應，並保留 CEFR 與常駐專注豆倉建議。任何批次信心不足時，整體 needsReview 必須為 true 並說明原因。不可補寫原結果沒有的畫面資訊。\n\n${JSON.stringify(parts)}`;
 }
 
 export async function analyzeEnglishImage(id: string, options: { force?: boolean } = {}): Promise<EnglishImageEntry> {
@@ -168,6 +195,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
       chineseExplanation: result.chineseExplanation,
       learningPhrases: result.learningPhrases,
       vocabularyWords: result.vocabularyWords,
+      vocabularyCandidates: result.vocabularyCandidates,
       analysisStatus: result.needsReview || result.confidence === "low" ? "needs-review" : "completed",
       analysisConfidence: result.confidence,
       analysisReviewReason: result.reviewReason,

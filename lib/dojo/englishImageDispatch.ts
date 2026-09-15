@@ -9,12 +9,51 @@ export type EnglishImageVocabCandidate = {
   meaning: string;
   sourceText: string;
   finalSentence: string;
+  cefrLevel: string;
+  suggestedFocusDecks: string[];
 };
 
 export type VocabForgeBook = {
   name: string;
   count: number;
 };
+
+export const PERMANENT_FOCUS_DECKS = [
+  "日常啟動",
+  "按摩工作",
+  "JRPG／冒險遊戲",
+  "生活模擬遊戲",
+  "故事閱讀",
+  "影音口語",
+] as const;
+
+function normalizeSourceName(value: string): string {
+  const name = value.normalize("NFKC").trim().slice(0, 300);
+  const compact = name.toLocaleLowerCase("en").replace(/[\s_／/|｜–—-]+/g, "");
+  if (/dragonquest(v|5)|勇者鬥惡龍(v|5)|^dqv$/.test(compact)) return "Dragon Quest V";
+  if (/chineseparents|中國式家長/.test(compact)) return "Chinese Parents";
+  if (/animalcrossing|動物森友會|動森/.test(compact)) return "Animal Crossing";
+  if (/zelda|薩爾達/.test(compact)) return "Zelda";
+  return name;
+}
+
+function routeFocusDeck(entry: EnglishImageEntry, sourceName: string): string {
+  const value = `${sourceName} ${entry.sourceLabel}`.toLocaleLowerCase("en");
+  if (/chinese parents|中國式家長|animal crossing|動森|星露谷|stardew|火山的女兒/.test(value)) return "生活模擬遊戲";
+  if (entry.route === "game") return "JRPG／冒險遊戲";
+  if (entry.route === "daily") return "日常啟動";
+  return "日常啟動";
+}
+
+export function recommendedFocusDecks(entry: EnglishImageEntry, sourceName = ""): string[] {
+  const recommendations: string[] = [routeFocusDeck(entry, sourceName)];
+  for (const candidate of englishImageVocabCandidates(entry)) {
+    for (const deck of candidate.suggestedFocusDecks) {
+      if (PERMANENT_FOCUS_DECKS.includes(deck as typeof PERMANENT_FOCUS_DECKS[number]) && !recommendations.includes(deck)) recommendations.push(deck);
+    }
+  }
+  return recommendations.slice(0, 2);
+}
 
 const VOCAB_BOOK_CACHE_TTL_MS = 10 * 60_000;
 let vocabBookCache: { books: VocabForgeBook[]; expiresAt: number } | null = null;
@@ -55,6 +94,21 @@ export function englishImageContextCandidates(entry: EnglishImageEntry): English
 }
 
 export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishImageVocabCandidate[] {
+  const structured = entry.vocabularyCandidates.flatMap((candidate) => {
+    const expression = candidate.expression.trim().replace(/^[\s'“”「」]+|[\s'“”「」]+$/g, "").slice(0, 240);
+    if (!/^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(expression)) return [];
+    return [{
+      key: candidateKey(expression),
+      expression,
+      meaning: candidate.meaning,
+      sourceText: (entry.contextNote || entry.chineseExplanation || entry.ocrText).trim().slice(0, 1900),
+      finalSentence: candidate.usage || (entry.englishRecord || entry.ocrText).trim().slice(0, 1900),
+      cefrLevel: candidate.cefrLevel,
+      suggestedFocusDecks: candidate.suggestedFocusDecks.filter((deck) => PERMANENT_FOCUS_DECKS.includes(deck as typeof PERMANENT_FOCUS_DECKS[number])).slice(0, 2),
+    }];
+  });
+  if (structured.length) return [...new Map(structured.map((candidate) => [candidate.key, candidate])).values()].slice(0, 5);
+
   // AI may place a useful single word in either section. Merge both sources so
   // a word such as "outfit" is not lost merely because a separate candidate
   // list also exists.
@@ -72,6 +126,8 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
       meaning: meaningParts.join(" — ").trim().slice(0, 500),
       sourceText: (entry.contextNote || entry.chineseExplanation || entry.ocrText).trim().slice(0, 1900),
       finalSentence: (entry.englishRecord || entry.ocrText).trim().slice(0, 1900),
+      cefrLevel: "待確認",
+      suggestedFocusDecks: [routeFocusDeck(entry, entry.vocabForgeDraft.sourceName)],
     }];
   });
   return [...new Map(candidates.map((candidate) => [candidate.key, candidate])).values()].slice(0, 5);
@@ -226,12 +282,23 @@ export async function exportEnglishImageVocab(id: string, requestedKey: string, 
   return { entry: result.entry, exported };
 }
 
-export async function exportEnglishImageVocabs(id: string, requestedKeys: string[], vocabBook: string): Promise<{ entry: EnglishImageEntry; exports: EnglishImageVocabExport[] }> {
+export async function exportEnglishImageVocabs(
+  id: string,
+  requestedKeys: string[],
+  vocabBook: string,
+  options: { focusDecks?: string[]; sourceName?: string } = {},
+): Promise<{ entry: EnglishImageEntry; exports: EnglishImageVocabExport[] }> {
   const endpoint = vocabForgeEndpoint("/api/integrations/lumen/import");
   const secret = vocabForgeSecret();
   if (!endpoint || !secret) throw new Error("VocabForge 串接尚未完成 Railway 設定");
   const selectedBook = vocabBook.trim().slice(0, 200);
   if (!selectedBook) throw new Error("請先選擇要放入的豆倉");
+  const focusDecks = [...new Set((options.focusDecks ?? [selectedBook])
+    .filter((deck): deck is string => typeof deck === "string")
+    .map((deck) => deck.trim())
+    .filter((deck) => PERMANENT_FOCUS_DECKS.includes(deck as typeof PERMANENT_FOCUS_DECKS[number])))].slice(0, 2);
+  if (!focusDecks.length) focusDecks.push(selectedBook);
+  const sourceName = normalizeSourceName(options.sourceName ?? "");
   const { entry } = await getEnglishImageEntry(id);
   const requested = [...new Set(requestedKeys)].slice(0, 5);
   if (!requested.length) throw new Error("請至少選擇一個要送入 VocabForge 的單字");
@@ -256,6 +323,9 @@ export async function exportEnglishImageVocabs(id: string, requestedKeys: string
       sourceRecordId: entry.id,
       topicTitle: entry.title,
       vocabBook: selectedBook,
+      focusDecks,
+      sourceName,
+      sourceContext: entry.contextNote || entry.chineseExplanation,
       items: pending,
     }),
     cache: "no-store",
@@ -272,6 +342,9 @@ export async function exportEnglishImageVocabs(id: string, requestedKeys: string
       key: candidate.key,
       expression: candidate.expression,
       vocabBook: imported.vocabBook?.trim() || selectedBook,
+      focusDecks,
+      sourceName,
+      cefrLevel: candidate.cefrLevel,
       result: imported.result,
       syncedAt: now,
     };

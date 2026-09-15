@@ -16,14 +16,16 @@ import {
   saveEnglishImageEntry,
   undoLatestEnglishImageMerge,
 } from "@/lib/dojo/englishImageStore";
-import { englishImageVocabCandidates, exportEnglishImageVocab, listVocabForgeBooks, prepareEnglishImageForContextRoom } from "@/lib/dojo/englishImageDispatch";
+import { englishImageVocabCandidates, exportEnglishImageVocabs, listVocabForgeBooks, prepareEnglishImageForContextRoom, recommendedFocusDecks, PERMANENT_FOCUS_DECKS } from "@/lib/dojo/englishImageDispatch";
 import {
   basicLineMenuQuickReply,
   captureImageQuickReply,
   clipQuickReply,
   contextRoomQuickReply,
   englishImageBookQuickReply,
+  englishImageFocusDeckQuickReply,
   englishImageOrganizeQuickReply,
+  englishImageSourceQuickReply,
   englishImageVocabQuickReply,
   extractFirstUrl,
   forageQuickReply,
@@ -133,8 +135,9 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
   if (command === "豆倉") {
     try {
       const books = await listVocabForgeBooks({ forceRefresh: true });
-      const rows = books.map((book) => `・${book.name}（${book.count}）`).join("\n");
-      await replyLineMessage(replyToken, `VocabForge 目前可用的豆倉：\n\n${rows}\n\n要放入單字時，請先叫出「最近一筆」，再按「送 VocabForge」。`, basicLineMenuQuickReply());
+      const counts = new Map(books.map((book) => [book.name, book.count]));
+      const rows = PERMANENT_FOCUS_DECKS.map((name) => `・${name}（${counts.get(name) ?? 0}）`).join("\n");
+      await replyLineMessage(replyToken, `VocabForge 六個常駐專注豆倉：\n\n${rows}\n\n作品名稱會另外保存為來源，不會再建立一本作品豆倉。要放入單字時，請先叫出「最近一筆」，再按「送 VocabForge」。`, basicLineMenuQuickReply());
     } catch (error) {
       await replyLineMessage(replyToken, `豆倉清單暫時無法讀取：${error instanceof Error ? error.message : String(error)}`, basicLineMenuQuickReply());
     }
@@ -165,6 +168,22 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
     const images = await listEnglishImageEntries();
     const awaitingInput = images.find((entry) => entry.lineInputMode && entry.lineInputUntil && new Date(entry.lineInputUntil).getTime() > Date.now());
     if (awaitingInput) {
+      if (awaitingInput.lineInputMode === "vocabSource") {
+        const sourceName = text.slice(0, 300);
+        const focusDecks = recommendedFocusDecks(awaitingInput, sourceName);
+        const updated = await saveEnglishImageEntry({
+          ...awaitingInput,
+          lineInputMode: null,
+          lineInputUntil: null,
+          vocabForgeDraft: { sourceName, focusDecks, selectedKeys: [] },
+        });
+        await replyLineMessage(
+          event.replyToken ?? "",
+          `已記錄來源「${sourceName}」。系統先依作品與內容勾選建議分類；你可以保留或調整，最多兩個常駐豆倉。`,
+          englishImageFocusDeckQuickReply(updated.id, focusDecks),
+        );
+        return;
+      }
       const updated = await saveEnglishImageEntry(awaitingInput.lineInputMode === "context"
         ? { ...awaitingInput, contextNote: [awaitingInput.contextNote, text].filter(Boolean).join("\n"), lineInputMode: null, lineInputUntil: null }
         : { ...awaitingInput, ocrText: text, lineInputMode: null, lineInputUntil: null, analysisStatus: "needs-review", analysisReviewReason: "英文原文已由使用者修正；事件紀錄尚未重新產生。" });
@@ -440,14 +459,80 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
             await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。可以先修正內容或重新分析。", target === "both" ? contextRoomQuickReply(current.id, current.contextRoomUrl) : englishImageOrganizeQuickReply(current.id));
             return;
           }
-          const books = await listVocabForgeBooks({ forceRefresh: true });
-          await replyLineMessage(event.replyToken ?? "", target === "both" ? "語境素材已備妥。請先選擇這批單字要放進哪個豆倉。" : "請先選擇要放入的 VocabForge 豆倉。", englishImageBookQuickReply(current.id, books));
+          if (current.route === "game" && !current.vocabForgeDraft.sourceName) {
+            await replyLineMessage(
+              event.replyToken ?? "",
+              `${target === "both" ? "語境素材已備妥。" : ""}送出前先確認作品名稱。作品會成為「目前主玩」的來源篩選，不會另外建立豆倉。`,
+              englishImageSourceQuickReply(current.id, current.sourceLabel),
+            );
+            return;
+          }
+          const sourceName = current.vocabForgeDraft.sourceName || current.sourceLabel || (current.route === "classroom" ? "本期課堂" : "英文日常");
+          const focusDecks = current.vocabForgeDraft.focusDecks.length
+            ? current.vocabForgeDraft.focusDecks
+            : recommendedFocusDecks(current, sourceName);
+          current = await saveEnglishImageEntry({
+            ...current,
+            vocabForgeDraft: { sourceName, focusDecks, selectedKeys: [] },
+          });
+          await replyLineMessage(
+            event.replyToken ?? "",
+            `${target === "both" ? "語境素材已備妥。" : ""}系統已先勾選建議分類。請確認或調整常駐豆倉，最多兩個。`,
+            englishImageFocusDeckQuickReply(current.id, focusDecks),
+          );
           return;
         }
         await replyLineMessage(event.replyToken ?? "", "語境素材已備妥。開啟語境修習室後可繼續建立修習專案；野採母紀錄會保留。", contextRoomQuickReply(current.id, current.contextRoomUrl));
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", `派送尚未完成：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
       }
+      return;
+    }
+    if (action === "imageVocabSourceInput") {
+      await saveEnglishImageEntry({ ...entry, lineInputMode: "vocabSource", lineInputUntil: new Date(Date.now() + 10 * 60_000).toISOString() });
+      await replyLineMessage(event.replyToken ?? "", "請在十分鐘內直接輸入遊戲或作品名稱，例如 Dragon Quest V。它只會成為來源，不會建立新豆倉。");
+      return;
+    }
+    if (action === "imageVocabSource") {
+      const sourceName = params.get("source")?.trim().slice(0, 300) ?? "";
+      if (!sourceName) return;
+      const focusDecks = recommendedFocusDecks(entry, sourceName);
+      const updated = await saveEnglishImageEntry({
+        ...entry,
+        vocabForgeDraft: { sourceName, focusDecks, selectedKeys: [] },
+      });
+      await replyLineMessage(
+        event.replyToken ?? "",
+        `來源是「${sourceName}」。系統先勾選建議分類；你可以保留或調整，最多兩個常駐豆倉。`,
+        englishImageFocusDeckQuickReply(updated.id, focusDecks),
+      );
+      return;
+    }
+    if (action === "imageVocabDeck") {
+      const deck = params.get("deck")?.trim() ?? "";
+      if (!PERMANENT_FOCUS_DECKS.includes(deck as typeof PERMANENT_FOCUS_DECKS[number])) return;
+      const current = entry.vocabForgeDraft.focusDecks;
+      const focusDecks = current.includes(deck) ? current.filter((name) => name !== deck) : [...current, deck];
+      if (focusDecks.length > 2) {
+        await replyLineMessage(event.replyToken ?? "", "一次最多選兩個常駐豆倉；請先取消一個再新增。", englishImageFocusDeckQuickReply(entry.id, current));
+        return;
+      }
+      const updated = await saveEnglishImageEntry({ ...entry, vocabForgeDraft: { ...entry.vocabForgeDraft, focusDecks } });
+      await replyLineMessage(event.replyToken ?? "", `目前分類：${focusDecks.length ? focusDecks.join("＋") : "尚未選擇"}`, englishImageFocusDeckQuickReply(updated.id, focusDecks));
+      return;
+    }
+    if (action === "imageVocabDeckConfirm") {
+      if (!entry.vocabForgeDraft.focusDecks.length) {
+        await replyLineMessage(event.replyToken ?? "", "請至少選一個常駐豆倉。", englishImageFocusDeckQuickReply(entry.id, []));
+        return;
+      }
+      const candidates = englishImageVocabCandidates(entry);
+      const exportedKeys = entry.vocabForgeExports.map((item) => item.key);
+      await replyLineMessage(
+        event.replyToken ?? "",
+        `分類：${entry.vocabForgeDraft.focusDecks.join("＋")}\n來源：${entry.vocabForgeDraft.sourceName || "未特別標示"}\n\n請先勾選 1–5 個單字，確認後才會一次送出。按鈕後方是 AI 建議的 CEFR；「?」代表待確認。`,
+        englishImageVocabQuickReply(entry.id, candidates, entry.vocabForgeDraft.selectedKeys, exportedKeys, entry.contextRoomUrl),
+      );
       return;
     }
     if (action === "imageVocabBooks") {
@@ -466,7 +551,16 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       try {
         const candidates = englishImageVocabCandidates(entry);
         if (!candidates.length) throw new Error("目前沒有適合送入 VocabForge 的單字");
-        await replyLineMessage(event.replyToken ?? "", `已選擇「${vocabBook}」。請挑選真正想留下的單字（最多五個）；每按一個就會立即送入。`, englishImageVocabQuickReply(entry.id, vocabBook, candidates, entry.vocabForgeExports.map((item) => item.key), entry.contextRoomUrl));
+        const sourceName = entry.vocabForgeDraft.sourceName || entry.sourceLabel;
+        const focusDecks = PERMANENT_FOCUS_DECKS.includes(vocabBook as typeof PERMANENT_FOCUS_DECKS[number])
+          ? [vocabBook]
+          : recommendedFocusDecks(entry, sourceName);
+        const updated = await saveEnglishImageEntry({ ...entry, vocabForgeDraft: { sourceName, focusDecks, selectedKeys: [] } });
+        await replyLineMessage(
+          event.replyToken ?? "",
+          `這是舊版豆倉按鈕。已保留來源並轉成目前的常駐分類「${focusDecks.join("＋")}」；請勾選單字，確認後才會送出。`,
+          englishImageVocabQuickReply(updated.id, candidates, [], entry.vocabForgeExports.map((item) => item.key), entry.contextRoomUrl),
+        );
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", `無法開始挑選單字：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
       }
@@ -476,11 +570,54 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       const key = params.get("key") ?? "";
       const vocabBook = params.get("book")?.trim() ?? "";
       try {
-        const result = await exportEnglishImageVocab(entry.id, key, vocabBook);
-        const candidates = englishImageVocabCandidates(result.entry);
-        const exportedKeys = result.entry.vocabForgeExports.map((item) => item.key);
-        const remaining = candidates.filter((item) => !exportedKeys.includes(item.key));
-        await replyLineMessage(event.replyToken ?? "", `「${result.exported.expression}」已${result.exported.result === "existing" ? "存在於" : "送入"}豆倉「${result.exported.vocabBook || vocabBook}」。${remaining.length && exportedKeys.length < 5 ? "還可以繼續選擇。" : "這筆候選單字已處理完成。"}`, englishImageVocabQuickReply(result.entry.id, vocabBook, candidates, exportedKeys, result.entry.contextRoomUrl));
+        const candidates = englishImageVocabCandidates(entry);
+        if (!candidates.some((candidate) => candidate.key === key)) throw new Error("找不到這個候選單字");
+        const sourceName = entry.vocabForgeDraft.sourceName || entry.sourceLabel;
+        const focusDecks = PERMANENT_FOCUS_DECKS.includes(vocabBook as typeof PERMANENT_FOCUS_DECKS[number])
+          ? [vocabBook]
+          : recommendedFocusDecks(entry, sourceName);
+        const updated = await saveEnglishImageEntry({
+          ...entry,
+          vocabForgeDraft: { sourceName, focusDecks, selectedKeys: [key] },
+        });
+        await replyLineMessage(
+          event.replyToken ?? "",
+          "這是先前訊息中的舊版單字按鈕。已替你勾選，但尚未送出；請在下方確認送出，避免誤觸就建立單字。",
+          englishImageVocabQuickReply(updated.id, candidates, [key], updated.vocabForgeExports.map((item) => item.key), updated.contextRoomUrl),
+        );
+      } catch (error) {
+        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+      }
+      return;
+    }
+    if (action === "imageVocabToggle") {
+      const key = params.get("key") ?? "";
+      try {
+        const candidates = englishImageVocabCandidates(entry);
+        if (!candidates.some((candidate) => candidate.key === key)) throw new Error("找不到這個候選單字");
+        const current = entry.vocabForgeDraft.selectedKeys;
+        const selectedKeys = current.includes(key) ? current.filter((value) => value !== key) : [...current, key];
+        if (selectedKeys.length > 5) throw new Error("每筆素材最多選五個單字");
+        const updated = await saveEnglishImageEntry({ ...entry, vocabForgeDraft: { ...entry.vocabForgeDraft, selectedKeys } });
+        await replyLineMessage(event.replyToken ?? "", `已勾選 ${selectedKeys.length} 個單字；尚未送出。`, englishImageVocabQuickReply(updated.id, candidates, selectedKeys, updated.vocabForgeExports.map((item) => item.key), updated.contextRoomUrl));
+      } catch (error) {
+        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+      }
+      return;
+    }
+    if (action === "imageVocabConfirm") {
+      try {
+        const { focusDecks, sourceName, selectedKeys } = entry.vocabForgeDraft;
+        if (!focusDecks.length) throw new Error("請先確認常駐豆倉");
+        if (!selectedKeys.length) throw new Error("請先勾選至少一個單字");
+        const result = await exportEnglishImageVocabs(entry.id, selectedKeys, focusDecks[0], { focusDecks, sourceName });
+        const imported = result.exports.map((item) => `${item.expression}（${item.cefrLevel}）`).join("、");
+        const updated = await saveEnglishImageEntry({ ...result.entry, vocabForgeDraft: { ...result.entry.vocabForgeDraft, selectedKeys: [] } });
+        await replyLineMessage(
+          event.replyToken ?? "",
+          `已確認送出 ${result.exports.length} 字：${imported}\n\n來源：${sourceName || "未特別標示"}\n專注豆倉：${focusDecks.join("＋")}\n既有單字會追加這次遇見，不會重設複習進度。`,
+          englishImageVocabQuickReply(updated.id, englishImageVocabCandidates(updated), [], updated.vocabForgeExports.map((item) => item.key), updated.contextRoomUrl),
+        );
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
       }
