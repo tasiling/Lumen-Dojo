@@ -45,7 +45,7 @@ import type { EnglishImageEntry } from "@/lib/dojo/englishImage";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const IMAGE_BATCH_WINDOW_MS = 10 * 60_000;
+const IMAGE_BATCH_WINDOW_MS = 30 * 60_000;
 type ManualImageBatch = { entryId: string; expiresAt: number };
 const manualImageBatches = new Map<string, ManualImageBatch>();
 const imageSetLocks = new Map<string, Promise<void>>();
@@ -98,7 +98,7 @@ function forageUrl(): string {
 async function handleLineCommand(event: LineWebhookEvent, command: string): Promise<boolean> {
   const replyToken = event.replyToken ?? "";
   if (command === "野採圖片") {
-    await replyLineMessage(replyToken, "如果圖片彼此相關，可以在相簿一次勾選多張送出；系統會自動收成同一組。若需要分次拍攝，請先按「分次收一組」。", captureImageQuickReply());
+    await replyLineMessage(replyToken, "如果圖片彼此相關，可以在相簿一次勾選多張送出。超過 10 張時 LINE 可能自行拆成多組，請先按「分次收一組」；即使一次選 23 張，也會收進同一筆，直到你按「完成這組」。", captureImageQuickReply());
     return true;
   }
   if (command === "剪藏網址" || command === "貼網址") {
@@ -267,8 +267,55 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
   const imageSetId = rawImageSet?.id?.trim() ?? "";
   const imageSetIndex = Number.isFinite(rawImageSet?.index) ? Math.max(1, Math.floor(Number(rawImageSet?.index))) : null;
   const imageSetTotal = Number.isFinite(rawImageSet?.total) ? Math.max(1, Math.floor(Number(rawImageSet?.total))) : 0;
+
+  // An explicitly opened batch takes precedence over LINE imageSet ids. LINE
+  // commonly splits a single selection of more than ten images into several
+  // image sets; the explicit user action is the reliable grouping boundary.
+  const manualBatch = manualImageBatches.get(userId);
+  if (manualBatch && manualBatch.expiresAt > Date.now()) {
+    await withImageSetLock(`manual:${userId}`, async () => {
+      const currentBatch = manualImageBatches.get(userId) ?? manualBatch;
+      let entry: EnglishImageEntry | null = null;
+      if (currentBatch.entryId) {
+        try { entry = (await getEnglishImageEntry(currentBatch.entryId)).entry; }
+        catch { entry = null; }
+      }
+      if (entry) {
+        entry = await appendEnglishImageAttachment({
+          entry,
+          bytes: image.bytes,
+          mimeType: image.mimeType,
+          filename: imageFilename(messageId, image.mimeType),
+          sourceMessageId: messageId,
+        });
+      } else {
+        entry = await createEnglishImageEntry({
+          bytes: image.bytes,
+          mimeType: image.mimeType,
+          filename: imageFilename(messageId, image.mimeType),
+          sourceMessageId: messageId,
+          externalEventId: event.webhookEventId ?? "",
+          lineBatchState: "open",
+          lineBatchUntil: new Date(Date.now() + IMAGE_BATCH_WINDOW_MS).toISOString(),
+        });
+      }
+      const expiresAt = Date.now() + IMAGE_BATCH_WINDOW_MS;
+      entry = await saveEnglishImageEntry({ ...entry, lineBatchState: "open", lineBatchUntil: new Date(expiresAt).toISOString() });
+      manualImageBatches.set(userId, { entryId: entry.id, expiresAt });
+
+      // Keep LINE quiet while it is still delivering one native image set.
+      // A progress message at each native set boundary keeps the finish button
+      // available without replying once per image.
+      const reachedNativeSetEnd = !imageSetId || imageSetTotal <= 1 || (imageSetIndex ?? 0) >= imageSetTotal;
+      if (reachedNativeSetEnd) {
+        await replyLineMessage(event.replyToken ?? "", `已加入目前圖片組，現在共有 ${entry.attachments.length} 張。全部傳完後請按「完成這組」。`, imageBatchCollectQuickReply(entry.id));
+      }
+    });
+    return;
+  }
+  manualImageBatches.delete(userId);
+
   if (imageSetId && imageSetTotal > 1) {
-    manualImageBatches.delete(userId);
     await withImageSetLock(imageSetId, async () => {
       const currentEntries = await listEnglishImageEntries({ includeMerged: true });
       let entry = currentEntries.find((item) => item.lineImageSetId === imageSetId && !item.mergedIntoId);
@@ -303,43 +350,6 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
     return;
   }
 
-  const manualBatch = manualImageBatches.get(userId);
-  if (manualBatch && manualBatch.expiresAt > Date.now()) {
-    await withImageSetLock(`manual:${userId}`, async () => {
-      const currentBatch = manualImageBatches.get(userId) ?? manualBatch;
-      let entry: EnglishImageEntry | null = null;
-      if (currentBatch.entryId) {
-        try { entry = (await getEnglishImageEntry(currentBatch.entryId)).entry; }
-        catch { entry = null; }
-      }
-      if (entry) {
-        entry = await appendEnglishImageAttachment({
-          entry,
-          bytes: image.bytes,
-          mimeType: image.mimeType,
-          filename: imageFilename(messageId, image.mimeType),
-          sourceMessageId: messageId,
-        });
-      } else {
-        entry = await createEnglishImageEntry({
-          bytes: image.bytes,
-          mimeType: image.mimeType,
-          filename: imageFilename(messageId, image.mimeType),
-          sourceMessageId: messageId,
-          externalEventId: event.webhookEventId ?? "",
-          lineBatchState: "open",
-          lineBatchUntil: new Date(Date.now() + IMAGE_BATCH_WINDOW_MS).toISOString(),
-        });
-      }
-      const expiresAt = Date.now() + IMAGE_BATCH_WINDOW_MS;
-      entry = await saveEnglishImageEntry({ ...entry, lineBatchState: "open", lineBatchUntil: new Date(expiresAt).toISOString() });
-      manualImageBatches.set(userId, { entryId: entry.id, expiresAt });
-      await replyLineMessage(event.replyToken ?? "", `已加入目前圖片組，現在共有 ${entry.attachments.length} 張。全部傳完後請按「完成這組」。`, imageBatchCollectQuickReply(entry.id));
-    });
-    return;
-  }
-  manualImageBatches.delete(userId);
-
   const entry = await createEnglishImageEntry({
     bytes: image.bytes,
     mimeType: image.mimeType,
@@ -356,7 +366,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
   const action = params.get("action");
   if (action === "imageBatchStart") {
     manualImageBatches.set(userId, { entryId: "", expiresAt: Date.now() + IMAGE_BATCH_WINDOW_MS });
-    await replyLineMessage(event.replyToken ?? "", "已開啟新的圖片組。接下來傳送的圖片會加入同一組；全部傳完後按「完成這組」。", imageBatchCollectQuickReply());
+    await replyLineMessage(event.replyToken ?? "", "已開啟新的大型圖片組（30 分鐘）。接下來即使 LINE 把一次選取拆成數批，也會加入同一筆；全部傳完後按「完成這組」。", imageBatchCollectQuickReply());
     return;
   }
   if (action === "imageBatchCancel") {
@@ -456,7 +466,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       try {
         const candidates = englishImageVocabCandidates(entry);
         if (!candidates.length) throw new Error("目前沒有適合送入 VocabForge 的單字");
-        await replyLineMessage(event.replyToken ?? "", `已選擇「${vocabBook}」。請挑選真正想留下的單字（最多三個）；每按一個就會立即送入。`, englishImageVocabQuickReply(entry.id, vocabBook, candidates, entry.vocabForgeExports.map((item) => item.key), entry.contextRoomUrl));
+        await replyLineMessage(event.replyToken ?? "", `已選擇「${vocabBook}」。請挑選真正想留下的單字（最多五個）；每按一個就會立即送入。`, englishImageVocabQuickReply(entry.id, vocabBook, candidates, entry.vocabForgeExports.map((item) => item.key), entry.contextRoomUrl));
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", `無法開始挑選單字：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
       }
@@ -470,7 +480,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
         const candidates = englishImageVocabCandidates(result.entry);
         const exportedKeys = result.entry.vocabForgeExports.map((item) => item.key);
         const remaining = candidates.filter((item) => !exportedKeys.includes(item.key));
-        await replyLineMessage(event.replyToken ?? "", `「${result.exported.expression}」已${result.exported.result === "existing" ? "存在於" : "送入"}豆倉「${result.exported.vocabBook || vocabBook}」。${remaining.length && exportedKeys.length < 3 ? "還可以繼續選擇。" : "這筆候選單字已處理完成。"}`, englishImageVocabQuickReply(result.entry.id, vocabBook, candidates, exportedKeys, result.entry.contextRoomUrl));
+        await replyLineMessage(event.replyToken ?? "", `「${result.exported.expression}」已${result.exported.result === "existing" ? "存在於" : "送入"}豆倉「${result.exported.vocabBook || vocabBook}」。${remaining.length && exportedKeys.length < 5 ? "還可以繼續選擇。" : "這筆候選單字已處理完成。"}`, englishImageVocabQuickReply(result.entry.id, vocabBook, candidates, exportedKeys, result.entry.contextRoomUrl));
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
       }
