@@ -228,11 +228,11 @@ export default function EnglishImageInbox() {
               </select>
             </label>
             <fieldset>
-              <legend>選擇真正想複習的單字（每筆素材最多 3 字）</legend>
+              <legend>選擇真正想複習的單字（每筆素材最多 5 字）</legend>
               {vocabDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的單一英文單字；可以先整理候選內容或重新分析。</p> : vocabDraft.candidates.map((candidate) => {
                 const exported = vocabDraft.exportedKeys.includes(candidate.key);
                 const checked = vocabDraft.candidateKeys.includes(candidate.key);
-                const remaining = Math.max(0, 3 - vocabDraft.exportedKeys.length);
+                const remaining = Math.max(0, 5 - vocabDraft.exportedKeys.length);
                 return <label className={`english-image-context-choice ${exported ? "is-exported" : ""}`} key={candidate.key}>
                   <input type="checkbox" checked={checked || exported} disabled={exported || (!checked && vocabDraft.candidateKeys.length >= remaining)} onChange={(event) => setVocabDraft({ ...vocabDraft, candidateKeys: event.target.checked ? [...vocabDraft.candidateKeys, candidate.key] : vocabDraft.candidateKeys.filter((key) => key !== candidate.key) })} />
                   <span><small>{exported ? "已送出" : "單字"}</small><b>{candidate.expression}</b>{candidate.meaning && <em>{candidate.meaning}</em>}</span>
