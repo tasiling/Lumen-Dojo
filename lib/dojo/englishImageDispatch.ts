@@ -208,7 +208,8 @@ async function fetchVocabForgeBooks(): Promise<VocabForgeBook[]> {
   return books;
 }
 
-export async function listVocabForgeBooks(): Promise<VocabForgeBook[]> {
+export async function listVocabForgeBooks(options: { forceRefresh?: boolean } = {}): Promise<VocabForgeBook[]> {
+  if (options.forceRefresh) return fetchVocabForgeBooks();
   if (vocabBookCache && vocabBookCache.expiresAt > Date.now()) return vocabBookCache.books;
   if (!vocabBookRequest) {
     vocabBookRequest = fetchVocabForgeBooks().finally(() => {
