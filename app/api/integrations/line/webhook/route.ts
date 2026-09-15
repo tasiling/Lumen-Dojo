@@ -132,7 +132,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
   }
   if (command === "豆倉") {
     try {
-      const books = await listVocabForgeBooks();
+      const books = await listVocabForgeBooks({ forceRefresh: true });
       const rows = books.map((book) => `・${book.name}（${book.count}）`).join("\n");
       await replyLineMessage(replyToken, `VocabForge 目前可用的豆倉：\n\n${rows}\n\n要放入單字時，請先叫出「最近一筆」，再按「送 VocabForge」。`, basicLineMenuQuickReply());
     } catch (error) {
@@ -430,7 +430,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
             await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。可以先修正內容或重新分析。", target === "both" ? contextRoomQuickReply(current.id, current.contextRoomUrl) : englishImageOrganizeQuickReply(current.id));
             return;
           }
-          const books = await listVocabForgeBooks();
+          const books = await listVocabForgeBooks({ forceRefresh: true });
           await replyLineMessage(event.replyToken ?? "", target === "both" ? "語境素材已備妥。請先選擇這批單字要放進哪個豆倉。" : "請先選擇要放入的 VocabForge 豆倉。", englishImageBookQuickReply(current.id, books));
           return;
         }
@@ -442,7 +442,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageVocabBooks") {
       try {
-        const books = await listVocabForgeBooks();
+        const books = await listVocabForgeBooks({ forceRefresh: true });
         const requestedPage = Number(params.get("page") ?? 0);
         const page = Number.isFinite(requestedPage) ? Math.max(0, Math.floor(requestedPage)) : 0;
         await replyLineMessage(event.replyToken ?? "", `請選擇要放入的豆倉（第 ${page + 1} 頁）。`, englishImageBookQuickReply(entry.id, books, page));
