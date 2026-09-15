@@ -4,12 +4,21 @@ export type EnglishImageRoute = "pending" | "game" | "daily" | "classroom";
 export type EnglishImageStatus = "inbox" | "organized";
 export type EnglishImageAnalysisStatus = "idle" | "processing" | "completed" | "needs-review" | "failed";
 export type EnglishImageConfidence = "high" | "medium" | "low" | null;
-export type EnglishImageLineInputMode = "context" | "ocr" | null;
+export type EnglishImageLineInputMode = "context" | "ocr" | "vocabSource" | null;
+
+export type EnglishImageVocabDraft = {
+  sourceName: string;
+  focusDecks: string[];
+  selectedKeys: string[];
+};
 
 export type EnglishImageVocabExport = {
   key: string;
   expression: string;
   vocabBook: string;
+  focusDecks: string[];
+  sourceName: string;
+  cefrLevel: string;
   result: "created" | "existing";
   syncedAt: string;
 };
@@ -48,6 +57,13 @@ export type EnglishImageEntry = {
   chineseExplanation: string;
   learningPhrases: string;
   vocabularyWords: string;
+  vocabularyCandidates: Array<{
+    expression: string;
+    meaning: string;
+    usage: string;
+    cefrLevel: string;
+    suggestedFocusDecks: string[];
+  }>;
   externalEventId: string;
   externalMessageId: string;
   awaitingContextUntil: string | null;
@@ -65,6 +81,7 @@ export type EnglishImageEntry = {
   contextRoomUrl: string;
   contextRoomExport: EnglishImageContextExport | null;
   vocabForgeExports: EnglishImageVocabExport[];
+  vocabForgeDraft: EnglishImageVocabDraft;
   analysisStatus: EnglishImageAnalysisStatus;
   analysisConfidence: EnglishImageConfidence;
   analysisError: string;
@@ -143,6 +160,21 @@ export function normalizeEnglishImageEntry(
     chineseExplanation: text(source.chineseExplanation, 12000),
     learningPhrases: text(source.learningPhrases, 12000),
     vocabularyWords: text(source.vocabularyWords, 12000),
+    vocabularyCandidates: Array.isArray(source.vocabularyCandidates) ? source.vocabularyCandidates.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const value = item as EnglishImageEntry["vocabularyCandidates"][number];
+      const expression = text(value.expression, 240);
+      if (!expression) return [];
+      return [{
+        expression,
+        meaning: text(value.meaning, 500),
+        usage: text(value.usage, 1000),
+        cefrLevel: /^(A1|A2|B1|B2|C1|C2)$/.test(text(value.cefrLevel, 10)) ? text(value.cefrLevel, 10) : "待確認",
+        suggestedFocusDecks: Array.isArray(value.suggestedFocusDecks)
+          ? value.suggestedFocusDecks.map((name) => text(name, 200)).filter(Boolean).slice(0, 2)
+          : [],
+      }];
+    }).slice(0, 5) : [],
     externalEventId: text(source.externalEventId, 200),
     externalMessageId: text(source.externalMessageId, 200),
     awaitingContextUntil: source.awaitingContextUntil ? iso(source.awaitingContextUntil, now) : null,
@@ -153,7 +185,7 @@ export function normalizeEnglishImageEntry(
     lineImageSetTotal: Number.isFinite(source.lineImageSetTotal) ? Math.max(0, Math.floor(Number(source.lineImageSetTotal))) : 0,
     lineBatchState: source.lineBatchState === "open" ? "open" : "closed",
     lineBatchUntil: source.lineBatchUntil ? iso(source.lineBatchUntil, now) : null,
-    lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" ? source.lineInputMode : null,
+    lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" || source.lineInputMode === "vocabSource" ? source.lineInputMode : null,
     lineInputUntil: source.lineInputUntil ? iso(source.lineInputUntil, now) : null,
     contextRoomStatus: source.contextRoomStatus === "synced" ? "synced" : source.contextRoomStatus === "ready" ? "ready" : "idle",
     contextRoomPreparedAt: source.contextRoomPreparedAt ? iso(source.contextRoomPreparedAt, now) : null,
@@ -187,10 +219,23 @@ export function normalizeEnglishImageEntry(
         key,
         expression,
         vocabBook: text(value.vocabBook, 200),
+        focusDecks: Array.isArray(value.focusDecks) ? value.focusDecks.map((name) => text(name, 200)).filter(Boolean).slice(0, 2) : [],
+        sourceName: text(value.sourceName, 300),
+        cefrLevel: /^(A1|A2|B1|B2|C1|C2)$/.test(text(value.cefrLevel, 10)) ? text(value.cefrLevel, 10) : "待確認",
         result: value.result === "existing" ? "existing" as const : "created" as const,
         syncedAt,
       }];
     }) : [],
+    vocabForgeDraft: (() => {
+      const value = source.vocabForgeDraft && typeof source.vocabForgeDraft === "object"
+        ? source.vocabForgeDraft as Partial<EnglishImageVocabDraft>
+        : {};
+      return {
+        sourceName: text(value.sourceName, 300),
+        focusDecks: Array.isArray(value.focusDecks) ? value.focusDecks.map((name) => text(name, 200)).filter(Boolean).slice(0, 2) : [],
+        selectedKeys: Array.isArray(value.selectedKeys) ? value.selectedKeys.map((key) => text(key, 180)).filter(Boolean).slice(0, 5) : [],
+      };
+    })(),
     analysisStatus,
     analysisConfidence: confidence,
     analysisError: text(source.analysisError, 3000),

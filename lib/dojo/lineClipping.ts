@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import type { CaptureClipPurpose } from "./formal";
-import type { EnglishImageVocabCandidate, VocabForgeBook } from "./englishImageDispatch";
+import { PERMANENT_FOCUS_DECKS, type EnglishImageVocabCandidate, type VocabForgeBook } from "./englishImageDispatch";
 
 export type LineWebhookEvent = {
   type: "message" | "postback" | string;
@@ -281,13 +281,36 @@ export function englishImageBookQuickReply(entryId: string, books: VocabForgeBoo
   return { items };
 }
 
-export function englishImageVocabQuickReply(entryId: string, vocabBook: string, candidates: EnglishImageVocabCandidate[], exportedKeys: string[], contextRoomUrl = "") {
+export function englishImageSourceQuickReply(entryId: string, inferredSource = "") {
+  const commonSources = [inferredSource, "Dragon Quest V", "Zelda", "Chinese Parents", "Animal Crossing"]
+    .map((source) => Array.from(source.trim()).slice(0, 50).join(""))
+    .filter((source, index, values) => source && values.indexOf(source) === index)
+    .slice(0, 5);
+  return { items: [
+    ...commonSources.map((source) => quickReplyItem(lineLabel(source), new URLSearchParams({ action: "imageVocabSource", entryId, source }).toString())),
+    quickReplyItem("輸入其他作品", new URLSearchParams({ action: "imageVocabSourceInput", entryId }).toString()),
+    quickReplyItem("取消", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
+  ] };
+}
+
+export function englishImageFocusDeckQuickReply(entryId: string, selectedDecks: string[]) {
+  const selected = new Set(selectedDecks);
+  return { items: [
+    ...PERMANENT_FOCUS_DECKS.map((deck) => quickReplyItem(`${selected.has(deck) ? "✓" : "＋"}${lineLabel(deck).slice(0, 17)}`, new URLSearchParams({ action: "imageVocabDeck", entryId, deck }).toString())),
+    quickReplyItem(`確認分類 ${selected.size}/2`, new URLSearchParams({ action: "imageVocabDeckConfirm", entryId }).toString()),
+    quickReplyItem("取消", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
+  ] };
+}
+
+export function englishImageVocabQuickReply(entryId: string, candidates: EnglishImageVocabCandidate[], selectedKeys: string[], exportedKeys: string[], contextRoomUrl = "") {
   const exported = new Set(exportedKeys);
+  const selected = new Set(selectedKeys);
   const remainingSlots = Math.max(0, 5 - exportedKeys.length);
   const items: LineQuickReplyItem[] = candidates.filter((candidate) => !exported.has(candidate.key)).slice(0, remainingSlots).map((candidate) => quickReplyItem(
-    candidate.expression.slice(0, 20),
-    new URLSearchParams({ action: "imageVocab", entryId, key: candidate.key, book: vocabBook }).toString(),
+    `${selected.has(candidate.key) ? "✓" : "＋"}${candidate.expression} ${candidate.cefrLevel === "待確認" ? "?" : candidate.cefrLevel}`.slice(0, 20),
+    new URLSearchParams({ action: "imageVocabToggle", entryId, key: candidate.key }).toString(),
   ));
+  if (selected.size > 0) items.push(quickReplyItem(`確認送出 ${selected.size} 字`, new URLSearchParams({ action: "imageVocabConfirm", entryId }).toString()));
   if (contextRoomUrl) items.push(uriQuickReplyItem("開啟語境修習室", contextRoomUrl));
   items.push(quickReplyItem("完成", new URLSearchParams({ action: "imageKeep", entryId }).toString()));
   return { items };
