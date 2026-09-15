@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import ClaimCandidateComposer from "@/app/components/ClaimCandidateComposer";
 import { WEAVING_FORMATS, type WeavingFormat } from "@/lib/dojo/weavingProjects";
 import type { WeavingShuttleBundle } from "@/lib/dojo/weavingShuttle";
 import {
@@ -311,6 +312,15 @@ function LibraryCard({
       <button onClick={() => setOrganizing((value) => !value)}>整理標籤</button>
       {stuck && <button className="danger" onClick={() => setStuckPanel((value) => !value)}>處理卡住狀態</button>}
     </div>
+
+    {(card.status === "已驗證" || card.status === "不成立") && <ClaimCandidateComposer
+      source={{ sourceType: "reading_insight", sourceId: card.id, label: `${card.sourceBookTitle}・閱讀洞察`, locator: "", url: "", snapshot: [`洞察：${card.insight}`, `行動：${card.action}`, card.result && `結果：${card.result}`].filter(Boolean).join("\n") }}
+      defaultStatement={card.insight}
+      defaultType="understanding"
+      supportingEvidence={card.status === "已驗證" ? card.result : ""}
+      contradictingEvidence={card.status === "不成立" ? card.result : ""}
+      buttonLabel="整理成知識候選"
+    />}
 
     {sourceOpen && <div className="reading-library-source">
       {source ? <><small>建立洞察時保存的來源快照</small><p>{source.sourceText}</p></> : <p>這是舊卡片，當時尚未保存來源快照；仍可由書名回到原閱讀筆記。</p>}

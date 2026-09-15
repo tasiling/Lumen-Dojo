@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ReadingQuickCapture from "@/app/components/ReadingQuickCapture";
+import ClaimCandidateComposer from "@/app/components/ClaimCandidateComposer";
 import type { InsightActionType, InsightCard, ReadingBook, ReadingNote, ReadingNoteKind, ReadingNoteMetadata } from "@/lib/reading/types";
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -189,6 +190,7 @@ export default function ReadingBookPage() {
                 {grouped.reading.map((note) => (
                   <ReadingSourceNoteCard
                     key={note.clientKey}
+                    book={book}
                     note={note}
                     onDelete={() => void removeNote(note)}
                     onMakeCard={() => setCardDraft({ noteId: note.id, text: note.text })}
@@ -377,7 +379,7 @@ function ReadingReviewPanel({ book, note, excerptCount, thoughtCount, onSaved }:
   </section>;
 }
 
-function ReadingSourceNoteCard({ note, onDelete, onMakeCard }: { note: EditorNote; onDelete: () => void; onMakeCard: () => void }) {
+function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard }: { book: ReadingBook; note: EditorNote; onDelete: () => void; onMakeCard: () => void }) {
   return <article className={`reading-source-note kind-${note.kind}`}>
     <div className="reading-source-note-meta">
       <span>{note.kind === "excerpt" ? note.metadata.source || "摘錄" : "我的想法"}</span>
@@ -387,6 +389,12 @@ function ReadingSourceNoteCard({ note, onDelete, onMakeCard }: { note: EditorNot
     {note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
     {note.metadata.reflection && <div className="reading-source-reflection"><small>我當時想到</small><p>{note.metadata.reflection}</p></div>}
     <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button className="reading-make-card" disabled={!note.id} onClick={onMakeCard}>提煉洞察</button></div>
+    {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
+      source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}
+      defaultStatement={note.kind === "thought" ? note.text : note.metadata.reflection || ""}
+      defaultType="understanding"
+      buttonLabel="整理成知識候選"
+    />}
   </article>;
 }
 

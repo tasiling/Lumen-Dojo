@@ -19,6 +19,7 @@ import {
   CREATIVE_ROLE_TITLE,
   MANIFESTATION_MILESTONE_TITLE_PREFIX,
 } from "./manifestation";
+import { KNOWLEDGE_CLAIM_TITLE_PREFIX } from "./knowledgeClaims";
 
 export { ENGLISH_JOURNAL_TITLE_PREFIX };
 export { CONTEXT_ROOM_RESULT_TITLE_PREFIX };
@@ -51,6 +52,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   CREATIVE_ROLE_TITLE,
   MANIFESTATION_MILESTONE_TITLE_PREFIX,
   CREATIVE_PRACTICE_TITLE_PREFIX,
+  KNOWLEDGE_CLAIM_TITLE_PREFIX,
 ] as const;
 
 export const TAIPEI_TIME_ZONE = "Asia/Taipei";
@@ -268,18 +270,33 @@ export type CaptureClipMeta = {
 };
 
 export const CAPTURE_CONTENT_TYPES = {
-  atomic: ["原子概念", "一個可以獨立理解、重複使用的知識點"],
-  inspiration: ["靈感", "尚未成形，但值得保留的創作火花"],
-  method: ["方法論", "可以重複使用的思考框架或做事方式"],
-  material: ["素材", "引用、案例、圖片或日後可以使用的資料"],
-  insight: ["洞見", "經過思考後得到的結論、觀察或新連接"],
-  affirmation: ["肯定句", "用來支持信念與自我認同的句子"],
-  invocation: ["祈請詞", "作為儀式、定錨或引導使用的文字"],
+  atomic: ["概念／原理", "一個可以獨立理解的概念、原理或事實主張"],
+  method: ["方法／操作", "可以照著做的步驟、技巧或工作規則"],
+  observation: ["觀察／經驗", "自己在實作或生活中實際觀察到的現象"],
+  case: ["案例／事件", "一件可支持、反駁或說明主張的具體事件"],
+  insight: ["個人洞見／推論", "經過思考後形成的解釋、判斷或新連接"],
+  question: ["待解問題", "值得追查，但目前還沒有足夠答案的問題"],
+  inspiration: ["創作靈感", "尚未成形，但值得保留的創作火花"],
+  material: ["引用／參考素材", "原文、圖片或日後可能使用的參考資料"],
+  affirmation: ["肯定句／自我定錨", "用來支持信念與自我認同的句子"],
+  invocation: ["祈請詞／儀式文本", "作為儀式、定錨或引導使用的文字"],
 } as const;
 
 export type CaptureContentType = keyof typeof CAPTURE_CONTENT_TYPES;
+export const CAPTURE_KNOWLEDGE_ORIGINS = {
+  unknown: ["尚未確認", "還不知道這段內容應歸屬於誰"],
+  direct_teaching: ["他人親自教導", "經理、老師、前輩或同事直接教我的內容"],
+  self_observation: ["個人觀察／實作", "自己親身做過、看見或記錄到的經驗"],
+  published_source: ["書籍／文章／影片", "可回到作者與原始出版內容"],
+  conversation_feedback: ["對話／回饋", "顧客、同事或他人在具體情境中的說法"],
+  ai_candidate: ["AI 候選", "AI 提出的摘要或想法，仍需人工核對與採用"],
+} as const;
+export type CaptureKnowledgeOrigin = keyof typeof CAPTURE_KNOWLEDGE_ORIGINS;
 export type CaptureStatus = "pending" | "adopted" | "faded";
 export type CaptureProcessingDepth = "raw" | "light" | "deep";
+export type CreativeMaturity = "C0" | "C1" | "C2" | "C3";
+export type SourceKnowledgeMaturity = "K0" | "K1";
+export type CaptureLlmMaterialUse = "disabled" | "inspiration_only";
 export type CaptureDestination = "practice" | "weaving" | "dao";
 export type LearningTrackKey = "english" | "massage" | "yijing" | "ziwei" | "qimen";
 export type KnowledgeRelation = "supports" | "extends" | "contradicts" | "example" | "question";
@@ -296,6 +313,14 @@ export type CaptureKnowledgeLink = {
   id: string;
   label: string;
   relation: KnowledgeRelation;
+};
+
+// inspiration 僅為舊資料相容值；新關聯統一使用下列五種語意關係。
+export type CaptureClaimRelation = "source" | KnowledgeRelation | "inspiration";
+
+export type CaptureClaimRef = {
+  claimId: string;
+  relation: CaptureClaimRelation;
 };
 
 export const WEAVING_OUTPUT_TYPES = {
@@ -330,6 +355,12 @@ export type CaptureEntry = {
   clip: CaptureClipMeta;
   status: CaptureStatus;
   processingDepth: CaptureProcessingDepth;
+  creativeMaturity: CreativeMaturity;
+  sourceKnowledgeMaturity: SourceKnowledgeMaturity;
+  sourceLocator: string;
+  claimRefs: CaptureClaimRef[];
+  llmMaterialUse: CaptureLlmMaterialUse;
+  knowledgeOrigin: CaptureKnowledgeOrigin;
   contentType: CaptureContentType | null;
   forageSummary: string;
   forageReason: string;
@@ -862,6 +893,15 @@ export function normalizeCaptureEntry(
       : legacyPrepared
         ? (contentType || legacyWeavingNote ? "deep" : "light")
         : "raw";
+  const creativeMaturity: CreativeMaturity =
+    source.creativeMaturity === "C1" || source.creativeMaturity === "C2" || source.creativeMaturity === "C3"
+      ? source.creativeMaturity
+      : processingDepth === "raw" ? "C0" : "C1";
+  const sourceKnowledgeMaturity: SourceKnowledgeMaturity = source.sourceKnowledgeMaturity === "K1" ? "K1" : "K0";
+  const knowledgeOrigin: CaptureKnowledgeOrigin =
+    typeof source.knowledgeOrigin === "string" && source.knowledgeOrigin in CAPTURE_KNOWLEDGE_ORIGINS
+      ? source.knowledgeOrigin as CaptureKnowledgeOrigin
+      : "unknown";
   const destinations = Array.isArray(source.destinations)
     ? source.destinations.filter((item): item is CaptureDestination =>
         item === "practice" || item === "weaving" || item === "dao")
@@ -882,6 +922,20 @@ export function normalizeCaptureEntry(
             : "extends";
         return label ? [{ id: stringValue(link.id, crypto.randomUUID()), label, relation }] : [];
       }).slice(0, 30)
+    : [];
+  const claimRefs = Array.isArray(source.claimRefs)
+    ? source.claimRefs.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const ref = item as Partial<CaptureClaimRef>;
+        const claimId = stringValue(ref.claimId).trim().slice(0, 300);
+        const rawRelation = typeof ref.relation === "string" ? ref.relation : "source";
+        const relation: CaptureClaimRelation = rawRelation === "inspiration"
+          ? "extends"
+          : rawRelation === "supports" || rawRelation === "extends" || rawRelation === "contradicts" || rawRelation === "example" || rawRelation === "question"
+            ? rawRelation
+            : "source";
+        return claimId ? [{ claimId, relation }] : [];
+      }).filter((ref, index, refs) => refs.findIndex((other) => other.claimId === ref.claimId && other.relation === ref.relation) === index).slice(0, 30)
     : [];
   const sourceWeaving: Partial<CaptureWeavingState> = source.weaving && typeof source.weaving === "object" ? source.weaving : {};
   const outputType = typeof sourceWeaving.outputType === "string" && sourceWeaving.outputType in WEAVING_OUTPUT_TYPES
@@ -931,6 +985,12 @@ export function normalizeCaptureEntry(
     },
     status,
     processingDepth,
+    creativeMaturity,
+    sourceKnowledgeMaturity,
+    sourceLocator: stringValue(source.sourceLocator).trim().slice(0, 1000),
+    claimRefs,
+    llmMaterialUse: source.llmMaterialUse === "inspiration_only" ? "inspiration_only" : "disabled",
+    knowledgeOrigin,
     contentType,
     forageSummary: stringValue(source.forageSummary, legacyWeavingNote).trim().slice(0, 5000),
     forageReason: stringValue(source.forageReason).trim().slice(0, 3000),
@@ -965,6 +1025,12 @@ export function captureContent(entry: CaptureEntry): FormalCaptureContent {
     clip: entry.clip,
     status: entry.status,
     processingDepth: entry.processingDepth,
+    creativeMaturity: entry.creativeMaturity,
+    sourceKnowledgeMaturity: entry.sourceKnowledgeMaturity,
+    sourceLocator: entry.sourceLocator,
+    claimRefs: entry.claimRefs,
+    llmMaterialUse: entry.llmMaterialUse,
+    knowledgeOrigin: entry.knowledgeOrigin,
     contentType: entry.contentType,
     forageSummary: entry.forageSummary,
     forageReason: entry.forageReason,
