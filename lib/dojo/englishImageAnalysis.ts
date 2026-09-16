@@ -90,14 +90,22 @@ function outputText(payload: Record<string, unknown>): string {
 
 function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total: number }): string {
   const context = entry.contextNote ? `\n使用者補充情境：${entry.contextNote}` : "";
-  const route = entry.route === "game" ? "英文遊戲畫面" : entry.route === "classroom" ? "英文課堂教材或白板畫面" : "英文日常畫面";
+  const route = entry.route === "game"
+    ? "英文遊戲畫面"
+    : entry.route === "classroom"
+      ? "英文課堂教材或白板畫面"
+      : entry.route === "reading"
+        ? "英文書頁或文章"
+        : "英文日常畫面";
   const group = entry.attachments.length > 1
     ? `這是同一段情境的 ${entry.attachments.length} 張連續圖片${part ? `，目前是第 ${part.index}/${part.total} 批` : ""}，請依畫面順序合併理解。`
     : "";
   const task = entry.route === "classroom"
     ? "辨識課堂主題、老師的問題或作業要求、文法重點，並在 englishRecord 提供一段 B1–B2、可直接拿來回答或練習的英文內容；chineseExplanation 要用中文分別說明課堂任務與文法重點。"
-    : "用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。";
-  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR 難度與 1–2 個常駐專注豆倉建議；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
+    : entry.route === "reading"
+      ? "先依頁碼、章節標題與上下文判斷閱讀順序；若不能確定順序，必須標記需要確認。sourceLabel 只填書名或文章名稱，不要混入本批摘要。englishRecord 請用 B1–B2 英文摘要本批內容；chineseExplanation 要分別整理內容理解、重要文法，以及只需理解但未必值得長期背誦的人名、地名、生物名或專有名詞。"
+      : "用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。";
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR 難度與 1–2 個常駐專注豆倉建議；閱讀內容優先建議「故事閱讀」，專有名詞除非具有長期學習價值，否則只放在中文解釋，不要列為單字候選；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 async function requestAnalysis(params: {
@@ -147,7 +155,7 @@ function synthesisPrompt(entry: EnglishImageEntry, parts: AnalysisResult[]): str
 
 export async function analyzeEnglishImage(id: string, options: { force?: boolean } = {}): Promise<EnglishImageEntry> {
   let { entry } = await getEnglishImageEntry(id);
-  if (entry.route === "pending") throw new Error("請先選擇遊戲英文、英文日常或課堂英文");
+  if (entry.route === "pending") throw new Error("請先選擇遊戲英文、英文日常、課堂英文或閱讀英文");
   if (!options.force && (entry.analysisStatus === "completed" || entry.analysisStatus === "needs-review")) return entry;
   const processingIsFresh = entry.analysisStatus === "processing" && Date.now() - new Date(entry.updatedAt).getTime() < 2 * 60_000;
   if (processingIsFresh) throw new Error("這張圖片正在分析中");

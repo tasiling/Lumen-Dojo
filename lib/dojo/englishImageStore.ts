@@ -7,6 +7,7 @@ import { captureContent, captureRecordTitle, normalizeCaptureEntry } from "./for
 import {
   ENGLISH_IMAGE_TITLE_PREFIX,
   englishImageContent,
+  englishImageRouteLabel,
   englishImageRecordTitle,
   normalizeEnglishImageEntry,
   type EnglishImageEntry,
@@ -166,7 +167,7 @@ export async function routeEnglishImage(entry: EnglishImageEntry, route: Exclude
     route,
     lineBatchState: "closed",
     lineBatchUntil: null,
-    title: route === "game" ? "遊戲英文" : route === "classroom" ? "課堂英文" : "英文日常",
+    title: englishImageRouteLabel(route),
     awaitingContextUntil: new Date(Date.now() + 10 * 60_000).toISOString(),
   });
 }

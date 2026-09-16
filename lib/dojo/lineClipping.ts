@@ -265,6 +265,7 @@ export function imageRouteQuickReply(entryId: string) {
     quickReplyItem("遊戲英文", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
     quickReplyItem("英文日常", new URLSearchParams({ action: "imageRoute", entryId, route: "daily" }).toString()),
     quickReplyItem("課堂英文", new URLSearchParams({ action: "imageRoute", entryId, route: "classroom" }).toString()),
+    quickReplyItem("閱讀英文", new URLSearchParams({ action: "imageRoute", entryId, route: "reading" }).toString()),
     quickReplyItem("一般剪藏", new URLSearchParams({ action: "imageRoute", entryId, route: "capture" }).toString()),
   ] };
 }
@@ -304,8 +305,11 @@ export function englishImageBookQuickReply(entryId: string, books: VocabForgeBoo
   return { items };
 }
 
-export function englishImageSourceQuickReply(entryId: string, inferredSource = "") {
-  const commonSources = [normalizeSourceName(inferredSource), "Dragon Quest V", "Zelda", "Chinese Parents", "Animal Crossing"]
+export function englishImageSourceQuickReply(entryId: string, inferredSource = "", kind: "game" | "reading" = "game") {
+  const suggestions = kind === "reading"
+    ? [normalizeSourceName(inferredSource)]
+    : [normalizeSourceName(inferredSource), "Dragon Quest V", "Zelda", "Chinese Parents", "Animal Crossing"];
+  const commonSources = suggestions
     .map((source) => source.trim())
     .filter((source, index, values) => source && values.indexOf(source) === index)
     .slice(0, 5);
@@ -314,7 +318,7 @@ export function englishImageSourceQuickReply(entryId: string, inferredSource = "
       lineLabel(source),
       boundedPostbackData({ action: "imageVocabSource", entryId, source }, "source"),
     )),
-    quickReplyItem("輸入其他作品", new URLSearchParams({ action: "imageVocabSourceInput", entryId }).toString()),
+    quickReplyItem(kind === "reading" ? "輸入書名／來源" : "輸入其他作品", new URLSearchParams({ action: "imageVocabSourceInput", entryId }).toString()),
     quickReplyItem("取消", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
   ] };
 }

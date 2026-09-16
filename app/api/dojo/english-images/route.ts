@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
-import { normalizeEnglishImageEntry } from "@/lib/dojo/englishImage";
+import { isEnglishImageLearningRoute, normalizeEnglishImageEntry } from "@/lib/dojo/englishImage";
 import {
   getEnglishImageEntry,
   listEnglishImageEntries,
@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
     if (body.action === "analyze") return NextResponse.json({ entry: await analyzeEnglishImage(id, { force: true }) });
     if (body.action === "routeAndAnalyze") {
-      const route = body.route === "game" || body.route === "daily" || body.route === "classroom" ? body.route : null;
-      if (!route) return NextResponse.json({ error: "請選擇遊戲英文、英文日常或課堂英文" }, { status: 400 });
+      const route = isEnglishImageLearningRoute(body.route) ? body.route : null;
+      if (!route) return NextResponse.json({ error: "請選擇遊戲英文、英文日常、課堂英文或閱讀英文" }, { status: 400 });
       const { entry } = await getEnglishImageEntry(id);
       const routed = await routeEnglishImage(entry, route);
       return NextResponse.json({ entry: await analyzeEnglishImage(routed.id) });
