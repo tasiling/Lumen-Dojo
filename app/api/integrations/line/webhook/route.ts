@@ -42,7 +42,11 @@ import {
   type LineWebhookEvent,
 } from "@/lib/dojo/lineClipping";
 import { CAPTURE_CLIP_PURPOSES, type CaptureClipMeta, type CaptureClipPurpose } from "@/lib/dojo/formal";
-import type { EnglishImageEntry } from "@/lib/dojo/englishImage";
+import {
+  englishImageRouteLabel,
+  isEnglishImageLearningRoute,
+  type EnglishImageEntry,
+} from "@/lib/dojo/englishImage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -82,7 +86,8 @@ function imageFilename(messageId: string, mimeType: string): string {
 
 function lineLearningSummary(entry: EnglishImageEntry, intro: string): string {
   const sections = [intro, entry.title ? `「${entry.title}」` : ""];
-  if (entry.englishRecord) sections.push(`【${entry.route === "classroom" ? "課堂回答整理" : "英文事件紀錄"}】\n${entry.englishRecord.slice(0, 900)}`);
+  const recordLabel = entry.route === "classroom" ? "課堂回答整理" : entry.route === "reading" ? "英文閱讀摘要" : "英文事件紀錄";
+  if (entry.englishRecord) sections.push(`【${recordLabel}】\n${entry.englishRecord.slice(0, 900)}`);
   if (entry.chineseExplanation) sections.push(`【中文理解】\n${entry.chineseExplanation.slice(0, 900)}`);
   if (entry.learningPhrases) sections.push(`【可學詞句】\n${entry.learningPhrases.slice(0, 1300)}`);
   if (entry.vocabularyWords) sections.push(`【單字候選】\n${entry.vocabularyWords.slice(0, 900)}`);
@@ -424,7 +429,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageAnalyze") {
       if (entry.route === "pending") {
-        await replyLineMessage(event.replyToken ?? "", "請先選擇遊戲英文、英文日常或課堂英文。", imageRouteQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", "請先選擇遊戲英文、英文日常、課堂英文或閱讀英文。", imageRouteQuickReply(entry.id));
         return;
       }
       const analyzed = await analyzeEnglishImage(entry.id, { force: true });
@@ -459,15 +464,16 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
             await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。可以先修正內容或重新分析。", target === "both" ? contextRoomQuickReply(current.id, current.contextRoomUrl) : englishImageOrganizeQuickReply(current.id));
             return;
           }
-          if (current.route === "game" && !current.vocabForgeDraft.sourceName) {
+          if ((current.route === "game" || current.route === "reading") && !current.vocabForgeDraft.sourceName) {
+            const isReading = current.route === "reading";
             await replyLineMessage(
               event.replyToken ?? "",
-              `${target === "both" ? "語境素材已備妥。" : ""}送出前先確認作品名稱。作品會成為「目前主玩」的來源篩選，不會另外建立豆倉。`,
-              englishImageSourceQuickReply(current.id, current.sourceLabel),
+              `${target === "both" ? "語境素材已備妥。" : ""}送出前先確認${isReading ? "書名或文章來源" : "作品名稱"}。來源會保留在單字的遇見紀錄中，不會另外建立豆倉。`,
+              englishImageSourceQuickReply(current.id, current.sourceLabel, isReading ? "reading" : "game"),
             );
             return;
           }
-          const sourceName = current.vocabForgeDraft.sourceName || current.sourceLabel || (current.route === "classroom" ? "本期課堂" : "英文日常");
+          const sourceName = current.vocabForgeDraft.sourceName || current.sourceLabel || (current.route === "classroom" ? "本期課堂" : current.route === "reading" ? "閱讀內容" : "英文日常");
           const focusDecks = current.vocabForgeDraft.focusDecks.length
             ? current.vocabForgeDraft.focusDecks
             : recommendedFocusDecks(current, sourceName);
@@ -490,7 +496,9 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageVocabSourceInput") {
       await saveEnglishImageEntry({ ...entry, lineInputMode: "vocabSource", lineInputUntil: new Date(Date.now() + 10 * 60_000).toISOString() });
-      await replyLineMessage(event.replyToken ?? "", "請在十分鐘內直接輸入遊戲或作品名稱，例如 Dragon Quest V。它只會成為來源，不會建立新豆倉。");
+      await replyLineMessage(event.replyToken ?? "", entry.route === "reading"
+        ? "請在十分鐘內直接輸入書名或文章來源，例如 Magic Tree House #1。它只會成為來源，不會建立新豆倉。"
+        : "請在十分鐘內直接輸入遊戲或作品名稱，例如 Dragon Quest V。它只會成為來源，不會建立新豆倉。");
       return;
     }
     if (action === "imageVocabSource") {
@@ -639,10 +647,10 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       await replyLineMessage(event.replyToken ?? "", "已轉成一般素材，並留在野採採集匣。", clipQuickReply(capture.id, false));
       return;
     }
-    if (route === "game" || route === "daily" || route === "classroom") {
+    if (isEnglishImageLearningRoute(route)) {
       const routed = await routeEnglishImage(entry, route);
       const analyzed = await analyzeEnglishImage(routed.id);
-      const label = route === "game" ? "遊戲英文" : route === "classroom" ? "課堂英文" : "英文日常";
+      const label = englishImageRouteLabel(route);
       if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
         await replyLineMessage(event.replyToken ?? "", lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id));
       } else {

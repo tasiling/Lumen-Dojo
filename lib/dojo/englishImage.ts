@@ -1,6 +1,7 @@
 export const ENGLISH_IMAGE_TITLE_PREFIX = "行光英文影像-";
 
-export type EnglishImageRoute = "pending" | "game" | "daily" | "classroom";
+export type EnglishImageRoute = "pending" | "game" | "daily" | "classroom" | "reading";
+export type EnglishImageLearningRoute = Exclude<EnglishImageRoute, "pending">;
 export type EnglishImageStatus = "inbox" | "organized";
 export type EnglishImageAnalysisStatus = "idle" | "processing" | "completed" | "needs-review" | "failed";
 export type EnglishImageConfidence = "high" | "medium" | "low" | null;
@@ -96,6 +97,18 @@ export type EnglishImageEntry = {
   updatedAt: string;
 };
 
+export function isEnglishImageLearningRoute(value: unknown): value is EnglishImageLearningRoute {
+  return value === "game" || value === "daily" || value === "classroom" || value === "reading";
+}
+
+export function englishImageRouteLabel(route: EnglishImageRoute): string {
+  if (route === "game") return "遊戲英文";
+  if (route === "daily") return "英文日常";
+  if (route === "classroom") return "課堂英文";
+  if (route === "reading") return "閱讀英文";
+  return "待分類";
+}
+
 function text(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -136,7 +149,7 @@ export function normalizeEnglishImageEntry(
   const blockId = attachments[0]?.blockId ?? "";
   if (!blockId) return null;
   const capturedAt = iso(source.capturedAt, params.capturedAt ?? now);
-  const route: EnglishImageRoute = source.route === "game" || source.route === "daily" || source.route === "classroom" ? source.route : "pending";
+  const route: EnglishImageRoute = isEnglishImageLearningRoute(source.route) ? source.route : "pending";
   const analysisStatus: EnglishImageAnalysisStatus =
     source.analysisStatus === "processing" || source.analysisStatus === "completed" ||
     source.analysisStatus === "needs-review" || source.analysisStatus === "failed"
@@ -152,7 +165,7 @@ export function normalizeEnglishImageEntry(
     id: params.id,
     route,
     status: source.status === "organized" ? "organized" : "inbox",
-    title: text(source.title, 300) || (route === "game" ? "遊戲英文" : route === "daily" ? "英文日常" : route === "classroom" ? "課堂英文" : "待分類英文影像"),
+    title: text(source.title, 300) || (route === "pending" ? "待分類英文影像" : englishImageRouteLabel(route)),
     sourceLabel: text(source.sourceLabel, 300),
     contextNote: text(source.contextNote, 8000),
     ocrText: text(source.ocrText, 30000),

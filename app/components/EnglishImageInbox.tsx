@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { EnglishImageEntry, EnglishImageRoute } from "@/lib/dojo/englishImage";
+import {
+  englishImageRouteLabel,
+  type EnglishImageEntry,
+  type EnglishImageLearningRoute,
+  type EnglishImageRoute,
+} from "@/lib/dojo/englishImage";
 
 async function json<T>(response: Response): Promise<T> {
   const result = await response.json().catch(() => ({}));
@@ -13,7 +18,33 @@ async function json<T>(response: Response): Promise<T> {
 const ROUTES: { key: "all" | EnglishImageRoute; label: string }[] = [
   { key: "all", label: "全部" }, { key: "pending", label: "待分類" },
   { key: "game", label: "遊戲英文" }, { key: "daily", label: "英文日常" }, { key: "classroom", label: "課堂英文" },
+  { key: "reading", label: "閱讀英文" },
 ];
+
+function englishRecordLabel(route: EnglishImageRoute): string {
+  if (route === "classroom") return "課堂回答整理";
+  if (route === "reading") return "英文閱讀摘要";
+  return "英文事件紀錄";
+}
+
+function contextRoomCopy(route: EnglishImageRoute) {
+  if (route === "classroom") return {
+    heading: "建立課堂練習", materialLabel: "課堂／主題", materialPlaceholder: "例如：英文課堂・工作描述",
+    eventLabel: "這次課堂任務", eventPlaceholder: "例如：使用三種時態介紹工作",
+  };
+  if (route === "game") return {
+    heading: "建立遊戲事件", materialLabel: "素材專案／遊戲名稱", materialPlaceholder: "例如：Animal Crossing",
+    eventLabel: "這次事件名稱", eventPlaceholder: "例如：評論角色的穿搭",
+  };
+  if (route === "reading") return {
+    heading: "建立閱讀批次", materialLabel: "素材專案／書名或文章", materialPlaceholder: "例如：Magic Tree House #1",
+    eventLabel: "本次章節／閱讀範圍", eventPlaceholder: "例如：Chapter 1–2",
+  };
+  return {
+    heading: "建立生活情境", materialLabel: "生活情境／主題", materialPlaceholder: "例如：按摩工作英文",
+    eventLabel: "這次事件名稱", eventPlaceholder: "例如：提醒客人注意腳部水泡",
+  };
+}
 
 type ContextCandidate = {
   key: string;
@@ -103,7 +134,7 @@ export default function EnglishImageInbox() {
     finally { setBusy(null); }
   }
 
-  async function routeAndAnalyze(entry: EnglishImageEntry, route: "game" | "daily" | "classroom") {
+  async function routeAndAnalyze(entry: EnglishImageEntry, route: EnglishImageLearningRoute) {
     if (entry.analysisAttempts > 0 && !window.confirm("這張圖片曾經分析過；再次執行會使用 API 額度，確定要繼續嗎？")) return;
     setBusy(entry.id); setError("");
     try {
@@ -197,18 +228,19 @@ export default function EnglishImageInbox() {
 
   return <div className="english-image-inbox learning-resources">
     <div className="subsection-title"><div><span className="eyebrow">野採・LINE 專屬入口</span><h4>英文影像匣</h4></div><span>{entries.length}</span></div>
-    <p className="muted-note">遊戲畫面、日常照片與課堂教材先留在野採的英文影像區；完成辨識與初步分類後，再決定是否連到修習所。AI 只在分類後分析一次。</p>
+    <p className="muted-note">遊戲畫面、日常照片、課堂教材與英文讀物先留在野採的英文影像區；完成辨識與初步分類後，再決定是否連到修習所。AI 只在分類後分析一次。</p>
     <div className="english-image-tabs">{ROUTES.map((item) => <button key={item.key} className={filter === item.key ? "on" : ""} onClick={() => setFilter(item.key)}>{item.label}</button>)}</div>
     {error && <p className="form-error">{error}</p>}
     {shown.length === 0 ? <p className="muted-note">目前沒有這一類圖片。</p> : shown.map((entry) => {
       const open = editing === entry.id && draft;
+      const contextForm = contextRoomCopy(entry.route);
       return <article className="english-image-card" key={entry.id}>
         <div className={`english-image-gallery ${entry.attachments.length > 1 ? "multiple" : ""}`}>{entry.attachments.map((attachment, index) => <Image key={attachment.blockId} src={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}&index=${index}`} alt={`${entry.title} ${index + 1}`} width={720} height={480} unoptimized />)}</div>
-        <div className="english-image-head"><div><small>{entry.route === "game" ? "遊戲英文" : entry.route === "daily" ? "英文日常" : entry.route === "classroom" ? "課堂英文" : "待分類"}</small><b>{entry.title}</b></div><span className={`analysis-${entry.analysisStatus}`}>{entry.analysisStatus === "completed" ? "AI 已完成" : entry.analysisStatus === "needs-review" ? "需要確認" : entry.analysisStatus === "processing" ? "分析中" : entry.analysisStatus === "failed" ? "分析失敗" : "尚未分析"}</span></div>
+        <div className="english-image-head"><div><small>{englishImageRouteLabel(entry.route)}</small><b>{entry.title}</b></div><span className={`analysis-${entry.analysisStatus}`}>{entry.analysisStatus === "completed" ? "AI 已完成" : entry.analysisStatus === "needs-review" ? "需要確認" : entry.analysisStatus === "processing" ? "分析中" : entry.analysisStatus === "failed" ? "分析失敗" : "尚未分析"}</span></div>
         <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.contextRoomStatus === "synced" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">已送語境修習室・{entry.contextRoomExport?.expressionCount ?? 0} 項 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>VocabForge {entry.vocabForgeExports.length} 字</span>}</div>
         {entry.analysisError && <p className="form-error">{entry.analysisError}</p>}
         {!open ? <>
-          {entry.englishRecord && <div className="english-image-result"><small>{entry.route === "classroom" ? "課堂回答整理" : "英文事件紀錄"}</small><p>{entry.englishRecord}</p></div>}
+          {entry.englishRecord && <div className="english-image-result"><small>{englishRecordLabel(entry.route)}</small><p>{entry.englishRecord}</p></div>}
           {entry.chineseExplanation && <div className="english-image-result"><small>中文理解</small><p>{entry.chineseExplanation}</p></div>}
           {entry.learningPhrases && <details><summary>可學詞句</summary><p>{entry.learningPhrases}</p></details>}
           {entry.vocabularyWords && <details><summary>單字候選</summary><p>{entry.vocabularyWords}</p></details>}
@@ -243,9 +275,9 @@ export default function EnglishImageInbox() {
             <button className="primary" disabled={busy === entry.id || !vocabDraft.vocabBook || vocabDraft.candidateKeys.length === 0} onClick={() => void sendVocabDispatch()}>{busy === entry.id ? "派送中…" : `送出 ${vocabDraft.candidateKeys.length} 字至 VocabForge`}</button>
           </div>}
           {contextDraft?.entryId === entry.id && <div className="english-image-context-dispatch">
-            <div className="english-image-context-head"><div><small>語境修習室</small><h5>{entry.route === "classroom" ? "建立課堂練習" : entry.route === "game" ? "建立遊戲事件" : "建立生活情境"}</h5></div><button className="text-link" onClick={() => setContextDraft(null)}>關閉</button></div>
-            <label>{entry.route === "classroom" ? "課堂／主題" : entry.route === "game" ? "素材專案／遊戲名稱" : "生活情境／主題"}<input className="field" value={contextDraft.materialTitle} onChange={(event) => setContextDraft({ ...contextDraft, materialTitle: event.target.value })} placeholder={entry.route === "classroom" ? "例如：英文課堂・工作描述" : entry.route === "game" ? "例如：Animal Crossing" : "例如：按摩工作英文"} /></label>
-            <label>{entry.route === "classroom" ? "這次課堂任務" : "這次事件名稱"}<input className="field" value={contextDraft.eventTitle} onChange={(event) => setContextDraft({ ...contextDraft, eventTitle: event.target.value })} placeholder={entry.route === "classroom" ? "例如：使用三種時態介紹工作" : "例如：評論角色的穿搭"} /></label>
+            <div className="english-image-context-head"><div><small>語境修習室</small><h5>{contextForm.heading}</h5></div><button className="text-link" onClick={() => setContextDraft(null)}>關閉</button></div>
+            <label>{contextForm.materialLabel}<input className="field" value={contextDraft.materialTitle} onChange={(event) => setContextDraft({ ...contextDraft, materialTitle: event.target.value })} placeholder={contextForm.materialPlaceholder} /></label>
+            <label>{contextForm.eventLabel}<input className="field" value={contextDraft.eventTitle} onChange={(event) => setContextDraft({ ...contextDraft, eventTitle: event.target.value })} placeholder={contextForm.eventPlaceholder} /></label>
             <fieldset>
               <legend>選擇真正想留下的表達（最多 5 項）</legend>
               {contextDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的片語、句型或用法；單一單字不會出現在這裡。</p> : contextDraft.candidates.map((candidate) => {
@@ -260,14 +292,14 @@ export default function EnglishImageInbox() {
             <button className="primary" disabled={busy === entry.id || !contextDraft.materialTitle.trim() || !contextDraft.eventTitle.trim()} onClick={() => void sendContextDispatch()}>{busy === entry.id ? "派送中…" : `建立事件並留下 ${contextDraft.candidateKeys.length} 項表達`}</button>
           </div>}
           {entry.analyzedAt && <small className="english-image-usage">{entry.analysisModel}・{entry.inputTokens + entry.outputTokens} tokens・約 US${entry.estimatedCostUsd.toFixed(4)}</small>}
-          {entry.route === "pending" && <div className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>{busy === entry.id ? "分析中…" : "遊戲英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "daily")}>{busy === entry.id ? "分析中…" : "英文日常並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "classroom")}>{busy === entry.id ? "分析中…" : "課堂英文並分析"}</button></div>}
+          {entry.route === "pending" && <div className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>{busy === entry.id ? "分析中…" : "遊戲英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "daily")}>{busy === entry.id ? "分析中…" : "英文日常並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "classroom")}>{busy === entry.id ? "分析中…" : "課堂英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "reading")}>{busy === entry.id ? "分析中…" : "閱讀英文並分析"}</button></div>}
           <div className="english-image-actions"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>整理</button>{entry.route !== "pending" && <button disabled={busy === entry.id} onClick={() => void action(entry, "analyze")}>{busy === entry.id ? "處理中…" : entry.analysisAttempts ? "重新分析" : "AI 分析"}</button>}<button className="text-link" disabled={busy === entry.id} onClick={() => void action(entry, "moveToCapture")}>轉為一般素材</button></div>
         </> : <div className="english-image-editor">
-          <label>類型</label><select className="field" value={draft.route} onChange={(event) => setDraft({ ...draft, route: event.target.value as EnglishImageRoute })}><option value="pending">待分類</option><option value="game">遊戲英文</option><option value="daily">英文日常</option><option value="classroom">課堂英文</option></select>
-          <label>標題／遊戲或場景</label><input className="field" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
+          <label>類型</label><select className="field" value={draft.route} onChange={(event) => setDraft({ ...draft, route: event.target.value as EnglishImageRoute })}><option value="pending">待分類</option><option value="game">遊戲英文</option><option value="daily">英文日常</option><option value="classroom">課堂英文</option><option value="reading">閱讀英文</option></select>
+          <label>標題／作品或場景</label><input className="field" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
           <label>情境補充</label><textarea className="field" rows={2} value={draft.contextNote} onChange={(event) => setDraft({ ...draft, contextNote: event.target.value })} />
           <label>圖片英文原文</label><textarea className="field" rows={5} value={draft.ocrText} onChange={(event) => setDraft({ ...draft, ocrText: event.target.value })} />
-          <label>英文事件紀錄</label><textarea className="field" rows={4} value={draft.englishRecord} onChange={(event) => setDraft({ ...draft, englishRecord: event.target.value })} />
+          <label>{englishRecordLabel(draft.route)}</label><textarea className="field" rows={4} value={draft.englishRecord} onChange={(event) => setDraft({ ...draft, englishRecord: event.target.value })} />
           <label>中文解釋</label><textarea className="field" rows={4} value={draft.chineseExplanation} onChange={(event) => setDraft({ ...draft, chineseExplanation: event.target.value })} />
           <label>可學詞句</label><textarea className="field" rows={5} value={draft.learningPhrases} onChange={(event) => setDraft({ ...draft, learningPhrases: event.target.value })} />
           <label>單字候選</label><textarea className="field" rows={5} value={draft.vocabularyWords} onChange={(event) => setDraft({ ...draft, vocabularyWords: event.target.value })} />
