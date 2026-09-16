@@ -4,7 +4,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import type { CaptureClipPurpose } from "./formal";
-import { PERMANENT_FOCUS_DECKS, type EnglishImageVocabCandidate, type VocabForgeBook } from "./englishImageDispatch";
+import {
+  normalizeSourceName,
+  PERMANENT_FOCUS_DECKS,
+  type EnglishImageVocabCandidate,
+  type VocabForgeBook,
+} from "./englishImageDispatch";
 
 export type LineWebhookEvent = {
   type: "message" | "postback" | string;
@@ -185,6 +190,24 @@ function quickReplyItem(label: string, data: string): LineQuickReplyItem {
   return { type: "action", action: { type: "postback", label, data, displayText: label } };
 }
 
+const LINE_POSTBACK_DATA_LIMIT = 300;
+
+function boundedPostbackData(params: Record<string, string>, truncatableKey?: string): string {
+  const values = { ...params };
+  let data = new URLSearchParams(values).toString();
+  if (Array.from(data).length <= LINE_POSTBACK_DATA_LIMIT) return data;
+  if (!truncatableKey) throw new Error("LINE postback data exceeds 300 characters");
+
+  const characters = Array.from(values[truncatableKey] ?? "");
+  while (characters.length > 0 && Array.from(data).length > LINE_POSTBACK_DATA_LIMIT) {
+    characters.pop();
+    values[truncatableKey] = characters.join("");
+    data = new URLSearchParams(values).toString();
+  }
+  if (Array.from(data).length > LINE_POSTBACK_DATA_LIMIT) throw new Error("LINE postback data exceeds 300 characters");
+  return data;
+}
+
 function lineLabel(value: string): string {
   return Array.from(value.trim()).slice(0, 20).join("") || "未命名豆倉";
 }
@@ -273,7 +296,7 @@ export function englishImageBookQuickReply(entryId: string, books: VocabForgeBoo
   const safePage = Math.min(Math.max(0, page), lastPage);
   const items = books.slice(safePage * pageSize, (safePage + 1) * pageSize).map((book) => quickReplyItem(
     lineLabel(book.name),
-    new URLSearchParams({ action: "imageVocabBook", entryId, book: book.name }).toString(),
+    boundedPostbackData({ action: "imageVocabBook", entryId, book: book.name }, "book"),
   ));
   if (safePage > 0) items.push(quickReplyItem("上一頁", new URLSearchParams({ action: "imageVocabBooks", entryId, page: String(safePage - 1) }).toString()));
   if (safePage < lastPage) items.push(quickReplyItem("下一頁", new URLSearchParams({ action: "imageVocabBooks", entryId, page: String(safePage + 1) }).toString()));
@@ -282,12 +305,15 @@ export function englishImageBookQuickReply(entryId: string, books: VocabForgeBoo
 }
 
 export function englishImageSourceQuickReply(entryId: string, inferredSource = "") {
-  const commonSources = [inferredSource, "Dragon Quest V", "Zelda", "Chinese Parents", "Animal Crossing"]
-    .map((source) => Array.from(source.trim()).slice(0, 50).join(""))
+  const commonSources = [normalizeSourceName(inferredSource), "Dragon Quest V", "Zelda", "Chinese Parents", "Animal Crossing"]
+    .map((source) => source.trim())
     .filter((source, index, values) => source && values.indexOf(source) === index)
     .slice(0, 5);
   return { items: [
-    ...commonSources.map((source) => quickReplyItem(lineLabel(source), new URLSearchParams({ action: "imageVocabSource", entryId, source }).toString())),
+    ...commonSources.map((source) => quickReplyItem(
+      lineLabel(source),
+      boundedPostbackData({ action: "imageVocabSource", entryId, source }, "source"),
+    )),
     quickReplyItem("輸入其他作品", new URLSearchParams({ action: "imageVocabSourceInput", entryId }).toString()),
     quickReplyItem("取消", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
   ] };
@@ -375,7 +401,20 @@ export async function replyLineMessage(replyToken: string, text: string, quickRe
       })),
     }),
   });
-  if (!response.ok) throw new Error(`LINE 回覆失敗（${response.status}）`);
+  if (!response.ok) {
+    const responseText = (await response.text()).slice(0, 1500);
+    console.error(`[LINE] Reply failed (${response.status}): ${responseText || "No response body"}`);
+    let detail = "";
+    try {
+      const payload = JSON.parse(responseText) as { message?: string; details?: Array<{ message?: string; property?: string }> };
+      detail = payload.details?.map((item) => [item.property, item.message].filter(Boolean).join("：")).filter(Boolean).join("；")
+        || payload.message
+        || "";
+    } catch {
+      detail = responseText;
+    }
+    throw new Error(`LINE 回覆失敗（${response.status}）${detail ? `：${detail}` : ""}`);
+  }
 }
 
 export async function fetchLineImage(messageId: string): Promise<{ bytes: ArrayBuffer; mimeType: string }> {

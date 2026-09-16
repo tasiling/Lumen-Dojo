@@ -27,7 +27,7 @@ export const PERMANENT_FOCUS_DECKS = [
   "影音口語",
 ] as const;
 
-function normalizeSourceName(value: string): string {
+export function normalizeSourceName(value: string): string {
   const name = value.normalize("NFKC").trim().slice(0, 300);
   const compact = name.toLocaleLowerCase("en").replace(/[\s_／/|｜–—-]+/g, "");
   if (/dragonquest(v|5)|勇者鬥惡龍(v|5)|^dqv$/.test(compact)) return "Dragon Quest V";
