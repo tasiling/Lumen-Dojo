@@ -96,9 +96,13 @@ function lineLearningSummary(entry: EnglishImageEntry, intro: string): string {
   return sections.filter(Boolean).join("\n\n");
 }
 
-function forageUrl(): string {
+function forageUrl(englishImageId = ""): string {
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://lumen-dojo.up.railway.app";
-  try { return new URL("/forage", base).toString(); }
+  try {
+    const url = new URL("/forage", base);
+    if (englishImageId) url.searchParams.set("englishImageId", englishImageId);
+    return url.toString();
+  }
   catch { return "https://lumen-dojo.up.railway.app/forage"; }
 }
 
@@ -461,7 +465,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
         if (target === "vocab" || target === "both") {
           const candidates = englishImageVocabCandidates(current);
           if (!candidates.length) {
-            await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。語境內容仍可到野採選擇要加入的既有專案與批次。", target === "both" ? contextRoomQuickReply(current.id, forageUrl()) : englishImageOrganizeQuickReply(current.id));
+            await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。語境內容仍可到野採選擇要加入的既有專案與批次。", target === "both" ? contextRoomQuickReply(current.id, forageUrl(current.id)) : englishImageOrganizeQuickReply(current.id));
             return;
           }
           if ((current.route === "game" || current.route === "reading") && !current.vocabForgeDraft.sourceName) {
@@ -488,7 +492,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
           );
           return;
         }
-        await replyLineMessage(event.replyToken ?? "", "語境素材已備妥。請到野採選擇「加入既有專案」或「建立新專案」；確認後會連同原文、摘要與表達建立新的內容批次。", contextRoomQuickReply(current.id, forageUrl()));
+        await replyLineMessage(event.replyToken ?? "", "語境素材已備妥。請到野採選擇「加入既有專案」或「建立新專案」；確認後會連同原文、摘要與表達建立新的內容批次。", contextRoomQuickReply(current.id, forageUrl(current.id)));
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", `派送尚未完成：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
       }
