@@ -68,6 +68,15 @@ export type EnglishImageContextCandidate = {
   kind: "chunk" | "pattern" | "repair" | "usage";
 };
 
+export type EnglishImageContextProject = {
+  id: string;
+  type: string;
+  title: string;
+  batchCount: number;
+  latestBatchLabel: string;
+  updatedAt: string;
+};
+
 function candidateKey(expression: string): string {
   return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/\s+/g, "_").slice(0, 180);
 }
@@ -142,6 +151,50 @@ function contextRoomSecret(): string {
   return process.env.LUMEN_CONTEXT_ROOM_SYNC_SECRET?.trim() ?? "";
 }
 
+function contextSourceType(entry: EnglishImageEntry): string {
+  return entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image";
+}
+
+function comparableProjectTitle(value: string): string {
+  return value.normalize("NFKC").toLocaleLowerCase("en").replace(/[\s_:：／/|｜–—-]+/g, "");
+}
+
+export async function listEnglishImageContextProjects(entry: EnglishImageEntry): Promise<EnglishImageContextProject[]> {
+  const base = contextRoomBaseUrl();
+  const secret = contextRoomSecret();
+  if (!base || !secret) throw new Error("語境修習室串接尚未完成 Railway 設定");
+  const endpoint = new URL("/api/integrations/lumen/import", base);
+  endpoint.searchParams.set("sourceType", contextSourceType(entry));
+  const response = await fetch(endpoint, {
+    headers: { Authorization: `Bearer ${secret}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
+  });
+  const result = await response.json().catch(() => ({})) as { error?: string; materials?: unknown[] };
+  if (!response.ok) throw new Error(result.error ?? `無法讀取語境修習室素材專案（${response.status}）`);
+  return (result.materials ?? []).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const value = item as Partial<EnglishImageContextProject>;
+    const id = typeof value.id === "string" ? value.id.trim().slice(0, 200) : "";
+    const title = typeof value.title === "string" ? value.title.trim().slice(0, 300) : "";
+    if (!id || !title) return [];
+    return [{
+      id,
+      type: typeof value.type === "string" ? value.type : "",
+      title,
+      batchCount: Math.max(0, Math.floor(Number(value.batchCount) || 0)),
+      latestBatchLabel: typeof value.latestBatchLabel === "string" ? value.latestBatchLabel.trim().slice(0, 300) : "",
+      updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "",
+    }];
+  });
+}
+
+export function suggestedEnglishImageContextProject(entry: EnglishImageEntry, projects: EnglishImageContextProject[]): string {
+  if (entry.contextRoomExport?.materialId && projects.some((item) => item.id === entry.contextRoomExport?.materialId)) return entry.contextRoomExport.materialId;
+  const expected = comparableProjectTitle(entry.sourceLabel || entry.vocabForgeDraft.sourceName || entry.title);
+  return projects.find((item) => comparableProjectTitle(item.title) === expected)?.id || "";
+}
+
 export async function prepareEnglishImageForContextRoom(id: string): Promise<EnglishImageEntry> {
   const { entry } = await getEnglishImageEntry(id);
   if (!entry.englishRecord.trim() && !entry.ocrText.trim()) throw new Error("請先完成 AI 分析或補上英文原文");
@@ -162,6 +215,7 @@ export async function prepareEnglishImageForContextRoom(id: string): Promise<Eng
 
 export async function exportEnglishImageContext(params: {
   id: string;
+  materialId?: string;
   materialTitle: string;
   eventTitle: string;
   candidateKeys: string[];
@@ -187,6 +241,7 @@ export async function exportEnglishImageContext(params: {
     body: JSON.stringify({
       sourceRecordId: entry.id,
       sourceType: entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image",
+      materialId: params.materialId?.trim().slice(0, 200) || undefined,
       materialTitle,
       eventTitle,
       capturedOn: entry.capturedAt.slice(0, 10),
@@ -204,18 +259,25 @@ export async function exportEnglishImageContext(params: {
     error?: string;
     materialId?: string;
     batchId?: string;
+    materialTitle?: string;
+    batchPosition?: number;
+    materialReused?: boolean;
     expressionCount?: number;
     duplicate?: boolean;
   };
   if (!response.ok) throw new Error(result.error ?? `語境修習室接收失敗（${response.status}）`);
   if (!result.materialId || !result.batchId) throw new Error("語境修習室回傳的接收結果不完整");
-  const contextRoomUrl = base.replace(/\/$/, "");
+  const contextRoomUrl = new URL(base.replace(/\/$/, ""));
+  contextRoomUrl.searchParams.set("materialId", result.materialId);
+  contextRoomUrl.searchParams.set("batchId", result.batchId);
   const contextRoomExport: EnglishImageContextExport = {
     sourceRecordId: entry.id,
     materialId: result.materialId,
     batchId: result.batchId,
-    materialTitle,
+    materialTitle: result.materialTitle?.trim().slice(0, 300) || materialTitle,
     eventTitle,
+    batchPosition: Math.max(1, Math.floor(Number(result.batchPosition) || 1)),
+    materialReused: result.materialReused === true,
     expressionCount: Math.max(0, Math.floor(Number(result.expressionCount) || 0)),
     duplicate: result.duplicate === true,
     syncedAt: new Date().toISOString(),
@@ -224,7 +286,7 @@ export async function exportEnglishImageContext(params: {
     ...entry,
     contextRoomStatus: "synced",
     contextRoomPreparedAt: contextRoomExport.syncedAt,
-    contextRoomUrl,
+    contextRoomUrl: contextRoomUrl.toString(),
     contextRoomExport,
   });
 }

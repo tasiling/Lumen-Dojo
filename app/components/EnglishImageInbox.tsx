@@ -37,7 +37,7 @@ function contextRoomCopy(route: EnglishImageRoute) {
     eventLabel: "這次事件名稱", eventPlaceholder: "例如：評論角色的穿搭",
   };
   if (route === "reading") return {
-    heading: "建立閱讀批次", materialLabel: "素材專案／書名或文章", materialPlaceholder: "例如：Magic Tree House #1",
+    heading: "加入閱讀批次", materialLabel: "素材專案／書名或文章", materialPlaceholder: "例如：Magic Tree House #1",
     eventLabel: "本次章節／閱讀範圍", eventPlaceholder: "例如：Chapter 1–2",
   };
   return {
@@ -54,12 +54,21 @@ type ContextCandidate = {
   kind: "chunk" | "pattern" | "repair" | "usage";
 };
 
+type ContextProject = {
+  id: string;
+  title: string;
+  batchCount: number;
+  latestBatchLabel: string;
+};
+
 type ContextDispatchDraft = {
   entryId: string;
+  materialId: string;
   materialTitle: string;
   eventTitle: string;
   candidateKeys: string[];
   candidates: ContextCandidate[];
+  projects: ContextProject[];
 };
 
 type VocabCandidate = {
@@ -152,14 +161,18 @@ export default function EnglishImageInbox() {
     try {
       const result = await json<{
         candidates: ContextCandidate[];
-        defaults: { materialTitle: string; eventTitle: string };
+        projects: ContextProject[];
+        defaults: { materialId: string; materialTitle: string; eventTitle: string };
       }>(await fetch(`/api/dojo/english-images/context-room?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" }));
+      const selectedProject = result.projects.find((item) => item.id === result.defaults.materialId);
       setContextDraft({
         entryId: entry.id,
-        materialTitle: result.defaults.materialTitle,
+        materialId: selectedProject?.id || "",
+        materialTitle: selectedProject?.title || result.defaults.materialTitle,
         eventTitle: result.defaults.eventTitle,
         candidateKeys: result.candidates.map((item) => item.key).slice(0, 3),
         candidates: result.candidates,
+        projects: result.projects,
       });
       setVocabDraft(null);
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
@@ -215,6 +228,7 @@ export default function EnglishImageInbox() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: contextDraft.entryId,
+          materialId: contextDraft.materialId,
           materialTitle: contextDraft.materialTitle,
           eventTitle: contextDraft.eventTitle,
           candidateKeys: contextDraft.candidateKeys,
@@ -237,7 +251,7 @@ export default function EnglishImageInbox() {
       return <article className="english-image-card" key={entry.id}>
         <div className={`english-image-gallery ${entry.attachments.length > 1 ? "multiple" : ""}`}>{entry.attachments.map((attachment, index) => <Image key={attachment.blockId} src={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}&index=${index}`} alt={`${entry.title} ${index + 1}`} width={720} height={480} unoptimized />)}</div>
         <div className="english-image-head"><div><small>{englishImageRouteLabel(entry.route)}</small><b>{entry.title}</b></div><span className={`analysis-${entry.analysisStatus}`}>{entry.analysisStatus === "completed" ? "AI 已完成" : entry.analysisStatus === "needs-review" ? "需要確認" : entry.analysisStatus === "processing" ? "分析中" : entry.analysisStatus === "failed" ? "分析失敗" : "尚未分析"}</span></div>
-        <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.contextRoomStatus === "synced" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">已送語境修習室・{entry.contextRoomExport?.expressionCount ?? 0} 項 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>VocabForge {entry.vocabForgeExports.length} 字</span>}</div>
+        <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.contextRoomStatus === "synced" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">已送語境修習室・第 {entry.contextRoomExport?.batchPosition ?? 1} 批 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>VocabForge {entry.vocabForgeExports.length} 字</span>}</div>
         {entry.analysisError && <p className="form-error">{entry.analysisError}</p>}
         {!open ? <>
           {entry.englishRecord && <div className="english-image-result"><small>{englishRecordLabel(entry.route)}</small><p>{entry.englishRecord}</p></div>}
@@ -276,7 +290,21 @@ export default function EnglishImageInbox() {
           </div>}
           {contextDraft?.entryId === entry.id && <div className="english-image-context-dispatch">
             <div className="english-image-context-head"><div><small>語境修習室</small><h5>{contextForm.heading}</h5></div><button className="text-link" onClick={() => setContextDraft(null)}>關閉</button></div>
-            <label>{contextForm.materialLabel}<input className="field" value={contextDraft.materialTitle} onChange={(event) => setContextDraft({ ...contextDraft, materialTitle: event.target.value })} placeholder={contextForm.materialPlaceholder} /></label>
+            <label>加入方式
+              <select className="field" value={contextDraft.materialId || "__new__"} onChange={(event) => {
+                const materialId = event.target.value === "__new__" ? "" : event.target.value;
+                const project = contextDraft.projects.find((item) => item.id === materialId);
+                setContextDraft({ ...contextDraft, materialId, materialTitle: project?.title || contextDraft.materialTitle });
+              }}>
+                <option value="__new__">建立新的素材專案</option>
+                {contextDraft.projects.map((project) => <option key={project.id} value={project.id}>加入「{project.title}」（{project.batchCount} 批）</option>)}
+              </select>
+            </label>
+            {contextDraft.materialId && (() => {
+              const project = contextDraft.projects.find((item) => item.id === contextDraft.materialId);
+              return <p className="muted-note">將建立第 {(project?.batchCount ?? 0) + 1} 批{project?.latestBatchLabel ? `；上一批是「${project.latestBatchLabel}」` : ""}。原有五話題與修習紀錄不受影響。</p>;
+            })()}
+            <label>{contextForm.materialLabel}<input className="field" value={contextDraft.materialTitle} disabled={Boolean(contextDraft.materialId)} onChange={(event) => setContextDraft({ ...contextDraft, materialTitle: event.target.value })} placeholder={contextForm.materialPlaceholder} /></label>
             <label>{contextForm.eventLabel}<input className="field" value={contextDraft.eventTitle} onChange={(event) => setContextDraft({ ...contextDraft, eventTitle: event.target.value })} placeholder={contextForm.eventPlaceholder} /></label>
             <fieldset>
               <legend>選擇真正想留下的表達（最多 5 項）</legend>
@@ -289,7 +317,7 @@ export default function EnglishImageInbox() {
               })}
             </fieldset>
             <p className="muted-note">只會送出你勾選的項目；未勾選的 AI 建議仍留在原始影像紀錄。</p>
-            <button className="primary" disabled={busy === entry.id || !contextDraft.materialTitle.trim() || !contextDraft.eventTitle.trim()} onClick={() => void sendContextDispatch()}>{busy === entry.id ? "派送中…" : `建立事件並留下 ${contextDraft.candidateKeys.length} 項表達`}</button>
+            <button className="primary" disabled={busy === entry.id || !contextDraft.materialTitle.trim() || !contextDraft.eventTitle.trim()} onClick={() => void sendContextDispatch()}>{busy === entry.id ? "派送中…" : contextDraft.materialId ? `加入既有專案，建立新批次` : `建立新專案並留下 ${contextDraft.candidateKeys.length} 項表達`}</button>
           </div>}
           {entry.analyzedAt && <small className="english-image-usage">{entry.analysisModel}・{entry.inputTokens + entry.outputTokens} tokens・約 US${entry.estimatedCostUsd.toFixed(4)}</small>}
           {entry.route === "pending" && <div className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>{busy === entry.id ? "分析中…" : "遊戲英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "daily")}>{busy === entry.id ? "分析中…" : "英文日常並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "classroom")}>{busy === entry.id ? "分析中…" : "課堂英文並分析"}</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "reading")}>{busy === entry.id ? "分析中…" : "閱讀英文並分析"}</button></div>}

@@ -30,6 +30,8 @@ export type EnglishImageContextExport = {
   batchId: string;
   materialTitle: string;
   eventTitle: string;
+  batchPosition: number;
+  materialReused: boolean;
   expressionCount: number;
   duplicate: boolean;
   syncedAt: string;
@@ -216,6 +218,8 @@ export function normalizeEnglishImageEntry(
         batchId,
         materialTitle: text(value.materialTitle, 300),
         eventTitle: text(value.eventTitle, 300),
+        batchPosition: Number.isFinite(value.batchPosition) ? Math.max(1, Math.floor(Number(value.batchPosition))) : 1,
+        materialReused: value.materialReused === true,
         expressionCount: Number.isFinite(value.expressionCount) ? Math.max(0, Math.floor(Number(value.expressionCount))) : 0,
         duplicate: value.duplicate === true,
         syncedAt,
