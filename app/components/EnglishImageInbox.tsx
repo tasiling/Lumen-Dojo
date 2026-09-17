@@ -77,7 +77,12 @@ type VocabCandidate = {
   meaning: string;
 };
 
-type VocabBook = { name: string; count: number };
+type VocabBook = {
+  name: string;
+  count: number;
+  source: "postgres" | "notion";
+  updatedAt: string;
+};
 
 type VocabDispatchDraft = {
   entryId: string;
@@ -282,6 +287,11 @@ export default function EnglishImageInbox() {
                 {vocabDraft.books.map((book) => <option key={book.name} value={book.name}>{book.name}（{book.count} 字）</option>)}
               </select>
             </label>
+            {vocabDraft.books[0]?.source === "postgres" ? (
+              <p className="muted-note">豆倉數量來自 VocabForge PostgreSQL 主詞庫；同一個字可同時計入多個專注豆倉。</p>
+            ) : (
+              <p className="muted-note" style={{ color: "#9a5d24" }}>目前顯示 Notion 備援數量，只計主要豆倉；可選擇並派送，但數量可能與 VocabForge 專注豆倉不同。</p>
+            )}
             <fieldset>
               <legend>選擇真正想複習的單字（每筆素材最多 5 字）</legend>
               {vocabDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的單一英文單字；可以先整理候選內容或重新分析。</p> : vocabDraft.candidates.map((candidate) => {

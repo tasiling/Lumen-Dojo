@@ -16,6 +16,8 @@ export type EnglishImageVocabCandidate = {
 export type VocabForgeBook = {
   name: string;
   count: number;
+  source: "postgres" | "notion";
+  updatedAt: string;
 };
 
 export const PERMANENT_FOCUS_DECKS = [
@@ -313,14 +315,23 @@ async function fetchVocabForgeBooks(): Promise<VocabForgeBook[]> {
     cache: "no-store",
     signal: AbortSignal.timeout(20_000),
   });
-  const result = await response.json().catch(() => ({})) as { error?: string; books?: unknown[] };
+  const result = await response.json().catch(() => ({})) as {
+    error?: string;
+    books?: unknown[];
+    source?: unknown;
+    updatedAt?: unknown;
+  };
   if (!response.ok) throw new Error(result.error ?? `無法讀取 VocabForge 豆倉（${response.status}）`);
   const books = (result.books ?? []).flatMap((item) => {
     if (!item || typeof item !== "object") return [];
-    const value = item as { name?: unknown; count?: unknown };
+    const value = item as { name?: unknown; count?: unknown; source?: unknown; updatedAt?: unknown };
     const name = typeof value.name === "string" ? value.name.trim().slice(0, 200) : "";
     if (!name) return [];
-    return [{ name, count: Number.isFinite(value.count) ? Math.max(0, Math.floor(Number(value.count))) : 0 }];
+    const source: VocabForgeBook["source"] = value.source === "postgres" || result.source === "postgres" ? "postgres" : "notion";
+    const updatedAt = typeof value.updatedAt === "string"
+      ? value.updatedAt
+      : typeof result.updatedAt === "string" ? result.updatedAt : "";
+    return [{ name, count: Number.isFinite(value.count) ? Math.max(0, Math.floor(Number(value.count))) : 0, source, updatedAt }];
   });
   if (!books.length) throw new Error("VocabForge 目前沒有可選擇的豆倉");
   vocabBookCache = { books, expiresAt: Date.now() + VOCAB_BOOK_CACHE_TTL_MS };
