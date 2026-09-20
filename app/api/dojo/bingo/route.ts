@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
         ))]
       : [];
     if (!DATE_RE.test(week)) return NextResponse.json({ error: "週起始日格式不正確" }, { status: 400 });
-    if (body.action !== "remove-cells" || !indexes.length) {
+    if ((body.action !== "remove-cells" && body.action !== "replace-cells") || !indexes.length) {
       return NextResponse.json({ error: "沒有可移除的週盤格子" }, { status: 400 });
     }
     const weekStart = mondayOf(week);
@@ -130,8 +130,9 @@ export async function PATCH(req: NextRequest) {
     await removeUnstartedLearningActivities({ weekStart, cells: selected });
     const next = normalizeWeeklyBoard({
       ...board,
-      version: 2,
+      version: 3,
       colorsConfirmedAt: null,
+      removedTaskHistory: [...board.removedTaskHistory, ...selected].slice(-100),
       cells: board.cells.map((cell) => indexes.includes(cell.index) ? emptyBingoCell(cell.index, weekStart) : cell),
       updatedAt: new Date().toISOString(),
     }, weekStart);

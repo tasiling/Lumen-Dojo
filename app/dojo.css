@@ -1816,11 +1816,30 @@
   font-size: 10px;
 }
 .dojo .bingo-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 5px;
   margin: 14px 0;
 }
+.dojo .bingo-lines {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px #fff4bd);
+}
+.dojo .bingo-lines line {
+  stroke: #d6a63f;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  animation: bingo-line-in .55s ease-out both;
+}
+@keyframes bingo-line-in { from { opacity: 0; stroke-dasharray: 1 120; } to { opacity: .9; stroke-dasharray: 120 0; } }
+@media (prefers-reduced-motion: reduce) { .dojo .bingo-lines line { animation: none; } }
 .dojo .bingo-cell,
 .dojo .bingo-grid textarea {
   width: 100%;
@@ -1854,6 +1873,7 @@
 .dojo .bingo-cell.hobby { border-color: var(--task-hobby); background: var(--task-hobby-soft); }
 .dojo .bingo-cell.health { border-color: var(--task-health); background: var(--task-health-soft); }
 .dojo .bingo-cell.uncolored { border-style: dashed; }
+.dojo .bingo-cell.uncolored:not(.free) { background: #fffdf866; color: #9b8f7d; }
 .dojo .bingo-cell em {
   padding: 2px 4px;
   border-radius: 999px;
@@ -1870,6 +1890,8 @@
   box-shadow: inset 0 0 0 2px #4d6557;
   font-weight: 800;
 }
+.dojo .bingo-cell.partial { box-shadow: inset 0 0 0 2px #bc9250; }
+.dojo .bingo-cell.empty-cell { border-style: dashed; background: #fffdf855; }
 .dojo .bingo-cell.free {
   background: #4d6557;
   border-color: #4d6557;
@@ -1967,6 +1989,34 @@
   gap: 7px;
   margin-bottom: 10px;
 }
+.dojo .cell-move-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; margin: 0 0 10px; }
+
+.dojo .weekly-template-library { padding: 0; overflow: hidden; }
+.dojo .weekly-template-body { padding: 12px; }
+.dojo .weekly-template-body > p { margin: 0 0 10px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.dojo .weekly-template-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; margin-bottom: 9px; }
+.dojo .weekly-template-tabs button.on,
+.dojo .template-filter-row button.on { border-color: #6a8069; background: #e9f0e7; color: #3f5b43; font-weight: 800; }
+.dojo .template-filter-row { display: flex; gap: 5px; margin: 8px 0; overflow-x: auto; scrollbar-width: none; }
+.dojo .template-filter-row button { flex: 0 0 auto; min-height: 34px; padding: 5px 9px; font-size: 10px; }
+.dojo .bundle-button { width: 100%; margin-bottom: 8px; border-color: #c99c45; background: #fff8e7; color: #785c28; }
+.dojo .template-project-note { display: block; margin: 7px 0; color: #8b6638; line-height: 1.5; }
+.dojo .template-pick-list { display: grid; gap: 6px; max-height: 52vh; overflow-y: auto; }
+.dojo .template-pick-list article { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fffdf8; }
+.dojo .template-pick-list article.selected { border-color: #789078; background: #f2f6ef; }
+.dojo .template-pick-main { width: 100%; display: grid; grid-template-columns: 22px minmax(0,1fr) auto; gap: 6px; align-items: center; border: 0; background: transparent; text-align: left; }
+.dojo .template-pick-main span { color: #5e795f; font-size: 17px; text-align: center; }
+.dojo .template-pick-main b { overflow-wrap: anywhere; font-size: 11px; }
+.dojo .template-pick-main small { color: var(--muted); font-size: 8px; }
+.dojo .template-preview-edit { display: grid; gap: 5px; padding: 0 8px 8px; }
+.dojo .template-preview-edit .field { margin: 0; min-height: 36px; background: #fff; }
+.dojo .custom-template-editor { display: grid; gap: 8px; }
+.dojo .custom-template-editor label { font-size: 10px; font-weight: 750; }
+.dojo .custom-template-editor .field { margin: 4px 0 0; background: #fff; }
+.dojo .template-selection-bar { position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 9px; padding: 8px; border-radius: 12px; background: #354f3feF; color: #fff; z-index: 4; }
+.dojo .template-manage-toggle { width: 100%; margin-top: 9px; }
+.dojo .template-manage-list { display: grid; gap: 5px; margin-top: 7px; }
+.dojo .template-manage-list > div { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; align-items: center; padding: 7px; border-bottom: 1px solid var(--line); font-size: 10px; }
 .dojo .danger-button,
 .dojo button.danger-button {
   border-color: #cf8e87;

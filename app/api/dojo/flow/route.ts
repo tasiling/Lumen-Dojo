@@ -92,7 +92,7 @@ async function completeTask(body: Record<string, unknown>) {
     const cell = board.cells[task.origin.cellIndex];
     if (cell && task.origin.cellIndex !== 12) {
       if (completed && cell.completion.requiresEvidence && !task.result.trim()) {
-        return NextResponse.json({ error: "請先在完成後紀錄中留下實際使用情境與對方反應" }, { status: 409 });
+        return NextResponse.json({ error: "請先留下這次實際完成的成果" }, { status: 409 });
       }
       const delta = completed === wasCompleted ? 0 : completed ? 1 : -1;
       cell.completion.progress = Math.max(0, Math.min(cell.completion.target, cell.completion.progress + delta));
@@ -127,7 +127,7 @@ async function progressBingo(body: Record<string, unknown>) {
   const evidence = typeof body.evidenceNote === "string" ? body.evidenceNote.trim().slice(0, 2000) : cell.evidenceNote;
   const nextProgress = Math.max(0, Math.min(cell.completion.target, cell.completion.progress + direction));
   if (direction > 0 && nextProgress >= cell.completion.target && cell.completion.requiresEvidence && !evidence) {
-    return NextResponse.json({ error: "完成這一格前，請先留下工作實際使用紀錄" }, { status: 409 });
+    return NextResponse.json({ error: "完成這一格前，請先留下實際成果" }, { status: 409 });
   }
   cell.completion.progress = nextProgress;
   cell.evidenceNote = evidence;

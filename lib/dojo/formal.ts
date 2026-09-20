@@ -27,6 +27,7 @@ export { ENGLISH_IMAGE_TITLE_PREFIX };
 
 export const DAILY_TITLE_PREFIX = "行光今日-";
 export const BINGO_TITLE_PREFIX = "行光週盤-";
+export const WEEKLY_TEMPLATE_LIBRARY_TITLE = "行光週盤範本庫-v2";
 export const CALENDAR_TITLE_PREFIX = "行光行程-";
 export const ENTRY_TITLE_PREFIX = "行光紀錄-";
 export const CAPTURE_TITLE_PREFIX = "行光捕捉-";
@@ -38,6 +39,7 @@ export const LIAOJIE_PROJECT_TITLE_PREFIX = "行光聊解企劃-";
 export const FORMAL_STATE_TITLE_PREFIXES = [
   DAILY_TITLE_PREFIX,
   BINGO_TITLE_PREFIX,
+  WEEKLY_TEMPLATE_LIBRARY_TITLE,
   CALENDAR_TITLE_PREFIX,
   ENTRY_TITLE_PREFIX,
   CAPTURE_TITLE_PREFIX,
@@ -162,6 +164,8 @@ export type DailyRecord = {
 
 export type BingoCell = {
   index: number;
+  taskInstanceId: string | null;
+  templateId: string | null;
   text: string;
   shortLabel: string;
   category: DailyTaskCategory | null;
@@ -175,7 +179,7 @@ export type BingoCell = {
     practiceType?: string;
   } | null;
   completion: {
-    mode: "single" | "count";
+    mode: "single" | "count" | "specified" | "free";
     target: number;
     progress: number;
     unit: string;
@@ -183,6 +187,7 @@ export type BingoCell = {
     criteria?: string;
   };
   evidenceNote: string;
+  note: string;
   completed: boolean;
   completedAt: string | null;
   assignedDate: string | null;
@@ -190,14 +195,14 @@ export type BingoCell = {
 };
 
 export type WeeklyBoard = {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   weekStart: string;
   title: string;
   cells: BingoCell[];
   rules: {
     planningDay: 0;
     crossColorLines: boolean;
-    minimumLineColors: 2;
+    minimumLineColors: 1 | 2;
   };
   colorsConfirmedAt: string | null;
   reflection: {
@@ -205,6 +210,8 @@ export type WeeklyBoard = {
     adjustment: string;
     nextFocus: string;
   };
+  removedTaskHistory: BingoCell[];
+  completedLineIds: string[];
   archivedAt: string | null;
   updatedAt: string;
 };
@@ -668,6 +675,8 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
 export function emptyBingoCell(index: number, weekStart: string): BingoCell {
   return {
     index,
+    taskInstanceId: index === 12 ? `free:${weekStart}` : null,
+    templateId: null,
     text: index === 12 ? "自在格" : "",
     shortLabel: "",
     category: null,
@@ -676,6 +685,7 @@ export function emptyBingoCell(index: number, weekStart: string): BingoCell {
     learning: null,
     completion: { mode: "single", target: 1, progress: index === 12 ? 1 : 0, unit: "次", requiresEvidence: false, criteria: "" },
     evidenceNote: "",
+    note: "",
     completed: index === 12,
     completedAt: index === 12 ? weekStart : null,
     assignedDate: null,
@@ -685,13 +695,15 @@ export function emptyBingoCell(index: number, weekStart: string): BingoCell {
 
 export function emptyWeeklyBoard(weekStart: string): WeeklyBoard {
   return {
-    version: 2,
+    version: 3,
     weekStart,
     title: "本週行光盤",
     cells: Array.from({ length: 25 }, (_, index) => emptyBingoCell(index, weekStart)),
-    rules: { planningDay: 0, crossColorLines: true, minimumLineColors: 2 },
+    rules: { planningDay: 0, crossColorLines: true, minimumLineColors: 1 },
     colorsConfirmedAt: null,
     reflection: { brightSpot: "", adjustment: "", nextFocus: "" },
+    removedTaskHistory: [],
+    completedLineIds: [],
     archivedAt: null,
     updatedAt: new Date().toISOString(),
   };
@@ -700,7 +712,8 @@ export function emptyWeeklyBoard(weekStart: string): WeeklyBoard {
 export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string): WeeklyBoard {
   const source = value && typeof value === "object" ? (value as Partial<WeeklyBoard>) : {};
   const base = emptyWeeklyBoard(expectedWeekStart);
-  const isVersionTwo = source.version === 2;
+  const isVersionTwo = source.version === 2 || source.version === 3;
+  const isVersionThree = source.version === 3;
   const incoming = Array.isArray(source.cells) ? source.cells : [];
   const byIndex = new Map<number, Partial<BingoCell>>();
   for (const cell of incoming) {
@@ -731,12 +744,17 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
         }
       : null;
     const completionSource = cell.completion && typeof cell.completion === "object" ? cell.completion : null;
-    const mode: BingoCell["completion"]["mode"] = completionSource?.mode === "count" ? "count" : "single";
+    const mode: BingoCell["completion"]["mode"] =
+      completionSource?.mode === "count" || completionSource?.mode === "specified" || completionSource?.mode === "free"
+        ? completionSource.mode
+        : "single";
     const target = Math.max(1, Math.min(99, Math.round(Number(completionSource?.target) || 1)));
     const legacyProgress = cell.completed ? target : 0;
     const progress = Math.max(0, Math.min(target, Math.round(Number(completionSource?.progress) || legacyProgress)));
     return {
       index: fallback.index,
+      taskInstanceId: nullableString(cell.taskInstanceId) ?? (stringValue(cell.text).trim() ? `legacy:${expectedWeekStart}:${fallback.index}` : null),
+      templateId: nullableString(cell.templateId),
       text: stringValue(cell.text).slice(0, 300),
       shortLabel: stringValue(cell.shortLabel).slice(0, 12),
       category,
@@ -752,6 +770,7 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
         criteria: stringValue(completionSource?.criteria).slice(0, 1000),
       },
       evidenceNote: stringValue(cell.evidenceNote).slice(0, 2000),
+      note: stringValue(cell.note).slice(0, 2000),
       completed: progress >= target,
       completedAt: nullableString(cell.completedAt),
       assignedDate: isDate(cell.assignedDate) ? cell.assignedDate : null,
@@ -763,14 +782,14 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
   });
   const reflection = source.reflection && typeof source.reflection === "object" ? source.reflection : base.reflection;
   return {
-    version: isVersionTwo ? 2 : 1,
+    version: isVersionThree ? 3 : isVersionTwo ? 2 : 1,
     weekStart: expectedWeekStart,
     title: stringValue(source.title, base.title).slice(0, 200),
     cells,
     rules: {
       planningDay: 0,
       crossColorLines: isVersionTwo ? source.rules?.crossColorLines !== false : false,
-      minimumLineColors: 2,
+      minimumLineColors: isVersionThree ? 1 : 2,
     },
     colorsConfirmedAt: nullableString(source.colorsConfirmedAt),
     reflection: {
@@ -778,12 +797,18 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
       adjustment: stringValue(reflection.adjustment).slice(0, 3000),
       nextFocus: stringValue(reflection.nextFocus).slice(0, 3000),
     },
+    removedTaskHistory: Array.isArray(source.removedTaskHistory)
+      ? source.removedTaskHistory.filter((cell): cell is BingoCell => Boolean(cell && typeof cell === "object")).slice(-100)
+      : [],
+    completedLineIds: Array.isArray(source.completedLineIds)
+      ? source.completedLineIds.filter((id): id is string => typeof id === "string").slice(0, 12)
+      : [],
     archivedAt: nullableString(source.archivedAt),
     updatedAt: new Date().toISOString(),
   };
 }
 
-const BINGO_LINES = [
+export const BINGO_LINES = [
   [0, 1, 2, 3, 4],
   [5, 6, 7, 8, 9],
   [10, 11, 12, 13, 14],
@@ -799,10 +824,14 @@ const BINGO_LINES = [
 ] as const;
 
 export function completedBingoLines(board: WeeklyBoard): number {
+  return completedBingoLineIds(board).length;
+}
+
+export function completedBingoLineIds(board: WeeklyBoard): string[] {
   const done = new Set(board.cells.filter((cell) => cell.completed).map((cell) => cell.index));
-  return BINGO_LINES.filter((line) => {
-    if (!line.every((index) => done.has(index))) return false;
-    if (!board.rules.crossColorLines) return true;
+  return BINGO_LINES.flatMap((line, lineIndex) => {
+    if (!line.every((index) => done.has(index))) return [];
+    if (!board.rules.crossColorLines) return [`line-${lineIndex}`];
     const colors = new Set(
       line.flatMap((index) => {
         if (index === 12) return [];
@@ -810,8 +839,8 @@ export function completedBingoLines(board: WeeklyBoard): number {
         return category ? [category] : [];
       })
     );
-    return colors.size >= board.rules.minimumLineColors;
-  }).length;
+    return colors.size >= board.rules.minimumLineColors ? [`line-${lineIndex}`] : [];
+  });
 }
 
 function isSpace(value: unknown): value is SpaceKey {
