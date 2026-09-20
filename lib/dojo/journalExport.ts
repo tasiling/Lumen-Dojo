@@ -42,10 +42,15 @@ export function formatDailyJournalText(params: {
   if (mode === "full" && record) {
     const morning = section("晨間", [
       record.morning.depth ? `晨間層級\n${DEPTH_LABELS[record.morning.depth]}` : null,
-      labeled("今日抉擇", record.morning.intention),
-      record.morning.state ? `此刻狀態\n${record.morning.state}` : null,
-      labeled("今天決定創作的狀態", record.morning.creativeState),
-      labeled("我很感恩的三件事", record.morning.gratitude),
+      labeled("今天的選擇", record.morning.intention),
+      record.morning.capacity ? `今天的行動餘裕\n${{ low: "低", medium: "適中", high: "充足" }[record.morning.capacity]}` : null,
+      labeled("此刻的我", record.morning.selfNote),
+      record.morning.roleSnapshot ? `我正在創現的角色\n${record.morning.roleSnapshot.title}${record.morning.roleSnapshot.traits.length ? ` · ${record.morning.roleSnapshot.traits.join("・")}` : ""}` : null,
+      labeled("來自那個我的一句話", record.morning.roleMessage),
+      labeled("我想對他說", record.morning.roleReply),
+      record.morning.state ? `舊版・此刻狀態\n${record.morning.state}` : null,
+      labeled("舊版・今天決定創作的狀態", record.morning.creativeState),
+      labeled("今天想感謝的人事物", record.morning.gratitude),
       labeled("我的正向肯定句", record.morning.affirmation),
       labeled("我的未來日記", record.morning.futureJournal),
     ]);
@@ -70,16 +75,17 @@ export function formatDailyJournalText(params: {
     // disposition is workflow metadata ("寫下今天", "帶回", ...), not prose
     // the user wrote, so only keep it in the full archival export.
     const highlightLabel = mode === "review"
-      ? "一束光（今日亮點：今天值得記住的美好時刻）"
-      : "一束光";
+      ? "今天的一束光（今天值得留下的時刻）"
+      : "今天的一束光";
     const evening = section("晚間復盤", [
       mode === "full" && record.evening.disposition
         ? `收光選擇\n${DISPOSITION_LABELS[record.evening.disposition]}`
         : null,
       labeled(highlightLabel, record.evening.highlight),
-      labeled("卡住的地方", record.evening.block),
-      labeled("看見了什麼", record.evening.insight),
-      labeled("下一步", record.evening.nextAction),
+      labeled("今天的實踐回望", record.evening.practiceReflection),
+      labeled("今天的卡點與消耗", record.evening.block),
+      labeled("今天的發現", record.evening.insight),
+      labeled("下一次的小調整", record.evening.nextAction),
       record.evening.carryNote.trim()
         ? `帶回${record.evening.carryToDate ? ` ${record.evening.carryToDate}` : "之後"}\n${record.evening.carryNote.trim()}`
         : null,

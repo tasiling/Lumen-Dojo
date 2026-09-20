@@ -85,9 +85,9 @@ type LegacyEnglishJournalPractice = {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SOURCE_HEADER_RE = /^行光(?:日記|每日紀錄)\s*\n日期：\d{4}-\d{2}-\d{2}\s*/;
 const CLOSING_DISPOSITION_ONLY_RE = /^(?:【晚間復盤】\s*)?收光選擇\s*(?:帶回|寫下今天|暫且放下)\s*$/;
-const LUMEN_HIGHLIGHT_LABEL = "一束光（今日亮點：今天值得記住的美好時刻）";
+const LUMEN_HIGHLIGHT_LABEL = "今天的一束光（今天值得留下的時刻）";
 const JOURNAL_SECTION_CONTAINERS = new Set(["晚間復盤", "晨間", "本日三件事", "白天追蹤"]);
-const JOURNAL_FIELD_LABEL_RE = /^(?:晨間層級|今日意圖|今日抉擇|此刻狀態|今天決定創作的狀態|我很感恩的三件事|我的正向肯定句|我的未來日記|一束光(?:（.+）)?|卡住的地方|看見了什麼|下一步|帶回(?:之後|\s+\d{4}-\d{2}-\d{2})?|收光選擇)$/;
+const JOURNAL_FIELD_LABEL_RE = /^(?:晨間層級|今日意圖|今日抉擇|今天的選擇|此刻狀態|舊版・此刻狀態|此刻的我|今天的行動餘裕|我正在創現的角色|來自那個我的一句話|我想對他說|今天決定創作的狀態|舊版・今天決定創作的狀態|我很感恩的三件事|今天想感謝的人事物|我的正向肯定句|我的未來日記|(?:今天的)?一束光(?:（.+）)?|今天的實踐回望|卡住的地方|今天的卡點與消耗|看見了什麼|今天的發現|下一步|下一次的小調整|帶回(?:之後|\s+\d{4}-\d{2}-\d{2})?|收光選擇)$/;
 
 function stringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;

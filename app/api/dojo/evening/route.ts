@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
             ? {
                 depth: null,
                 highlight: "",
+                practiceReflection: "",
                 block: "",
                 insight: "",
                 nextAction: "",
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
             : {
                 depth: null,
                 highlight: "",
+                practiceReflection: "",
                 block: "",
                 insight: "",
                 nextAction: "",

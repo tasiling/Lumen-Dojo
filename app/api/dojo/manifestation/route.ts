@@ -34,12 +34,41 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const profile = normalizeCreativeRole(await req.json());
+    const [body, existingRow] = await Promise.all([
+      req.json(),
+      readJsonRecord(CREATIVE_ROLE_TITLE),
+    ]);
+    const existing = existingRow ? normalizeCreativeRole(existingRow.value) : emptyCreativeRole();
+    const profile = normalizeCreativeRole({
+      ...body,
+      id: existing.id,
+      // Role profile edits must not silently erase the reusable message history.
+      messages: existing.messages,
+    });
     if (!profile.title) return NextResponse.json({ error: "請先寫下創現角色的稱號" }, { status: 400 });
     if (!profile.traits.length) return NextResponse.json({ error: "請選定至少一個核心特質" }, { status: 400 });
     profile.updatedAt = new Date().toISOString();
     await upsertJsonRecord(CREATIVE_ROLE_TITLE, profile);
     return NextResponse.json({ ok: true, profile });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const message = typeof body.message === "string" ? body.message.trim().slice(0, 1000) : "";
+    if (!message) return NextResponse.json({ error: "請先寫下角色想說的話" }, { status: 400 });
+    const existingRow = await readJsonRecord(CREATIVE_ROLE_TITLE);
+    const profile = existingRow ? normalizeCreativeRole(existingRow.value) : emptyCreativeRole();
+    if (!profile.title) return NextResponse.json({ error: "請先在修習所建立創現角色" }, { status: 400 });
+    const duplicate = profile.messages.find((item) => item.text === message);
+    const savedMessage = duplicate ?? { id: crypto.randomUUID(), text: message, createdAt: new Date().toISOString() };
+    profile.messages = duplicate ? profile.messages : [...profile.messages, savedMessage].slice(-50);
+    profile.updatedAt = new Date().toISOString();
+    await upsertJsonRecord(CREATIVE_ROLE_TITLE, profile);
+    return NextResponse.json({ ok: true, profile, message: savedMessage });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }

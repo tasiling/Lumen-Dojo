@@ -55,7 +55,10 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   KNOWLEDGE_CLAIM_TITLE_PREFIX,
 ] as const;
 
-export const TAIPEI_TIME_ZONE = "Asia/Taipei";
+// Keep the dojo day anchored to Taipei time. The environment variable remains available
+// for an intentional deployment-level override, while existing imports keep working.
+export const DOJO_TIME_ZONE = process.env.NEXT_PUBLIC_DOJO_TIME_ZONE ?? "Asia/Taipei";
+export const TAIPEI_TIME_ZONE = DOJO_TIME_ZONE;
 
 export type DailyTaskCategory = "important" | "hobby" | "health";
 
@@ -106,11 +109,23 @@ export const ENGLISH_TOUCH_TYPES: Record<
 };
 
 export type DailyRecord = {
-  version: 1;
+  version: 2;
   date: string;
   morning: {
     depth: MorningDepth | null;
     intention: string;
+    capacity: "low" | "medium" | "high" | null;
+    selfNote: string;
+    roleSnapshot: {
+      id: string;
+      title: string;
+      traits: string[];
+      note: string;
+    } | null;
+    roleMessageId: string | null;
+    roleMessage: string;
+    roleReply: string;
+    // Legacy fields remain readable and writable so old journals never lose content.
     state: "低" | "穩" | "亮" | null;
     creativeState: string;
     gratitude: string;
@@ -132,6 +147,7 @@ export type DailyRecord = {
   evening: {
     depth: EveningDepth | null;
     highlight: string;
+    practiceReflection: string;
     block: string;
     insight: string;
     nextAction: string;
@@ -402,7 +418,7 @@ function isDate(value: unknown): value is string {
 
 export function taipeiTodayISO(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: TAIPEI_TIME_ZONE,
+    timeZone: DOJO_TIME_ZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -464,11 +480,17 @@ function emptyTask(category: DailyTaskCategory): DailyTask {
 
 export function emptyDailyRecord(date = taipeiTodayISO()): DailyRecord {
   return {
-    version: 1,
+    version: 2,
     date,
     morning: {
       depth: null,
       intention: "",
+      capacity: null,
+      selfNote: "",
+      roleSnapshot: null,
+      roleMessageId: null,
+      roleMessage: "",
+      roleReply: "",
       state: null,
       creativeState: "",
       gratitude: "",
@@ -486,6 +508,7 @@ export function emptyDailyRecord(date = taipeiTodayISO()): DailyRecord {
     evening: {
       depth: null,
       highlight: "",
+      practiceReflection: "",
       block: "",
       insight: "",
       nextAction: "",
@@ -545,6 +568,22 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
     : [];
   if (vocabForgeRounds > 0 && !englishTouches.includes("vocabulary")) englishTouches.push("vocabulary");
   const state = morning.state === "低" || morning.state === "穩" || morning.state === "亮" ? morning.state : null;
+  const capacity = morning.capacity === "low" || morning.capacity === "medium" || morning.capacity === "high"
+    ? morning.capacity
+    : state === "低" ? "low" : state === "穩" ? "medium" : state === "亮" ? "high" : null;
+  const rawRoleSnapshot = morning.roleSnapshot && typeof morning.roleSnapshot === "object"
+    ? morning.roleSnapshot as { id?: unknown; title?: unknown; traits?: unknown; note?: unknown }
+    : null;
+  const roleSnapshot = rawRoleSnapshot && stringValue(rawRoleSnapshot.title).trim()
+    ? {
+        id: stringValue(rawRoleSnapshot.id, "primary").slice(0, 120),
+        title: stringValue(rawRoleSnapshot.title).slice(0, 160),
+        traits: Array.isArray(rawRoleSnapshot.traits)
+          ? rawRoleSnapshot.traits.map((item) => stringValue(item).trim().slice(0, 40)).filter(Boolean).slice(0, 3)
+          : [],
+        note: stringValue(rawRoleSnapshot.note).slice(0, 1000),
+      }
+    : null;
   const explicitMorningDepth = morning.depth === "light" || morning.depth === "medium" || morning.depth === "deep"
     ? morning.depth
     : null;
@@ -579,11 +618,17 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
     : [];
 
   return {
-    version: 1,
+    version: 2,
     date: expectedDate,
     morning: {
       depth: explicitMorningDepth ?? legacyMorningDepth,
       intention: stringValue(morning.intention).slice(0, 1000),
+      capacity,
+      selfNote: stringValue(morning.selfNote).slice(0, 2000),
+      roleSnapshot,
+      roleMessageId: nullableString(morning.roleMessageId),
+      roleMessage: stringValue(morning.roleMessage).slice(0, 1000),
+      roleReply: stringValue(morning.roleReply).slice(0, 1000),
       state,
       creativeState: stringValue(morning.creativeState).slice(0, 1000),
       gratitude: stringValue(morning.gratitude).slice(0, 3000),
@@ -606,6 +651,7 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
     evening: {
       depth,
       highlight: stringValue(evening.highlight).slice(0, 3000),
+      practiceReflection: stringValue(evening.practiceReflection).slice(0, 3000),
       block: stringValue(evening.block).slice(0, 3000),
       insight: stringValue(evening.insight).slice(0, 3000),
       nextAction: stringValue(evening.nextAction).slice(0, 1000),
