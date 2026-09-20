@@ -9,6 +9,7 @@ import { SPACES, type SpaceKey } from "@/lib/dojo/constants";
 import type { PersonalContinuation } from "@/lib/dojo/continuations";
 import {
   DAILY_TASK_CATEGORIES,
+  DOJO_TIME_ZONE,
   ENGLISH_TOUCH_TYPES,
   completedBingoLines,
   emptyDailyRecord,
@@ -26,23 +27,30 @@ import type { CreativeRoleProfile } from "@/lib/dojo/manifestation";
 const TASK_ORDER: DailyTaskCategory[] = ["important", "hobby", "health"];
 const ENGLISH_TOUCH_ORDER: EnglishTouchType[] = ["input", "output", "vocabulary", "transfer"];
 const EVENING_FIELDS = {
-  light: ["highlight"],
-  medium: ["highlight", "block"],
-  deep: ["highlight", "block", "insight", "nextAction"],
+  light: ["highlight", "practiceReflection"],
+  medium: ["highlight", "practiceReflection", "block", "insight"],
+  deep: ["highlight", "practiceReflection", "block", "insight", "nextAction"],
 } as const;
 
 const MORNING_DEPTHS: { key: MorningDepth; label: string; note: string }[] = [
-  { key: "light", label: "輕", note: "狀態與定向" },
-  { key: "medium", label: "適中", note: "加上感恩與肯定" },
-  { key: "deep", label: "深入", note: "再寫未來日記" },
+  { key: "light", label: "輕", note: "簡單開始" },
+  { key: "medium", label: "適中", note: "感恩與肯定" },
+  { key: "deep", label: "深入", note: "未來日記" },
 ];
 
 const EVENING_LABELS = {
-  highlight: ["今天的一束光", "今天值得留下的片刻"],
-  block: ["卡住的地方", "哪裡消耗了你？"],
-  insight: ["看見了什麼", "今天多明白了一點什麼？"],
-  nextAction: ["下一步", "下一次想怎麼做？"],
+  highlight: ["今天的一束光", "今天有什麼值得留下的時刻？"],
+  practiceReflection: ["今天的實踐回望", "帶著今天早晨的選擇生活了一天，你經歷了什麼？"],
+  block: ["今天的卡點與消耗", "今天有什麼不太順利，或讓你感到消耗的地方？"],
+  insight: ["今天的發現", "經歷今天之後，你有什麼新的理解？"],
+  nextAction: ["下一次的小調整", "下次遇到類似情況，你想嘗試什麼？"],
 } as const;
+
+const CAPACITY_OPTIONS = [
+  ["low", "低"],
+  ["medium", "適中"],
+  ["high", "充足"],
+] as const;
 
 const REFLECTION_PROMPTS = {
   highlight: ["今天做得好的一件事", "今天經歷的美好時刻", "一個想感謝的人或片刻"],
@@ -100,6 +108,10 @@ export default function TodayPage() {
   const [logText, setLogText] = useState("");
   const [readingVisitCount, setReadingVisitCount] = useState(0);
   const [creativeRole, setCreativeRole] = useState<CreativeRoleProfile | null>(null);
+  const [editingRoleMessage, setEditingRoleMessage] = useState(false);
+  const [saveRoleMessage, setSaveRoleMessage] = useState(true);
+  const [roleMessageFeedback, setRoleMessageFeedback] = useState<string | null>(null);
+  const [reusingChoice, setReusingChoice] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,15 +119,31 @@ export default function TodayPage() {
       setLoading(true);
       setError(null);
       try {
-        const [dailyResponse, boardResponse] = await Promise.all([
+        const [dailyResponse, boardResponse, manifestationResponse] = await Promise.all([
           fetch(`/api/dojo/daily?date=${date}`, { cache: "no-store" }),
           fetch(`/api/dojo/bingo?week=${weekStart}`, { cache: "no-store" }),
+          fetch("/api/dojo/manifestation", { cache: "no-store" }).catch(() => null),
         ]);
         const dailyJson = await readResponse<{ record: DailyRecord }>(dailyResponse);
         const boardJson = await readResponse<{ board: WeeklyBoard }>(boardResponse);
+        const manifestationJson = manifestationResponse?.ok
+          ? await readResponse<{ profile: CreativeRoleProfile }>(manifestationResponse)
+          : null;
         if (!cancelled) {
-          setRecord(dailyJson.record);
+          const profile = manifestationJson?.profile ?? null;
+          const latestMessage = profile?.messages.at(-1);
+          setRecord(latestMessage && !dailyJson.record.morning.roleMessage
+            ? {
+                ...dailyJson.record,
+                morning: {
+                  ...dailyJson.record.morning,
+                  roleMessageId: latestMessage.id,
+                  roleMessage: latestMessage.text,
+                },
+              }
+            : dailyJson.record);
           setBoard(boardJson.board);
+          setCreativeRole(profile);
         }
       } catch (caught) {
         if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
@@ -152,15 +180,6 @@ export default function TodayPage() {
       }
     }
     void loadReadingVisits();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/dojo/manifestation", { cache: "no-store" })
-      .then((response) => readResponse<{ profile: CreativeRoleProfile }>(response))
-      .then(({ profile }) => { if (!cancelled) setCreativeRole(profile); })
-      .catch(() => { /* 創現角色是選用功能，不阻擋今天頁。 */ });
     return () => { cancelled = true; };
   }, []);
 
@@ -280,7 +299,7 @@ export default function TodayPage() {
     if (!text) return;
     const now = new Date();
     const time = new Intl.DateTimeFormat("zh-TW", {
-      timeZone: "Asia/Taipei",
+      timeZone: DOJO_TIME_ZONE,
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
@@ -309,6 +328,111 @@ export default function TodayPage() {
       await persist(next);
     } catch {
       // persist() 已顯示錯誤。
+    }
+  }
+
+  function selectRoleMessage(message: CreativeRoleProfile["messages"][number]) {
+    setRoleMessageFeedback(null);
+    setEditingRoleMessage(false);
+    setRecord((current) => ({
+      ...current,
+      morning: { ...current.morning, roleMessageId: message.id, roleMessage: message.text },
+    }));
+  }
+
+  function reuseLatestRoleMessage() {
+    const latest = creativeRole?.messages.at(-1);
+    if (!latest) {
+      setRoleMessageFeedback("這個角色還沒有保存過留言，可以先寫一句新的話。");
+      setEditingRoleMessage(true);
+      return;
+    }
+    selectRoleMessage(latest);
+    setRoleMessageFeedback("已沿用最近保存的角色留言。");
+  }
+
+  function rotateRoleMessage() {
+    const messages = creativeRole?.messages ?? [];
+    if (!messages.length) {
+      setRoleMessageFeedback("這個角色還沒有其他留言。");
+      setEditingRoleMessage(true);
+      return;
+    }
+    const currentIndex = messages.findIndex((message) =>
+      message.id === record.morning.roleMessageId || message.text === record.morning.roleMessage
+    );
+    const nextIndex = currentIndex < 0 ? messages.length - 1 : (currentIndex - 1 + messages.length) % messages.length;
+    selectRoleMessage(messages[nextIndex]);
+    setRoleMessageFeedback(messages.length === 1 ? "目前只保存了這一句。" : "換成另一句保存過的話了。");
+  }
+
+  async function reuseLastChoice() {
+    setReusingChoice(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/dojo/daily?date=${date}&latestChoiceBefore=1`, { cache: "no-store" });
+      const json = await readResponse<{ latest: { date: string; choice: string } | null }>(response);
+      if (!json.latest) {
+        setNotice("目前還沒有可沿用的過往選擇。");
+        return;
+      }
+      setRecord((current) => ({
+        ...current,
+        morning: { ...current.morning, intention: json.latest?.choice ?? current.morning.intention },
+      }));
+      setNotice(`已帶入 ${json.latest.date} 的選擇；儲存晨間啟動後才會寫入今天。`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setReusingChoice(false);
+    }
+  }
+
+  async function saveMorning() {
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      let roleMessageId = record.morning.roleMessageId;
+      let profile = creativeRole;
+      const roleMessage = record.morning.roleMessage.trim();
+      if (profile?.title && roleMessage && !roleMessageId && saveRoleMessage) {
+        const response = await fetch("/api/dojo/manifestation", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: roleMessage }),
+        });
+        const json = await readResponse<{
+          profile: CreativeRoleProfile;
+          message: CreativeRoleProfile["messages"][number];
+        }>(response);
+        profile = json.profile;
+        roleMessageId = json.message.id;
+        setCreativeRole(json.profile);
+      }
+      const roleSnapshot = record.morning.roleSnapshot ?? (profile?.title ? {
+        id: profile.id,
+        title: profile.title,
+        traits: profile.traits,
+        note: profile.note,
+      } : null);
+      await writeDaily({
+        ...record,
+        morning: {
+          ...record.morning,
+          depth: record.morning.depth ?? "light",
+          roleSnapshot,
+          roleMessageId,
+          roleMessage,
+          startedAt: record.morning.startedAt ?? new Date().toISOString(),
+        },
+      });
+      setEditingRoleMessage(false);
+      setNotice(`晨間${record.morning.depth === "deep" ? "深入" : record.morning.depth === "medium" ? "適中" : "輕量"}模式已存下來。`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -401,6 +525,7 @@ export default function TodayPage() {
     .filter((touch) => record.englishRhythm.touches.includes(touch))
     .map((touch) => ENGLISH_TOUCH_TYPES[touch].label);
   const boardDone = board?.cells.filter((cell) => cell.index !== 12 && cell.completed).length ?? 0;
+  const displayedRole = record.morning.roleSnapshot ?? creativeRole;
   return (
     <section className="screen today-screen">
       <div className="hero today-hero">
@@ -483,43 +608,132 @@ export default function TodayPage() {
               ))}
             </div>
 
-            <label>現在的狀態</label>
-            <div className="segmented three">
-              {(["低", "穩", "亮"] as const).map((state) => (
+            <div className="morning-section-block">
+              <div className="morning-section-title">
+                <b>此刻的我</b>
+                <small>現在的你，正經歷著什麼？</small>
+              </div>
+              <label>今天的行動餘裕</label>
+              <div className="segmented three capacity-picker">
+              {CAPACITY_OPTIONS.map(([capacity, label]) => (
                 <button
                   type="button"
-                  key={state}
-                  className={record.morning.state === state ? "on" : ""}
-                  onClick={() => setRecord({ ...record, morning: { ...record.morning, state } })}
+                  key={capacity}
+                  className={record.morning.capacity === capacity ? "on" : ""}
+                  onClick={() => setRecord((current) => ({
+                    ...current,
+                    morning: { ...current.morning, capacity },
+                  }))}
                 >
-                  {state}
+                  {label}
                 </button>
               ))}
+              </div>
+              <label htmlFor="morning-self-note">此刻的我</label>
+              <textarea
+                id="morning-self-note"
+                className="field compact-field"
+                rows={2}
+                value={record.morning.selfNote}
+                onChange={(event) => setRecord((current) => ({
+                  ...current,
+                  morning: { ...current.morning, selfNote: event.target.value },
+                }))}
+                placeholder="有什麼想對自己說的？（選填）"
+              />
             </div>
 
-            {creativeRole?.title ? <div className="morning-creative-anchor">
-              <div><small>你正在創作</small><b>{creativeRole.title}</b><span>{creativeRole.traits.join("・")}</span></div>
-              <Link href="/practice?manifestation=1">調整角色</Link>
-            </div> : <Link className="morning-creative-setup" href="/practice?manifestation=1">先建立創現角色小檔案 →</Link>}
+            {displayedRole?.title ? (
+              <div className="morning-creative-anchor">
+                <div>
+                  <small>我正在創現的角色</small>
+                  <b>{displayedRole.title}</b>
+                  <span>{displayedRole.traits.join("・")}</span>
+                </div>
+                <div className="role-anchor-actions">
+                  <Link href="/practice?manifestation=1">查看角色</Link>
+                  <Link href="/practice?manifestation=1">調整角色</Link>
+                </div>
+              </div>
+            ) : (
+              <div className="morning-role-empty">
+                <p>還沒有建立創現角色，也可以先完成今天的一般晨間紀錄。</p>
+                <Link className="morning-creative-setup" href="/practice?manifestation=1">前往修習所建立角色 →</Link>
+              </div>
+            )}
 
-            <label htmlFor="morning-creative-state">今天決定創作什麼狀態？</label>
-            <textarea
-              id="morning-creative-state"
-              className="field"
-              value={record.morning.creativeState}
-              onChange={(event) => setRecord({ ...record, morning: { ...record.morning, creativeState: event.target.value } })}
-              placeholder="例如：我決定營造步調放慢、仍能完成一件重要小事的狀態。"
-            />
-            <small className="field-help">如實看見現在，再選擇今天想往哪個狀態靠近。</small>
+            {displayedRole?.title && (
+              <section className="role-message-section">
+                <div className="morning-section-title">
+                  <b>來自那個我的一句話</b>
+                  <small>已經活出這個版本的你，今天想對此刻的自己說什麼？</small>
+                </div>
+                <div className="role-message-card">
+                  <small>{displayedRole.title}</small>
+                  <p>{record.morning.roleMessage || "今天想聽見一句什麼樣的話？"}</p>
+                </div>
+                <div className="role-message-actions">
+                  <button type="button" onClick={() => {
+                    setEditingRoleMessage(true);
+                    setRoleMessageFeedback(null);
+                    setRecord((current) => ({
+                      ...current,
+                      morning: { ...current.morning, roleMessageId: null, roleMessage: "" },
+                    }));
+                  }}>寫一句新留言</button>
+                  <button type="button" onClick={reuseLatestRoleMessage}>沿用之前的留言</button>
+                  <button type="button" onClick={rotateRoleMessage}>換一句想聽的話</button>
+                </div>
+                {editingRoleMessage && (
+                  <div className="role-message-editor">
+                    <textarea
+                      className="field compact-field"
+                      rows={3}
+                      value={record.morning.roleMessage}
+                      onChange={(event) => setRecord((current) => ({
+                        ...current,
+                        morning: { ...current.morning, roleMessageId: null, roleMessage: event.target.value },
+                      }))}
+                      placeholder="保留你自己的語氣：溫柔、幽默、調皮或很日常都可以。"
+                    />
+                    <label className="inline-check">
+                      <input type="checkbox" checked={saveRoleMessage} onChange={(event) => setSaveRoleMessage(event.target.checked)} />
+                      保存到這個角色的留言紀錄
+                    </label>
+                  </div>
+                )}
+                {roleMessageFeedback && <small className="role-message-feedback">{roleMessageFeedback}</small>}
+                <label htmlFor="morning-role-reply">我想對他說（選填）</label>
+                <textarea
+                  id="morning-role-reply"
+                  className="field compact-field"
+                  rows={2}
+                  value={record.morning.roleReply}
+                  onChange={(event) => setRecord((current) => ({
+                    ...current,
+                    morning: { ...current.morning, roleReply: event.target.value },
+                  }))}
+                  placeholder="好啦！我知道啦🤣"
+                />
+              </section>
+            )}
 
-            <label htmlFor="morning-intention">今日抉擇</label>
-            <textarea
-              id="morning-intention"
-              className="field"
-              value={record.morning.intention}
-              onChange={(event) => setRecord({ ...record, morning: { ...record.morning, intention: event.target.value } })}
-              placeholder="為了創作這個版本的自己，今天要做哪個具體選擇？"
-            />
+            <div className="morning-choice-section">
+              <div className="field-heading-row">
+                <label htmlFor="morning-intention">今天的選擇</label>
+                <button type="button" className="text-action" disabled={reusingChoice} onClick={() => void reuseLastChoice()}>
+                  {reusingChoice ? "讀取中…" : "沿用上次的選擇"}
+                </button>
+              </div>
+              <textarea
+                id="morning-intention"
+                className="field"
+                rows={3}
+                value={record.morning.intention}
+                onChange={(event) => setRecord({ ...record, morning: { ...record.morning, intention: event.target.value } })}
+                placeholder="今天，你想如何實踐這個版本的自己？"
+              />
+            </div>
 
             {(record.morning.depth === "medium" || record.morning.depth === "deep") && (
               <section className="morning-layer-fields">
@@ -527,7 +741,7 @@ export default function TodayPage() {
                   <b>中層書寫</b>
                   <small>感恩與肯定句</small>
                 </div>
-                <label htmlFor="morning-gratitude">我很感恩的三件事</label>
+                <label htmlFor="morning-gratitude">今天想感謝的人事物</label>
                 <textarea
                   id="morning-gratitude"
                   className="field"
@@ -536,7 +750,7 @@ export default function TodayPage() {
                     ...current,
                     morning: { ...current.morning, gratitude: event.target.value },
                   }))}
-                  placeholder="想寫多少都可以，不必湊滿三件。"
+                  placeholder="一件、三件或更多件都可以。"
                 />
                 <label htmlFor="morning-affirmation">我的正向肯定句</label>
                 <textarea
@@ -576,16 +790,9 @@ export default function TodayPage() {
               type="button"
               className="primary"
               disabled={saving}
-              onClick={() => void persist({
-                ...record,
-                morning: {
-                  ...record.morning,
-                  depth: record.morning.depth ?? "light",
-                  startedAt: record.morning.startedAt ?? new Date().toISOString(),
-                },
-              }, `晨間${record.morning.depth === "deep" ? "深層" : record.morning.depth === "medium" ? "中層" : "輕層"}已存下來。`)}
+              onClick={() => void saveMorning()}
             >
-              {saving ? "儲存中…" : "儲存晨間啟動"}
+              {saving ? "儲存中…" : "開始今天"}
             </button>
           </section>
 
@@ -760,7 +967,7 @@ export default function TodayPage() {
             <div className="section-heading">
               <div>
                 <span className="eyebrow">晚間收光</span>
-                <h2>今晚想怎麼承接自己？</h2>
+                <h2>今天過得怎麼樣？</h2>
               </div>
               {record.evening.closedAt && <span className="saved-mark">已收光</span>}
             </div>
@@ -801,7 +1008,7 @@ export default function TodayPage() {
             <p className="section-guide">選一種今晚真正需要的收束；三個選項各自有完整流程。</p>
             <div className="closing-choice-grid">
               {([
-                ["journal", "寫下今天", "留下一束光，也可往卡點、洞察與下一步深入"],
+                ["journal", "寫下今天", "留下今天，也可依需要往發現與小調整深入"],
                 ["carry", "帶回", "把一段念頭、問題或下一步帶到指定日期"],
                 ["pause", "暫且放下", "今天到此，不建立待辦或接續"],
               ] as const).map(([choice, label, description]) => (
@@ -837,13 +1044,23 @@ export default function TodayPage() {
             {!eveningFeedback && record.evening.disposition === "journal" && (
               <div className="closing-flow-panel journal" aria-live="polite">
                 <ManifestationMilestoneCapture date={date} />
+                {(record.morning.startedAt || record.morning.intention || record.morning.roleMessage) && (
+                  <div className="evening-morning-context">
+                    <small>今天早晨留下的方向</small>
+                    {record.morning.roleSnapshot?.title && (
+                      <p><b>創現角色</b>{record.morning.roleSnapshot.title}</p>
+                    )}
+                    {record.morning.intention && <p><b>今天的選擇</b>{record.morning.intention}</p>}
+                    {record.morning.roleMessage && <p><b>來自那個我的一句話</b>{record.morning.roleMessage}</p>}
+                  </div>
+                )}
                 <label>今天想回看到多深？</label>
                 <div className="segmented three evening-depth-picker">
                   {([
-                    ["light", "輕"],
-                    ["medium", "適中"],
-                    ["deep", "深入"],
-                  ] as const).map(([depth, label]) => (
+                    ["light", "輕", "留下今天"],
+                    ["medium", "適中", "整理今天"],
+                    ["deep", "深入", "回望與調整"],
+                  ] as const).map(([depth, label, note]) => (
                     <button
                       type="button"
                       key={depth}
@@ -854,7 +1071,8 @@ export default function TodayPage() {
                         evening: { ...current.evening, depth },
                       }))}
                     >
-                      {label}
+                      <b>{label}</b>
+                      <small>{note}</small>
                     </button>
                   ))}
                 </div>

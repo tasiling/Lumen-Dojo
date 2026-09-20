@@ -124,6 +124,11 @@ function hasDailyActivity(record?: DailyRecord) {
   return Boolean(
     record.morning.startedAt ||
     record.morning.intention.trim() ||
+    record.morning.capacity ||
+    record.morning.selfNote.trim() ||
+    record.morning.roleSnapshot ||
+    record.morning.roleMessage.trim() ||
+    record.morning.roleReply.trim() ||
     record.morning.creativeState.trim() ||
     record.morning.gratitude.trim() ||
     record.morning.affirmation.trim() ||
@@ -133,6 +138,7 @@ function hasDailyActivity(record?: DailyRecord) {
     record.daytime.note.trim() ||
     record.evening.closedAt ||
     record.evening.highlight.trim() ||
+    record.evening.practiceReflection.trim() ||
     record.evening.block.trim() ||
     record.evening.insight.trim() ||
     record.evening.nextAction.trim() ||

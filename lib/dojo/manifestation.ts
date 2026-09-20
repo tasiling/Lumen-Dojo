@@ -2,11 +2,19 @@ export const CREATIVE_ROLE_TITLE = "行光創現角色";
 export const MANIFESTATION_MILESTONE_TITLE_PREFIX = "行光創現里程碑-";
 export const CREATIVE_PRACTICE_TITLE_PREFIX = "行光創現修習-";
 
+export type CreativeRoleMessage = {
+  id: string;
+  text: string;
+  createdAt: string;
+};
+
 export type CreativeRoleProfile = {
-  version: 1;
+  version: 2;
+  id: string;
   title: string;
   traits: string[];
   note: string;
+  messages: CreativeRoleMessage[];
   updatedAt: string;
 };
 
@@ -54,7 +62,15 @@ function text(value: unknown, max: number) {
 }
 
 export function emptyCreativeRole(): CreativeRoleProfile {
-  return { version: 1, title: "", traits: [], note: "", updatedAt: new Date().toISOString() };
+  return {
+    version: 2,
+    id: "primary",
+    title: "",
+    traits: [],
+    note: "",
+    messages: [],
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 export function normalizeCreativeRole(value: unknown): CreativeRoleProfile {
@@ -62,11 +78,26 @@ export function normalizeCreativeRole(value: unknown): CreativeRoleProfile {
   const traits = Array.isArray(source.traits)
     ? source.traits.map((item) => text(item, 40)).filter(Boolean).slice(0, 3)
     : [];
+  const messages = Array.isArray(source.messages)
+    ? source.messages.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const message = item as Partial<CreativeRoleMessage>;
+        const messageText = text(message.text, 1000);
+        if (!messageText) return [];
+        return [{
+          id: text(message.id, 120) || crypto.randomUUID(),
+          text: messageText,
+          createdAt: typeof message.createdAt === "string" ? message.createdAt : new Date().toISOString(),
+        }];
+      }).slice(-50)
+    : [];
   return {
-    version: 1,
+    version: 2,
+    id: text(source.id, 120) || "primary",
     title: text(source.title, 160),
     traits: [...new Set(traits)],
     note: text(source.note, 1000),
+    messages,
     updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : new Date().toISOString(),
   };
 }

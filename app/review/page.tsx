@@ -334,6 +334,7 @@ function DailyReviewCard({
   const completed = record ? TASK_ORDER.filter((category) => record.tasks[category].completed).length : 0;
   const hasTasks = Boolean(record && TASK_ORDER.some((category) => record.tasks[category].text));
   const hasMorningNotes = Boolean(record && (
+    record.morning.selfNote || record.morning.roleSnapshot || record.morning.roleMessage || record.morning.roleReply ||
     record.morning.gratitude || record.morning.affirmation || record.morning.futureJournal
   ));
   const oldAnswers = journals.flatMap((journal) =>
@@ -402,7 +403,7 @@ function DailyReviewCard({
           )}
         </div>
         {englishError && <p className="form-error">{englishError}</p>}
-        {(record?.morning.intention || record?.morning.creativeState) && <><h3>晨間創作{morningDepthLabel ? ` · ${morningDepthLabel}` : ""}</h3><div className="review-note-stack">{record.morning.creativeState && <p><b>今天決定創作的狀態</b>{record.morning.creativeState}</p>}{record.morning.intention && <p><b>今日抉擇</b>{record.morning.intention}</p>}</div></>}
+        {(record?.morning.intention || record?.morning.creativeState) && <><h3>晨間啟動{morningDepthLabel ? ` · ${morningDepthLabel}` : ""}</h3><div className="review-note-stack">{record.morning.creativeState && <p><b>舊版・今天決定創作的狀態</b>{record.morning.creativeState}</p>}{record.morning.intention && <p><b>今天的選擇</b>{record.morning.intention}</p>}</div></>}
 
         {milestones.length > 0 && <><h3>創現里程碑</h3><div className="review-milestones">{milestones.map((item) => <article key={item.id}><small>{item.trait}</small><b>{item.action}</b>{item.response && <p>現實回應：{item.response}</p>}{item.reflection && <p>這段進度：{item.reflection}</p>}</article>)}</div></>}
 
@@ -412,7 +413,12 @@ function DailyReviewCard({
           <>
             <h3>晨間筆記</h3>
             <div className="review-reflection">
-              {record?.morning.gratitude && <p><b>我很感恩的三件事</b>{record.morning.gratitude}</p>}
+              {record?.morning.capacity && <p><b>今天的行動餘裕</b>{{ low: "低", medium: "適中", high: "充足" }[record.morning.capacity]}</p>}
+              {record?.morning.selfNote && <p><b>此刻的我</b>{record.morning.selfNote}</p>}
+              {record?.morning.roleSnapshot && <p><b>我正在創現的角色</b>{record.morning.roleSnapshot.title}{record.morning.roleSnapshot.traits.length ? ` · ${record.morning.roleSnapshot.traits.join("・")}` : ""}</p>}
+              {record?.morning.roleMessage && <p><b>來自那個我的一句話</b>{record.morning.roleMessage}</p>}
+              {record?.morning.roleReply && <p><b>我想對他說</b>{record.morning.roleReply}</p>}
+              {record?.morning.gratitude && <p><b>今天想感謝的人事物</b>{record.morning.gratitude}</p>}
               {record?.morning.affirmation && <p><b>我的正向肯定句</b>{record.morning.affirmation}</p>}
               {record?.morning.futureJournal && <p><b>我的未來日記</b>{record.morning.futureJournal}</p>}
             </div>
@@ -472,10 +478,11 @@ function DailyReviewCard({
               {record.evening.disposition && (
                 <p><b>收光選擇</b>{EVENING_DISPOSITION_LABELS[record.evening.disposition]}</p>
               )}
-              {record.evening.highlight && <p><b>一束光</b>{record.evening.highlight}</p>}
-              {record.evening.block && <p><b>卡住的地方</b>{record.evening.block}</p>}
-              {record.evening.insight && <p><b>看見了什麼</b>{record.evening.insight}</p>}
-              {record.evening.nextAction && <p><b>下一步</b>{record.evening.nextAction}</p>}
+              {record.evening.highlight && <p><b>今天的一束光</b>{record.evening.highlight}</p>}
+              {record.evening.practiceReflection && <p><b>今天的實踐回望</b>{record.evening.practiceReflection}</p>}
+              {record.evening.block && <p><b>今天的卡點與消耗</b>{record.evening.block}</p>}
+              {record.evening.insight && <p><b>今天的發現</b>{record.evening.insight}</p>}
+              {record.evening.nextAction && <p><b>下一次的小調整</b>{record.evening.nextAction}</p>}
               {record.evening.carryNote && (
                 <p>
                   <b>帶回 {record.evening.carryToDate ? fmtDate(record.evening.carryToDate) : "之後"}</b>
