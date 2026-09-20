@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "node scripts/setup-line-rich-menu.mjs --allow-failure && next start",
     "line:rich-menu": "node scripts/setup-line-rich-menu.mjs",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:weekly": "node scripts/test-weekly-bingo-v2.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",
