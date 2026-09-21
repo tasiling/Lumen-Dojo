@@ -624,10 +624,11 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
         if (!selectedKeys.length) throw new Error("請先勾選至少一個單字");
         const result = await exportEnglishImageVocabs(entry.id, selectedKeys, focusDecks[0], { focusDecks, sourceName });
         const imported = result.exports.map((item) => `${item.expression}（${item.cefrLevel}）`).join("、");
+        const failed = result.failures.map((item) => item.expression).join("、");
         const updated = await saveEnglishImageEntry({ ...result.entry, vocabForgeDraft: { ...result.entry.vocabForgeDraft, selectedKeys: [] } });
         await replyLineMessage(
           event.replyToken ?? "",
-          `已確認送出 ${result.exports.length} 字：${imported}\n\n來源：${sourceName || "未特別標示"}\n專注豆倉：${focusDecks.join("＋")}\n既有單字會追加這次遇見，不會重設複習進度。`,
+          `${result.exports.length ? `已同步 ${result.exports.length} 字：${imported}` : "這次沒有單字完成同步"}${failed ? `\n同步失敗 ${result.failures.length} 字（候選已保留，可重試）：${failed}` : ""}\n\n來源：${sourceName || "未特別標示"}\n專注豆倉：${focusDecks.join("＋")}\n既有單字會追加這次遇見，不會重設複習進度。`,
           englishImageVocabQuickReply(updated.id, englishImageVocabCandidates(updated), [], updated.vocabForgeExports.map((item) => item.key), updated.contextRoomUrl),
         );
       } catch (error) {
