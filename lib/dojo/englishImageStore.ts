@@ -10,8 +10,10 @@ import {
   englishImageRouteLabel,
   englishImageRecordTitle,
   normalizeEnglishImageEntry,
+  withEnglishImageStatus,
   type EnglishImageEntry,
   type EnglishImageRoute,
+  type EnglishImageStatus,
 } from "./englishImage";
 import { listJsonRecords, updateJsonRecordById } from "./notionStore";
 
@@ -71,6 +73,24 @@ export async function saveEnglishImageEntry(entry: EnglishImageEntry): Promise<E
   if (!normalized) throw new Error("英文影像紀錄無法儲存");
   await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
   return normalized;
+}
+
+export async function updateEnglishImageEntry(
+  id: string,
+  update: (current: EnglishImageEntry) => Partial<EnglishImageEntry>
+): Promise<EnglishImageEntry> {
+  const current = await getEnglishImageEntry(id);
+  const normalized = normalizeEnglishImageEntry(
+    { ...current.entry, ...update(current.entry) },
+    { id, capturedAt: current.entry.capturedAt, touch: true }
+  );
+  if (!normalized) throw new Error("英文影像紀錄無法儲存");
+  await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
+  return normalized;
+}
+
+export async function updateEnglishImageStatus(id: string, status: EnglishImageStatus): Promise<EnglishImageEntry> {
+  return updateEnglishImageEntry(id, (current) => withEnglishImageStatus(current, status));
 }
 
 export async function createEnglishImageEntry(params: {

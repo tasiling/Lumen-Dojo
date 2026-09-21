@@ -115,6 +115,11 @@ export function isEnglishImageLearningRoute(value: unknown): value is EnglishIma
   return value === "game" || value === "daily" || value === "classroom" || value === "reading";
 }
 
+export function withEnglishImageStatus(entry: EnglishImageEntry, status: EnglishImageStatus): EnglishImageEntry {
+  if (entry.mergedIntoId) throw new Error("已合併的子紀錄不能變更整理狀態");
+  return { ...entry, status };
+}
+
 export function englishImageRouteLabel(route: EnglishImageRoute): string {
   if (route === "game") return "遊戲英文";
   if (route === "daily") return "英文日常";
