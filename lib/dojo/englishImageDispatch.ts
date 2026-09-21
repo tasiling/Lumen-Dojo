@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { EnglishImageContextExport, EnglishImageEntry, EnglishImageVocabExport } from "./englishImage";
+import type { EnglishImageContextExport, EnglishImageEntry, EnglishImageVocabExport, EnglishImageVocabSyncState } from "./englishImage";
 import { getEnglishImageEntry, saveEnglishImageEntry } from "./englishImageStore";
 
 export type EnglishImageVocabCandidate = {
@@ -11,6 +11,8 @@ export type EnglishImageVocabCandidate = {
   finalSentence: string;
   cefrLevel: string;
   suggestedFocusDecks: string[];
+  origin: "source" | "extension";
+  recommendationReason: string;
 };
 
 export type VocabForgeBook = {
@@ -18,6 +20,7 @@ export type VocabForgeBook = {
   count: number;
   source: "postgres" | "notion";
   updatedAt: string;
+  countDefinition: "focus_deck_membership";
 };
 
 export const PERMANENT_FOCUS_DECKS = [
@@ -117,6 +120,8 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
       finalSentence: candidate.usage || (entry.englishRecord || entry.ocrText).trim().slice(0, 1900),
       cefrLevel: candidate.cefrLevel,
       suggestedFocusDecks: candidate.suggestedFocusDecks.filter((deck) => PERMANENT_FOCUS_DECKS.includes(deck as typeof PERMANENT_FOCUS_DECKS[number])).slice(0, 2),
+      origin: candidate.origin,
+      recommendationReason: candidate.recommendationReason,
     }];
   });
   if (structured.length) return [...new Map(structured.map((candidate) => [candidate.key, candidate])).values()].slice(0, 5);
@@ -140,6 +145,8 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
       finalSentence: (entry.englishRecord || entry.ocrText).trim().slice(0, 1900),
       cefrLevel: "待確認",
       suggestedFocusDecks: [routeFocusDeck(entry, entry.vocabForgeDraft.sourceName)],
+      origin: "source" as const,
+      recommendationReason: "來自原素材的單字候選",
     }];
   });
   return [...new Map(candidates.map((candidate) => [candidate.key, candidate])).values()].slice(0, 5);
@@ -293,7 +300,7 @@ export async function exportEnglishImageContext(params: {
   });
 }
 
-type ImportResult = { key: string; expression: string; result: "created" | "existing" };
+type ImportResult = { key: string; expression: string; result: "created" | "existing" | "failed"; error?: string };
 
 function vocabForgeEndpoint(pathname: string): URL | null {
   const base = process.env.VOCABFORGE_INTEGRATION_URL?.trim();
@@ -320,6 +327,7 @@ async function fetchVocabForgeBooks(): Promise<VocabForgeBook[]> {
     books?: unknown[];
     source?: unknown;
     updatedAt?: unknown;
+    countDefinition?: unknown;
   };
   if (!response.ok) throw new Error(result.error ?? `無法讀取 VocabForge 豆倉（${response.status}）`);
   const books = (result.books ?? []).flatMap((item) => {
@@ -331,7 +339,7 @@ async function fetchVocabForgeBooks(): Promise<VocabForgeBook[]> {
     const updatedAt = typeof value.updatedAt === "string"
       ? value.updatedAt
       : typeof result.updatedAt === "string" ? result.updatedAt : "";
-    return [{ name, count: Number.isFinite(value.count) ? Math.max(0, Math.floor(Number(value.count))) : 0, source, updatedAt }];
+    return [{ name, count: Number.isFinite(value.count) ? Math.max(0, Math.floor(Number(value.count))) : 0, source, updatedAt, countDefinition: "focus_deck_membership" as const }];
   });
   if (!books.length) throw new Error("VocabForge 目前沒有可選擇的豆倉");
   vocabBookCache = { books, expiresAt: Date.now() + VOCAB_BOOK_CACHE_TTL_MS };
@@ -361,7 +369,7 @@ export async function exportEnglishImageVocabs(
   requestedKeys: string[],
   vocabBook: string,
   options: { focusDecks?: string[]; sourceName?: string } = {},
-): Promise<{ entry: EnglishImageEntry; exports: EnglishImageVocabExport[] }> {
+): Promise<{ entry: EnglishImageEntry; exports: EnglishImageVocabExport[]; failures: EnglishImageVocabSyncState[] }> {
   const endpoint = vocabForgeEndpoint("/api/integrations/lumen/import");
   const secret = vocabForgeSecret();
   if (!endpoint || !secret) throw new Error("VocabForge 串接尚未完成 Railway 設定");
@@ -384,35 +392,67 @@ export async function exportEnglishImageVocabs(
   if (entry.vocabForgeExports.length + pending.length > 5) throw new Error("每筆素材最多送出五個單字，避免詞庫一次增加太多");
 
   if (!pending.length) {
-    return { entry, exports: selected.flatMap((candidate) => existingByKey.get(candidate.key) ?? []) };
+    return { entry, exports: selected.flatMap((candidate) => existingByKey.get(candidate.key) ?? []), failures: [] };
   }
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-    body: JSON.stringify({
-      sourceSystem: "Lumen Dojo",
-      sourceType: entry.route === "game" ? "野採・遊戲英文" : entry.route === "classroom" ? "野採・課堂英文" : entry.route === "reading" ? "野採・閱讀英文" : "野採・英文日常",
-      sourceDate: entry.capturedAt.slice(0, 10),
-      sourceRecordId: entry.id,
-      topicTitle: entry.title,
-      vocabBook: selectedBook,
-      focusDecks,
-      sourceName,
-      sourceContext: entry.contextNote || entry.chineseExplanation,
-      items: pending,
-    }),
-    cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
-  });
+  const attemptAt = new Date().toISOString();
+  const previousStates = new Map(entry.vocabForgeSyncStates.map((item) => [item.key, item]));
+  for (const candidate of pending) {
+    const previous = previousStates.get(candidate.key);
+    previousStates.set(candidate.key, {
+      key: candidate.key,
+      expression: candidate.expression,
+      status: "pending_sync",
+      attempts: (previous?.attempts ?? 0) + 1,
+      lastError: "",
+      updatedAt: attemptAt,
+    });
+  }
+  const workingEntry = await saveEnglishImageEntry({ ...entry, vocabForgeSyncStates: [...previousStates.values()] });
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+      body: JSON.stringify({
+        sourceSystem: "Lumen Dojo",
+        sourceType: entry.route === "game" ? "野採・遊戲英文" : entry.route === "classroom" ? "野採・課堂英文" : entry.route === "reading" ? "野採・閱讀英文" : "野採・英文日常",
+        sourceDate: entry.capturedAt.slice(0, 10),
+        sourceRecordId: entry.id,
+        topicTitle: entry.title,
+        vocabBook: selectedBook,
+        focusDecks,
+        sourceName,
+        sourceContext: entry.contextNote || entry.chineseExplanation,
+        items: pending,
+      }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    for (const candidate of pending) previousStates.set(candidate.key, { ...previousStates.get(candidate.key)!, status: "failed", lastError: message, updatedAt: new Date().toISOString() });
+    await saveEnglishImageEntry({ ...workingEntry, vocabForgeSyncStates: [...previousStates.values()] });
+    throw error;
+  }
   const result = await response.json().catch(() => ({})) as { error?: string; items?: Array<ImportResult & { vocabBook?: string }> };
-  if (!response.ok) throw new Error(result.error ?? `VocabForge 接收失敗（${response.status}）`);
+  if (!response.ok) {
+    const message = result.error ?? `VocabForge 接收失敗（${response.status}）`;
+    for (const candidate of pending) previousStates.set(candidate.key, { ...previousStates.get(candidate.key)!, status: "failed", lastError: message, updatedAt: new Date().toISOString() });
+    await saveEnglishImageEntry({ ...workingEntry, vocabForgeSyncStates: [...previousStates.values()] });
+    throw new Error(message);
+  }
   const now = new Date().toISOString();
   const importedByKey = new Map((result.items ?? []).map((item) => [item.key, item]));
-  const newExports = pending.map((candidate): EnglishImageVocabExport => {
+  const newExports = pending.flatMap((candidate): EnglishImageVocabExport[] => {
     const imported = importedByKey.get(candidate.key);
-    if (!imported || (imported.result !== "created" && imported.result !== "existing")) throw new Error("VocabForge 回傳的接收結果不完整");
-    return {
+    if (!imported || imported.result === "failed") {
+      previousStates.set(candidate.key, { ...previousStates.get(candidate.key)!, status: "failed", lastError: imported?.error || "VocabForge 未回傳此單字的結果", updatedAt: now });
+      return [];
+    }
+    previousStates.set(candidate.key, { ...previousStates.get(candidate.key)!, status: imported.result === "existing" ? "already_exists" : "synced", lastError: "", updatedAt: now });
+    return [{
       key: candidate.key,
       expression: candidate.expression,
       vocabBook: imported.vocabBook?.trim() || selectedBook,
@@ -421,9 +461,13 @@ export async function exportEnglishImageVocabs(
       cefrLevel: candidate.cefrLevel,
       result: imported.result,
       syncedAt: now,
-    };
+    }];
   });
-  const updated = await saveEnglishImageEntry({ ...entry, vocabForgeExports: [...entry.vocabForgeExports, ...newExports] });
+  const updated = await saveEnglishImageEntry({ ...workingEntry, vocabForgeExports: [...workingEntry.vocabForgeExports, ...newExports], vocabForgeSyncStates: [...previousStates.values()] });
   const updatedByKey = new Map(updated.vocabForgeExports.map((item) => [item.key, item]));
-  return { entry: updated, exports: selected.flatMap((candidate) => updatedByKey.get(candidate.key) ?? []) };
+  return {
+    entry: updated,
+    exports: selected.flatMap((candidate) => updatedByKey.get(candidate.key) ?? []),
+    failures: updated.vocabForgeSyncStates.filter((item) => requested.includes(item.key) && item.status === "failed"),
+  };
 }
