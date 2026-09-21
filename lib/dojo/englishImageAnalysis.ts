@@ -6,6 +6,8 @@ import type { EnglishImageEntry } from "./englishImage";
 const INPUT_USD_PER_MILLION = 0.2;
 const OUTPUT_USD_PER_MILLION = 1.2;
 const ANALYSIS_IMAGE_CHUNK_SIZE = 10;
+const VOCABULARY_KEY_CACHE_MS = 10 * 60_000;
+let vocabularyKeyCache: { keys: string[]; expiresAt: number } | null = null;
 
 type AnalysisResult = {
   sourceLabel: string;
@@ -20,6 +22,8 @@ type AnalysisResult = {
     usage: string;
     cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
     suggestedFocusDecks: string[];
+    origin: "source" | "extension";
+    recommendationReason: string;
   }>;
   confidence: "high" | "medium" | "low";
   needsReview: boolean;
@@ -49,7 +53,7 @@ const ANALYSIS_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["expression", "meaning", "usage", "cefrLevel", "suggestedFocusDecks"],
+        required: ["expression", "meaning", "usage", "cefrLevel", "suggestedFocusDecks", "origin", "recommendationReason"],
         properties: {
           expression: { type: "string" },
           meaning: { type: "string" },
@@ -60,6 +64,8 @@ const ANALYSIS_SCHEMA = {
             maxItems: 2,
             items: { type: "string", enum: ["日常啟動", "按摩工作", "JRPG／冒險遊戲", "生活模擬遊戲", "故事閱讀", "影音口語"] },
           },
+          origin: { type: "string", enum: ["source", "extension"] },
+          recommendationReason: { type: "string" },
         },
       },
     },
@@ -88,7 +94,32 @@ function outputText(payload: Record<string, unknown>): string {
   return "";
 }
 
-function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total: number }): string {
+async function formalVocabularyKeys(): Promise<string[]> {
+  if (vocabularyKeyCache && vocabularyKeyCache.expiresAt > Date.now()) return vocabularyKeyCache.keys;
+  const base = process.env.VOCABFORGE_INTEGRATION_URL?.trim();
+  const secret = process.env.LUMEN_VOCABFORGE_SYNC_SECRET?.trim();
+  if (!base || !secret) return [];
+  try {
+    const response = await fetch(new URL("/api/integrations/lumen/vocabulary-keys", base), {
+      headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
+    });
+    const result = await response.json().catch(() => ({})) as { keys?: unknown[] };
+    if (!response.ok) return [];
+    const keys = (result.keys ?? [])
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/\s+/g, "_").slice(0, 180))
+      .filter(Boolean)
+      .slice(0, 1200);
+    vocabularyKeyCache = { keys: [...new Set(keys)], expiresAt: Date.now() + VOCABULARY_KEY_CACHE_MS };
+    return vocabularyKeyCache.keys;
+  } catch {
+    return [];
+  }
+}
+
+function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total: number }, existingVocabularyKeys: string[] = []): string {
   const context = entry.contextNote ? `\n使用者補充情境：${entry.contextNote}` : "";
   const route = entry.route === "game"
     ? "英文遊戲畫面"
@@ -105,7 +136,17 @@ function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total:
     : entry.route === "reading"
       ? "先依頁碼、章節標題與上下文判斷閱讀順序；若不能確定順序，必須標記需要確認。sourceLabel 只填書名或文章名稱，不要混入本批摘要。englishRecord 請用 B1–B2 英文摘要本批內容；chineseExplanation 要分別整理內容理解、重要文法，以及只需理解但未必值得長期背誦的人名、地名、生物名或專有名詞。"
       : "用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。";
-  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR 難度與 1–2 個常駐專注豆倉建議；閱讀內容優先建議「故事閱讀」，專有名詞除非具有長期學習價值，否則只放在中文解釋，不要列為單字候選；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
+  const recommendationPurpose = entry.route === "game" || entry.route === "reading"
+    ? "主題探索：優先挑能擴展此作品／章節主題理解、且彼此語意不同的詞"
+    : entry.route === "classroom"
+      ? "口說表達：優先挑能實際回答或表達觀點的詞"
+      : /按摩|工作|客人|顧客|massage|client|customer/i.test(`${entry.sourceLabel} ${entry.contextNote}`)
+        ? "工作英文：優先挑工作現場可實際使用的詞"
+        : "一般理解：優先挑真正影響素材理解的詞";
+  const exclusion = existingVocabularyKeys.length
+    ? `以下 canonical keys 已存在正式詞庫，不要再次推薦；若它們出現在原文，仍可在中文解釋中使用：${existingVocabularyKeys.join(", ")}。`
+    : "";
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。這次推薦目的為「${recommendationPurpose}」。${exclusion}同批候選必須依 NFKC 正規化後去重，並兼顧多樣性；不要只反覆推薦 fish、water、ocean 這類過度泛用字，除非它確實是理解素材的關鍵。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR、1–2 個常駐專注豆倉、origin 與 recommendationReason；畫面或 OCR 中確實出現的字標為 source。可加入最多 2 個與使用者目的高度相關、但原素材未出現的單一英文延伸字，必須標為 extension，且在 recommendationReason 清楚說明是延伸推薦，不得冒充原文。閱讀內容優先建議「故事閱讀」，專有名詞除非具有長期學習價值，否則只放在中文解釋，不要列為單字候選；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 async function requestAnalysis(params: {
@@ -150,7 +191,7 @@ async function requestAnalysis(params: {
 }
 
 function synthesisPrompt(entry: EnglishImageEntry, parts: AnalysisResult[]): string {
-  return `以下是同一組 ${entry.attachments.length} 張連續圖片分批辨識後的 JSON。請依批次順序合併成一份完整結果，刪除重複內容，但不要遺漏不同畫面出現的事件或英文。ocrText 保留重要原文；englishRecord 寫成連貫的 B1–B2 紀錄；learningPhrases 與 vocabularyWords 各精選最多 5 項，每行維持「英文｜中文｜簡短用法」。vocabularyCandidates 必須與最後的 vocabularyWords 完全對應，並保留 CEFR 與常駐專注豆倉建議。任何批次信心不足時，整體 needsReview 必須為 true 並說明原因。不可補寫原結果沒有的畫面資訊。\n\n${JSON.stringify(parts)}`;
+  return `以下是同一組 ${entry.attachments.length} 張連續圖片分批辨識後的 JSON。請依批次順序合併成一份完整結果，依 NFKC 正規化後刪除重複候選，但不要遺漏不同畫面出現的事件或英文。ocrText 保留重要原文；englishRecord 寫成連貫的 B1–B2 紀錄；learningPhrases 與 vocabularyWords 各精選最多 5 項，每行維持「英文｜中文｜簡短用法」。vocabularyCandidates 必須與最後的 vocabularyWords 完全對應，並保留 CEFR、常駐專注豆倉、origin 與 recommendationReason；extension 不可改標成 source。任何批次信心不足時，整體 needsReview 必須為 true 並說明原因。不可補寫原結果沒有的畫面資訊。\n\n${JSON.stringify(parts)}`;
 }
 
 export async function analyzeEnglishImage(id: string, options: { force?: boolean } = {}): Promise<EnglishImageEntry> {
@@ -177,6 +218,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
   });
   try {
     const model = process.env.OPENAI_ENGLISH_IMAGE_MODEL ?? "gpt-5.6-luna";
+    const existingVocabularyKeys = await formalVocabularyKeys();
     const chunks: EnglishImageEntry["attachments"][] = [];
     for (let index = 0; index < entry.attachments.length; index += ANALYSIS_IMAGE_CHUNK_SIZE) {
       chunks.push(entry.attachments.slice(index, index + ANALYSIS_IMAGE_CHUNK_SIZE));
@@ -184,7 +226,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
     const partCalls = await Promise.all(chunks.map(async (chunk, index) => requestAnalysis({
       apiKey,
       model,
-      prompt: analysisPrompt(entry, chunks.length > 1 ? { index: index + 1, total: chunks.length } : undefined),
+      prompt: analysisPrompt(entry, chunks.length > 1 ? { index: index + 1, total: chunks.length } : undefined, existingVocabularyKeys),
       images: await Promise.all(chunk.map(englishImageAttachmentBytes)),
     })));
     const finalCall = partCalls.length === 1

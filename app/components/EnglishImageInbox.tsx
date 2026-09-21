@@ -75,6 +75,8 @@ type VocabCandidate = {
   key: string;
   expression: string;
   meaning: string;
+  origin: "source" | "extension";
+  recommendationReason: string;
 };
 
 type VocabBook = {
@@ -82,6 +84,7 @@ type VocabBook = {
   count: number;
   source: "postgres" | "notion";
   updatedAt: string;
+  countDefinition: "focus_deck_membership";
 };
 
 type VocabDispatchDraft = {
@@ -90,6 +93,7 @@ type VocabDispatchDraft = {
   candidateKeys: string[];
   candidates: VocabCandidate[];
   exportedKeys: string[];
+  syncStates: { key: string; status: "pending_sync" | "synced" | "already_exists" | "failed"; lastError: string }[];
   books: VocabBook[];
 };
 
@@ -199,6 +203,7 @@ export default function EnglishImageInbox() {
         candidates: VocabCandidate[];
         books: VocabBook[];
         exports: { key: string; vocabBook: string }[];
+        syncStates: VocabDispatchDraft["syncStates"];
       }>(await fetch(`/api/dojo/english-images/vocabforge?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" }));
       setVocabDraft({
         entryId: entry.id,
@@ -206,6 +211,7 @@ export default function EnglishImageInbox() {
         candidateKeys: [],
         candidates: result.candidates,
         exportedKeys: result.exports.map((item) => item.key),
+        syncStates: result.syncStates,
         books: result.books,
       });
       setContextDraft(null);
@@ -217,7 +223,7 @@ export default function EnglishImageInbox() {
     if (!vocabDraft) return;
     setBusy(vocabDraft.entryId); setError("");
     try {
-      const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images/vocabforge", {
+      const result = await json<{ entry: EnglishImageEntry; failures: { expression: string; lastError: string }[] }>(await fetch("/api/dojo/english-images/vocabforge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -227,6 +233,7 @@ export default function EnglishImageInbox() {
         }),
       }));
       setEntries((old) => old.map((item) => item.id === result.entry.id ? result.entry : item));
+      if (result.failures.length) setError(`${result.failures.length} 個單字尚未同步，可保留候選後重試：${result.failures.map((item) => item.expression).join("、")}`);
       setVocabDraft(null);
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setBusy(null); }
@@ -265,7 +272,7 @@ export default function EnglishImageInbox() {
       return <article id={`english-image-${entry.id}`} className="english-image-card" style={entry.id === targetEntryId ? { borderColor: "#b8812f", boxShadow: "0 0 0 3px rgba(212, 166, 82, .2)" } : undefined} key={entry.id}>
         <div className={`english-image-gallery ${entry.attachments.length > 1 ? "multiple" : ""}`}>{entry.attachments.map((attachment, index) => <Image key={attachment.blockId} src={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}&index=${index}`} alt={`${entry.title} ${index + 1}`} width={720} height={480} unoptimized />)}</div>
         <div className="english-image-head"><div><small>{englishImageRouteLabel(entry.route)}</small><b>{entry.title}</b></div><span className={`analysis-${entry.analysisStatus}`}>{entry.analysisStatus === "completed" ? "AI 已完成" : entry.analysisStatus === "needs-review" ? "需要確認" : entry.analysisStatus === "processing" ? "分析中" : entry.analysisStatus === "failed" ? "分析失敗" : "尚未分析"}</span></div>
-        <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.contextRoomStatus === "synced" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">已送語境修習室・第 {entry.contextRoomExport?.batchPosition ?? 1} 批 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>VocabForge {entry.vocabForgeExports.length} 字</span>}</div>
+        <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.contextRoomStatus === "ready" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境修習室待接續 ↗</a>}{entry.contextRoomStatus === "synced" && <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">已送語境修習室・第 {entry.contextRoomExport?.batchPosition ?? 1} 批 ↗</a>}{entry.vocabForgeExports.length > 0 && <span title={entry.vocabForgeExports.map((item) => item.expression).join("、")}>本素材已同步 {entry.vocabForgeExports.length} 字</span>}{entry.vocabForgeSyncStates.some((item) => item.status === "failed") && <span>同步失敗 {entry.vocabForgeSyncStates.filter((item) => item.status === "failed").length} 字</span>}</div>
         {entry.analysisError && <p className="form-error">{entry.analysisError}</p>}
         {!open ? <>
           {entry.englishRecord && <div className="english-image-result"><small>{englishRecordLabel(entry.route)}</small><p>{entry.englishRecord}</p></div>}
@@ -284,23 +291,24 @@ export default function EnglishImageInbox() {
             <label>選擇豆倉
               <select className="field" value={vocabDraft.vocabBook} onChange={(event) => setVocabDraft({ ...vocabDraft, vocabBook: event.target.value })}>
                 <option value="">請選擇要放入的豆倉</option>
-                {vocabDraft.books.map((book) => <option key={book.name} value={book.name}>{book.name}（{book.count} 字）</option>)}
+                {vocabDraft.books.map((book) => <option key={book.name} value={book.name}>{book.name}（正式詞庫歸屬 {book.count}）</option>)}
               </select>
             </label>
             {vocabDraft.books[0]?.source === "postgres" ? (
-              <p className="muted-note">豆倉數量來自 VocabForge PostgreSQL 主詞庫；同一個字可同時計入多個專注豆倉。</p>
+              <p className="muted-note">數量是 VocabForge PostgreSQL 正式詞庫的「豆倉歸屬」；同一個字可同時計入多個專注豆倉。</p>
             ) : (
-              <p className="muted-note" style={{ color: "#9a5d24" }}>目前顯示 Notion 備援數量，只計主要豆倉；可選擇並派送，但數量可能與 VocabForge 專注豆倉不同。</p>
+              <p className="muted-note" style={{ color: "#9a5d24" }}>目前由 Notion 備援計算「豆倉歸屬」；可選擇並派送，正式存在仍以 VocabForge 接收結果為準。</p>
             )}
             <fieldset>
               <legend>選擇真正想複習的單字（每筆素材最多 5 字）</legend>
               {vocabDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的單一英文單字；可以先整理候選內容或重新分析。</p> : vocabDraft.candidates.map((candidate) => {
                 const exported = vocabDraft.exportedKeys.includes(candidate.key);
+                const syncState = vocabDraft.syncStates.find((item) => item.key === candidate.key);
                 const checked = vocabDraft.candidateKeys.includes(candidate.key);
                 const remaining = Math.max(0, 5 - vocabDraft.exportedKeys.length);
                 return <label className={`english-image-context-choice ${exported ? "is-exported" : ""}`} key={candidate.key}>
                   <input type="checkbox" checked={checked || exported} disabled={exported || (!checked && vocabDraft.candidateKeys.length >= remaining)} onChange={(event) => setVocabDraft({ ...vocabDraft, candidateKeys: event.target.checked ? [...vocabDraft.candidateKeys, candidate.key] : vocabDraft.candidateKeys.filter((key) => key !== candidate.key) })} />
-                  <span><small>{exported ? "已送出" : "單字"}</small><b>{candidate.expression}</b>{candidate.meaning && <em>{candidate.meaning}</em>}</span>
+                  <span><small>{exported ? "已同步" : syncState?.status === "failed" ? "同步失敗・可重試" : syncState?.status === "pending_sync" ? "等待確認" : candidate.origin === "extension" ? "延伸推薦・非原文" : "原素材候選"}</small><b>{candidate.expression}</b>{candidate.meaning && <em>{candidate.meaning}</em>}{candidate.recommendationReason && <i>{candidate.recommendationReason}</i>}{syncState?.status === "failed" && syncState.lastError && <i>{syncState.lastError}</i>}</span>
                 </label>;
               })}
             </fieldset>

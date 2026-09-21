@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
       candidates: englishImageVocabCandidates(entry),
       books,
       exports: entry.vocabForgeExports,
+      syncStates: entry.vocabForgeSyncStates,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

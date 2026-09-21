@@ -24,6 +24,15 @@ export type EnglishImageVocabExport = {
   syncedAt: string;
 };
 
+export type EnglishImageVocabSyncState = {
+  key: string;
+  expression: string;
+  status: "pending_sync" | "synced" | "already_exists" | "failed";
+  attempts: number;
+  lastError: string;
+  updatedAt: string;
+};
+
 export type EnglishImageContextExport = {
   sourceRecordId: string;
   materialId: string;
@@ -66,6 +75,8 @@ export type EnglishImageEntry = {
     usage: string;
     cefrLevel: string;
     suggestedFocusDecks: string[];
+    origin: "source" | "extension";
+    recommendationReason: string;
   }>;
   externalEventId: string;
   externalMessageId: string;
@@ -84,6 +95,7 @@ export type EnglishImageEntry = {
   contextRoomUrl: string;
   contextRoomExport: EnglishImageContextExport | null;
   vocabForgeExports: EnglishImageVocabExport[];
+  vocabForgeSyncStates: EnglishImageVocabSyncState[];
   vocabForgeDraft: EnglishImageVocabDraft;
   analysisStatus: EnglishImageAnalysisStatus;
   analysisConfidence: EnglishImageConfidence;
@@ -188,6 +200,8 @@ export function normalizeEnglishImageEntry(
         suggestedFocusDecks: Array.isArray(value.suggestedFocusDecks)
           ? value.suggestedFocusDecks.map((name) => text(name, 200)).filter(Boolean).slice(0, 2)
           : [],
+        origin: value.origin === "extension" ? "extension" as const : "source" as const,
+        recommendationReason: text(value.recommendationReason, 500),
       }];
     }).slice(0, 5) : [],
     externalEventId: text(source.externalEventId, 200),
@@ -241,6 +255,25 @@ export function normalizeEnglishImageEntry(
         cefrLevel: /^(A1|A2|B1|B2|C1|C2)$/.test(text(value.cefrLevel, 10)) ? text(value.cefrLevel, 10) : "待確認",
         result: value.result === "existing" ? "existing" as const : "created" as const,
         syncedAt,
+      }];
+    }) : [],
+    vocabForgeSyncStates: Array.isArray(source.vocabForgeSyncStates) ? source.vocabForgeSyncStates.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const value = item as Partial<EnglishImageVocabSyncState>;
+      const key = text(value.key, 180);
+      const expression = text(value.expression, 240);
+      const updatedAt = text(value.updatedAt, 80);
+      const status = value.status === "pending_sync" || value.status === "synced" || value.status === "already_exists" || value.status === "failed"
+        ? value.status
+        : null;
+      if (!key || !expression || !status || !updatedAt) return [];
+      return [{
+        key,
+        expression,
+        status,
+        attempts: Number.isFinite(value.attempts) ? Math.max(0, Math.floor(Number(value.attempts))) : 0,
+        lastError: text(value.lastError, 1000),
+        updatedAt,
       }];
     }) : [],
     vocabForgeDraft: (() => {
