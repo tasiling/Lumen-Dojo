@@ -6,6 +6,8 @@ import type { EnglishImageEntry } from "./englishImage";
 const INPUT_USD_PER_MILLION = 0.2;
 const OUTPUT_USD_PER_MILLION = 1.2;
 const ANALYSIS_IMAGE_CHUNK_SIZE = 10;
+const VOCABULARY_KEY_CACHE_MS = 10 * 60_000;
+let vocabularyKeyCache: { keys: string[]; expiresAt: number } | null = null;
 
 type AnalysisResult = {
   sourceLabel: string;
@@ -92,7 +94,32 @@ function outputText(payload: Record<string, unknown>): string {
   return "";
 }
 
-function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total: number }): string {
+async function formalVocabularyKeys(): Promise<string[]> {
+  if (vocabularyKeyCache && vocabularyKeyCache.expiresAt > Date.now()) return vocabularyKeyCache.keys;
+  const base = process.env.VOCABFORGE_INTEGRATION_URL?.trim();
+  const secret = process.env.LUMEN_VOCABFORGE_SYNC_SECRET?.trim();
+  if (!base || !secret) return [];
+  try {
+    const response = await fetch(new URL("/api/integrations/lumen/vocabulary-keys", base), {
+      headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
+    });
+    const result = await response.json().catch(() => ({})) as { keys?: unknown[] };
+    if (!response.ok) return [];
+    const keys = (result.keys ?? [])
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/\s+/g, "_").slice(0, 180))
+      .filter(Boolean)
+      .slice(0, 1200);
+    vocabularyKeyCache = { keys: [...new Set(keys)], expiresAt: Date.now() + VOCABULARY_KEY_CACHE_MS };
+    return vocabularyKeyCache.keys;
+  } catch {
+    return [];
+  }
+}
+
+function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total: number }, existingVocabularyKeys: string[] = []): string {
   const context = entry.contextNote ? `\n使用者補充情境：${entry.contextNote}` : "";
   const route = entry.route === "game"
     ? "英文遊戲畫面"
@@ -116,7 +143,10 @@ function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total:
       : /按摩|工作|客人|顧客|massage|client|customer/i.test(`${entry.sourceLabel} ${entry.contextNote}`)
         ? "工作英文：優先挑工作現場可實際使用的詞"
         : "一般理解：優先挑真正影響素材理解的詞";
-  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。這次推薦目的為「${recommendationPurpose}」。同批候選必須依 NFKC 正規化後去重，並兼顧多樣性；不要只反覆推薦 fish、water、ocean 這類過度泛用字，除非它確實是理解素材的關鍵。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR、1–2 個常駐專注豆倉、origin 與 recommendationReason；畫面或 OCR 中確實出現的字標為 source。可加入最多 2 個與使用者目的高度相關、但原素材未出現的單一英文延伸字，必須標為 extension，且在 recommendationReason 清楚說明是延伸推薦，不得冒充原文。閱讀內容優先建議「故事閱讀」，專有名詞除非具有長期學習價值，否則只放在中文解釋，不要列為單字候選；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
+  const exclusion = existingVocabularyKeys.length
+    ? `以下 canonical keys 已存在正式詞庫，不要再次推薦；若它們出現在原文，仍可在中文解釋中使用：${existingVocabularyKeys.join(", ")}。`
+    : "";
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。這次推薦目的為「${recommendationPurpose}」。${exclusion}同批候選必須依 NFKC 正規化後去重，並兼顧多樣性；不要只反覆推薦 fish、water、ocean 這類過度泛用字，除非它確實是理解素材的關鍵。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR、1–2 個常駐專注豆倉、origin 與 recommendationReason；畫面或 OCR 中確實出現的字標為 source。可加入最多 2 個與使用者目的高度相關、但原素材未出現的單一英文延伸字，必須標為 extension，且在 recommendationReason 清楚說明是延伸推薦，不得冒充原文。閱讀內容優先建議「故事閱讀」，專有名詞除非具有長期學習價值，否則只放在中文解釋，不要列為單字候選；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 async function requestAnalysis(params: {
@@ -188,6 +218,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
   });
   try {
     const model = process.env.OPENAI_ENGLISH_IMAGE_MODEL ?? "gpt-5.6-luna";
+    const existingVocabularyKeys = await formalVocabularyKeys();
     const chunks: EnglishImageEntry["attachments"][] = [];
     for (let index = 0; index < entry.attachments.length; index += ANALYSIS_IMAGE_CHUNK_SIZE) {
       chunks.push(entry.attachments.slice(index, index + ANALYSIS_IMAGE_CHUNK_SIZE));
@@ -195,7 +226,7 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
     const partCalls = await Promise.all(chunks.map(async (chunk, index) => requestAnalysis({
       apiKey,
       model,
-      prompt: analysisPrompt(entry, chunks.length > 1 ? { index: index + 1, total: chunks.length } : undefined),
+      prompt: analysisPrompt(entry, chunks.length > 1 ? { index: index + 1, total: chunks.length } : undefined, existingVocabularyKeys),
       images: await Promise.all(chunk.map(englishImageAttachmentBytes)),
     })));
     const finalCall = partCalls.length === 1
