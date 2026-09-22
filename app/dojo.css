@@ -3829,10 +3829,20 @@
 
 /* LINE 英文影像匣：位於野採、資料仍獨立，保留原圖、AI 結果與人工修訂。 */
 .dojo .english-image-inbox { margin-top: 14px; }
+.dojo .english-image-status-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 12px 0 8px; }
+.dojo .english-image-status-tabs button { min-width: 0; padding: 9px 6px; font-size: 9px; }
+.dojo .english-image-status-tabs button span { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; }
+.dojo .english-image-status-tabs button.on { border-color: var(--practice); background: #eef0df; font-weight: 750; }
 .dojo .english-image-tabs { display: flex; gap: 6px; margin: 10px 0; overflow-x: auto; }
 .dojo .english-image-tabs button { flex: 0 0 auto; padding: 7px 10px; font-size: 9px; }
 .dojo .english-image-tabs button.on { border-color: var(--practice); background: #eef0df; font-weight: 750; }
+.dojo .english-image-batch-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border: 1px solid #d8d0bf; border-radius: 11px; background: #f7f3e9; }
+.dojo .english-image-batch-bar span { color: #665d50; font-size: 9px; font-weight: 750; }
+.dojo .english-image-batch-bar button { min-width: 0; padding: 7px 9px; font-size: 9px; }
+.dojo .english-image-inbox .form-success { margin: 9px 0; padding: 8px 10px; border-radius: 10px; background: #e8f2e5; color: #3f6747; font-size: 9px; }
 .dojo .english-image-card { display: grid; gap: 10px; margin-top: 10px; padding: 11px; border: 1px solid var(--line); border-radius: 14px; background: #fffefa; }
+.dojo .english-image-select { display: flex; align-items: center; gap: 7px; color: #655b4d; font-size: 9px; font-weight: 750; }
+.dojo .english-image-select input { accent-color: #58705d; }
 .dojo .english-image-gallery { display: grid; gap: 7px; }
 .dojo .english-image-gallery.multiple { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .dojo .english-image-gallery img { width: 100%; height: auto; max-height: 440px; object-fit: contain; border-radius: 10px; background: #f3f0e7; }
@@ -3849,6 +3859,7 @@
 .dojo .english-image-destinations { display: flex; flex-wrap: wrap; gap: 5px; }
 .dojo .english-image-destinations span,
 .dojo .english-image-destinations a { padding: 4px 7px; border-radius: 999px; background: #f1ede3; color: #665d50; font-size: 8px; text-decoration: none; }
+.dojo .english-image-destinations span.is-organized { background: #e5efe4; color: #3f6747; }
 .dojo .english-image-result { padding: 9px 10px; border-left: 3px solid #99a777; background: #f4f5e9; }
 .dojo .english-image-result small { color: #66704e; font-size: 8px; font-weight: 750; }
 .dojo .english-image-result p,
@@ -3894,6 +3905,11 @@
 .dojo .english-image-context-choice i { margin-top: 2px; color: #786f62; font-size: 8px; font-style: normal; line-height: 1.45; }
 .dojo .english-image-context-choice i { color: #5e715f; }
 .dojo .english-image-context-choice.is-exported { border-color: #c8d4c5; background: #eef4eb; opacity: .8; }
+.dojo .english-image-completion-prompt { display: grid; gap: 8px; padding: 10px; border: 1px solid #aaba9c; border-radius: 12px; background: #edf4e9; }
+.dojo .english-image-completion-prompt small,
+.dojo .english-image-completion-prompt b { display: block; }
+.dojo .english-image-completion-prompt small { color: #668064; font-size: 8px; font-weight: 750; }
+.dojo .english-image-completion-prompt b { margin-top: 3px; font-size: 10px; }
 
 @media (max-width: 390px) {
   .dojo .english-image-route-buttons { grid-template-columns: 1fr; }

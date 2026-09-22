@@ -1,15 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
-import { isEnglishImageLearningRoute, normalizeEnglishImageEntry } from "@/lib/dojo/englishImage";
+import { isEnglishImageLearningRoute, type EnglishImageEntry, type EnglishImageStatus } from "@/lib/dojo/englishImage";
 import {
   getEnglishImageEntry,
   listEnglishImageEntries,
   moveEnglishImageToCapture,
   routeEnglishImage,
-  saveEnglishImageEntry,
+  updateEnglishImageEntry,
+  updateEnglishImageStatus,
 } from "@/lib/dojo/englishImageStore";
 
 export const dynamic = "force-dynamic";
+
+const EDITABLE_FIELDS = [
+  "route",
+  "title",
+  "sourceLabel",
+  "contextNote",
+  "ocrText",
+  "englishRecord",
+  "chineseExplanation",
+  "learningPhrases",
+  "vocabularyWords",
+] as const satisfies readonly (keyof EnglishImageEntry)[];
+
+function statusFrom(value: unknown): EnglishImageStatus | null {
+  return value === "inbox" || value === "organized" ? value : null;
+}
 
 export async function GET() {
   try { return NextResponse.json({ entries: await listEnglishImageEntries() }); }
@@ -19,12 +36,39 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
+    if (body.action === "batchSetStatus") {
+      const status = statusFrom(body.status);
+      const ids: string[] = [];
+      if (Array.isArray(body.ids)) {
+        for (const value of body.ids) {
+          if (typeof value !== "string") continue;
+          const id = value.trim();
+          if (id && !ids.includes(id)) ids.push(id);
+        }
+      }
+      if (!status) return NextResponse.json({ error: "整理狀態不正確" }, { status: 400 });
+      if (!ids.length) return NextResponse.json({ error: "尚未選取英文影像" }, { status: 400 });
+      if (ids.length > 100) return NextResponse.json({ error: "單次最多批次處理 100 筆英文影像" }, { status: 400 });
+      const entries: EnglishImageEntry[] = [];
+      const failures: { id: string; error: string }[] = [];
+      // Intentionally sequential: Notion writes are rate-limited and each item must fail independently.
+      for (const id of ids) {
+        try { entries.push(await updateEnglishImageStatus(id, status)); }
+        catch (error) { failures.push({ id, error: error instanceof Error ? error.message : String(error) }); }
+      }
+      return NextResponse.json({ entries, failures, succeeded: entries.length, failed: failures.length });
+    }
     const id = typeof body.id === "string" ? body.id : "";
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
-    const current = await getEnglishImageEntry(id);
-    const entry = normalizeEnglishImageEntry({ ...current.entry, ...(body.entry && typeof body.entry === "object" ? body.entry : {}) }, { id, capturedAt: current.entry.capturedAt, touch: true });
-    if (!entry) return NextResponse.json({ error: "英文影像內容不正確" }, { status: 400 });
-    return NextResponse.json({ entry: await saveEnglishImageEntry(entry) });
+    if (body.action === "setStatus") {
+      const status = statusFrom(body.status);
+      if (!status) return NextResponse.json({ error: "整理狀態不正確" }, { status: 400 });
+      return NextResponse.json({ entry: await updateEnglishImageStatus(id, status) });
+    }
+    const requested = body.entry && typeof body.entry === "object" ? body.entry as Partial<EnglishImageEntry> : {};
+    return NextResponse.json({ entry: await updateEnglishImageEntry(id, () => Object.fromEntries(
+      EDITABLE_FIELDS.filter((field) => requested[field] !== undefined).map((field) => [field, requested[field]])
+    ) as Partial<EnglishImageEntry>) });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 }); }
 }
 
