@@ -129,7 +129,7 @@ function CaptureForm() {
             <b>已收進野採的採集匣</b>
             <span>「{saved.title}」已安全保存，可以繼續擷取。</span>
           </div>
-          <Link href="/forage">前往野採整理 →</Link>
+          <Link href={`/forage/captures?captureId=${encodeURIComponent(saved.id)}`}>前往野採整理 →</Link>
         </div>
       )}
 

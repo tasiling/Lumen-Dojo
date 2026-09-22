@@ -1,15 +1,14 @@
-import ModuleDomainPage from "../components/ModuleDomainPage";
-import ForageCaptureInbox from "../components/ForageCaptureInbox";
-import EnglishImageInbox from "../components/EnglishImageInbox";
+import { redirect } from "next/navigation";
+import ForageHome from "../components/ForageHome";
 
-export default function ForagePage() {
-  return (
-    <ModuleDomainPage
-      title="野採"
-      lead="把問題、閱讀、對話與素材撿起來；不必立刻做成作品。"
-      space="forage"
-      defaultKind="野採"
-      extra={<><EnglishImageInbox /><ForageCaptureInbox /></>}
-    />
-  );
+export default async function ForagePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ englishImageId?: string | string[] }>;
+}) {
+  const requested = (await searchParams).englishImageId;
+  const englishImageId = (Array.isArray(requested) ? requested[0] : requested)?.trim();
+  if (englishImageId) redirect(`/forage/english?englishImageId=${encodeURIComponent(englishImageId)}`);
+
+  return <ForageHome />;
 }
