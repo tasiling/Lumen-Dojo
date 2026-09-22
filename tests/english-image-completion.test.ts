@@ -31,6 +31,24 @@ function capture(overrides: Record<string, unknown> = {}) {
 
 const analyzedLegacy = entry({ analysisStatus: "completed" });
 assert.equal(analyzedLegacy.status, "inbox", "AI analysis completion must not infer organization completion");
+assert.deepEqual(analyzedLegacy.vocabularyCandidates, [], "legacy image records remain readable without v2 usage fields");
+
+const contextContractCandidate = entry({
+  vocabularyCandidates: [{
+    expression: "incorrigible",
+    meaning: "屢勸不改的",
+    usage: "His incorrigible behaviour kept causing trouble.",
+    usageTranslation: "他屢勸不改的行為不斷惹出麻煩。",
+    partOfSpeech: "adjective",
+    usageProvenance: "generated",
+    cefrLevel: "C1",
+    suggestedFocusDecks: ["JRPG／冒險遊戲"],
+    origin: "source",
+    recommendationReason: "原始遊戲文字中的重要詞彙",
+  }],
+});
+assert.equal(contextContractCandidate.vocabularyCandidates[0].usageTranslation, "他屢勸不改的行為不斷惹出麻煩。", "usage translation stays separate from source context");
+assert.equal(contextContractCandidate.vocabularyCandidates[0].usageProvenance, "generated", "generated learning examples remain explicitly labelled");
 
 const organized = entry({ status: "organized", analysisStatus: "idle" });
 assert.equal(organized.status, "organized", "existing organized records remain completed");
