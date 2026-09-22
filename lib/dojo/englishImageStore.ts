@@ -252,7 +252,7 @@ export async function moveEnglishImageToCapture(entry: EnglishImageEntry) {
     clip: {
       origin: "line", purpose: "saveFirst", sourceKind: "screenshot", platform: "LINE 截圖",
       externalEventId: entry.externalEventId, externalMessageId: entry.externalMessageId,
-      awaitingScreenshotUntil: null, webPreview: { description: "", imageUrl: "", fetchedAt: null, status: "none" },
+      awaitingScreenshotUntil: null, awaitingReflectionUntil: null, webPreview: { description: "", imageUrl: "", fetchedAt: null, status: "none" },
       attachments: entry.attachments.map((attachment) => ({ id: crypto.randomUUID(), kind: "image" as const, storage: "notion" as const, ...attachment })),
     },
   }, { id: entry.id, capturedAt: entry.capturedAt, touch: true });

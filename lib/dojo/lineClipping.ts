@@ -355,10 +355,22 @@ export function contextRoomQuickReply(entryId: string, url: string) {
 }
 
 export function clipQuickReply(captureId: string, includeScreenshot: boolean) {
-  const items = PURPOSE_ACTIONS.map((purpose) => quickReplyItem(
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://lumen-dojo.up.railway.app";
+  let explorationUrl = `${base.replace(/\/$/, "")}/forage/captures?captureId=${encodeURIComponent(captureId)}`;
+  try {
+    const url = new URL("/forage/captures", base);
+    url.searchParams.set("captureId", captureId);
+    explorationUrl = url.toString();
+  } catch { /* Use the safe fallback above. */ }
+  const items: LineQuickReplyItem[] = [
+    quickReplyItem("補一句感觸", new URLSearchParams({ action: "captureReflectionInput", captureId }).toString()),
+    quickReplyItem("先收下", new URLSearchParams({ action: "captureKeep", captureId }).toString()),
+    uriQuickReplyItem("繼續探索", explorationUrl),
+    ...PURPOSE_ACTIONS.map((purpose) => quickReplyItem(
     purpose.label,
     new URLSearchParams({ action: "purpose", captureId, purpose: purpose.key }).toString()
-  ));
+    )),
+  ];
   if (includeScreenshot) {
     items.push(quickReplyItem("補截圖", new URLSearchParams({ action: "awaitScreenshot", captureId }).toString()));
   }

@@ -14,6 +14,7 @@ import {
 } from "@/lib/dojo/notionStore";
 import { createKnowledgeEntry } from "@/lib/notion/mutations";
 import { getKnowledgeEntry } from "@/lib/notion/queries";
+import { appendCaptureExplorationRecord, saveCaptureInitialReflection } from "@/lib/dojo/captureStore";
 
 export const dynamic = "force-dynamic";
 
@@ -45,11 +46,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "來源網址格式不正確" }, { status: 400 });
     }
 
+    const initialReason = typeof body.forageReason === "string" && body.forageReason.trim()
+      ? body.forageReason.trim()
+      : typeof body.note === "string" ? body.note.trim() : "";
     const capture = normalizeCaptureEntry(
       {
         ...body,
         status: "pending",
-        processingDepth: "raw",
+        processingDepth: initialReason ? "light" : "raw",
         creativeMaturity: "C0",
         sourceKnowledgeMaturity: "K0",
         sourceLocator: "",
@@ -58,7 +62,8 @@ export async function POST(req: NextRequest) {
         knowledgeOrigin: "unknown",
         contentType: null,
         forageSummary: "",
-        forageReason: "",
+        forageReason: initialReason,
+        explorationRecords: [],
         knowledgeLinks: [],
         learningTracks: [],
         destinations: [],
@@ -100,6 +105,21 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.id !== "string") {
       return NextResponse.json({ error: "缺少 id" }, { status: 400 });
     }
+    if (body.action === "setInitialReflection") {
+      const reflection = typeof body.reflection === "string" ? body.reflection : "";
+      return NextResponse.json({ ok: true, capture: await saveCaptureInitialReflection(body.id, reflection) });
+    }
+    if (body.action === "appendExploration") {
+      const clientRecordId = typeof body.clientRecordId === "string" ? body.clientRecordId.trim() : "";
+      const source = body.source === "gpt_import" ? "gpt_import" as const : "manual" as const;
+      if (!clientRecordId) return NextResponse.json({ error: "缺少探索紀錄識別碼" }, { status: 400 });
+      const capture = await appendCaptureExplorationRecord(body.id, {
+        thoughts: typeof body.thoughts === "string" ? body.thoughts : "",
+        keyFinding: typeof body.keyFinding === "string" ? body.keyFinding : "",
+        openQuestions: typeof body.openQuestions === "string" ? body.openQuestions : "",
+      }, { clientRecordId, source });
+      return NextResponse.json({ ok: true, capture });
+    }
     if (!isValidCaptureSourceUrl(body.capture?.sourceUrl)) {
       return NextResponse.json({ error: "來源網址格式不正確" }, { status: 400 });
     }
@@ -113,7 +133,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "既有捕捉內容無法讀取" }, { status: 409 });
     }
 
-    const capture = normalizeCaptureEntry(body.capture, {
+    const requestedCapture = body.capture && typeof body.capture === "object" ? body.capture : {};
+    const capture = normalizeCaptureEntry({
+      ...previous,
+      ...requestedCapture,
+      explorationRecords: Array.isArray(requestedCapture.explorationRecords)
+        ? requestedCapture.explorationRecords
+        : previous.explorationRecords,
+    }, {
       id: body.id,
       capturedAt: previous.capturedAt,
       touch: true,
