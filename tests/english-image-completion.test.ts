@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { normalizeEnglishImageEntry, withEnglishImageStatus } from "../lib/dojo/englishImage";
+import { englishImageStage, filterAndSortEnglishImages, searchEnglishImage } from "../lib/dojo/englishImageInboxView";
 
 function entry(overrides: Record<string, unknown> = {}) {
   return normalizeEnglishImageEntry({
@@ -63,5 +64,36 @@ assert.throws(
   /已合併的子紀錄/,
   "merged child records cannot re-enter visible completion lists"
 );
+
+const waitingForClassification = entry({ id: "classification", route: "pending", title: "待分類圖片" });
+const waitingForAnalysis = entry({ id: "analysis", route: "reading", title: "Magic Tree House", sourceLabel: "Dinosaurs Before Dark", capturedAt: "2026-09-20T00:00:00.000Z" });
+const waitingForDispatch = entry({ id: "dispatch", route: "reading", analysisStatus: "completed", englishRecord: "Jack and Annie found a tree house.", capturedAt: "2026-09-19T00:00:00.000Z" });
+const failedSync = entry({ id: "error", route: "daily", analysisStatus: "completed", vocabForgeSyncStates: [{ key: "blister", expression: "blister", status: "failed", attempts: 1, lastError: "timeout", updatedAt: "2026-09-21T00:00:00.000Z" }] });
+assert.equal(englishImageStage(waitingForClassification), "classification", "pending routes derive the classification stage");
+assert.equal(englishImageStage(waitingForAnalysis), "analysis", "classified idle records derive the analysis stage");
+assert.equal(englishImageStage(waitingForDispatch), "dispatch", "analyzed records derive the dispatch stage");
+assert.equal(englishImageStage(failedSync), "error", "sync failures take error-stage priority");
+assert.equal(searchEnglishImage(waitingForAnalysis, "dinosaurs"), true, "search includes source labels");
+assert.equal(searchEnglishImage(waitingForDispatch, "tree house"), true, "search includes English records");
+const crossed = filterAndSortEnglishImages([waitingForClassification, waitingForAnalysis, waitingForDispatch, failedSync], {
+  status: "inbox", route: "reading", stage: "dispatch", query: "jack", sort: "captured-asc",
+});
+assert.deepEqual(crossed, [waitingForDispatch], "status, route, stage, and search filters intersect");
+const oldestFirst = filterAndSortEnglishImages([waitingForAnalysis, waitingForDispatch], {
+  status: "inbox", route: "reading", stage: "all", query: "", sort: "captured-asc",
+});
+assert.deepEqual(oldestFirst, [waitingForDispatch, waitingForAnalysis], "oldest-first sorting exposes accumulated pending material");
+
+const manyAttachments = Array.from({ length: 23 }, (_, index) => ({
+  blockId: `block-${23 - index}`,
+  filename: `page-${23 - index}.jpg`,
+  mimeType: "image/jpeg",
+  sourceMessageId: `message-${23 - index}`,
+  createdAt: "2026-09-21T00:00:00.000Z",
+  batchIndex: 23 - index,
+}));
+const multiImage = entry({ attachments: manyAttachments });
+assert.equal(multiImage.attachments.length, 23, "23-image groups remain complete");
+assert.deepEqual(multiImage.attachments.map((item) => item.batchIndex), Array.from({ length: 23 }, (_, index) => index + 1), "attachment order follows batchIndex without regrouping");
 
 console.log("english-image-completion: model assertions passed");

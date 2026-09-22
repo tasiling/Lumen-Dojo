@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
     const { entry } = await getEnglishImageEntry(id);
     const attachment = entry.attachments[index];
     if (!attachment) throw new Error("找不到指定圖片");
-    return NextResponse.redirect(await englishImageAttachmentUrl(attachment), { status: 307 });
+    return NextResponse.redirect(await englishImageAttachmentUrl(attachment), {
+      status: 307,
+      headers: { "Cache-Control": "private, max-age=300" },
+    });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 404 });
   }
