@@ -3,6 +3,7 @@ import {
   appendCaptureImage,
   createCaptureEntry,
   listCaptureEntries,
+  saveCaptureInitialReflection,
   saveCaptureEntry,
 } from "@/lib/dojo/captureStore";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
@@ -73,6 +74,7 @@ function emptyClip(overrides: Partial<CaptureClipMeta>): CaptureClipMeta {
     externalEventId: "",
     externalMessageId: "",
     awaitingScreenshotUntil: null,
+    awaitingReflectionUntil: null,
     webPreview: { description: "", imageUrl: "", fetchedAt: null, status: "none" },
     attachments: [],
     ...overrides,
@@ -174,6 +176,20 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
   if (await handleLineCommand(event, text)) return;
   const foundUrl = extractFirstUrl(text);
   if (!foundUrl) {
+    const captures = await listCaptureEntries();
+    const awaitingReflection = captures.find((capture) =>
+      capture.clip.origin === "line" && capture.clip.awaitingReflectionUntil &&
+      new Date(capture.clip.awaitingReflectionUntil).getTime() > Date.now()
+    );
+    if (awaitingReflection) {
+      const updated = await saveCaptureInitialReflection(awaitingReflection.id, text, true);
+      await replyLineMessage(
+        event.replyToken ?? "",
+        `已把這段感觸留在「${updated.title}」。最初原因會與之後的探索紀錄分開保存。`,
+        clipQuickReply(updated.id, updated.clip.attachments.length === 0 && Boolean(updated.sourceUrl)),
+      );
+      return;
+    }
     const images = await listEnglishImageEntries();
     const awaitingInput = images.find((entry) => entry.lineInputMode && entry.lineInputUntil && new Date(entry.lineInputUntil).getTime() > Date.now());
     if (awaitingInput) {
@@ -253,9 +269,12 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
   });
 
   const previewNote = preview.status === "unavailable" ? "網址已保存；這個網站目前無法自動讀取摘要。" : "網址與網頁資訊已保存。";
+  const reflectionNote = note
+    ? `\n已記下你當下的感觸：${note.slice(0, 500)}`
+    : "\n\n為什麼想留下這份素材？可以補一句感觸，也可以直接先收下。";
   await replyLineMessage(
     event.replyToken ?? "",
-    `已剪藏｜${preview.platform}\n「${capture.title}」\n${previewNote}\n可以順手標記用途，也可以先不處理。`,
+    `已剪藏｜${preview.platform}\n「${capture.title}」\n${previewNote}${reflectionNote}`,
     clipQuickReply(capture.id, true)
   );
   void userId;
@@ -679,6 +698,19 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     if (!purpose || !(purpose in CAPTURE_CLIP_PURPOSES)) return;
     await saveCaptureEntry({ ...capture, clip: { ...capture.clip, purpose } });
     await replyLineMessage(event.replyToken ?? "", `已標記為「${CAPTURE_CLIP_PURPOSES[purpose]}」。素材仍留在野採待處理。`);
+    return;
+  }
+  if (action === "captureReflectionInput") {
+    const awaitingReflectionUntil = new Date(Date.now() + 10 * 60_000).toISOString();
+    await saveCaptureEntry({ ...capture, clip: { ...capture.clip, awaitingReflectionUntil } });
+    await replyLineMessage(event.replyToken ?? "", "請在十分鐘內直接輸入：為什麼想留下這份素材？可以是一句話，也可以多寫幾句。");
+    return;
+  }
+  if (action === "captureKeep") {
+    if (capture.clip.awaitingReflectionUntil) {
+      await saveCaptureEntry({ ...capture, clip: { ...capture.clip, awaitingReflectionUntil: null } });
+    }
+    await replyLineMessage(event.replyToken ?? "", "已先收下。原始素材、來源、圖片與目前留下的感觸都會保留；不會自動建立其他紀錄。", forageQuickReply(forageUrl()));
     return;
   }
   if (action === "awaitScreenshot") {

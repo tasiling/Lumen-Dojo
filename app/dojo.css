@@ -3734,6 +3734,62 @@
 .dojo .forage-page-heading h1 { margin-top: 2px; }
 .dojo .forage-inbox-screen .english-image-inbox { margin-top: 15px; }
 .dojo .forage-card.is-targeted { border-color: #a97d33; box-shadow: 0 0 0 3px #d8bd8240; }
+.dojo .capture-initial-reflection {
+  margin: 9px 0;
+  padding: 10px 11px;
+  border-left: 3px solid #d39a55;
+  border-radius: 4px 11px 11px 4px;
+  background: #fff7e9;
+}
+.dojo .capture-initial-reflection b { display: block; color: #765322; font-size: 9px; }
+.dojo .capture-initial-reflection p { margin: 4px 0 0; font-size: 11px; line-height: 1.6; white-space: pre-wrap; }
+.dojo .capture-exploration {
+  margin: 11px 0;
+  border: 1px solid #d8c8a9;
+  border-radius: 14px;
+  background: #fffdf8;
+  overflow: hidden;
+}
+.dojo .capture-exploration-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  padding: 10px 11px;
+}
+.dojo .capture-exploration-heading b,
+.dojo .capture-exploration-heading span { display: block; }
+.dojo .capture-exploration-heading b { font-size: 11px; }
+.dojo .capture-exploration-heading span { margin-top: 2px; color: var(--muted); font-size: 8.5px; }
+.dojo .capture-exploration-heading button { min-height: 34px; padding: 5px 9px; color: #725627; font-size: 9.5px; font-weight: 800; }
+.dojo .capture-exploration-history { border-top: 1px solid #e8decb; }
+.dojo .capture-exploration-history > summary { padding: 8px 11px; color: #77684e; font-size: 9.5px; font-weight: 800; cursor: pointer; }
+.dojo .capture-exploration-history > div { display: grid; gap: 7px; padding: 0 9px 9px; }
+.dojo .capture-exploration-history article { padding: 9px; border-radius: 10px; background: #f7f2e8; }
+.dojo .capture-exploration-history article > div { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.dojo .capture-exploration-history article > div b { font-size: 9.5px; }
+.dojo .capture-exploration-history article > div time,
+.dojo .capture-exploration-history article > div span { color: var(--muted); font-size: 8px; }
+.dojo .capture-exploration-history article > div span { padding: 2px 5px; border-radius: 999px; background: #ebe2d2; }
+.dojo .capture-exploration-history article p { margin: 7px 0 0; color: #504a40; font-size: 10px; line-height: 1.6; white-space: pre-wrap; }
+.dojo .capture-exploration-history article strong { display: block; margin-bottom: 1px; color: #806132; font-size: 8px; }
+.dojo .capture-exploration-editor { padding: 11px; border-top: 1px solid #e8decb; background: #fffbf4; }
+.dojo .capture-exploration-editor > label,
+.dojo .capture-exploration-import label { display: block; margin: 10px 1px 5px; color: #5f5547; font-size: 9px; font-weight: 800; }
+.dojo .capture-exploration-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.dojo .capture-exploration-modes button { min-width: 0; min-height: 36px; padding: 5px; color: var(--muted); font-size: 9.5px; }
+.dojo .capture-exploration-modes button.on { border-color: #b68b47; background: #ebdbc0; color: #654a1d; font-weight: 800; }
+.dojo .capture-exploration-import { margin-top: 8px; padding: 9px; border-radius: 11px; background: #f2eee6; }
+.dojo .capture-exploration-import p { margin: 0 0 7px; color: var(--muted); font-size: 9px; line-height: 1.55; }
+.dojo .capture-exploration-import button { min-height: 35px; font-size: 9.5px; }
+.dojo .capture-exploration-import textarea { margin-top: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; }
+.dojo .capture-exploration-prompts { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 2px; }
+.dojo .capture-exploration-prompts span { width: 100%; color: var(--muted); font-size: 8.5px; }
+.dojo .capture-exploration-prompts small { padding: 4px 6px; border-radius: 999px; background: #eee5d5; color: #6b5b43; font-size: 8px; }
+.dojo .capture-exploration-save { width: 100%; margin-top: 9px; }
+.dojo .capture-exploration-next { margin-top: 9px; padding: 9px 10px; border-radius: 10px; background: #edf2e9; }
+.dojo .capture-exploration-next b { display: block; color: #53654c; font-size: 9px; }
+.dojo .capture-exploration-next p { margin: 3px 0 0; color: #667260; font-size: 8.5px; line-height: 1.55; }
 
 @media (max-width: 600px) {
   .dojo .forage-home-intro,
@@ -3755,6 +3811,8 @@
   .dojo .forage-page-heading { flex-direction: column; }
   .dojo .forage-add-entry,
   .dojo .forage-page-heading > a { width: 100%; }
+  .dojo .capture-exploration-heading { align-items: flex-start; }
+  .dojo .capture-exploration-history article > div { align-items: flex-start; }
 }
 
 /* 織光堂只顯示已由野採送入的材料，並保存實際成品進度。 */

@@ -283,6 +283,7 @@ export type CaptureClipMeta = {
   externalEventId: string;
   externalMessageId: string;
   awaitingScreenshotUntil: string | null;
+  awaitingReflectionUntil: string | null;
   webPreview: {
     description: string;
     imageUrl: string;
@@ -366,6 +367,17 @@ export type CaptureWeavingState = {
   outputUrl: string;
 };
 
+export type CaptureExplorationRecord = {
+  id: string;
+  clientRecordId: string;
+  source: "manual" | "gpt_import";
+  thoughts: string;
+  keyFinding: string;
+  openQuestions: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type CaptureEntry = {
   version: 2;
   recordType: "capture-entry";
@@ -387,6 +399,7 @@ export type CaptureEntry = {
   contentType: CaptureContentType | null;
   forageSummary: string;
   forageReason: string;
+  explorationRecords: CaptureExplorationRecord[];
   knowledgeLinks: CaptureKnowledgeLink[];
   learningTracks: LearningTrackKey[];
   destinations: CaptureDestination[];
@@ -949,6 +962,29 @@ export function normalizeCaptureEntry(
         }];
       }).slice(0, 12)
     : [];
+  const explorationRecords: CaptureExplorationRecord[] = Array.isArray(source.explorationRecords)
+    ? source.explorationRecords.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const record = item as Partial<CaptureExplorationRecord>;
+        const thoughts = stringValue(record.thoughts).trim().slice(0, 6000);
+        const keyFinding = stringValue(record.keyFinding).trim().slice(0, 3000);
+        const openQuestions = stringValue(record.openQuestions).trim().slice(0, 3000);
+        if (!thoughts && !keyFinding && !openQuestions) return [];
+        const createdAt = isoDateTime(record.createdAt, now);
+        return [{
+          id: stringValue(record.id, crypto.randomUUID()).trim().slice(0, 100),
+          clientRecordId: stringValue(record.clientRecordId, record.id).trim().slice(0, 100),
+          source: record.source === "gpt_import" ? "gpt_import" as const : "manual" as const,
+          thoughts,
+          keyFinding,
+          openQuestions,
+          createdAt,
+          updatedAt: isoDateTime(record.updatedAt, createdAt),
+        }];
+      }).filter((record, index, records) => records.findIndex((other) =>
+        (record.clientRecordId && other.clientRecordId === record.clientRecordId) || other.id === record.id
+      ) === index).slice(0, 100)
+    : [];
   const legacyStatus = (source as { status?: string }).status;
   const isLegacy = (source as { version?: number }).version !== 2;
   const legacyWeavingNote = stringValue((source as { weavingNote?: unknown }).weavingNote).trim();
@@ -1050,6 +1086,9 @@ export function normalizeCaptureEntry(
       awaitingScreenshotUntil: sourceClip.awaitingScreenshotUntil
         ? isoDateTime(sourceClip.awaitingScreenshotUntil, now)
         : null,
+      awaitingReflectionUntil: sourceClip.awaitingReflectionUntil
+        ? isoDateTime(sourceClip.awaitingReflectionUntil, now)
+        : null,
       webPreview: {
         description: stringValue(sourceWebPreview.description).trim().slice(0, 3000),
         imageUrl: normalizedCaptureSourceUrl(sourceWebPreview.imageUrl),
@@ -1068,7 +1107,8 @@ export function normalizeCaptureEntry(
     knowledgeOrigin,
     contentType,
     forageSummary: stringValue(source.forageSummary, legacyWeavingNote).trim().slice(0, 5000),
-    forageReason: stringValue(source.forageReason).trim().slice(0, 3000),
+    forageReason: (stringValue(source.forageReason).trim() || stringValue(source.note).trim()).slice(0, 3000),
+    explorationRecords,
     knowledgeLinks,
     learningTracks,
     destinations,
@@ -1109,6 +1149,7 @@ export function captureContent(entry: CaptureEntry): FormalCaptureContent {
     contentType: entry.contentType,
     forageSummary: entry.forageSummary,
     forageReason: entry.forageReason,
+    explorationRecords: entry.explorationRecords,
     knowledgeLinks: entry.knowledgeLinks,
     learningTracks: entry.learningTracks,
     destinations: entry.destinations,

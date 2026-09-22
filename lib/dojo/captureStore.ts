@@ -13,6 +13,17 @@ import { listJsonRecords, updateJsonRecordById } from "./notionStore";
 import { createKnowledgeEntry } from "@/lib/notion/mutations";
 import { notion, withNotionRateLimit } from "@/lib/notion/client";
 import { getKnowledgeEntry } from "@/lib/notion/queries";
+import { appendCaptureExploration, type CaptureExplorationDraft } from "./captureExploration";
+
+const captureUpdateLocks = new Map<string, Promise<unknown>>();
+
+async function withCaptureUpdateLock<T>(id: string, task: () => Promise<T>): Promise<T> {
+  const previous = captureUpdateLocks.get(id) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(task);
+  captureUpdateLocks.set(id, current);
+  try { return await current; }
+  finally { if (captureUpdateLocks.get(id) === current) captureUpdateLocks.delete(id); }
+}
 
 export async function listCaptureEntries(): Promise<CaptureEntry[]> {
   const rows = await listJsonRecords(CAPTURE_TITLE_PREFIX);
@@ -31,11 +42,15 @@ export async function getCaptureEntry(id: string): Promise<{ capture: CaptureEnt
 }
 
 export async function createCaptureEntry(input: unknown): Promise<CaptureEntry> {
+  const source = input && typeof input === "object" ? input as Record<string, unknown> : {};
+  const initialReason = typeof source.forageReason === "string" && source.forageReason.trim()
+    ? source.forageReason.trim()
+    : typeof source.note === "string" ? source.note.trim() : "";
   const capture = normalizeCaptureEntry(
     {
-      ...(input && typeof input === "object" ? input : {}),
+      ...source,
       status: "pending",
-      processingDepth: "raw",
+      processingDepth: initialReason ? "light" : "raw",
       creativeMaturity: "C0",
       sourceKnowledgeMaturity: "K0",
       sourceLocator: "",
@@ -44,7 +59,8 @@ export async function createCaptureEntry(input: unknown): Promise<CaptureEntry> 
       knowledgeOrigin: "unknown",
       contentType: null,
       forageSummary: "",
-      forageReason: "",
+      forageReason: initialReason,
+      explorationRecords: [],
       knowledgeLinks: [],
       learningTracks: [],
       destinations: [],
@@ -82,6 +98,41 @@ export async function saveCaptureEntry(capture: CaptureEntry): Promise<CaptureEn
   if (!normalized) throw new Error("擷取內容無法儲存");
   await updateJsonRecordById(normalized.id, CAPTURE_TITLE_PREFIX, current.title, captureContent(normalized));
   return normalized;
+}
+
+export async function updateCaptureEntry(
+  id: string,
+  update: (current: CaptureEntry) => Partial<CaptureEntry>
+): Promise<CaptureEntry> {
+  return withCaptureUpdateLock(id, async () => {
+    const current = await getCaptureEntry(id);
+    const normalized = normalizeCaptureEntry(
+      { ...current.capture, ...update(current.capture) },
+      { id, capturedAt: current.capture.capturedAt, touch: true }
+    );
+    if (!normalized) throw new Error("擷取內容無法儲存");
+    await updateJsonRecordById(id, CAPTURE_TITLE_PREFIX, current.title, captureContent(normalized));
+    return normalized;
+  });
+}
+
+export async function saveCaptureInitialReflection(id: string, reflection: string, append = false): Promise<CaptureEntry> {
+  const cleaned = reflection.trim().slice(0, 3000);
+  return updateCaptureEntry(id, (current) => ({
+    forageReason: append && current.forageReason && cleaned
+      ? `${current.forageReason}\n${cleaned}`.slice(0, 3000)
+      : cleaned,
+    processingDepth: cleaned && current.processingDepth === "raw" ? "light" : current.processingDepth,
+    clip: { ...current.clip, awaitingReflectionUntil: null },
+  }));
+}
+
+export async function appendCaptureExplorationRecord(
+  id: string,
+  draft: CaptureExplorationDraft,
+  params: { clientRecordId: string; source: "manual" | "gpt_import" }
+): Promise<CaptureEntry> {
+  return updateCaptureEntry(id, (current) => appendCaptureExploration(current, draft, params));
 }
 
 export async function appendCaptureImage(params: {

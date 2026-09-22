@@ -17,6 +17,7 @@ import {
 } from "@/lib/dojo/formal";
 import { LEARNING_TRACKS } from "@/lib/dojo/learning";
 import { KNOWLEDGE_CLAIM_TYPES, currentClaimVersion, type Claimant, type KnowledgeClaim, type KnowledgeClaimType } from "@/lib/dojo/knowledgeClaims";
+import { buildCaptureExplorationPackage, parseCaptureExplorationResult, type CaptureExplorationDraft } from "@/lib/dojo/captureExploration";
 
 type InboxTab = "pending" | "adopted" | "faded";
 
@@ -179,6 +180,80 @@ export default function ForageCaptureInbox({ initialCaptureId = "" }: { initialC
   );
 }
 
+function CaptureExploration({ capture, onUpdated }: { capture: CaptureEntry; onUpdated: (capture: CaptureEntry) => void }) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"manual" | "import">("manual");
+  const [draft, setDraft] = useState<CaptureExplorationDraft>({ thoughts: "", keyFinding: "", openQuestions: "" });
+  const [pastedResult, setPastedResult] = useState("");
+  const [packageFallback, setPackageFallback] = useState("");
+  const [source, setSource] = useState<"manual" | "gpt_import">("manual");
+  const [clientRecordId, setClientRecordId] = useState(() => crypto.randomUUID());
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+
+  async function copyPackage() {
+    setError(""); setNotice("");
+    try {
+      await navigator.clipboard.writeText(buildCaptureExplorationPackage(capture));
+      setPackageFallback("");
+      setNotice("探索包已複製；可以貼到 GPT 對話逐步探索。");
+    } catch {
+      setError("瀏覽器無法直接複製。請改用下方文字框全選複製。");
+      setMode("import");
+      setPackageFallback(buildCaptureExplorationPackage(capture));
+    }
+  }
+
+  function previewImport() {
+    setError(""); setNotice("");
+    try {
+      setDraft(parseCaptureExplorationResult(pastedResult, capture.id));
+      setSource("gpt_import");
+      setNotice("已辨識整理結果。請先修改與確認，再按保存。");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+  }
+
+  async function saveProgress() {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const result = await responseJson<{ capture: CaptureEntry }>(await fetch("/api/dojo/captures", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: capture.id, action: "appendExploration", clientRecordId, source, ...draft }),
+      }));
+      onUpdated(result.capture);
+      setDraft({ thoughts: "", keyFinding: "", openQuestions: "" });
+      setPastedResult(""); setSource("manual"); setMode("manual"); setClientRecordId(crypto.randomUUID());
+      setNotice("這次探索進度已追加保存；最初感觸沒有被覆蓋。");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <section className="capture-exploration" aria-label="素材探索">
+      <div className="capture-exploration-heading">
+        <div><b>感觸與探索</b><span>{capture.explorationRecords.length ? `已保存 ${capture.explorationRecords.length} 次探索` : "可選擇，不必現在完成"}</span></div>
+        <button type="button" onClick={() => setOpen((value) => !value)}>{open ? "收起" : "繼續探索"}</button>
+      </div>
+
+      {capture.explorationRecords.length > 0 && <details className="capture-exploration-history"><summary>查看探索歷程</summary><div>{capture.explorationRecords.map((record, index) => <article key={record.id}><div><b>第 {index + 1} 次</b><time>{capturedTime(record.createdAt)}</time><span>{record.source === "gpt_import" ? "GPT 整理後確認" : "自行記錄"}</span></div>{record.thoughts && <p><strong>探索中的想法</strong>{record.thoughts}</p>}{record.keyFinding && <p><strong>目前最值得保留</strong>{record.keyFinding}</p>}{record.openQuestions && <p><strong>還沒想清楚</strong>{record.openQuestions}</p>}</article>)}</div></details>}
+
+      {open && <div className="capture-exploration-editor">
+        <div className="capture-exploration-modes"><button type="button" className={mode === "manual" ? "on" : ""} onClick={() => { setMode("manual"); setSource("manual"); }}>直接記錄</button><button type="button" className={mode === "import" ? "on" : ""} onClick={() => setMode("import")}>使用 GPT 探索包</button></div>
+        {mode === "import" && <div className="capture-exploration-import"><p>先複製探索包到 GPT。完成對話後，把 GPT 輸出的 JSON 貼回來預覽；系統不會直接呼叫 AI。</p><button type="button" onClick={() => void copyPackage()}>複製探索包</button>{packageFallback && <textarea className="field" rows={6} readOnly value={packageFallback} aria-label="可手動複製的探索包" />}<label>貼上探索整理結果</label><textarea className="field" rows={7} value={pastedResult} onChange={(event) => setPastedResult(event.target.value)} placeholder='貼上 capture-exploration-result/v1 JSON' /><button type="button" disabled={!pastedResult.trim()} onClick={previewImport}>辨識並預覽</button></div>}
+        <div className="capture-exploration-prompts"><span>可以只回答目前有感覺的一題：</span><small>這份素材讓我想到什麼？</small><small>為什麼它對我重要？</small><small>它讓我聯想到哪些經驗？</small></div>
+        <label>探索過程中產生的想法</label><textarea className="field" rows={4} value={draft.thoughts} onChange={(event) => setDraft({ ...draft, thoughts: event.target.value })} placeholder="不必完整，也不必急著形成結論。" />
+        <label>目前最值得保留的發現</label><textarea className="field" rows={3} value={draft.keyFinding} onChange={(event) => setDraft({ ...draft, keyFinding: event.target.value })} placeholder="沒有明確發現也可以留白。" />
+        <label>哪些部分還沒有想清楚？</label><textarea className="field" rows={3} value={draft.openQuestions} onChange={(event) => setDraft({ ...draft, openQuestions: event.target.value })} placeholder="把問題留下，之後可以接著探索。" />
+        {notice && <p className="form-success">{notice}</p>}{error && <p className="form-error">{error}</p>}
+        <button type="button" className="primary capture-exploration-save" disabled={busy || (!draft.thoughts.trim() && !draft.keyFinding.trim() && !draft.openQuestions.trim())} onClick={() => void saveProgress()}>{busy ? "保存中…" : "保存這次進度"}</button>
+        <div className="capture-exploration-next"><b>保存後可以先停在這裡</b><p>留在野採是預設選擇。若日後要建立 K2 或送往織光杼，仍需使用原有深入整理、K1 來源與成熟度檢查；本次探索不會自動建立任何後續紀錄。</p></div>
+      </div>}
+    </section>
+  );
+}
+
 function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit, onCancel, onSaved, onClaimCreated, onCaptureUpdated }: {
   capture: CaptureEntry; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; targeted: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
 }) {
@@ -266,11 +341,12 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
     }
     setSaving(true); setError(null);
     const now = new Date().toISOString();
-    const hasDeepWork = Boolean(draft.forageSummary || draft.forageReason || draft.contentType || draft.knowledgeOrigin !== "unknown" || draft.claimRefs.length || draft.sourceLocator || draft.creativeMaturity !== "C0" || draft.sourceKnowledgeMaturity !== "K0");
+    const hasDeepWork = Boolean(draft.forageSummary || draft.contentType || draft.knowledgeOrigin !== "unknown" || draft.claimRefs.length || draft.sourceLocator || draft.creativeMaturity !== "C0" || draft.sourceKnowledgeMaturity !== "K0");
+    const hasLightWork = Boolean(draft.forageReason || draft.explorationRecords.length);
     const next: CaptureEntry = {
       ...draft,
       status,
-      processingDepth: hasDeepWork ? "deep" : status === "adopted" ? "light" : draft.processingDepth,
+      processingDepth: hasDeepWork ? "deep" : hasLightWork || status === "adopted" ? "light" : draft.processingDepth,
       fadedAt: status === "faded" ? now : null,
       sentToPracticeAt: status === "adopted" && draft.destinations.includes("practice") ? (draft.sentToPracticeAt ?? now) : draft.sentToPracticeAt,
       sentToWeavingAt: status === "adopted" && draft.destinations.includes("weaving") ? (draft.sentToWeavingAt ?? now) : draft.sentToWeavingAt,
@@ -290,8 +366,10 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
       {capture.clip.origin === "line" && <div className="forage-clip-source"><span>{capture.clip.sourceKind === "screenshot" ? "截圖" : "網頁"}</span><span>{capture.clip.platform || "LINE"}</span>{capture.clip.webPreview.status === "unavailable" && <span>僅保存網址</span>}</div>}
       {capture.clip.attachments.length > 0 && <div className="forage-clip-images">{capture.clip.attachments.map((attachment) => <a key={attachment.id} href={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} target="_blank" rel="noreferrer"><Image src={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} alt="LINE 剪藏原始截圖" width={720} height={480} unoptimized /></a>)}</div>}
       {capture.excerpt && <p className="weaving-excerpt">{capture.excerpt}</p>}
-      {capture.note && <div className="weaving-original-note"><b>擷取時的想法</b><p>{capture.note}</p></div>}
+      {capture.forageReason && <div className="capture-initial-reflection"><b>最初想記錄的原因</b><p>{capture.forageReason}</p></div>}
+      {capture.note && capture.note !== capture.forageReason && <div className="weaving-original-note"><b>擷取時的其他補充</b><p>{capture.note}</p></div>}
       {capture.sourceUrl && <a className="weaving-source" href={capture.sourceUrl} target="_blank" rel="noreferrer">↗ {sourceHost(capture.sourceUrl)}</a>}
+      <CaptureExploration capture={capture} onUpdated={onCaptureUpdated} />
       {!editing && capture.status === "adopted" && <div className="forage-result"><div><span>{capture.creativeMaturity}</span><span>{capture.sourceKnowledgeMaturity}</span>{capture.destinations.map((key) => <span key={key}>{DESTINATIONS.find((item) => item.key === key)?.label}</span>)}</div>{capture.forageSummary && <p>{capture.forageSummary}</p>}</div>}
 
       {!editing ? (
@@ -299,6 +377,9 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
       ) : (
         <div className="forage-editor">
           <div className="weaving-editor-heading"><div><span className="label">輕整理</span><b>它大致屬於什麼？接下來用在哪裡？</b></div><button className="text-link" onClick={onCancel} disabled={saving}>收起</button></div>
+          <label>為什麼想留下這份素材？</label>
+          <textarea className="field" rows={3} value={draft.forageReason} onChange={(event) => setDraft({ ...draft, forageReason: event.target.value })} placeholder="一句話、多句話都可以，也可以先留白。" />
+          <small className="field-help">這是最初感觸，不會被之後的摘要或探索紀錄覆蓋。</small>
           <label>分類</label>
           <select className="field" value={draft.category ?? ""} onChange={(event) => setDraft({ ...draft, category: event.target.value ? event.target.value as CaptureEntry["category"] : null })}>
             <option value="">暫不分類</option>{Object.entries(CAPTURE_CATEGORIES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
@@ -322,7 +403,6 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
             </select>
             {draft.contentType && CONTENT_TYPE_CLAIM_HINTS[draft.contentType] && <p className="knowledge-field-hint">{CONTENT_TYPE_CLAIM_HINTS[draft.contentType]}</p>}
             <label>這份材料在說什麼？</label><textarea className="field" rows={3} value={draft.forageSummary} onChange={(event) => setDraft({ ...draft, forageSummary: event.target.value })} placeholder="用自己的話留下一段摘要" />
-            <label>為什麼值得留下？</label><textarea className="field" rows={2} value={draft.forageReason} onChange={(event) => setDraft({ ...draft, forageReason: event.target.value })} placeholder="可能的用途、疑問或個人理解" />
             <label>創作成熟度</label><div className="creative-maturity-grid">{(Object.keys(CREATIVE_MATURITY) as CreativeMaturity[]).map((key) => <button type="button" key={key} className={draft.creativeMaturity === key ? "on" : ""} onClick={() => setDraft({ ...draft, creativeMaturity: key })}><b>{CREATIVE_MATURITY[key].label}</b><small>{CREATIVE_MATURITY[key].hint}</small></button>)}</div>
             <label>來源成熟度</label><div className="knowledge-source-maturity"><button type="button" className={draft.sourceKnowledgeMaturity === "K0" ? "on" : ""} onClick={() => setDraft({ ...draft, sourceKnowledgeMaturity: "K0" })}><b>K0 未處理來源</b><small>來源或上下文仍不足，只保存</small></button><button type="button" className={draft.sourceKnowledgeMaturity === "K1" ? "on" : ""} onClick={() => setDraft({ ...draft, sourceKnowledgeMaturity: "K1" })}><b>K1 可追溯來源</b><small>能由網址、位置或經驗日期回找</small></button></div>
             <label>可定位來源</label><input className="field" value={draft.sourceLocator} onChange={(event) => setDraft({ ...draft, sourceLocator: event.target.value })} placeholder={ORIGIN_LOCATOR_HINTS[draft.knowledgeOrigin]} />

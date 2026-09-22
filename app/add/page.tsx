@@ -100,6 +100,7 @@ function CaptureForm() {
           excerpt: excerpt.trim(),
           sourceUrl: sourceUrl.trim(),
           note: note.trim(),
+          forageReason: note.trim(),
         }),
       });
       const result = await responseJson<{ capture: CaptureEntry }>(response);
@@ -126,10 +127,10 @@ function CaptureForm() {
       {saved && (
         <div className="capture-success" role="status">
           <div>
-            <b>已收進野採的採集匣</b>
-            <span>「{saved.title}」已安全保存，可以繼續擷取。</span>
+            <b>已先收進野採</b>
+            <span>「{saved.title}」與當下感觸已安全保存，也可以稍後再探索。</span>
           </div>
-          <Link href={`/forage/captures?captureId=${encodeURIComponent(saved.id)}`}>前往野採整理 →</Link>
+          <Link href={`/forage/captures?captureId=${encodeURIComponent(saved.id)}`}>繼續探索 →</Link>
         </div>
       )}
 
@@ -182,21 +183,21 @@ function CaptureForm() {
         maxLength={2000}
       />
 
-      <label htmlFor="capture-note">此刻的補充想法</label>
+      <label htmlFor="capture-note">為什麼想留下這份素材？</label>
       <textarea
         id="capture-note"
         className="field"
         rows={3}
         value={note}
         onChange={(event) => setNote(event.target.value)}
-        placeholder="為什麼想留下它？也可以先留白。"
+        placeholder="一句話、多句話都可以，也可以先留白，稍後再補。"
         maxLength={3000}
       />
 
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="primary capture-submit" type="submit" disabled={saving}>
         <span aria-hidden="true">✦</span>
-        {saving ? "正在收進來…" : "收進野採"}
+        {saving ? "正在收進來…" : "先收下"}
       </button>
       <p className="capture-footnote">儲存後會進入野採採集匣，不會自動公開，也不會直接變成作品。</p>
     </form>
