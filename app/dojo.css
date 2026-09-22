@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 51042)
-Total output lines: 5868
-
 /* 行光道場介面雛形 v1 移植(擁有者提供的 HTML 原型)。
    直接沿用雛形的 CSS 變數、版面結構、元件樣式,不重新設計、不「順手優化」。
    唯一調整:所有選擇器加上 .dojo 前綴做範圍限定,避免影響尚未重新編排進場域的
@@ -3807,7 +3804,70 @@ Total output lines: 5868
 }
 .dojo .learning-track-grid b,
 .dojo .learning-track-grid small,
-.dojo …1042 tokens truncated…olid #dfd1b4; border-radius: 10px; background: rgba(255,255,255,.55); color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+.dojo .learning-track-grid em { display: block; }
+.dojo .learning-track-grid b { margin-top: 7px; font-size: 13px; }
+.dojo .learning-track-grid small { margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.4; }
+.dojo .learning-track-grid em { margin-top: 6px; color: var(--track-color); font-size: 9px; font-style: normal; font-weight: 700; }
+.dojo .learning-track-grid button.on { border-color: var(--track-color); background: color-mix(in srgb, var(--track-color) 9%, white); box-shadow: 0 0 0 2px color-mix(in srgb, var(--track-color) 14%, transparent); }
+.dojo .learning-detail {
+  margin-top: 11px;
+  padding: 15px;
+  border: 1px solid color-mix(in srgb, var(--track-color) 48%, white);
+  border-radius: 19px;
+  background: #fffefa;
+  box-shadow: 0 4px 16px #5949270c;
+}
+.dojo .learning-detail-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.dojo .learning-detail-head h3 { margin: 2px 0 9px; font: 650 20px "Noto Serif TC", serif; }
+.dojo .learning-detail-head button { min-height: 0; padding: 3px; border: 0; background: transparent; color: var(--track-color); font-size: 10.5px; }
+.dojo .learning-facts { display: grid; gap: 7px; }
+.dojo .learning-facts > div { padding: 9px 10px; border-radius: 11px; background: #f5f2e9; }
+.dojo .learning-facts > div.next { background: color-mix(in srgb, var(--track-color) 10%, white); }
+.dojo .learning-facts small { color: var(--muted); font-size: 9px; }
+.dojo .learning-facts p { margin: 3px 0 0; font-size: 11.5px; line-height: 1.55; }
+.dojo .english-pilot {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 11px;
+  border-radius: 13px;
+  background: #eaf0f4;
+}
+.dojo .cefr-route { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.dojo .cefr-route span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px; background: #fff; color: #49677e; font-weight: 800; }
+.dojo .cefr-route i { color: #7890a0; font-style: normal; }
+.dojo .english-pilot small { color: #68808f; font-size: 9px; }
+.dojo .english-pilot p { margin: 2px 0 7px; font-size: 10.5px; line-height: 1.45; }
+.dojo .learning-actions button { min-width: 0; padding: 7px; font-size: 10.5px; }
+.dojo .learning-resources { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e4dccb; }
+.dojo .subsection-title { display: flex; align-items: center; justify-content: space-between; }
+.dojo .subsection-title h4 { margin: 0 0 7px; font-size: 12px; }
+.dojo .subsection-title span { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 999px; background: #ece6d9; font-size: 9px; }
+.dojo .learning-material { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid #eee7d9; }
+.dojo .learning-material:first-of-type { border-top: 0; }
+.dojo .learning-material b,
+.dojo .learning-material small { display: block; }
+.dojo .learning-material b { font-size: 11.5px; }
+.dojo .learning-material small { max-height: 3em; overflow: hidden; margin-top: 3px; color: var(--muted); font-size: 9.5px; line-height: 1.5; }
+.dojo .learning-material a { flex: 0 0 auto; color: var(--track-color); font-size: 9.5px; }
+
+/* 修習所・心・意：雙角色創現書寫。角色設定低頻更新，里程碑與每日紀錄分開保存。 */
+.dojo .creative-role-studio { display: grid; gap: 12px; margin-top: 12px; }
+.dojo .creative-principle-card,
+.dojo .creative-role-card,
+.dojo .creative-milestone-card {
+  padding: 14px;
+  border: 1px solid #d8c9a7;
+  border-radius: 16px;
+  background: #fffaf0;
+}
+.dojo .creative-principle-card { background: linear-gradient(145deg, #fff8e9, #f2ead7); }
+.dojo .creative-principle-card .label { color: #9a722e; }
+.dojo .creative-principle-card b { display: block; margin: 5px 0; font: 650 16px "Noto Serif TC", serif; }
+.dojo .creative-principle-card p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.65; }
+.dojo .creative-role-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.dojo .creative-role-pair span { padding: 8px; border: 1px solid #dfd1b4; border-radius: 10px; background: rgba(255,255,255,.55); color: var(--muted); font-size: 8.5px; line-height: 1.45; }
 .dojo .creative-role-pair b { margin: 0 0 2px; color: var(--ink); font-size: 9.5px; font-weight: 800; line-height: 1.3; }
 .dojo .creative-method-map { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .dojo .creative-method-map span,
