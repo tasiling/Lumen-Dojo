@@ -20,6 +20,9 @@ type AnalysisResult = {
     expression: string;
     meaning: string;
     usage: string;
+    usageTranslation: string;
+    partOfSpeech: string;
+    usageProvenance: "source" | "generated";
     cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
     suggestedFocusDecks: string[];
     origin: "source" | "extension";
@@ -53,11 +56,14 @@ const ANALYSIS_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["expression", "meaning", "usage", "cefrLevel", "suggestedFocusDecks", "origin", "recommendationReason"],
+        required: ["expression", "meaning", "usage", "usageTranslation", "partOfSpeech", "usageProvenance", "cefrLevel", "suggestedFocusDecks", "origin", "recommendationReason"],
         properties: {
           expression: { type: "string" },
           meaning: { type: "string" },
           usage: { type: "string" },
+          usageTranslation: { type: "string" },
+          partOfSpeech: { type: "string" },
+          usageProvenance: { type: "string", enum: ["source", "generated"] },
           cefrLevel: { type: "string", enum: ["A1", "A2", "B1", "B2", "C1", "C2"] },
           suggestedFocusDecks: {
             type: "array",
@@ -146,7 +152,7 @@ function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total:
   const exclusion = existingVocabularyKeys.length
     ? `以下 canonical keys 已存在正式詞庫，不要再次推薦；若它們出現在原文，仍可在中文解釋中使用：${existingVocabularyKeys.join(", ")}。`
     : "";
-  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。這次推薦目的為「${recommendationPurpose}」。${exclusion}同批候選必須依 NFKC 正規化後去重，並兼顧多樣性；不要只反覆推薦 fish、water、ocean 這類過度泛用字，除非它確實是理解素材的關鍵。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR、1–2 個常駐專注豆倉、origin 與 recommendationReason；畫面或 OCR 中確實出現的字標為 source。可加入最多 2 個與使用者目的高度相關、但原素材未出現的單一英文延伸字，必須標為 extension，且在 recommendationReason 清楚說明是延伸推薦，不得冒充原文。閱讀內容優先建議「故事閱讀」，專有名詞除非具有長期學習價值，否則只放在中文解釋，不要列為單字候選；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
+  return `分析這張${route}。${group}忠實抄錄可辨識的英文，不可猜測模糊文字。${task}learningPhrases 請挑 3–5 個真正能在其他情境重用的片語、搭配或完整句型，不要只放孤立單字；vocabularyWords 另外挑 1–5 個值得進單字庫的英文單字。這次推薦目的為「${recommendationPurpose}」。${exclusion}同批候選必須依 NFKC 正規化後去重，並兼顧多樣性；不要只反覆推薦 fish、water、ocean 這類過度泛用字，除非它確實是理解素材的關鍵。兩欄皆每行使用「英文｜中文｜簡短用法」格式。vocabularyCandidates 必須與 vocabularyWords 是同一批單字，逐字提供 CEFR、詞性 partOfSpeech、1–2 個常駐專注豆倉、origin 與 recommendationReason。usage 只能是一個自然、精簡且確實使用該單字的英文學習例句，usageTranslation 只能翻譯 usage，不得放素材摘要；若 usage 是逐字取自可辨識原文，usageProvenance 標 source，否則標 generated，絕不可把生成句冒充原始遇見句。畫面或 OCR 中確實出現的字標為 source。可加入最多 2 個與使用者目的高度相關、但原素材未出現的單一英文延伸字，必須標為 extension，且在 recommendationReason 清楚說明是延伸推薦，不得冒充原文。閱讀內容優先建議「故事閱讀」，專有名詞除非具有長期學習價值，否則只放在中文解釋，不要列為單字候選；遊戲作品要依語言模式分成「JRPG／冒險遊戲」或「生活模擬遊戲」，不可把作品名稱當成豆倉。若資訊不足，保守描述並標記需要確認。${context}`;
 }
 
 async function requestAnalysis(params: {

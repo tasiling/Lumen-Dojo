@@ -73,6 +73,9 @@ export type EnglishImageEntry = {
     expression: string;
     meaning: string;
     usage: string;
+    usageTranslation: string;
+    partOfSpeech: string;
+    usageProvenance: "source" | "generated" | "unknown";
     cefrLevel: string;
     suggestedFocusDecks: string[];
     origin: "source" | "extension";
@@ -201,6 +204,11 @@ export function normalizeEnglishImageEntry(
         expression,
         meaning: text(value.meaning, 500),
         usage: text(value.usage, 1000),
+        usageTranslation: text(value.usageTranslation, 1000),
+        partOfSpeech: text(value.partOfSpeech, 80),
+        usageProvenance: value.usageProvenance === "source" || value.usageProvenance === "generated"
+          ? value.usageProvenance
+          : "unknown" as const,
         cefrLevel: /^(A1|A2|B1|B2|C1|C2)$/.test(text(value.cefrLevel, 10)) ? text(value.cefrLevel, 10) : "待確認",
         suggestedFocusDecks: Array.isArray(value.suggestedFocusDecks)
           ? value.suggestedFocusDecks.map((name) => text(name, 200)).filter(Boolean).slice(0, 2)

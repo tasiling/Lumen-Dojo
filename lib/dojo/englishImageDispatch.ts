@@ -9,6 +9,14 @@ export type EnglishImageVocabCandidate = {
   meaning: string;
   sourceText: string;
   finalSentence: string;
+  sourceSentence: string;
+  usage: {
+    partOfSpeech: string;
+    meaning: string;
+    sentence: string;
+    translation: string;
+    provenance: "source" | "generated" | "unknown";
+  };
   cefrLevel: string;
   suggestedFocusDecks: string[];
   origin: "source" | "extension";
@@ -86,6 +94,25 @@ function candidateKey(expression: string): string {
   return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/\s+/g, "_").slice(0, 180);
 }
 
+function sourceSentenceFor(entry: EnglishImageEntry, expression: string): string {
+  const escaped = expression.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const stem = expression.length >= 7
+    ? expression.slice(0, expression.length - 2).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    : escaped;
+  const target = new RegExp(`\\b(?:${escaped}|${stem}[A-Za-z]*)\\b`, "i");
+  const source = entry.ocrText;
+  const sentences = source.match(/[^.!?\n]+[.!?]?/g) ?? [];
+  return (sentences.find((sentence) => target.test(sentence)) ?? "").trim().slice(0, 1900);
+}
+
+function sourceContextFor(entry: EnglishImageEntry): string {
+  return [
+    entry.contextNote && `使用者補充：${entry.contextNote}`,
+    entry.chineseExplanation && `素材理解：${entry.chineseExplanation}`,
+    entry.ocrText && `OCR 原文：${entry.ocrText}`,
+  ].filter(Boolean).join("\n\n").trim().slice(0, 12000);
+}
+
 function contextKind(text: string, usage: string): EnglishImageContextCandidate["kind"] {
   const joined = `${text} ${usage}`.toLocaleLowerCase("en");
   if (/repair|修復|想不起|換句話/.test(joined)) return "repair";
@@ -117,7 +144,15 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
       expression,
       meaning: candidate.meaning,
       sourceText: (entry.contextNote || entry.chineseExplanation || entry.ocrText).trim().slice(0, 1900),
-      finalSentence: candidate.usage || (entry.englishRecord || entry.ocrText).trim().slice(0, 1900),
+      finalSentence: candidate.usage.trim().slice(0, 1900),
+      sourceSentence: sourceSentenceFor(entry, expression),
+      usage: {
+        partOfSpeech: candidate.partOfSpeech,
+        meaning: candidate.meaning,
+        sentence: candidate.usage,
+        translation: candidate.usageTranslation,
+        provenance: candidate.usageProvenance,
+      },
       cefrLevel: candidate.cefrLevel,
       suggestedFocusDecks: candidate.suggestedFocusDecks.filter((deck) => PERMANENT_FOCUS_DECKS.includes(deck as typeof PERMANENT_FOCUS_DECKS[number])).slice(0, 2),
       origin: candidate.origin,
@@ -142,7 +177,15 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
       expression,
       meaning: meaningParts.join(" — ").trim().slice(0, 500),
       sourceText: (entry.contextNote || entry.chineseExplanation || entry.ocrText).trim().slice(0, 1900),
-      finalSentence: (entry.englishRecord || entry.ocrText).trim().slice(0, 1900),
+      finalSentence: "",
+      sourceSentence: sourceSentenceFor(entry, expression),
+      usage: {
+        partOfSpeech: "",
+        meaning: meaningParts.join(" — ").trim().slice(0, 500),
+        sentence: "",
+        translation: "",
+        provenance: "unknown" as const,
+      },
       cefrLevel: "待確認",
       suggestedFocusDecks: [routeFocusDeck(entry, entry.vocabForgeDraft.sourceName)],
       origin: "source" as const,
@@ -416,6 +459,7 @@ export async function exportEnglishImageVocabs(
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
       body: JSON.stringify({
+        contextContractVersion: 2,
         sourceSystem: "Lumen Dojo",
         sourceType: entry.route === "game" ? "野採・遊戲英文" : entry.route === "classroom" ? "野採・課堂英文" : entry.route === "reading" ? "野採・閱讀英文" : "野採・英文日常",
         sourceDate: entry.capturedAt.slice(0, 10),
@@ -424,7 +468,7 @@ export async function exportEnglishImageVocabs(
         vocabBook: selectedBook,
         focusDecks,
         sourceName,
-        sourceContext: entry.contextNote || entry.chineseExplanation,
+        sourceContext: sourceContextFor(entry),
         items: pending,
       }),
       cache: "no-store",
