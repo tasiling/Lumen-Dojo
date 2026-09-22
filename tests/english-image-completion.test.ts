@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { normalizeEnglishImageEntry, withEnglishImageStatus } from "../lib/dojo/englishImage";
 import { englishImageStage, filterAndSortEnglishImages, searchEnglishImage } from "../lib/dojo/englishImageInboxView";
+import { buildForageOverview } from "../lib/dojo/forageOverview";
+import { normalizeCaptureEntry } from "../lib/dojo/formal";
 
 function entry(overrides: Record<string, unknown> = {}) {
   return normalizeEnglishImageEntry({
@@ -15,7 +17,16 @@ function entry(overrides: Record<string, unknown> = {}) {
     capturedAt: "2026-09-21T00:00:00.000Z",
     updatedAt: "2026-09-21T00:00:00.000Z",
     ...overrides,
-  }, { id: "entry-1", capturedAt: "2026-09-21T00:00:00.000Z" })!;
+  }, { id: String(overrides.id ?? "entry-1"), capturedAt: "2026-09-21T00:00:00.000Z" })!;
+}
+
+function capture(overrides: Record<string, unknown> = {}) {
+  return normalizeCaptureEntry({
+    title: "一般素材",
+    capturedAt: "2026-09-18T00:00:00.000Z",
+    updatedAt: "2026-09-18T00:00:00.000Z",
+    ...overrides,
+  }, { id: String(overrides.id ?? "capture-1") })!;
 }
 
 const analyzedLegacy = entry({ analysisStatus: "completed" });
@@ -95,5 +106,24 @@ const manyAttachments = Array.from({ length: 23 }, (_, index) => ({
 const multiImage = entry({ attachments: manyAttachments });
 assert.equal(multiImage.attachments.length, 23, "23-image groups remain complete");
 assert.deepEqual(multiImage.attachments.map((item) => item.batchIndex), Array.from({ length: 23 }, (_, index) => index + 1), "attachment order follows batchIndex without regrouping");
+
+const homeOverview = buildForageOverview([
+  waitingForClassification,
+  waitingForAnalysis,
+  waitingForDispatch,
+  failedSync,
+  entry({ id: "completed", status: "organized", route: "reading", analysisStatus: "completed", capturedAt: "2026-09-22T00:00:00.000Z" }),
+  entry({ id: "merged", mergedIntoId: "dispatch", capturedAt: "2026-09-23T00:00:00.000Z" }),
+], [
+  capture({ id: "pending-capture", status: "pending" }),
+  capture({ id: "adopted-capture", status: "adopted", capturedAt: "2026-09-17T00:00:00.000Z" }),
+  capture({ id: "faded-capture", status: "faded", capturedAt: "2026-09-16T00:00:00.000Z" }),
+]);
+assert.deepEqual(homeOverview.english, { pending: 4, classification: 1, dispatch: 1, errors: 1 }, "home counts only unfinished visible English records and keeps derived stages distinct");
+assert.deepEqual(homeOverview.captures, { pending: 1, adopted: 1, faded: 1 }, "general capture statuses keep their existing meanings");
+assert.equal(homeOverview.recent.length, 3, "home shows only three recent material summaries");
+assert.equal(homeOverview.recent[0].id, "completed", "completed material can still appear in recent links");
+assert.equal(homeOverview.recent.some((item) => item.id === "merged"), false, "merged English child records never reappear on the home page");
+assert.match(homeOverview.recent[0].href, /^\/forage\/english\?englishImageId=/, "recent English material links to the independent inbox");
 
 console.log("english-image-completion: model assertions passed");

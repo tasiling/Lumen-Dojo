@@ -80,7 +80,7 @@ const CONTENT_TYPE_CLAIM_HINTS: Partial<Record<NonNullable<CaptureEntry["content
   material: "先保留來源；從材料中另外抽取一句 Claim。",
 };
 
-export default function ForageCaptureInbox() {
+export default function ForageCaptureInbox({ initialCaptureId = "" }: { initialCaptureId?: string }) {
   const [captures, setCaptures] = useState<CaptureEntry[]>([]);
   const [claims, setClaims] = useState<KnowledgeClaim[]>([]);
   const [claimsLoaded, setClaimsLoaded] = useState(false);
@@ -89,6 +89,7 @@ export default function ForageCaptureInbox() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deepLinkMessage, setDeepLinkMessage] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -96,10 +97,20 @@ export default function ForageCaptureInbox() {
       const response = await fetch("/api/dojo/captures", { cache: "no-store" });
       const result = await responseJson<{ captures: CaptureEntry[] }>(response);
       setCaptures(result.captures ?? []);
+      if (initialCaptureId) {
+        const target = result.captures.find((capture) => capture.id === initialCaptureId);
+        if (target) {
+          setTab(target.status);
+          setDeepLinkMessage("已定位最近素材；可直接展開整理。");
+          window.setTimeout(() => document.getElementById(`capture-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+        } else {
+          setDeepLinkMessage("找不到指定的一般素材；它可能已被移除，或連結已失效。");
+        }
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally { setLoading(false); }
-  }, []);
+  }, [initialCaptureId]);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
   const loadClaims = useCallback(async () => {
@@ -145,6 +156,8 @@ export default function ForageCaptureInbox() {
         ))}
       </div>
 
+      {deepLinkMessage && <p className={`english-image-deep-link-note ${initialCaptureId && !captures.some((capture) => capture.id === initialCaptureId) ? "is-error" : ""}`}>{deepLinkMessage}</p>}
+
       {tab === "faded" && <p className="forage-fade-note">待處理超過 30 天的原始材料會暫時淡出；資料仍完整保留，可隨時恢復。</p>}
       {loading && <div className="empty">正在打開採集匣…</div>}
       {error && <p className="form-error">{error}<button className="text-link" onClick={() => void load()}>重新讀取</button></p>}
@@ -154,7 +167,7 @@ export default function ForageCaptureInbox() {
 
       <div className="forage-list">
         {visible.map((capture) => (
-          <ForageCard key={`${capture.id}-${capture.updatedAt}`} capture={capture} editing={editingId === capture.id}
+          <ForageCard key={`${capture.id}-${capture.updatedAt}`} capture={capture} editing={editingId === capture.id} targeted={capture.id === initialCaptureId}
             claims={claims} claimsLoading={claimsLoading}
             onEdit={() => { setEditingId(capture.id); void loadClaims(); }} onCancel={() => setEditingId(null)}
             onClaimCreated={(claim) => setClaims((current) => [claim, ...current])}
@@ -166,8 +179,8 @@ export default function ForageCaptureInbox() {
   );
 }
 
-function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel, onSaved, onClaimCreated, onCaptureUpdated }: {
-  capture: CaptureEntry; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
+function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit, onCancel, onSaved, onClaimCreated, onCaptureUpdated }: {
+  capture: CaptureEntry; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; targeted: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
 }) {
   const [draft, setDraft] = useState(capture);
   const [candidateStatement, setCandidateStatement] = useState("");
@@ -271,7 +284,7 @@ function ForageCard({ capture, claims, claimsLoading, editing, onEdit, onCancel,
   }
 
   return (
-    <article className={`forage-card depth-${capture.processingDepth}`}>
+    <article id={`capture-${capture.id}`} className={`forage-card depth-${capture.processingDepth} ${targeted ? "is-targeted" : ""}`}>
       <div className="weaving-capture-meta"><span>{capture.clip.origin === "line" ? `LINE 剪藏 · ${purposeLabel}` : categoryLabel} · {capture.processingDepth === "raw" ? "原始擷取" : capture.processingDepth === "light" ? "輕整理" : "深整理"}</span><time>{capturedTime(capture.capturedAt)}</time></div>
       <h3>{capture.title}</h3>
       {capture.clip.origin === "line" && <div className="forage-clip-source"><span>{capture.clip.sourceKind === "screenshot" ? "截圖" : "網頁"}</span><span>{capture.clip.platform || "LINE"}</span>{capture.clip.webPreview.status === "unavailable" && <span>僅保存網址</span>}</div>}
