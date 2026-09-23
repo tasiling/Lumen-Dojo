@@ -330,10 +330,8 @@ export async function exportEnglishImageContext(params: {
   const contentFingerprint = calculateSourceContentFingerprint(entry);
   const sourceRevision = nextSourceRevision(entry, contentFingerprint);
   const targetSignature = `${projectMode}:${materialId || materialTitle}|${unitMode}:${unitId || eventTitle}`;
-  const retryLink = [...entry.contextRoomLinks].reverse().find((link) => link.status !== "synced" && `${link.targetProjectMode}:${link.projectId || link.projectTitle}|${link.targetUnitMode}:${link.unitId || link.unitTitle}` === targetSignature && link.contentFingerprint === contentFingerprint);
-  const dispatchId = retryLink?.dispatchId || crypto.randomUUID();
   const { source, content } = sourceContent(entry);
-  const requestWithoutFingerprint = {
+  const requestForDispatch = (dispatchId: string) => ({
     contractVersion: SOURCE_HANDOFF_V2,
     dispatchId,
     source: { ...source, revision: sourceRevision, contentFingerprint },
@@ -346,7 +344,15 @@ export async function exportEnglishImageContext(params: {
     },
     content,
     expressions: selected,
-  };
+  });
+  const retryLink = [...entry.contextRoomLinks].reverse().find((link) =>
+    link.status !== "synced" &&
+    `${link.targetProjectMode}:${link.projectId || link.projectTitle}|${link.targetUnitMode}:${link.unitId || link.unitTitle}` === targetSignature &&
+    link.contentFingerprint === contentFingerprint &&
+    link.requestFingerprint === calculateRequestFingerprint(requestForDispatch(link.dispatchId))
+  );
+  const dispatchId = retryLink?.dispatchId || crypto.randomUUID();
+  const requestWithoutFingerprint = requestForDispatch(dispatchId);
   const requestFingerprint = calculateRequestFingerprint(requestWithoutFingerprint);
   const requestBody = { ...requestWithoutFingerprint, requestFingerprint };
   const dispatchedAt = retryLink?.dispatchedAt || new Date().toISOString();
@@ -376,7 +382,10 @@ export async function exportEnglishImageContext(params: {
   }
   const projectId = result.projectId || result.materialId || "";
   const receivedUnitId = result.unitId || result.batchId || "";
-  if (!projectId || !receivedUnitId || !result.sourceItemId || !result.sourceItemUnitId) throw new Error("語境修習室回傳的 v2 接收結果不完整");
+  if (!projectId || !receivedUnitId || !result.sourceItemId || !result.sourceItemUnitId) {
+    await saveEnglishImageEntry({ ...workingEntry, contextRoomLinks: workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "failed" as const, lastError: "語境修習室回傳的 v2 接收結果不完整" } : link) });
+    throw new Error("語境修習室回傳的 v2 接收結果不完整");
+  }
   const syncedAt = new Date().toISOString();
   const syncedLink: EnglishImageContextLink = { ...pendingLink, projectId, unitId: receivedUnitId, sourceItemId: result.sourceItemId, sourceItemUnitId: result.sourceItemUnitId, status: "synced", outcome: result.outcome || (result.duplicateDispatch ? "idempotent_replay" : "source_reused"), syncedAt };
   const finalLinks = workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? syncedLink : link).filter((link, index, all) => link.status !== "synced" || all.findIndex((other) => other.status === "synced" && other.projectId === link.projectId && other.unitId === link.unitId) === index);

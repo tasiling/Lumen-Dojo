@@ -145,6 +145,7 @@ assert.equal(new Set(multiDestination.contextRoomLinks.map((item) => item.source
 
 const dispatchSource = readFileSync(join(process.cwd(), "lib/dojo/englishImageDispatch.ts"), "utf8");
 assert.match(dispatchSource, /contractVersion: SOURCE_HANDOFF_V2/, "dispatcher uses the formal v2 contract");
+assert.match(dispatchSource, /calculateRequestFingerprint\(requestForDispatch\(link\.dispatchId\)\)/, "a retry reuses dispatchId only when the full canonical request is unchanged");
 assert.match(dispatchSource, /unitMode, unitId/, "dispatcher supports existing and new Unit targets");
 assert.match(dispatchSource, /retryLink\?\.dispatchId \|\| crypto\.randomUUID\(\)/, "timeout retry reuses the original dispatch ID");
 assert.match(dispatchSource, /mode: "v1", supportsExistingUnit: false/, "unsupported v2 capability falls back without exposing existing Unit selection");

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { englishImageAttachmentBytes, getEnglishImageEntry } from "@/lib/dojo/englishImageStore";
 
@@ -5,8 +6,12 @@ export const dynamic = "force-dynamic";
 
 function authorized(request: NextRequest): boolean {
   const secret = process.env.LUMEN_SOURCE_IMAGE_PROXY_SECRET?.trim() || "";
-  const actual = request.headers.get("authorization") || "";
-  return Boolean(secret) && actual === `Bearer ${secret}`;
+  const authorization = request.headers.get("authorization") || "";
+  const provided = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  if (!secret || !provided) return false;
+  const expectedBytes = Buffer.from(secret);
+  const providedBytes = Buffer.from(provided);
+  return expectedBytes.length === providedBytes.length && timingSafeEqual(expectedBytes, providedBytes);
 }
 
 export async function GET(
