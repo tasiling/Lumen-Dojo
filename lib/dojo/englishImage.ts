@@ -46,7 +46,28 @@ export type EnglishImageContextExport = {
   syncedAt: string;
 };
 
+export type EnglishImageContextLink = {
+  projectId: string;
+  unitId: string;
+  sourceItemId: string;
+  sourceItemUnitId: string;
+  projectTitle: string;
+  unitTitle: string;
+  dispatchId: string;
+  requestFingerprint: string;
+  sourceRevision: number;
+  contentFingerprint: string;
+  status: "pending" | "unknown" | "synced" | "failed";
+  outcome: string;
+  lastError: string;
+  dispatchedAt: string;
+  syncedAt: string | null;
+  targetProjectMode: "create" | "existing";
+  targetUnitMode: "create" | "existing";
+};
+
 export type EnglishImageAttachment = {
+  id: string;
   blockId: string;
   filename: string;
   mimeType: string;
@@ -97,6 +118,9 @@ export type EnglishImageEntry = {
   contextRoomPreparedAt: string | null;
   contextRoomUrl: string;
   contextRoomExport: EnglishImageContextExport | null;
+  contextRoomLinks: EnglishImageContextLink[];
+  contextRoomSourceRevision: number;
+  contextRoomContentFingerprint: string;
   vocabForgeExports: EnglishImageVocabExport[];
   vocabForgeSyncStates: EnglishImageVocabSyncState[];
   vocabForgeDraft: EnglishImageVocabDraft;
@@ -154,20 +178,30 @@ export function normalizeEnglishImageEntry(
     ? source.attachment as Partial<EnglishImageAttachment>
     : {};
   const attachmentValues = Array.isArray(source.attachments) ? source.attachments : [attachmentSource];
-  const attachments = attachmentValues.flatMap((item) => {
+  const attachments = attachmentValues.flatMap((item, originalIndex) => {
     if (!item || typeof item !== "object") return [];
     const attachment = item as Partial<EnglishImageAttachment>;
     const itemBlockId = text(attachment.blockId, 100);
     if (!itemBlockId) return [];
     return [{
+      id: text(attachment.id, 300) || itemBlockId,
       blockId: itemBlockId,
       filename: text(attachment.filename, 300) || "line-image.jpg",
       mimeType: text(attachment.mimeType, 100) || "image/jpeg",
       sourceMessageId: text(attachment.sourceMessageId, 200),
       createdAt: iso(attachment.createdAt, params.capturedAt ?? now),
       batchIndex: Number.isFinite(attachment.batchIndex) ? Math.max(1, Math.floor(Number(attachment.batchIndex))) : null,
+      originalIndex,
     }];
-  }).sort((a, b) => (a.batchIndex ?? Number.MAX_SAFE_INTEGER) - (b.batchIndex ?? Number.MAX_SAFE_INTEGER));
+  }).sort((a, b) => {
+    if (a.batchIndex === null && b.batchIndex === null) return a.originalIndex - b.originalIndex;
+    if (a.batchIndex === null) return 1;
+    if (b.batchIndex === null) return -1;
+    return a.batchIndex - b.batchIndex || a.originalIndex - b.originalIndex;
+  }).map(({ originalIndex, ...attachment }) => {
+    void originalIndex;
+    return attachment;
+  });
   const blockId = attachments[0]?.blockId ?? "";
   if (!blockId) return null;
   const capturedAt = iso(source.capturedAt, params.capturedAt ?? now);
@@ -252,6 +286,31 @@ export function normalizeEnglishImageEntry(
         syncedAt,
       };
     })() : null,
+    contextRoomLinks: Array.isArray(source.contextRoomLinks) ? source.contextRoomLinks.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const value = item as Partial<EnglishImageContextLink>;
+      const dispatchId = text(value.dispatchId, 200);
+      const dispatchedAt = text(value.dispatchedAt, 80);
+      if (!dispatchId || !dispatchedAt) return [];
+      const status: EnglishImageContextLink["status"] = value.status === "pending" || value.status === "unknown" || value.status === "failed" ? value.status : "synced";
+      return [{
+        projectId: text(value.projectId, 200), unitId: text(value.unitId, 200),
+        sourceItemId: text(value.sourceItemId, 200), sourceItemUnitId: text(value.sourceItemUnitId, 200),
+        projectTitle: text(value.projectTitle, 300), unitTitle: text(value.unitTitle, 300),
+        dispatchId, requestFingerprint: text(value.requestFingerprint, 64),
+        sourceRevision: Number.isSafeInteger(value.sourceRevision) && Number(value.sourceRevision) > 0 ? Number(value.sourceRevision) : 1,
+        contentFingerprint: text(value.contentFingerprint, 64), status,
+        outcome: text(value.outcome, 100), lastError: text(value.lastError, 1000), dispatchedAt,
+        syncedAt: value.syncedAt ? iso(value.syncedAt, dispatchedAt) : null,
+        targetProjectMode: value.targetProjectMode === "create" ? "create" as const : "existing" as const,
+        targetUnitMode: value.targetUnitMode === "existing" ? "existing" as const : "create" as const,
+      }];
+    }).filter((item, index, all) => {
+      if (item.status !== "synced" || !item.projectId || !item.unitId) return all.findIndex((other) => other.dispatchId === item.dispatchId) === index;
+      return all.findIndex((other) => other.status === "synced" && other.projectId === item.projectId && other.unitId === item.unitId) === index;
+    }) : [],
+    contextRoomSourceRevision: Number.isSafeInteger(source.contextRoomSourceRevision) && Number(source.contextRoomSourceRevision) > 0 ? Number(source.contextRoomSourceRevision) : 0,
+    contextRoomContentFingerprint: text(source.contextRoomContentFingerprint, 64),
     vocabForgeExports: Array.isArray(source.vocabForgeExports) ? source.vocabForgeExports.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const value = item as Partial<EnglishImageVocabExport>;
