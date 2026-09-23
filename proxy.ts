@@ -5,7 +5,7 @@ import { ACCESS_KEY_COOKIE } from "@/lib/access-key";
 // 首次進入輸入一次,存於瀏覽器 cookie;之後每次請求(頁面+寫入端點)都驗證。
 // 沒有金鑰或金鑰不符,一律拒絕——不論頁面或 API。
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|unlock|api/unlock|api/integrations/line/webhook).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|unlock|api/unlock|api/integrations/line/webhook|api/integrations/context-room/images).*)"],
 };
 
 export default function proxy(request: NextRequest) {

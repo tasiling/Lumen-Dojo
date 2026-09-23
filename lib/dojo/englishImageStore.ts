@@ -118,7 +118,7 @@ export async function createEnglishImageEntry(params: {
     lineBatchUntil: params.lineBatchUntil ?? null,
     capturedAt: now,
     updatedAt: now,
-    attachment: { blockId: "pending", filename: params.filename, mimeType: params.mimeType, sourceMessageId: params.sourceMessageId, createdAt: now, batchIndex: params.batchIndex ?? null },
+    attachment: { id: params.sourceMessageId || "pending", blockId: "pending", filename: params.filename, mimeType: params.mimeType, sourceMessageId: params.sourceMessageId, createdAt: now, batchIndex: params.batchIndex ?? null },
   }, { id: "pending" });
   if (!seed) throw new Error("無法建立英文影像紀錄");
   const created = await createKnowledgeEntry({ 標題: englishImageRecordTitle(crypto.randomUUID()), 內容: JSON.stringify(englishImageContent(seed)) });
@@ -134,7 +134,7 @@ export async function createEnglishImageEntry(params: {
   }));
   const block = response.results[0];
   if (!block) throw new Error("圖片沒有成功附加到英文影像紀錄");
-  const attachment = { ...seed.attachment, blockId: block.id };
+  const attachment = { ...seed.attachment, id: block.id, blockId: block.id };
   const entry = { ...seed, id: created.id, attachment, attachments: [attachment] };
   return saveEnglishImageEntry(entry);
 }
@@ -163,6 +163,7 @@ export async function appendEnglishImageAttachment(params: {
   const block = response.results[0];
   if (!block) throw new Error("圖片沒有成功附加到英文影像紀錄");
   const attachment: EnglishImageEntry["attachment"] = {
+    id: block.id,
     blockId: block.id,
     filename: params.filename,
     mimeType: params.mimeType,
@@ -171,7 +172,14 @@ export async function appendEnglishImageAttachment(params: {
     batchIndex: params.batchIndex ?? null,
   };
   const attachments = [...params.entry.attachments, attachment]
-    .sort((a, b) => (a.batchIndex ?? Number.MAX_SAFE_INTEGER) - (b.batchIndex ?? Number.MAX_SAFE_INTEGER));
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .sort((a, b) => {
+      if (a.item.batchIndex === null && b.item.batchIndex === null) return a.originalIndex - b.originalIndex;
+      if (a.item.batchIndex === null) return 1;
+      if (b.item.batchIndex === null) return -1;
+      return a.item.batchIndex - b.item.batchIndex || a.originalIndex - b.originalIndex;
+    })
+    .map(({ item }) => item);
   return saveEnglishImageEntry({
     ...params.entry,
     attachment: attachments[0],
@@ -253,7 +261,7 @@ export async function moveEnglishImageToCapture(entry: EnglishImageEntry) {
       origin: "line", purpose: "saveFirst", sourceKind: "screenshot", platform: "LINE 截圖",
       externalEventId: entry.externalEventId, externalMessageId: entry.externalMessageId,
       awaitingScreenshotUntil: null, awaitingReflectionUntil: null, webPreview: { description: "", imageUrl: "", fetchedAt: null, status: "none" },
-      attachments: entry.attachments.map((attachment) => ({ id: crypto.randomUUID(), kind: "image" as const, storage: "notion" as const, ...attachment })),
+      attachments: entry.attachments.map((attachment) => ({ ...attachment, id: crypto.randomUUID(), kind: "image" as const, storage: "notion" as const })),
     },
   }, { id: entry.id, capturedAt: entry.capturedAt, touch: true });
   if (!capture) throw new Error("無法轉成一般剪藏");

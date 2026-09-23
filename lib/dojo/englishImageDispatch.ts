@@ -1,7 +1,14 @@
 import "server-only";
 
-import type { EnglishImageContextExport, EnglishImageEntry, EnglishImageVocabExport, EnglishImageVocabSyncState } from "./englishImage";
+import type { EnglishImageContextExport, EnglishImageContextLink, EnglishImageEntry, EnglishImageVocabExport, EnglishImageVocabSyncState } from "./englishImage";
 import { getEnglishImageEntry, saveEnglishImageEntry } from "./englishImageStore";
+import {
+  calculateRequestFingerprint,
+  calculateSourceContentFingerprint,
+  nextSourceRevision,
+  sourceContent,
+  SOURCE_HANDOFF_V2,
+} from "./sourceHandoffV2";
 
 export type EnglishImageVocabCandidate = {
   key: string;
@@ -10,13 +17,7 @@ export type EnglishImageVocabCandidate = {
   sourceText: string;
   finalSentence: string;
   sourceSentence: string;
-  usage: {
-    partOfSpeech: string;
-    meaning: string;
-    sentence: string;
-    translation: string;
-    provenance: "source" | "generated" | "unknown";
-  };
+  usage: { partOfSpeech: string; meaning: string; sentence: string; translation: string; provenance: "source" | "generated" | "unknown" };
   cefrLevel: string;
   suggestedFocusDecks: string[];
   origin: "source" | "extension";
@@ -88,6 +89,22 @@ export type EnglishImageContextProject = {
   batchCount: number;
   latestBatchLabel: string;
   updatedAt: string;
+  units: Array<{ id: string; label: string; learningGoal: string; status: string; position: number; updatedAt: string }>;
+};
+
+export type EnglishImageContextCapability = {
+  mode: "v2" | "v1";
+  supportsExistingUnit: boolean;
+  supportsSourceItemReuse: boolean;
+  supportsOrderedAttachments: boolean;
+  supportsRevisionUpsert: boolean;
+  requiresRequestFingerprint: boolean;
+  imageProxyReady: boolean;
+};
+
+export type EnglishImageContextCatalog = {
+  projects: EnglishImageContextProject[];
+  capability: EnglishImageContextCapability;
 };
 
 function candidateKey(expression: string): string {
@@ -96,21 +113,14 @@ function candidateKey(expression: string): string {
 
 function sourceSentenceFor(entry: EnglishImageEntry, expression: string): string {
   const escaped = expression.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const stem = expression.length >= 7
-    ? expression.slice(0, expression.length - 2).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-    : escaped;
+  const stem = expression.length >= 7 ? expression.slice(0, expression.length - 2).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : escaped;
   const target = new RegExp(`\\b(?:${escaped}|${stem}[A-Za-z]*)\\b`, "i");
-  const source = entry.ocrText;
-  const sentences = source.match(/[^.!?\n]+[.!?]?/g) ?? [];
+  const sentences = entry.ocrText.match(/[^.!?\n]+[.!?]?/g) ?? [];
   return (sentences.find((sentence) => target.test(sentence)) ?? "").trim().slice(0, 1900);
 }
 
 function sourceContextFor(entry: EnglishImageEntry): string {
-  return [
-    entry.contextNote && `使用者補充：${entry.contextNote}`,
-    entry.chineseExplanation && `素材理解：${entry.chineseExplanation}`,
-    entry.ocrText && `OCR 原文：${entry.ocrText}`,
-  ].filter(Boolean).join("\n\n").trim().slice(0, 12000);
+  return [entry.contextNote && `使用者補充：${entry.contextNote}`, entry.chineseExplanation && `素材理解：${entry.chineseExplanation}`, entry.ocrText && `OCR 原文：${entry.ocrText}`].filter(Boolean).join("\n\n").trim().slice(0, 12000);
 }
 
 function contextKind(text: string, usage: string): EnglishImageContextCandidate["kind"] {
@@ -146,13 +156,7 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
       sourceText: (entry.contextNote || entry.chineseExplanation || entry.ocrText).trim().slice(0, 1900),
       finalSentence: candidate.usage.trim().slice(0, 1900),
       sourceSentence: sourceSentenceFor(entry, expression),
-      usage: {
-        partOfSpeech: candidate.partOfSpeech,
-        meaning: candidate.meaning,
-        sentence: candidate.usage,
-        translation: candidate.usageTranslation,
-        provenance: candidate.usageProvenance,
-      },
+      usage: { partOfSpeech: candidate.partOfSpeech, meaning: candidate.meaning, sentence: candidate.usage, translation: candidate.usageTranslation, provenance: candidate.usageProvenance },
       cefrLevel: candidate.cefrLevel,
       suggestedFocusDecks: candidate.suggestedFocusDecks.filter((deck) => PERMANENT_FOCUS_DECKS.includes(deck as typeof PERMANENT_FOCUS_DECKS[number])).slice(0, 2),
       origin: candidate.origin,
@@ -179,13 +183,7 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
       sourceText: (entry.contextNote || entry.chineseExplanation || entry.ocrText).trim().slice(0, 1900),
       finalSentence: "",
       sourceSentence: sourceSentenceFor(entry, expression),
-      usage: {
-        partOfSpeech: "",
-        meaning: meaningParts.join(" — ").trim().slice(0, 500),
-        sentence: "",
-        translation: "",
-        provenance: "unknown" as const,
-      },
+      usage: { partOfSpeech: "", meaning: meaningParts.join(" — ").trim().slice(0, 500), sentence: "", translation: "", provenance: "unknown" as const },
       cefrLevel: "待確認",
       suggestedFocusDecks: [routeFocusDeck(entry, entry.vocabForgeDraft.sourceName)],
       origin: "source" as const,
@@ -211,34 +209,62 @@ function comparableProjectTitle(value: string): string {
   return value.normalize("NFKC").toLocaleLowerCase("en").replace(/[\s_:：／/|｜–—-]+/g, "");
 }
 
-export async function listEnglishImageContextProjects(entry: EnglishImageEntry): Promise<EnglishImageContextProject[]> {
-  const base = contextRoomBaseUrl();
-  const secret = contextRoomSecret();
-  if (!base || !secret) throw new Error("語境修習室串接尚未完成 Railway 設定");
-  const endpoint = new URL("/api/integrations/lumen/import", base);
-  endpoint.searchParams.set("sourceType", contextSourceType(entry));
-  const response = await fetch(endpoint, {
-    headers: { Authorization: `Bearer ${secret}` },
-    cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
-  });
-  const result = await response.json().catch(() => ({})) as { error?: string; materials?: unknown[] };
-  if (!response.ok) throw new Error(result.error ?? `無法讀取語境修習室素材專案（${response.status}）`);
-  return (result.materials ?? []).flatMap((item) => {
+function parseContextProjects(items: unknown[], includeUnits: boolean): EnglishImageContextProject[] {
+  return items.flatMap((item) => {
     if (!item || typeof item !== "object") return [];
     const value = item as Partial<EnglishImageContextProject>;
     const id = typeof value.id === "string" ? value.id.trim().slice(0, 200) : "";
     const title = typeof value.title === "string" ? value.title.trim().slice(0, 300) : "";
     if (!id || !title) return [];
-    return [{
-      id,
-      type: typeof value.type === "string" ? value.type : "",
-      title,
-      batchCount: Math.max(0, Math.floor(Number(value.batchCount) || 0)),
-      latestBatchLabel: typeof value.latestBatchLabel === "string" ? value.latestBatchLabel.trim().slice(0, 300) : "",
-      updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "",
-    }];
+    const units = includeUnits && Array.isArray(value.units) ? value.units.flatMap((unit) => {
+      if (!unit || typeof unit !== "object") return [];
+      const row = unit as Partial<EnglishImageContextProject["units"][number]>;
+      const unitId = typeof row.id === "string" ? row.id.trim().slice(0, 200) : "";
+      const label = typeof row.label === "string" ? row.label.trim().slice(0, 300) : "";
+      if (!unitId || !label) return [];
+      return [{ id: unitId, label, learningGoal: typeof row.learningGoal === "string" ? row.learningGoal.trim().slice(0, 1000) : "", status: row.status === "active" ? "active" : "archived", position: Math.max(1, Math.floor(Number(row.position) || 1)), updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : "" }];
+    }) : [];
+    return [{ id, type: typeof value.type === "string" ? value.type : "", title, batchCount: Math.max(0, Math.floor(Number(value.batchCount) || 0)), latestBatchLabel: typeof value.latestBatchLabel === "string" ? value.latestBatchLabel.trim().slice(0, 300) : "", updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", units }];
   });
+}
+
+export async function listEnglishImageContextCatalog(entry: EnglishImageEntry): Promise<EnglishImageContextCatalog> {
+  const base = contextRoomBaseUrl();
+  const secret = contextRoomSecret();
+  if (!base || !secret) throw new Error("語境修習室串接尚未完成 Railway 設定");
+  const endpoint = new URL("/api/integrations/lumen/import", base);
+  endpoint.searchParams.set("contractVersion", SOURCE_HANDOFF_V2);
+  const v2Response = await fetch(endpoint, {
+    headers: { Authorization: `Bearer ${secret}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
+  });
+  const v2Result = await v2Response.json().catch(() => ({})) as { error?: string; materials?: unknown[]; capabilities?: Record<string, unknown> };
+  if (v2Response.ok && Array.isArray(v2Result.capabilities?.acceptedContractVersions) && v2Result.capabilities.acceptedContractVersions.includes(SOURCE_HANDOFF_V2)) {
+    return {
+      projects: parseContextProjects(v2Result.materials ?? [], true),
+      capability: {
+        mode: "v2", supportsExistingUnit: v2Result.capabilities.supportsExistingUnit === true,
+        supportsSourceItemReuse: v2Result.capabilities.supportsSourceItemReuse === true,
+        supportsOrderedAttachments: v2Result.capabilities.supportsOrderedAttachments === true,
+        supportsRevisionUpsert: v2Result.capabilities.supportsRevisionUpsert === true,
+        requiresRequestFingerprint: v2Result.capabilities.requiresRequestFingerprint === true,
+        imageProxyReady: v2Result.capabilities.imageProxyReady === true,
+      },
+    };
+  }
+  if (v2Response.status === 401 || v2Response.status === 403)
+    throw new Error(v2Result.error ?? "語境修習室 v2 capability 授權失敗，已停用新版派送");
+  const legacyEndpoint = new URL("/api/integrations/lumen/import", base);
+  legacyEndpoint.searchParams.set("sourceType", contextSourceType(entry));
+  const legacyResponse = await fetch(legacyEndpoint, { headers: { Authorization: `Bearer ${secret}` }, cache: "no-store", signal: AbortSignal.timeout(20_000) });
+  const legacyResult = await legacyResponse.json().catch(() => ({})) as { error?: string; materials?: unknown[] };
+  if (!legacyResponse.ok) throw new Error(legacyResult.error ?? `無法讀取語境修習室學習專案（${legacyResponse.status}）`);
+  return { projects: parseContextProjects(legacyResult.materials ?? [], false), capability: { mode: "v1", supportsExistingUnit: false, supportsSourceItemReuse: false, supportsOrderedAttachments: false, supportsRevisionUpsert: false, requiresRequestFingerprint: false, imageProxyReady: false } };
+}
+
+export async function listEnglishImageContextProjects(entry: EnglishImageEntry): Promise<EnglishImageContextProject[]> {
+  return (await listEnglishImageContextCatalog(entry)).projects;
 }
 
 export function suggestedEnglishImageContextProject(entry: EnglishImageEntry, projects: EnglishImageContextProject[]): string {
@@ -267,9 +293,16 @@ export async function prepareEnglishImageForContextRoom(id: string): Promise<Eng
 
 export async function exportEnglishImageContext(params: {
   id: string;
+  contractMode?: "v2" | "v1";
+  projectMode?: "create" | "existing";
   materialId?: string;
   materialTitle: string;
+  unitMode?: "create" | "existing";
+  unitId?: string;
   eventTitle: string;
+  projectType?: string;
+  learningPathId?: string;
+  crossTypeConfirmed?: boolean;
   candidateKeys: string[];
 }): Promise<EnglishImageEntry> {
   const base = contextRoomBaseUrl();
@@ -286,6 +319,88 @@ export async function exportEnglishImageContext(params: {
   const selected = requested.flatMap((key) => allCandidates.find((item) => item.key === key) ?? []);
   if (selected.length !== requested.length) throw new Error("表達候選已變更，請重新整理後再選擇");
 
+  if (params.contractMode !== "v2") return exportEnglishImageContextV1({ ...params, entry, selected, base, secret, materialTitle, eventTitle });
+  const projectMode = params.projectMode === "existing" ? "existing" : "create";
+  const unitMode = params.unitMode === "existing" ? "existing" : "create";
+  const materialId = params.materialId?.trim().slice(0, 200) || "";
+  const unitId = params.unitId?.trim().slice(0, 200) || "";
+  if (projectMode === "existing" && !materialId) throw new Error("請選擇既有學習專案");
+  if (unitMode === "existing" && !unitId) throw new Error("請選擇既有學習單元");
+  if (projectMode === "create" && unitMode === "existing") throw new Error("新學習專案不能直接選擇既有單元");
+  const contentFingerprint = calculateSourceContentFingerprint(entry);
+  const sourceRevision = nextSourceRevision(entry, contentFingerprint);
+  const targetSignature = `${projectMode}:${materialId || materialTitle}|${unitMode}:${unitId || eventTitle}`;
+  const { source, content } = sourceContent(entry);
+  const requestForDispatch = (dispatchId: string) => ({
+    contractVersion: SOURCE_HANDOFF_V2,
+    dispatchId,
+    source: { ...source, revision: sourceRevision, contentFingerprint },
+    target: {
+      projectMode, projectId: materialId, projectTitle: materialTitle,
+      projectType: params.projectType?.trim().slice(0, 100) || (entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom"),
+      unitMode, unitId, unitTitle: eventTitle,
+      learningPathId: params.learningPathId?.trim().slice(0, 200) || "",
+      crossTypeConfirmed: params.crossTypeConfirmed === true,
+    },
+    content,
+    expressions: selected,
+  });
+  const retryLink = [...entry.contextRoomLinks].reverse().find((link) =>
+    link.status !== "synced" &&
+    `${link.targetProjectMode}:${link.projectId || link.projectTitle}|${link.targetUnitMode}:${link.unitId || link.unitTitle}` === targetSignature &&
+    link.contentFingerprint === contentFingerprint &&
+    link.requestFingerprint === calculateRequestFingerprint(requestForDispatch(link.dispatchId))
+  );
+  const dispatchId = retryLink?.dispatchId || crypto.randomUUID();
+  const requestWithoutFingerprint = requestForDispatch(dispatchId);
+  const requestFingerprint = calculateRequestFingerprint(requestWithoutFingerprint);
+  const requestBody = { ...requestWithoutFingerprint, requestFingerprint };
+  const dispatchedAt = retryLink?.dispatchedAt || new Date().toISOString();
+  const pendingLink: EnglishImageContextLink = {
+    projectId: materialId, unitId, sourceItemId: retryLink?.sourceItemId || "", sourceItemUnitId: retryLink?.sourceItemUnitId || "",
+    projectTitle: materialTitle, unitTitle: eventTitle, dispatchId, requestFingerprint, sourceRevision, contentFingerprint,
+    status: "pending", outcome: "", lastError: "", dispatchedAt, syncedAt: null,
+    targetProjectMode: projectMode, targetUnitMode: unitMode,
+  };
+  const contextRoomLinks = retryLink
+    ? entry.contextRoomLinks.map((link) => link.dispatchId === retryLink.dispatchId ? pendingLink : link)
+    : [...entry.contextRoomLinks, pendingLink];
+  let workingEntry = await saveEnglishImageEntry({ ...entry, contextRoomLinks, contextRoomSourceRevision: sourceRevision, contextRoomContentFingerprint: contentFingerprint });
+  const endpoint = new URL("/api/integrations/lumen/import", base);
+  let response: Response;
+  try {
+    response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` }, body: JSON.stringify(requestBody), cache: "no-store", signal: AbortSignal.timeout(20_000) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    workingEntry = await saveEnglishImageEntry({ ...workingEntry, contextRoomLinks: workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "unknown" as const, lastError: `接收結果未知：${message}` } : link) });
+    throw new Error("派送逾時或連線中斷；接收結果未知，已保留原 dispatchId，可安全重試。");
+  }
+  const result = await response.json().catch(() => ({})) as { error?: string; code?: string; projectId?: string; unitId?: string; sourceItemId?: string; sourceItemUnitId?: string; materialId?: string; batchId?: string; outcome?: string; duplicateDispatch?: boolean };
+  if (!response.ok) {
+    await saveEnglishImageEntry({ ...workingEntry, contextRoomLinks: workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "failed" as const, lastError: [result.code, result.error].filter(Boolean).join("：") || `HTTP ${response.status}` } : link) });
+    throw new Error(result.error ?? `語境修習室接收失敗（${response.status}）`);
+  }
+  const projectId = result.projectId || result.materialId || "";
+  const receivedUnitId = result.unitId || result.batchId || "";
+  if (!projectId || !receivedUnitId || !result.sourceItemId || !result.sourceItemUnitId) {
+    await saveEnglishImageEntry({ ...workingEntry, contextRoomLinks: workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "failed" as const, lastError: "語境修習室回傳的 v2 接收結果不完整" } : link) });
+    throw new Error("語境修習室回傳的 v2 接收結果不完整");
+  }
+  const syncedAt = new Date().toISOString();
+  const syncedLink: EnglishImageContextLink = { ...pendingLink, projectId, unitId: receivedUnitId, sourceItemId: result.sourceItemId, sourceItemUnitId: result.sourceItemUnitId, status: "synced", outcome: result.outcome || (result.duplicateDispatch ? "idempotent_replay" : "source_reused"), syncedAt };
+  const finalLinks = workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? syncedLink : link).filter((link, index, all) => link.status !== "synced" || all.findIndex((other) => other.status === "synced" && other.projectId === link.projectId && other.unitId === link.unitId) === index);
+  const contextRoomUrl = new URL(base.replace(/\/$/, ""));
+  contextRoomUrl.searchParams.set("materialId", projectId);
+  contextRoomUrl.searchParams.set("batchId", receivedUnitId);
+  const contextRoomExport: EnglishImageContextExport = { sourceRecordId: entry.id, materialId: projectId, batchId: receivedUnitId, materialTitle, eventTitle, batchPosition: 1, materialReused: projectMode === "existing", expressionCount: selected.length, duplicate: result.duplicateDispatch === true, syncedAt };
+  return saveEnglishImageEntry({ ...workingEntry, contextRoomStatus: "synced", contextRoomPreparedAt: syncedAt, contextRoomUrl: contextRoomUrl.toString(), contextRoomExport, contextRoomLinks: finalLinks });
+}
+
+async function exportEnglishImageContextV1(params: {
+  entry: EnglishImageEntry; selected: EnglishImageContextCandidate[]; base: string; secret: string;
+  materialId?: string; materialTitle: string; eventTitle: string;
+}): Promise<EnglishImageEntry> {
+  const { entry, selected, base, secret, materialTitle, eventTitle } = params;
   const endpoint = new URL("/api/integrations/lumen/import", base);
   const response = await fetch(endpoint, {
     method: "POST",
