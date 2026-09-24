@@ -18,6 +18,7 @@ import {
 import { LEARNING_TRACKS } from "@/lib/dojo/learning";
 import { KNOWLEDGE_CLAIM_TYPES, currentClaimVersion, type Claimant, type KnowledgeClaim, type KnowledgeClaimType } from "@/lib/dojo/knowledgeClaims";
 import { buildCaptureExplorationPackage, parseCaptureExplorationResult, type CaptureExplorationDraft } from "@/lib/dojo/captureExploration";
+import { decodeHtmlEntities } from "@/lib/dojo/htmlEntities";
 
 type InboxTab = "pending" | "adopted" | "faded";
 
@@ -35,6 +36,12 @@ function capturedTime(value: string): string {
 
 function sourceHost(sourceUrl: string): string {
   try { return new URL(sourceUrl).hostname.replace(/^www\./, ""); } catch { return "查看來源"; }
+}
+
+function externalPreviewText(capture: CaptureEntry, value: string): string {
+  return capture.clip.origin === "line" && capture.clip.sourceKind === "webpage"
+    ? decodeHtmlEntities(value)
+    : value;
 }
 
 const DESTINATIONS: { key: CaptureDestination; label: string; hint: string }[] = [
@@ -267,6 +274,8 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
   const [error, setError] = useState<string | null>(null);
   const categoryLabel = capture.category ? CAPTURE_CATEGORIES[capture.category] : "未分類";
   const purposeLabel = CAPTURE_CLIP_PURPOSES[capture.clip.purpose];
+  const displayTitle = externalPreviewText(capture, capture.title);
+  const displayExcerpt = externalPreviewText(capture, capture.excerpt);
 
   function toggleDestination(destination: CaptureDestination) {
     setDraft((current) => ({ ...current, destinations: current.destinations.includes(destination)
@@ -362,11 +371,11 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
   return (
     <article id={`capture-${capture.id}`} className={`forage-card depth-${capture.processingDepth} ${targeted ? "is-targeted" : ""}`}>
       <div className="weaving-capture-meta"><span>{capture.clip.origin === "line" ? `LINE 剪藏 · ${purposeLabel}` : categoryLabel} · {capture.processingDepth === "raw" ? "原始擷取" : capture.processingDepth === "light" ? "輕整理" : "深整理"}</span><time>{capturedTime(capture.capturedAt)}</time></div>
-      <h3>{capture.title}</h3>
+      <h3>{displayTitle}</h3>
       {capture.clip.origin === "line" && <div className="forage-clip-source"><span>{capture.clip.sourceKind === "screenshot" ? "截圖" : "網頁"}</span><span>{capture.clip.platform || "LINE"}</span>{capture.clip.webPreview.status === "unavailable" && <span>僅保存網址</span>}</div>}
       {capture.clip.attachments.length > 0 && <div className="forage-clip-images">{capture.clip.attachments.map((attachment) => <a key={attachment.id} href={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} target="_blank" rel="noreferrer"><Image src={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} alt="LINE 剪藏原始截圖" width={720} height={480} unoptimized /></a>)}</div>}
-      {capture.excerpt && <p className="weaving-excerpt">{capture.excerpt}</p>}
-      {capture.forageReason && <div className="capture-initial-reflection"><b>最初想記錄的原因</b><p>{capture.forageReason}</p></div>}
+      {displayExcerpt && <p className="weaving-excerpt">{displayExcerpt}</p>}
+      {capture.forageReason && !editing && <div className="capture-initial-reflection"><b>最初想記錄的原因</b><p>{capture.forageReason}</p></div>}
       {capture.note && capture.note !== capture.forageReason && <div className="weaving-original-note"><b>擷取時的其他補充</b><p>{capture.note}</p></div>}
       {capture.sourceUrl && <a className="weaving-source" href={capture.sourceUrl} target="_blank" rel="noreferrer">↗ {sourceHost(capture.sourceUrl)}</a>}
       <CaptureExploration capture={capture} onUpdated={onCaptureUpdated} />
