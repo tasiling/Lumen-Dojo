@@ -3124,6 +3124,7 @@
   font-size: 13px;
   line-height: 1.7;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 .dojo .weaving-original-note {
@@ -3277,6 +3278,9 @@
 
 /* 野採：狀態、整理深度、使用去向分開，輕整理可在十秒內完成。 */
 .dojo .forage-inbox {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   margin: 15px 0 18px;
   padding: 15px;
   border: 1px solid #e1c996;
@@ -3343,9 +3347,15 @@
 }
 .dojo .forage-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 100%;
   gap: 10px;
 }
 .dojo .forage-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 14px;
   border: 1px solid #ddc99f;
   border-radius: 16px;
@@ -3354,6 +3364,32 @@
 .dojo .forage-card h3 {
   margin: 9px 0 5px;
   font: 650 17px "Noto Serif TC", serif;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.dojo .forage-card > *,
+.dojo .weaving-editor-heading > div,
+.dojo .forage-editor,
+.dojo .deep-forage,
+.dojo .claim-bridge,
+.dojo .capture-initial-reflection,
+.dojo .capture-exploration,
+.dojo .capture-exploration-heading > div,
+.dojo .capture-exploration-editor,
+.dojo .capture-exploration-history,
+.dojo .capture-exploration-history article {
+  min-width: 0;
+  max-width: 100%;
+}
+.dojo .forage-card p,
+.dojo .forage-card small,
+.dojo .forage-card span,
+.dojo .forage-card b,
+.dojo .forage-card time,
+.dojo .forage-card summary,
+.dojo .forage-card label {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .dojo .forage-card .weaving-capture-meta span {
   background: #f3e7cd;
@@ -3426,6 +3462,17 @@
   padding-top: 13px;
   border-top: 1px solid #e1d3b7;
 }
+.dojo .forage-editor .field,
+.dojo .capture-exploration-editor .field {
+  min-width: 0;
+  max-width: 100%;
+}
+.dojo .forage-editor textarea,
+.dojo .capture-exploration-editor textarea {
+  resize: vertical;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .dojo .forage-editor > label,
 .dojo .deep-forage label,
 .dojo .learning-editor label {
@@ -3443,7 +3490,7 @@
 .dojo .destination-grid,
 .dojo .output-type-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 .dojo .destination-grid button {
@@ -3544,7 +3591,7 @@
 .dojo .learning-editor-actions,
 .dojo .learning-actions {
   display: grid;
-  grid-template-columns: 0.9fr 1.35fr;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
   gap: 7px;
   margin-top: 13px;
 }
@@ -3776,7 +3823,7 @@
 .dojo .capture-exploration-editor { padding: 11px; border-top: 1px solid #e8decb; background: #fffbf4; }
 .dojo .capture-exploration-editor > label,
 .dojo .capture-exploration-import label { display: block; margin: 10px 1px 5px; color: #5f5547; font-size: 9px; font-weight: 800; }
-.dojo .capture-exploration-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.dojo .capture-exploration-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
 .dojo .capture-exploration-modes button { min-width: 0; min-height: 36px; padding: 5px; color: var(--muted); font-size: 9.5px; }
 .dojo .capture-exploration-modes button.on { border-color: #b68b47; background: #ebdbc0; color: #654a1d; font-weight: 800; }
 .dojo .capture-exploration-import { margin-top: 8px; padding: 9px; border-radius: 11px; background: #f2eee6; }
