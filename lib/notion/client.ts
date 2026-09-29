@@ -12,6 +12,11 @@ function getToken(): string {
 }
 
 let client: Client | null = null;
+let noRetryClient: Client | null = null;
+export function notionWithoutRetries(): Client {
+  if (!noRetryClient) noRetryClient = new Client({ auth: getToken(), retry: false });
+  return noRetryClient;
+}
 export function notion(): Client {
   if (!client) {
     client = new Client({ auth: getToken() });
@@ -46,7 +51,7 @@ function sleep(ms: number) {
 // (如日上三更批次建立)一次要連續送出數十筆請求,若中途有一兩筆因短暫網路
 // 抖動失敗又沒被重試,會造成「這批只成功一半」的部分寫入,卻只看得到
 // Notion 裡缺了幾筆、看不出原因——擴大重試範圍是為了降低這種情況發生的機率。
-export async function withNotionRateLimit<T>(fn: () => Promise<T>): Promise<T> {
+export async function withNotionRateLimit<T>(fn: () => Promise<T>, options: { retry?: boolean } = {}): Promise<T> {
   await throttledSlot();
   const delays = [500, 1500, 4000];
   let lastErr: unknown;
@@ -57,7 +62,7 @@ export async function withNotionRateLimit<T>(fn: () => Promise<T>): Promise<T> {
       lastErr = err;
       const status = (err as { status?: number })?.status;
       const retryable = status === undefined || status === 429 || status >= 500;
-      if (!retryable || attempt === delays.length) break;
+      if (options.retry === false || !retryable || attempt === delays.length) break;
       await sleep(delays[attempt]);
     }
   }

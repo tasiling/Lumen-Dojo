@@ -15,9 +15,15 @@ import { notion, withNotionRateLimit } from "@/lib/notion/client";
 import { getKnowledgeEntry } from "@/lib/notion/queries";
 import { appendCaptureExploration, type CaptureExplorationDraft } from "./captureExploration";
 
+import { withLearningWriteLock } from './learningFoundation/fileLock';
+import { learningFoundation } from './learningFoundation/store';
+import { mergeLearningRelations } from './learningFoundation/relations';
+import { LearningError } from './learningFoundation/model';
+
 const captureUpdateLocks = new Map<string, Promise<unknown>>();
 
 async function withCaptureUpdateLock<T>(id: string, task: () => Promise<T>): Promise<T> {
+  if (process.env.LEARNING_WRITE_LOCK_DIR) return withLearningWriteLock(task);
   const previous = captureUpdateLocks.get(id) ?? Promise.resolve();
   const current = previous.catch(() => undefined).then(task);
   captureUpdateLocks.set(id, current);
@@ -63,6 +69,7 @@ export async function createCaptureEntry(input: unknown): Promise<CaptureEntry> 
       explorationRecords: [],
       knowledgeLinks: [],
       learningTracks: [],
+      learningItemIds: [],
       destinations: [],
       pinned: false,
       fadedAt: null,
@@ -89,25 +96,24 @@ export async function createCaptureEntry(input: unknown): Promise<CaptureEntry> 
 }
 
 export async function saveCaptureEntry(capture: CaptureEntry): Promise<CaptureEntry> {
-  const current = await getCaptureEntry(capture.id);
-  const normalized = normalizeCaptureEntry(capture, {
-    id: capture.id,
-    capturedAt: current.capture.capturedAt,
-    touch: true,
+  return updateCaptureEntry(capture.id, current => {
+    if (capture.updatedAt !== current.updatedAt) throw new LearningError('素材版本已變更，請重新讀取再操作', 409);
+    return capture;
   });
-  if (!normalized) throw new Error("擷取內容無法儲存");
-  await updateJsonRecordById(normalized.id, CAPTURE_TITLE_PREFIX, current.title, captureContent(normalized));
-  return normalized;
 }
 
 export async function updateCaptureEntry(
   id: string,
-  update: (current: CaptureEntry) => Partial<CaptureEntry>
+  update: (current: CaptureEntry) => Partial<CaptureEntry> | Promise<Partial<CaptureEntry>>
 ): Promise<CaptureEntry> {
   return withCaptureUpdateLock(id, async () => {
     const current = await getCaptureEntry(id);
+    const incoming = await update(current.capture);
+    if (!process.env.LEARNING_WRITE_LOCK_DIR && ((current.capture.learningItemIds?.length ?? 0) || (incoming.learningItemIds?.length ?? 0))) throw new LearningError('穩定學習關聯寫入需設定 LEARNING_WRITE_LOCK_DIR', 503);
+    const entities = process.env.LEARNING_WRITE_LOCK_DIR ? (await learningFoundation.snapshot()).entities : [];
+    const relations = mergeLearningRelations(current.capture, incoming, entities);
     const normalized = normalizeCaptureEntry(
-      { ...current.capture, ...update(current.capture) },
+      { ...current.capture, ...incoming, ...relations, unresolvedLearningRefs: current.capture.unresolvedLearningRefs },
       { id, capturedAt: current.capture.capturedAt, touch: true }
     );
     if (!normalized) throw new Error("擷取內容無法儲存");

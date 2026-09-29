@@ -24,6 +24,7 @@ export type QuickAddOptions = {
   editId?: string;
   presetSpace?: SpaceKey;
   presetKind?: string;
+  learningItemId?: string;
   presetDate?: string;
   mode?: "record" | "calendar";
 };
@@ -31,6 +32,7 @@ export type QuickAddOptions = {
 export type TimerConfig = {
   space: SpaceKey;
   kind: string;
+  learningItemId?: string;
   title: string;
   guangxing: GuangxingKey | null;
   guangfa: GuangfaKey | null;
@@ -48,6 +50,7 @@ export type StartTimerParams = {
   space: SpaceKey;
   title: string;
   kind: string;
+  learningItemId?: string;
   guangxing?: GuangxingKey | null;
   guangfa?: GuangfaKey | null;
 };
@@ -83,6 +86,7 @@ function editablePayload(entry: DojoEntry): NewEntry {
     title: entry.title,
     space: entry.space,
     kind: entry.kind,
+    learningItemId: entry.learningItemId,
     privacy: entry.privacy,
     note: entry.note,
     date: entry.date,
@@ -212,6 +216,7 @@ export function DojoProvider({ children }: { children: ReactNode }) {
       space: params.space,
       title: params.title,
       kind: params.kind,
+      learningItemId: params.learningItemId,
       guangxing: params.guangxing ?? null,
       guangfa: params.guangfa ?? null,
     });

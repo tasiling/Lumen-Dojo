@@ -69,6 +69,7 @@ export type DojoEntry = {
   title: string;
   space: SpaceKey;
   kind: string;
+  learningItemId?: string;
   privacy: Privacy;
   note?: string;
   date: string;

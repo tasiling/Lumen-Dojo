@@ -24,3 +24,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* R2-1 functional learning management; the wider home redesign belongs to R2-2. */
+.learning-foundation { min-width: 0; margin: 1.5rem 0; padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+.learning-foundation * { min-width: 0; overflow-wrap: anywhere; }
+.foundation-detail, .foundation-editor, .foundation-init { margin: 1rem 0; padding: 1rem; border: 1px solid var(--border, #d7d1c5); border-radius: 16px; }
+.foundation-node { margin: .75rem 0; padding: .8rem; background: var(--surface, #f9f6f0); border-radius: 12px; }
+.foundation-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
+.foundation-actions button, .learning-foundation > button { min-height: 44px; }
+.foundation-editor label { display: block; margin: .8rem 0; }
+.foundation-editor .field { width: 100%; max-width: 100%; font-size: 16px; }
+.foundation-stage { border-left: 2px solid #9a8c73; padding-left: .6rem; }
+.foundation-topics { padding-left: .5rem; }
+@media (max-width: 430px) { .learning-foundation .learning-track-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .foundation-detail, .foundation-editor, .foundation-init { padding: .75rem; } }
