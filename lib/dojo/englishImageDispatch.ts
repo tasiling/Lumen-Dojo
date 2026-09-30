@@ -86,10 +86,13 @@ export type EnglishImageContextProject = {
   id: string;
   type: string;
   title: string;
+  longTermGoal: string;
+  description: string;
+  catalogRole: string;
   batchCount: number;
   latestBatchLabel: string;
   updatedAt: string;
-  units: Array<{ id: string; label: string; learningGoal: string; status: string; position: number; updatedAt: string }>;
+  units: Array<{ id: string; label: string; learningGoal: string; status: string; position: number; updatedAt: string; sourceRecordIds: string[] }>;
 };
 
 export type EnglishImageContextCapability = {
@@ -100,6 +103,8 @@ export type EnglishImageContextCapability = {
   supportsRevisionUpsert: boolean;
   requiresRequestFingerprint: boolean;
   imageProxyReady: boolean;
+  supportsUnitArrangement: boolean;
+  supportsEnsureUnit: boolean;
 };
 
 export type EnglishImageContextCatalog = {
@@ -222,9 +227,9 @@ function parseContextProjects(items: unknown[], includeUnits: boolean): EnglishI
       const unitId = typeof row.id === "string" ? row.id.trim().slice(0, 200) : "";
       const label = typeof row.label === "string" ? row.label.trim().slice(0, 300) : "";
       if (!unitId || !label) return [];
-      return [{ id: unitId, label, learningGoal: typeof row.learningGoal === "string" ? row.learningGoal.trim().slice(0, 1000) : "", status: row.status === "active" ? "active" : "archived", position: Math.max(1, Math.floor(Number(row.position) || 1)), updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : "" }];
+      return [{ id: unitId, label, learningGoal: typeof row.learningGoal === "string" ? row.learningGoal.trim().slice(0, 1000) : "", status: row.status === "active" ? "active" : "archived", position: Math.max(1, Math.floor(Number(row.position) || 1)), updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : "", sourceRecordIds: Array.isArray(row.sourceRecordIds) ? row.sourceRecordIds.filter((id): id is string => typeof id === "string") : [] }];
     }) : [];
-    return [{ id, type: typeof value.type === "string" ? value.type : "", title, batchCount: Math.max(0, Math.floor(Number(value.batchCount) || 0)), latestBatchLabel: typeof value.latestBatchLabel === "string" ? value.latestBatchLabel.trim().slice(0, 300) : "", updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", units }];
+    return [{ id, type: typeof value.type === "string" ? value.type : "", title, longTermGoal: typeof value.longTermGoal === "string" ? value.longTermGoal.trim().slice(0, 2000) : "", description: typeof value.description === "string" ? value.description.trim().slice(0, 3000) : "", catalogRole: typeof value.catalogRole === "string" ? value.catalogRole : "", batchCount: Math.max(0, Math.floor(Number(value.batchCount) || 0)), latestBatchLabel: typeof value.latestBatchLabel === "string" ? value.latestBatchLabel.trim().slice(0, 300) : "", updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", units }];
   });
 }
 
@@ -250,6 +255,8 @@ export async function listEnglishImageContextCatalog(entry: EnglishImageEntry): 
         supportsRevisionUpsert: v2Result.capabilities.supportsRevisionUpsert === true,
         requiresRequestFingerprint: v2Result.capabilities.requiresRequestFingerprint === true,
         imageProxyReady: v2Result.capabilities.imageProxyReady === true,
+        supportsUnitArrangement: v2Result.capabilities.supportsUnitArrangement === true,
+        supportsEnsureUnit: v2Result.capabilities.supportsEnsureUnit === true,
       },
     };
   }
@@ -260,7 +267,7 @@ export async function listEnglishImageContextCatalog(entry: EnglishImageEntry): 
   const legacyResponse = await fetch(legacyEndpoint, { headers: { Authorization: `Bearer ${secret}` }, cache: "no-store", signal: AbortSignal.timeout(20_000) });
   const legacyResult = await legacyResponse.json().catch(() => ({})) as { error?: string; materials?: unknown[] };
   if (!legacyResponse.ok) throw new Error(legacyResult.error ?? `無法讀取語境修習室學習專案（${legacyResponse.status}）`);
-  return { projects: parseContextProjects(legacyResult.materials ?? [], false), capability: { mode: "v1", supportsExistingUnit: false, supportsSourceItemReuse: false, supportsOrderedAttachments: false, supportsRevisionUpsert: false, requiresRequestFingerprint: false, imageProxyReady: false } };
+  return { projects: parseContextProjects(legacyResult.materials ?? [], false), capability: { mode: "v1", supportsExistingUnit: false, supportsSourceItemReuse: false, supportsOrderedAttachments: false, supportsRevisionUpsert: false, requiresRequestFingerprint: false, imageProxyReady: false, supportsUnitArrangement: false, supportsEnsureUnit: false } };
 }
 
 export async function listEnglishImageContextProjects(entry: EnglishImageEntry): Promise<EnglishImageContextProject[]> {
