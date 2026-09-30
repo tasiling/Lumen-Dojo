@@ -14,6 +14,7 @@ import {
   FOUNDATION_PREFIX,
 } from "../lib/dojo/learningFoundation/model";
 import { createSeedOnce } from "../lib/dojo/learningFoundation/seedWrite";
+import { trackLearningWrite } from "../lib/dojo/learningFoundation/writeOutcome";
 import { withLearningWriteLock } from "../lib/dojo/learningFoundation/fileLock";
 import { mergeLearningRelations } from "../lib/dojo/learningFoundation/relations";
 import { captureContent, normalizeCaptureEntry } from "../lib/dojo/formal";
@@ -296,9 +297,13 @@ async function main() {
   );
   const uncertainRoot = await mkdtemp(join(tmpdir(), "r2-uncertain-"));
   await assert.rejects(
-    withLearningWriteLock(async () => {
-      throw new Error("lost network response");
-    }, uncertainRoot),
+    withLearningWriteLock(
+      () =>
+        trackLearningWrite(async () => {
+          throw new LearningError("lost network response", 503);
+        }),
+      uncertainRoot,
+    ),
     /結果未確認/,
   );
   await assert.rejects(
@@ -307,6 +312,36 @@ async function main() {
   );
   assert.ok((await readdir(uncertainRoot)).includes("learning-writer.lock"));
   await rm(uncertainRoot, { recursive: true, force: true });
+  const safeSeedRoot = await mkdtemp(join(tmpdir(), "r2-safe-seed-"));
+  await assert.rejects(
+    withLearningWriteLock(
+      () =>
+        createSeedOnce(
+          "tarot",
+          async () => {
+            throw new Error("client setup failed before dispatch");
+          },
+          safeSeedRoot,
+        ),
+      safeSeedRoot,
+    ),
+    /讀取／驗證失敗/,
+  );
+  assert.deepEqual(await readdir(safeSeedRoot), []);
+  await withLearningWriteLock(
+    () =>
+      createSeedOnce(
+        "tarot",
+        () => trackLearningWrite(async () => true),
+        safeSeedRoot,
+      ),
+    safeSeedRoot,
+  );
+  assert.deepEqual(await readdir(safeSeedRoot), ["seed-tarot.intent"]);
+  await rm(safeSeedRoot, { recursive: true, force: true });
+  console.log(
+    "PASS seed intent cleaned only with transport evidence of no dispatch; confirmed create retains intent",
+  );
   let seedAttempts = 0;
   await assert.rejects(
     createSeedOnce(

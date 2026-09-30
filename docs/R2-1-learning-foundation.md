@@ -1,5 +1,7 @@
 # R2-1 跨學科學習底座交付
 
+本次 PR #72 收尾的分類、重現測試與部署核對，見 [R2-1-lock-closeout.md](./R2-1-lock-closeout.md)。下方原交付測試表屬歷史紀錄，不能代替本次結果。
+
 本包僅交付 R2-1；不合併、不部署，不執行正式初始化、backfill、Repair、清理或派送。
 
 - Repository：`tasiling/Lumen-Dojo`
@@ -72,9 +74,9 @@
 
 - `mkdir learning-writer.lock` 是共同檔案系統上的互斥操作。獨立 Node 子程序測試證實競爭者無法同時進入；不是單程序記憶體 mutex。
 - 每筆 foundation 的版本檢查與 Notion 更新均在鎖內，所有參與的同版 writer 序列化。
-- 初始化先用 `wx` 建立 seed intent，fsync 檔案與 parent directory，再送出 Notion create。新底座 create 關閉 SDK 與應用層自動重試。
+- 初始化先用 `wx` 建立 seed intent，fsync 檔案與 parent directory，再送出 Notion create。共同鎖 scope 中關閉 SDK 與應用層自動重試；新底座 create 在 scope 外亦不重送。自己的新 intent 只有零派送或所有派送均有明確拒絕證據時才清除；成功與結果不明仍保留。
 - 若 query 尚未觀察到曾嘗試建立的 seed，intent 阻止再次 create，明確回報需核對，不用成功訊息掩蓋。
-- 非可確認的錯誤保留 mutex，阻擋後续寫入；不按 TTL 自動解鎖。即使遲到的 Notion請求完成，也不讓下一個 writer 立刻覆盖。
+- 依 SDK mutation dispatch 與回應證據分類：零派送的讀取／驗證失敗釋放 mutex；已確認的部分寫入保留；有結果不明的 request 則保留 mutex。不是依 Error 名稱判定。呼叫端吞掉錯誤也不能繞過；不按 TTL 自動解鎖。
 - 成功的部分初始化以已保存 seed key 重用；剩餘缺項可以繼續，但結果不明的項目需先核對。
 - Notion 本身没有 unique constraint／原子 CAS。本方案**不是 Notion 跨程序 transaction，也不是多紀錄原子提交**。一批初始化可能部分完成，失敗時 UI 明確提示重新讀取。
 

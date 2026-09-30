@@ -1,6 +1,7 @@
-import { open } from "node:fs/promises";
+import { open, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { LearningError, SEEDS } from "./model";
+import { learningWriteOutcome } from "./writeOutcome";
 
 // A durable intent marker prevents retrying an ambiguous Notion create when a query
 // has not yet observed it. The shared writer lock must already be held.
@@ -22,19 +23,41 @@ export async function createSeedOnce<T>(
       );
     throw error;
   }
+  const outcome = learningWriteOutcome.getStore();
+  const sentBefore = outcome?.sent;
+  const rejectedBefore = outcome?.rejected;
   try {
-    await marker.writeFile(new Date().toISOString());
-    await marker.sync();
-  } finally {
-    await marker.close();
+    try {
+      await marker.writeFile(new Date().toISOString());
+      await marker.sync();
+    } finally {
+      await marker.close();
+    }
+    const parent = await open(directory, "r");
+    try {
+      await parent.sync();
+    } finally {
+      await parent.close();
+    }
+    // Keep the intent after acknowledged/uncertain creates: a renamed or
+    // temporarily invisible row must never be recreated.
+    return await create();
+  } catch (error) {
+    // Only our own new intent: no dispatch, or every dispatched request has
+    // an explicit provider rejection. Never remove an uncertain create intent.
+    // Existing intents are never removed. Cleanup failure remains conservative.
+    if (
+      outcome &&
+      outcome.sent - sentBefore! === outcome.rejected - rejectedBefore!
+    ) {
+      await unlink(join(directory, `seed-${seedKey}.intent`));
+      const parent = await open(directory, "r");
+      try {
+        await parent.sync();
+      } finally {
+        await parent.close();
+      }
+    }
+    throw error;
   }
-  const parent = await open(directory, "r");
-  try {
-    await parent.sync();
-  } finally {
-    await parent.close();
-  }
-  // Keep the marker even after failure/success. A renamed/archived or temporarily
-  // invisible seeded record must never cause an automatic second create.
-  return create();
 }
