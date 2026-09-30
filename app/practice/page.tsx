@@ -40,7 +40,7 @@ export default function PracticePage() {
       const timer = window.setTimeout(() => setTab("spirit"), 0);
       return () => window.clearTimeout(timer);
     }
-    if (!params.get("journal") && !params.get("manifestation")) return;
+    if (!params.get("journal") && !params.get("manifestation") && !params.get("learningItem")) return;
     const timer = window.setTimeout(() => setTab("mind"), 0);
     return () => window.clearTimeout(timer);
   }, []);
