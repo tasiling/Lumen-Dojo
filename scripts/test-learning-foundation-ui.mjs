@@ -1,5 +1,6 @@
 // Browser interaction tests use isolated in-memory IO and the real foundation domain service.
 // Start local Next dev with ACCESS_KEY=r2-1-isolated-test first. No live Notion calls.
+import { isolatedServer } from "./isolated-practice-server.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
@@ -69,7 +70,8 @@ let capture = normalizeCaptureEntry(
   },
   { id: "isolated-capture" },
 );
-const base = process.env.UI_BASE_URL ?? "http://127.0.0.1:3017";
+const server = await isolatedServer(3017,"r2-1-isolated-test");
+const base = server.base;
 const output = process.env.R2_UI_OUTPUT_DIR ?? "/tmp/r2-1-ui";
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
@@ -100,7 +102,7 @@ if (process.env.UI_CJK_FONT) {
       .load()
       .then((font) => {
         document.fonts.add(font);
-      });
+      }).catch(() => null);
     document.addEventListener("DOMContentLoaded", () => {
       const style = document.createElement("style");
       style.textContent =
@@ -175,8 +177,7 @@ await page.route("**/api/**", async (route) => {
 });
 const manager = page.locator(".learning-foundation");
 async function openLearning() {
-  await page.goto(`${base}/practice`);
-  await page.getByRole("button", { name: "心", exact: true }).click();
+  await page.goto(`${base}/practice/manage`);
   await manager
     .getByRole("button", { name: "＋ 新增項目", exact: true })
     .waitFor();
@@ -379,7 +380,7 @@ try {
   );
   await manager
     .locator(".foundation-detail")
-    .getByRole("button", { name: "開始這次修習", exact: true })
+    .getByRole("button", { name: "輔助計時（選用）", exact: true })
     .click();
   await page.waitForURL("**/timer");
   await page.goBack();
@@ -421,4 +422,5 @@ try {
   console.log(`Screenshots: ${output}`);
 } finally {
   await browser.close();
+  server.stop();
 }
