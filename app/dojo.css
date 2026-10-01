@@ -5995,3 +5995,5 @@
 .dojo .practice-tabs [aria-current=page] { background:var(--pr);color:var(--paper);border-radius:12px; }
 .dojo .practice-workspace textarea { scroll-margin-bottom:180px; }
 .dojo .practice-workspace .english-journal-actions { position:sticky;bottom:calc(82px + env(safe-area-inset-bottom));background:var(--paper);padding:12px 0;z-index:2; }
+.dojo:has(.practice-workspace) { overflow-x:visible; }
+.dojo .practice-workspace .english-journal-actions button { font-size:12px;min-height:44px; }

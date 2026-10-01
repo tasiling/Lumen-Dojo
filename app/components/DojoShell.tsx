@@ -1,5 +1,6 @@
 "use client";
 
+import { canLeavePractice } from "@/lib/dojo/practiceNavigation";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
@@ -29,15 +30,17 @@ function BackButton({ pathname }: { pathname: string }) {
   if (NO_BACK_BUTTON.has(pathname)) return null;
 
   const useBrowserBack = USE_BROWSER_BACK.has(pathname);
-  const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/reading/books/") ? "/reading" : pathname.startsWith("/weaving/") ? "/weaving" : "/");
+  const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/practice/") ? "/practice" : pathname.startsWith("/reading/books/") ? "/reading" : pathname.startsWith("/weaving/") ? "/weaving" : "/");
   const label = useBrowserBack ? "返回" : (ROUTE_LABEL[parent] ?? "今天");
 
   function handleClick() {
+    if (!canLeavePractice()) return;
     if (depth() > 0 || useBrowserBack) {
       router.back();
       return;
     }
-    router.push(parent);
+    const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+    router.push(returnTo?.startsWith("/practice/learning?") ? returnTo : parent);
   }
 
   return (
@@ -122,6 +125,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   useBackableState(modalOpen, closeQuickAdd);
 
   function openTimerFromHere() {
+    if (!canLeavePractice()) return;
     startTimerFromSpace(currentSpaceFromPath(pathname));
     router.push("/timer");
   }
@@ -138,7 +142,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
           {pathname === "/" ? <div className="brand"><b>行光道場</b><small>Lumen Dojo</small></div> : <BackButton pathname={pathname} />}
           <div className="top-actions">
             <button onClick={openTimerFromHere}>◷ 計時</button>
-            <button onClick={() => router.push("/map")}>⌘ 場域</button>
+            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }}>⌘ 場域</button>
           </div>
         </header>
         <div id="view">{children}</div>
@@ -149,7 +153,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
           <button
             key={item.key}
             className={isActive(item.href) ? "on" : ""}
-            onClick={() => router.push(item.href)}
+            onClick={() => { if(canLeavePractice()) router.push(item.href); }}
           >
             <span className="nav-icon"><NavIcon name={item.icon} /></span>
             {item.label}

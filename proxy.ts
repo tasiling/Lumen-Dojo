@@ -29,6 +29,6 @@ export default function proxy(request: NextRequest) {
   }
 
   const url = new URL("/unlock", request.url);
-  url.searchParams.set("redirect", request.nextUrl.pathname);
+  url.searchParams.set("redirect", request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(url);
 }
