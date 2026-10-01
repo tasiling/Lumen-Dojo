@@ -76,8 +76,7 @@ const output = process.env.R2_UI_OUTPUT_DIR ?? "/tmp/r2-1-ui";
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   headless: true,
-  executablePath:
-    process.env.CHROMIUM_EXECUTABLE_PATH ?? chromium.executablePath(),
+  ...(process.env.CHROMIUM_EXECUTABLE_PATH ? {executablePath: process.env.CHROMIUM_EXECUTABLE_PATH} : {}),
   args: ["--no-sandbox"],
 });
 const context = await browser.newContext({
@@ -383,6 +382,7 @@ try {
     .getByRole("button", { name: "輔助計時（選用）", exact: true })
     .click();
   await page.waitForURL("**/timer");
+  await page.getByRole("heading",{name:"修行計時",exact:true}).waitFor();
   await page.goBack();
   await manager
     .locator(".foundation-detail")
@@ -390,7 +390,7 @@ try {
     .waitFor();
   console.log("PASS timer navigation and Back restore selected learning item");
   await page.goto(`${base}/forage/captures`);
-  await page.getByRole("tab", { name: /已採用/ }).click();
+  await page.getByRole("tab", { name: /已採用.*1/ }).click();
   await page
     .getByText("隔離素材：心理學與中醫長中文", { exact: true })
     .waitFor();
@@ -405,7 +405,7 @@ try {
     .click();
   assert.equal(capture.learningItemIds.length, 2);
   await page.reload();
-  await page.getByRole("tab", { name: /已採用/ }).click();
+  await page.getByRole("tab", { name: /已採用.*1/ }).click();
   await page
     .getByText("隔離素材：心理學與中醫長中文", { exact: true })
     .waitFor();
@@ -420,6 +420,9 @@ try {
   assert.deepEqual(pageErrors, []);
   console.log("PASS no browser runtime errors");
   console.log(`Screenshots: ${output}`);
+} catch(error) {
+  await page.screenshot({path: join(output,"failure.png"),fullPage:true}).catch(()=>{});
+  throw error;
 } finally {
   await browser.close();
   server.stop();

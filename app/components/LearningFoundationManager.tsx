@@ -87,7 +87,7 @@ export default function LearningFoundationManager({
     setNotice("");
     const url = new URL(window.location.href);
     url.searchParams.set("learningItem", item.id);
-    window.history.replaceState(window.history.state, "", url);
+    window.history.replaceState(null, "", url);
   }
   async function mutate(
     method: string,
@@ -361,7 +361,8 @@ export default function LearningFoundationManager({
                   kind: `學習／${active.name}`,
                   learningItemId: active.id,
                 });
-                router.push("/timer");
+                window.history.pushState(window.history.state, "", window.location.href);
+                router.replace("/timer");
               }}
             >
               輔助計時（選用）

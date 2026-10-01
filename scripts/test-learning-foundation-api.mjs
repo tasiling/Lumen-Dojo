@@ -407,12 +407,20 @@ try {
   const oldForm = clone(capture);
   delete oldForm.learningItemIds;
   oldForm.note = "舊表單其他編輯";
-  const saved = await captures.PATCH(
+  // Separate edits need distinct revision timestamps; in-memory IO can finish within one ms.
+  // Advance only this isolated test clock, leaving the production adapter unchanged.
+  const RealDate = globalThis.Date;
+  let saved;
+  const editTime = RealDate.parse(oldForm.updatedAt) + 1;
+  globalThis.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [editTime])); } };
+  try {
+    saved = await captures.PATCH(
     request("/api/dojo/captures", "PATCH", {
       id: capture.id,
       capture: oldForm,
     }),
   );
+  } finally { globalThis.Date = RealDate; }
   assert.equal(saved.status, 200);
   const safe = (await saved.json()).capture;
   assert.ok(safe.learningItemIds.includes(psychology.id));

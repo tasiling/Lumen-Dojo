@@ -74,7 +74,7 @@ export default function EnglishJournalWorkbench({
   const dirty = Boolean(draft && JSON.stringify(draft.segments) !== JSON.stringify(practices.find(p => p.date === draft.date)?.segments));
   usePracticeLeaveGuard(dirty);
   function discardAllowed() { return !dirty || window.confirm("尚有未儲存的自譯內容，確定放棄修改？"); }
-  function keepDate(date: string) { const url = new URL(window.location.href); url.searchParams.set("journal",date); window.history.replaceState(window.history.state,"",url); }
+  function keepDate(date: string) { const url = new URL(window.location.href); url.searchParams.set("journal",date); window.history.replaceState(null,"",url); }
 
   const load = useCallback(async () => {
     setLoading(true);
