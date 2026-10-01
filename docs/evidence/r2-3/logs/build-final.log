@@ -6,15 +6,15 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 ▲ Next.js 16.2.10 (Turbopack)
 
   Creating an optimized production build ...
-✓ Compiled successfully in 20.4s
+✓ Compiled successfully in 28.0s
   Running TypeScript ...
-  Finished TypeScript in 8.7s ...
+  Finished TypeScript in 8.2s ...
   Collecting page data using 8 workers ...
   Generating static pages using 8 workers (0/34) ...
-  Generating static pages using 8 workers (8/34) 
-  Generating static pages using 8 workers (16/34) 
-  Generating static pages using 8 workers (25/34) 
-✓ Generating static pages using 8 workers (34/34) in 328ms
+  Generating static pages using 8 workers (8/34)
+  Generating static pages using 8 workers (16/34)
+  Generating static pages using 8 workers (25/34)
+✓ Generating static pages using 8 workers (34/34) in 360ms
   Finalizing page optimization ...
 
 Route (app)
@@ -149,4 +149,3 @@ Route (app)
 
 ○  (Static)   prerendered as static content
 ƒ  (Dynamic)  server-rendered on demand
-

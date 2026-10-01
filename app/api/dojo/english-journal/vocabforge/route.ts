@@ -119,10 +119,10 @@ export async function POST(req: NextRequest) {
       vocabForgeExports: [...byKey.values()],
       updatedAt: now,
     };
-    await upsertJsonRecord(title, updated);
+    const saved = await upsertJsonRecord(title, updated);
     return NextResponse.json({
       ok: true,
-      practice: updated,
+      practice: normalizeEnglishJournalPractice(saved.value, date),
       created: updates.filter((item) => item.result === "created").length,
       existing: updates.filter((item) => item.result === "existing").length,
     });

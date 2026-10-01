@@ -108,3 +108,6 @@ scripts/test-r2-3-ui.mjs
 tests/learning-records.test.ts
 tests/practice-events.test.ts
 ```
+
+候選派送相容：VF／context-seeds 的既有回應改回傳真正保存後的 journal revision；隔離 actual route + mocked external transport 驗證 receipt 版本與資料一致，且不新增完成事件。外部 integration／模型未更動；沒有實際派送。
+測試 logs 已去除終端 CR／行尾空白；full base-to-head diff check 重跑，沒有把 clean working-tree check 當作整包 diff check。
