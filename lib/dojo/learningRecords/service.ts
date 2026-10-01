@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { LearningError, type LearningEntity } from "../learningFoundation/model";
-import { recordInput, type LearningRecord, type RecordFilter } from "./model";
+import { recordInput, type LearningRecord, type RecordFilter, type SourceRef } from "./model";
 export type Row<T> = { id: string; value: T };
 export type RecordRepository = {
+  verifySources?(refs: SourceRef[], previous?: LearningRecord): Promise<SourceRef[]>;
   owner: string; graph(): Promise<LearningEntity[]>;
   page(cursor?: string, limit?: number): Promise<{ rows: Row<LearningRecord>[]; cursor: string | null }>;
   get(id: string): Promise<Row<LearningRecord> | null>;
@@ -41,6 +42,7 @@ export function recordService(repo: RecordRepository) {
         }
         const now = new Date().toISOString();
         const record: LearningRecord = { ...recordInput(input, await repo.graph()), id, owner: repo.owner, recordType: "learning-record/v1", createdAt: now, updatedAt: now, revision: 1 };
+        if(repo.verifySources) record.sourceRefs = await repo.verifySources(record.sourceRefs);
         await repo.create(record); return record;
       });
     },
@@ -49,6 +51,7 @@ export function recordService(repo: RecordRepository) {
         const row = await get(id);
         if (revision !== row.value.revision) throw new LearningError("紀錄已更新，請重新讀取後編輯", 409);
         const record = { ...row.value, ...recordInput(input, await repo.graph(), row.value), revision: revision + 1, updatedAt: new Date().toISOString() };
+        if(repo.verifySources) record.sourceRefs = await repo.verifySources(record.sourceRefs, row.value);
         await repo.update(row.id, record); return record;
       });
     },

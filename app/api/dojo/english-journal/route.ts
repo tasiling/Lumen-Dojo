@@ -255,7 +255,10 @@ async function patchUnlocked(req: NextRequest) {
     }
     const events: CompletionEvent[] = [];
     const completions = journalCompletions(previous, candidate, row.id, (await learningFoundation.snapshot()).entities, new Date(), binding);
-    for (const input of completions) events.push(await practiceEvents.accept(input));
+    for (const input of completions) {
+      const event = await practiceEvents.accept(input); events.push(event);
+      candidate.segments = candidate.segments.map(segment => `${row.id}:${segment.id}` === event.sourceId ? { ...segment, completedAt: event.occurredAt } : segment);
+    }
     // Durable completion fact first; body, daily and weekly projections follow.
     const saved = await upsertJsonRecord(title, candidate);
     candidate = normalizeEnglishJournalPractice(saved.value, date)!;
@@ -276,7 +279,9 @@ async function deleteUnlocked(req: NextRequest) {
     const title = englishJournalRecordTitle(date);
     const row = await readJsonRecord(title);
     if (!row) return NextResponse.json({ error: "找不到這篇英文練習" }, { status: 404 });
+    const practice = normalizeEnglishJournalPractice(row.value, date);
     await archiveJsonRecordById(row.id, ENGLISH_JOURNAL_TITLE_PREFIX);
+    for (const segment of practice?.segments ?? []) await practiceEvents.sourceArchived(`${row.id}:${segment.id}`);
     return NextResponse.json({ ok: true, date });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });

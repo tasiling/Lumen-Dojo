@@ -21,6 +21,12 @@ export function eventService(repo: EventRepository) {
       const e: CompletionEvent = { ...input, id, owner: repo.owner, eventVersion: 1, eventType: "practice.completed", sourceSystem: "dojo", sourceType: "english-journal-segment", learningRecordId: randomUUID(), completionKind: "journal-self-translation", quantity: 1, unit: "段", sourceStatus: "available", binding: input.binding ?? null, createdAt: new Date().toISOString(), projections: { record: "pending", output: "pending", weekly: "pending" }, projectionStatus: "pending", projectionRevision: 1, syncedAt: null, error: null };
       await repo.create(e); return e;
     },
+    async sourceArchived(sourceId: string) {
+      const id = sourceIdentity(repo.owner, "dojo", "english-journal-segment", sourceId);
+      const existing = await repo.get(id); if(!existing) return;
+      const event = owner(existing);
+      await repo.update({ ...event, sourceStatus: "archived", projectionRevision: event.projectionRevision + 1 });
+    },
     async retry(id: string) {
       const found = await repo.get(id); if (!found) throw new LearningError("事件不存在", 404); let event = owner(found);
       if (event.sourceStatus === "withdrawn") return event;

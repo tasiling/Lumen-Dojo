@@ -3,7 +3,7 @@ import { createPracticeOnce } from "../learningFoundation/practiceWrite";
 import { sourceIdentity } from "../practiceEvents/service";
 import { notion, withNotionRateLimit } from "@/lib/notion/client";
 import { DATA_SOURCES } from "@/lib/notion/schema";
-import { mapKnowledge } from "@/lib/notion/queries";
+import { getKnowledgeEntry, mapKnowledge } from "@/lib/notion/queries";
 import { createKnowledgeEntry, updateKnowledgeEntry } from "@/lib/notion/mutations";
 import { parseJson } from "../formal";
 import { withLearningWriteLock } from "../learningFoundation/fileLock";
@@ -15,6 +15,25 @@ const title = (r: LearningRecord) => `${RECORD_PREFIX}${r.practicedOn}:${r.id}`;
 export const learningRecords = recordService({
   owner: learningOwner, graph: async () => (await learningFoundation.snapshot()).entities,
   exclusive: withLearningWriteLock,
+  async verifySources(refs, previous) {
+    const result = [];
+    for (const ref of refs) {
+      const old = previous?.sourceRefs.find(r => r.type === ref.type && r.id === ref.id);
+      if(old) { result.push({ ...ref, status: old.status }); continue; }
+      if(ref.type === "capture" || ref.type === "english-image") {
+        const row = await getKnowledgeEntry(ref.id);
+        const prefix = ref.type === "capture" ? "行光捕捉-" : "行光英文影像-";
+        if(!row.標題.startsWith(prefix)) throw new LearningError("素材種類或 owner 不符",403);
+        result.push({ ...ref, status: "available" as const });
+      } else if(ref.type === "reading-book" || ref.type === "reading-note") {
+        const page = await withNotionRateLimit(() => notion().pages.retrieve({ page_id: ref.id }));
+        const allowed = ref.type === "reading-book" ? [DATA_SOURCES.DB21_書籍庫] : [DATA_SOURCES.DB21_書籍庫, DATA_SOURCES.DB22_洞察卡片庫];
+        if(!("parent" in page) || !("data_source_id" in page.parent) || !allowed.some(id => id.replaceAll("-", "") === page.parent.data_source_id.replaceAll("-", "")) || page.archived) throw new LearningError("閱讀來源不屬於本 owner 或已封存",403);
+        result.push({ ...ref, status: "available" as const });
+      } else result.push(ref);
+    }
+    return result;
+  },
   async page(cursor, limit = 20) {
     const result = await withNotionRateLimit(() => notion().dataSources.query({ data_source_id: DATA_SOURCES.DB14_知識庫, filter: { property: "標題", title: { starts_with: RECORD_PREFIX } }, sorts: [{ property: "標題", direction: "descending" }], page_size: limit, ...(cursor ? { start_cursor: cursor } : {}) }));
     return { rows: result.results.map(p => { const row = mapKnowledge(p); return { id: row.id, value: parseJson(row.內容) as LearningRecord }; }), cursor: result.has_more ? result.next_cursor : null };
