@@ -14,7 +14,7 @@ import { withLearningWriteLock } from "../lib/dojo/learningFoundation/fileLock";
 import { trackLearningWrite } from "../lib/dojo/learningFoundation/writeOutcome";
 import { createPracticeOnce } from "../lib/dojo/learningFoundation/practiceWrite";
 async function main() {
- const graph = [{ id: "english", kind: "item", legacyKey: "english" }] as LearningEntity[];
+ const graph = [{ id: "english", kind: "item", status: "active", legacyKey: "english" }] as LearningEntity[];
  const original = emptyEnglishJournalPractice("2026-09-20", "今天探索新的想法，並用英文留下內容。\n\n【新的觀察】\n這是另一段實際日記內容。");
  original.segments = [original.segments[0], { ...original.segments[0], id: "stable-two", sourceText: "另一個真正有效的段落。" }];
  const candidate = structuredClone(original); candidate.segments[0].draft = "I explored ideas."; candidate.segments[0].finalVersion = "I explored new ideas."; candidate.segments[0].completedAt = "2026-10-01T04:00:00Z";
@@ -36,13 +36,14 @@ async function main() {
  const event = await service.accept(input); assert.equal(creates,1);
  const repeat = await service.accept({ ...input, practicedOn:"2026-10-03", occurredAt:"2026-10-03T04:00:00Z" }); assert.equal(repeat.id,event.id); assert.equal(repeat.practicedOn,input.practicedOn); assert.equal(creates,1);
  failDaily=true; const failed = await service.retry(event.id); assert.equal(failed.projections.output,"needs_retry"); assert.equal(events.size,1); assert.equal(bodyWrites,1);
- failDaily=false; const done = await service.retry(event.id); assert.equal(done.projections.weekly,"unlinked"); assert.equal(done.projectionStatus,"applied"); assert.equal(bodyWrites,1);
+ failDaily=false; const done = await service.retry(event.id); assert.equal(done.projections.weekly,"unlinked"); assert.equal(done.projectionStatus,"applied"); assert.equal(bodyWrites,1);assert.equal(done.evidence,null);
  assert.deepEqual(daily.englishRhythm.touches,["input","vocabulary","transfer","output"]); assert.equal(daily.englishRhythm.note,"保留");assert.equal(daily.englishRhythm.vocabForgeRounds,4); assert.equal(daily.evening.highlight,"真實原內容");
  const before=[bodyWrites,dailyWrites,weeklyWrites]; await service.retry(event.id); assert.deepEqual([bodyWrites,dailyWrites,weeklyWrites],before);
  const bound = await service.accept({ ...input, sourceId:"different-session",binding:{weekStart:board.weekStart,taskInstanceId:"task-stable"} });
  failWeekly=true; const weeklyFailed=await service.retry(bound.id); assert.equal(weeklyFailed.projections.weekly,"needs_retry"); const dailyBefore=dailyWrites;
  failWeekly=false; await service.retry(bound.id); assert.equal(dailyWrites,dailyBefore);assert.equal(board.cells[0].completion.progress,1);assert.equal((board.cells[0] as ProjectedCell).completionSources!.events.length,1);
  await service.retry(bound.id);assert.equal(board.cells[0].completion.progress,1);
+ const secondIncrement=projectWeekly(board,{...bound,id:"distinct-event"});assert.equal(secondIncrement.board!.cells[0].completion.progress,2);assert.equal(projectWeekly(secondIncrement.board!,{...bound,id:"distinct-event"}).board!.cells[0].completion.progress,2);
  const moved = structuredClone(board); moved.cells[4]={ ...moved.cells[0],index:4 }; moved.cells[0]={ ...emptyWeeklyBoard(board.weekStart).cells[0] };assert.equal(projectWeekly(moved,bound).board!.cells[4].completion.progress,1);
  const removed = structuredClone(board);removed.cells[0].taskInstanceId=null;assert.equal(projectWeekly(removed,bound).state,"unlinked");
  const ambiguous=structuredClone(board);ambiguous.cells[1]={ ...ambiguous.cells[0],index:1 };assert.equal(projectWeekly(ambiguous,bound).state,"unlinked");

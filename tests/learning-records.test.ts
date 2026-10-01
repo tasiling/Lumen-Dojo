@@ -21,7 +21,9 @@ async function main() {
   let cursor: string | undefined; let count = 0;
   const before = writes;
   do { const page = await service.list({ cursor, limit: 17 }); count += page.records.length; cursor = page.cursor ?? undefined; } while(cursor);
-  assert.equal(count, 181); assert.equal(writes, before);
+  assert.equal(count, 181); assert.equal((await service.read(r.id)).whatIDid, r.whatIDid);
+  assert.equal((await service.list({ learningItemId: "english" })).records.length,1);
+  assert.equal((await service.list({ status: "completed" })).records.length,0); assert.equal(writes, before);
   const foreign = recordService({ ...repo, owner: "another" }); await assert.rejects(foreign.read(r.id), /存取/);
   console.log("PASS Learning Record: create, complete, one-body multi-subject, stable refs, archive/restore, auth, stale, 181-row pagination, read-only GET service");
 }

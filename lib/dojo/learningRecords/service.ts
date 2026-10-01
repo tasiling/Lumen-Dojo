@@ -18,7 +18,7 @@ export function recordService(repo: RecordRepository) {
   async function get(id: string) {
     const row = await repo.get(id);
     if (!row) throw new LearningError("找不到紀錄", 404);
-    assert(row.value); return row;
+    assert(row.value); if(row.value.id !== id) throw new LearningError("紀錄 ID 與儲存列不一致",409); return row;
   }
   return {
     async read(id: string) { return (await get(id)).value; },

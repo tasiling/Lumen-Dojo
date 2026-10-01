@@ -44,3 +44,8 @@ body {
 .learning-records input[type="checkbox"] { width: auto; }
 .learning-records .card { overflow-wrap: anywhere; white-space: pre-wrap; }
 .record-actions { display: flex; gap: .6rem; flex-wrap: wrap; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
+.learning-records textarea, .learning-records select, .learning-records input:not([type="checkbox"]) { border: 1px solid var(--line, #d7d1c5); border-radius: 12px; background: var(--surface, #fffdf8); padding: .7rem; font-size: 16px; min-height: 44px; }
+.learning-records textarea:focus-visible, .learning-records select:focus-visible, .learning-records input:focus-visible { outline: 2px solid var(--accent, #9a7843); outline-offset: 2px; }
+.learning-records fieldset { border: 1px solid var(--line, #d7d1c5); padding: .75rem; border-radius: 12px; }
+.learning-records button { min-height: 44px; }

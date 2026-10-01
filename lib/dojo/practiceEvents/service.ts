@@ -12,7 +12,7 @@ export type EventRepository = {
   assertKnownOutcome(): void;
 };
 export function eventService(repo: EventRepository) {
-  function owner(e: CompletionEvent) { if (e.owner !== repo.owner || e.eventVersion !== 1) throw new LearningError("事件無權存取或版本不符", 403); return e; }
+  function owner(e: CompletionEvent) { if (e.owner !== repo.owner || e.eventVersion !== 1 || e.id !== sourceIdentity(repo.owner, e.sourceSystem, e.sourceType, e.sourceId)) throw new LearningError("事件無權存取或版本不符", 403); return e; }
   return {
     // Caller holds the same R2-1 lock throughout event + source + projection.
     async accept(input: { sourceId: string; sourceRevision: string; occurredAt: string; practicedOn: string; timeZone: string; sourceDate: string; learningItemIds: string[]; binding?: TargetBinding | null; evidence: NonNullable<CompletionEvent["evidence"]> }) {
