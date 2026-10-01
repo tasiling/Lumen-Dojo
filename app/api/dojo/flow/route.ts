@@ -1,3 +1,6 @@
+import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
+import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
+import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import { NextRequest, NextResponse } from "next/server";
 import {
   bingoRecordTitle,
@@ -16,7 +19,7 @@ export const dynamic = "force-dynamic";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const CATEGORIES: DailyTaskCategory[] = ["important", "hobby", "health"];
 
-export async function POST(req: NextRequest) {
+async function postUnlocked(req: NextRequest) {
   try {
     const body = await req.json();
     if (body.action === "assign-bingo") return assignBingo(body);
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (body.action === "progress-bingo") return progressBingo(body);
     return NextResponse.json({ error: "不明的流程動作" }, { status: 400 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
@@ -101,7 +104,7 @@ async function completeTask(body: Record<string, unknown>) {
       cell.assignedDate = date;
       cell.assignedCategory = category;
       if (typeof body.result === "string" && body.result.trim()) cell.evidenceNote = body.result.trim().slice(0, 2000);
-      await upsertJsonRecord(bingoRecordTitle(board.weekStart), normalizeWeeklyBoard(board, board.weekStart));
+      await upsertJsonRecord(bingoRecordTitle(board.weekStart), normalizeWeeklyBoard(board, board.weekStart), { manualCompletion: true });
       await syncLearningActivity({ weekStart: board.weekStart, cell });
     }
   }
@@ -134,7 +137,8 @@ async function progressBingo(body: Record<string, unknown>) {
   cell.completed = nextProgress >= cell.completion.target;
   cell.completedAt = cell.completed ? (cell.completedAt ?? new Date().toISOString()) : null;
   const normalized = normalizeWeeklyBoard(board, weekStart);
-  await upsertJsonRecord(bingoRecordTitle(weekStart), normalized);
+  const savedBoard = await upsertJsonRecord(bingoRecordTitle(weekStart), normalized, { manualCompletion: true });
+  Object.assign(normalized, savedBoard.value);
   if (cell.completion.target === 1 && cell.assignedDate && cell.assignedCategory) {
     const dailyRow = await readJsonRecord(dailyRecordTitle(cell.assignedDate));
     const daily = dailyRow ? normalizeDailyRecord(dailyRow.value, cell.assignedDate) : emptyDailyRecord(cell.assignedDate);
@@ -149,3 +153,5 @@ async function progressBingo(body: Record<string, unknown>) {
   await syncLearningActivity({ weekStart, cell: normalized.cells[cellIndex] });
   return NextResponse.json({ ok: true, board: normalized });
 }
+
+export async function POST(req: NextRequest) { try { requireLearningOwner(req); return await withLearningWriteLock(() => postUnlocked(req)); } catch(e) { return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: e instanceof LearningError ? e.status : 503 }); } }

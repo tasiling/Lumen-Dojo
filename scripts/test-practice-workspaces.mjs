@@ -148,6 +148,10 @@ try {
       } else throw Error("Unexpected journal mutation " + req.method());
     } else if (u.pathname === "/api/dojo/learning/foundation")
       body = { entities, missing: [] };
+    else if (u.pathname === "/api/dojo/learning/records")
+      body = { records: [], cursor: null };
+    else if (u.pathname === "/api/dojo/practice-events")
+      body = { events: [], cursor: null };
     else if (u.pathname === "/api/dojo/learning")
       body = { tracks: Object.keys(LEARNING_TRACKS).map(defaultLearningTrack) };
     else if (u.pathname === "/api/dojo/entries")
@@ -311,7 +315,8 @@ try {
   await page.getByRole("link", { name: "學習路徑", exact: true }).click();
   await page.getByText("空白路徑也能開始修習，尚無階段或主題。").waitFor();
   await page.getByRole("button", { name: "留下修習紀錄", exact: true }).click();
-  await page.getByRole("button", { name: "儲存紀錄", exact: true }).waitFor();
+  await page.getByRole("button", { name: "儲存草稿", exact: true }).waitFor();
+  await page.getByLabel("這次學了什麼？").waitFor();
   console.log(
     "PASS nine disciplines, no default English, empty path starts real record",
   );

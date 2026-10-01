@@ -7,6 +7,7 @@ import { useDojo } from "@/lib/dojo/store";
 import { GUANGXING, GUANGFA } from "@/lib/dojo/constants";
 import type { CaptureEntry } from "@/lib/dojo/formal";
 import PracticeLearning from "./PracticeLearning";
+const Records = dynamic(() => import("./LearningRecordWorkspace"));
 const Journal = dynamic(() => import("./EnglishJournalWorkbench"));
 const Manager = dynamic(() => import("./LearningFoundationManager"));
 const Legacy = dynamic(() => import("./LearningPaths"));
@@ -17,6 +18,7 @@ const Grammar = dynamic(() => import("./EnglishContextSeedInbox"));
 const Topic = dynamic(() => import("./EnglishTopicStudy"));
 const Rhythm = dynamic(() => import("./EnglishRhythmWeek"));
 const names: Record<string, string> = {
+  records: "學習歷程",
   journal: "日記自譯",
   manage: "學習管理",
   legacy: "既有五項學習設定",
@@ -63,7 +65,7 @@ export default function PracticeWorkspace({
   const returnTo = params.get("returnTo");
   const parent = returnTo?.startsWith("/practice/learning?")
     ? returnTo
-    : workspace === "manage"
+    : (workspace === "manage" || workspace === "records")
       ? `/practice/learning${params.get("learningItem") ? `?learningItem=${params.get("learningItem")}` : ""}`
       : "/practice";
   const kind =
@@ -75,6 +77,7 @@ export default function PracticeWorkspace({
       </Link>
       {workspace !== "learning" && <h1>{names[workspace]}</h1>}
       {workspace === "learning" && <PracticeLearning />}
+      {workspace === "records" && <Records />}
       {workspace === "manage" && (
         <>
           {error && <p role="alert">{error}</p>}

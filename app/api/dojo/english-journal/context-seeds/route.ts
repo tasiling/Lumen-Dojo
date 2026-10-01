@@ -146,8 +146,8 @@ export async function POST(req: NextRequest) {
     const byKey = new Map(practice.contextExports.map((item) => [item.key, item]));
     exports.forEach((item) => byKey.set(item.key, item));
     const updated = { ...practice, contextExports: [...byKey.values()], updatedAt: now };
-    await upsertJsonRecord(title, updated);
-    return NextResponse.json({ ok: true, practice: updated, created, existing });
+    const saved = await upsertJsonRecord(title, updated);
+    return NextResponse.json({ ok: true, practice: normalizeEnglishJournalPractice(saved.value, date), created, existing });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
