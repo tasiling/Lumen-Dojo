@@ -16,6 +16,7 @@ import {
   type EnglishImageStatus,
 } from "./englishImage";
 import { listJsonRecords, updateJsonRecordById } from "./notionStore";
+import { withIntegrationMutationLease } from "./integrationMutationLease";
 
 async function firstImageBlockId(pageId: string): Promise<string | null> {
   let cursor: string | undefined;
@@ -68,25 +69,28 @@ export async function getEnglishImageEntry(id: string): Promise<{ entry: English
 }
 
 export async function saveEnglishImageEntry(entry: EnglishImageEntry): Promise<EnglishImageEntry> {
-  const current = await getEnglishImageEntry(entry.id);
-  const normalized = normalizeEnglishImageEntry(entry, { id: entry.id, capturedAt: current.entry.capturedAt, touch: true });
-  if (!normalized) throw new Error("英文影像紀錄無法儲存");
-  await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
-  return normalized;
+  return withIntegrationMutationLease(`english-image:${entry.id}`, async () => {
+    const current = await getEnglishImageEntry(entry.id);
+    if (entry.updatedAt && current.entry.updatedAt && entry.updatedAt !== current.entry.updatedAt)
+      throw new Error("英文影像已由另一個流程更新，請重新讀取後再儲存");
+    const normalized = normalizeEnglishImageEntry(entry, { id: entry.id, capturedAt: current.entry.capturedAt, touch: true });
+    if (!normalized) throw new Error("英文影像紀錄無法儲存");
+    await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
+    return normalized;
+  });
 }
 
 export async function updateEnglishImageEntry(
   id: string,
   update: (current: EnglishImageEntry) => Partial<EnglishImageEntry>
 ): Promise<EnglishImageEntry> {
-  const current = await getEnglishImageEntry(id);
-  const normalized = normalizeEnglishImageEntry(
-    { ...current.entry, ...update(current.entry) },
-    { id, capturedAt: current.entry.capturedAt, touch: true }
-  );
-  if (!normalized) throw new Error("英文影像紀錄無法儲存");
-  await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
-  return normalized;
+  return withIntegrationMutationLease(`english-image:${id}`, async () => {
+    const current = await getEnglishImageEntry(id);
+    const normalized = normalizeEnglishImageEntry({ ...current.entry, ...update(current.entry) }, { id, capturedAt: current.entry.capturedAt, touch: true });
+    if (!normalized) throw new Error("英文影像紀錄無法儲存");
+    await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
+    return normalized;
+  });
 }
 
 export async function updateEnglishImageStatus(id: string, status: EnglishImageStatus): Promise<EnglishImageEntry> {
@@ -171,21 +175,22 @@ export async function appendEnglishImageAttachment(params: {
     createdAt: now,
     batchIndex: params.batchIndex ?? null,
   };
-  const attachments = [...params.entry.attachments, attachment]
-    .map((item, originalIndex) => ({ item, originalIndex }))
-    .sort((a, b) => {
-      if (a.item.batchIndex === null && b.item.batchIndex === null) return a.originalIndex - b.originalIndex;
-      if (a.item.batchIndex === null) return 1;
-      if (b.item.batchIndex === null) return -1;
-      return a.item.batchIndex - b.item.batchIndex || a.originalIndex - b.originalIndex;
-    })
-    .map(({ item }) => item);
-  return saveEnglishImageEntry({
-    ...params.entry,
-    attachment: attachments[0],
-    attachments,
-    analysisStatus: params.entry.analysisAttempts ? "idle" : params.entry.analysisStatus,
-    analysisReviewReason: params.entry.analysisAttempts ? "圖片組已更新，請重新分析完整情境。" : params.entry.analysisReviewReason,
+  return updateEnglishImageEntry(params.entry.id, (current) => {
+    if (current.attachments.some((item) => item.sourceMessageId === params.sourceMessageId)) return {};
+    const attachments = [...current.attachments, attachment]
+      .map((item, originalIndex) => ({ item, originalIndex }))
+      .sort((a, b) => {
+        if (a.item.batchIndex === null && b.item.batchIndex === null) return a.originalIndex - b.originalIndex;
+        if (a.item.batchIndex === null) return 1;
+        if (b.item.batchIndex === null) return -1;
+        return a.item.batchIndex - b.item.batchIndex || a.originalIndex - b.originalIndex;
+      })
+      .map(({ item }) => item);
+    return {
+      attachment: attachments[0], attachments,
+      analysisStatus: current.analysisAttempts ? "idle" : current.analysisStatus,
+      analysisReviewReason: current.analysisAttempts ? "圖片組已更新，請重新分析完整情境。" : current.analysisReviewReason,
+    };
   });
 }
 

@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { EnglishImageContextExport, EnglishImageContextLink, EnglishImageEntry, EnglishImageVocabExport, EnglishImageVocabSyncState } from "./englishImage";
-import { getEnglishImageEntry, saveEnglishImageEntry } from "./englishImageStore";
+import { getEnglishImageEntry, saveEnglishImageEntry, updateEnglishImageEntry } from "./englishImageStore";
 import {
   calculateRequestFingerprint,
   calculateSourceContentFingerprint,
@@ -105,11 +105,14 @@ export type EnglishImageContextCapability = {
   imageProxyReady: boolean;
   supportsUnitArrangement: boolean;
   supportsEnsureUnit: boolean;
+  supportsArrangementCoordinator: boolean;
+  supportsMutationLease: boolean;
 };
 
 export type EnglishImageContextCatalog = {
   projects: EnglishImageContextProject[];
   capability: EnglishImageContextCapability;
+  sourceBindings: Array<{ sourceRecordId: string; sourceItemId: string; projectId: string; revision: number; contentFingerprint: string; unitIds: string[]; pendingResult?: boolean }>;
 };
 
 function candidateKey(expression: string): string {
@@ -248,6 +251,7 @@ export async function listEnglishImageContextCatalog(entry: EnglishImageEntry): 
   if (v2Response.ok && Array.isArray(v2Result.capabilities?.acceptedContractVersions) && v2Result.capabilities.acceptedContractVersions.includes(SOURCE_HANDOFF_V2)) {
     return {
       projects: parseContextProjects(v2Result.materials ?? [], true),
+      sourceBindings: Array.isArray((v2Result as { sourceBindings?: unknown[] }).sourceBindings) ? (v2Result as { sourceBindings: EnglishImageContextCatalog["sourceBindings"] }).sourceBindings : [],
       capability: {
         mode: "v2", supportsExistingUnit: v2Result.capabilities.supportsExistingUnit === true,
         supportsSourceItemReuse: v2Result.capabilities.supportsSourceItemReuse === true,
@@ -257,6 +261,8 @@ export async function listEnglishImageContextCatalog(entry: EnglishImageEntry): 
         imageProxyReady: v2Result.capabilities.imageProxyReady === true,
         supportsUnitArrangement: v2Result.capabilities.supportsUnitArrangement === true,
         supportsEnsureUnit: v2Result.capabilities.supportsEnsureUnit === true,
+        supportsArrangementCoordinator: v2Result.capabilities.supportsArrangementCoordinator === true,
+        supportsMutationLease: v2Result.capabilities.supportsMutationLease === true,
       },
     };
   }
@@ -267,7 +273,7 @@ export async function listEnglishImageContextCatalog(entry: EnglishImageEntry): 
   const legacyResponse = await fetch(legacyEndpoint, { headers: { Authorization: `Bearer ${secret}` }, cache: "no-store", signal: AbortSignal.timeout(20_000) });
   const legacyResult = await legacyResponse.json().catch(() => ({})) as { error?: string; materials?: unknown[] };
   if (!legacyResponse.ok) throw new Error(legacyResult.error ?? `無法讀取語境修習室學習專案（${legacyResponse.status}）`);
-  return { projects: parseContextProjects(legacyResult.materials ?? [], false), capability: { mode: "v1", supportsExistingUnit: false, supportsSourceItemReuse: false, supportsOrderedAttachments: false, supportsRevisionUpsert: false, requiresRequestFingerprint: false, imageProxyReady: false, supportsUnitArrangement: false, supportsEnsureUnit: false } };
+  return { projects: parseContextProjects(legacyResult.materials ?? [], false), sourceBindings: [], capability: { mode: "v1", supportsExistingUnit: false, supportsSourceItemReuse: false, supportsOrderedAttachments: false, supportsRevisionUpsert: false, requiresRequestFingerprint: false, imageProxyReady: false, supportsUnitArrangement: false, supportsEnsureUnit: false, supportsArrangementCoordinator: false, supportsMutationLease: false } };
 }
 
 export async function listEnglishImageContextProjects(entry: EnglishImageEntry): Promise<EnglishImageContextProject[]> {
@@ -369,38 +375,34 @@ export async function exportEnglishImageContext(params: {
     status: "pending", outcome: "", lastError: "", dispatchedAt, syncedAt: null,
     targetProjectMode: projectMode, targetUnitMode: unitMode,
   };
-  const contextRoomLinks = retryLink
-    ? entry.contextRoomLinks.map((link) => link.dispatchId === retryLink.dispatchId ? pendingLink : link)
-    : [...entry.contextRoomLinks, pendingLink];
-  let workingEntry = await saveEnglishImageEntry({ ...entry, contextRoomLinks, contextRoomSourceRevision: sourceRevision, contextRoomContentFingerprint: contentFingerprint });
+  await updateEnglishImageEntry(entry.id, (current) => ({ contextRoomLinks: retryLink ? current.contextRoomLinks.map((link) => link.dispatchId === retryLink.dispatchId ? pendingLink : link) : [...current.contextRoomLinks, pendingLink], contextRoomSourceRevision: Math.max(current.contextRoomSourceRevision, sourceRevision), contextRoomContentFingerprint: contentFingerprint }));
   const endpoint = new URL("/api/integrations/lumen/import", base);
   let response: Response;
   try {
     response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` }, body: JSON.stringify(requestBody), cache: "no-store", signal: AbortSignal.timeout(20_000) });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    workingEntry = await saveEnglishImageEntry({ ...workingEntry, contextRoomLinks: workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "unknown" as const, lastError: `接收結果未知：${message}` } : link) });
+    await updateEnglishImageEntry(entry.id, (current) => ({ contextRoomLinks: current.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "unknown" as const, lastError: `接收結果未知：${message}` } : link) }));
     throw new Error("派送逾時或連線中斷；接收結果未知，已保留原 dispatchId，可安全重試。");
   }
   const result = await response.json().catch(() => ({})) as { error?: string; code?: string; projectId?: string; unitId?: string; sourceItemId?: string; sourceItemUnitId?: string; materialId?: string; batchId?: string; outcome?: string; duplicateDispatch?: boolean };
   if (!response.ok) {
-    await saveEnglishImageEntry({ ...workingEntry, contextRoomLinks: workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "failed" as const, lastError: [result.code, result.error].filter(Boolean).join("：") || `HTTP ${response.status}` } : link) });
+    await updateEnglishImageEntry(entry.id, (current) => ({ contextRoomLinks: current.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "failed" as const, lastError: [result.code, result.error].filter(Boolean).join("：") || `HTTP ${response.status}` } : link) }));
     throw new Error(result.error ?? `語境修習室接收失敗（${response.status}）`);
   }
   const projectId = result.projectId || result.materialId || "";
   const receivedUnitId = result.unitId || result.batchId || "";
   if (!projectId || !receivedUnitId || !result.sourceItemId || !result.sourceItemUnitId) {
-    await saveEnglishImageEntry({ ...workingEntry, contextRoomLinks: workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "failed" as const, lastError: "語境修習室回傳的 v2 接收結果不完整" } : link) });
+    await updateEnglishImageEntry(entry.id, (current) => ({ contextRoomLinks: current.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? { ...link, status: "failed" as const, lastError: "語境修習室回傳的 v2 接收結果不完整" } : link) }));
     throw new Error("語境修習室回傳的 v2 接收結果不完整");
   }
   const syncedAt = new Date().toISOString();
   const syncedLink: EnglishImageContextLink = { ...pendingLink, projectId, unitId: receivedUnitId, sourceItemId: result.sourceItemId, sourceItemUnitId: result.sourceItemUnitId, status: "synced", outcome: result.outcome || (result.duplicateDispatch ? "idempotent_replay" : "source_reused"), syncedAt };
-  const finalLinks = workingEntry.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? syncedLink : link).filter((link, index, all) => link.status !== "synced" || all.findIndex((other) => other.status === "synced" && other.projectId === link.projectId && other.unitId === link.unitId) === index);
   const contextRoomUrl = new URL(base.replace(/\/$/, ""));
   contextRoomUrl.searchParams.set("materialId", projectId);
   contextRoomUrl.searchParams.set("batchId", receivedUnitId);
   const contextRoomExport: EnglishImageContextExport = { sourceRecordId: entry.id, materialId: projectId, batchId: receivedUnitId, materialTitle, eventTitle, batchPosition: 1, materialReused: projectMode === "existing", expressionCount: selected.length, duplicate: result.duplicateDispatch === true, syncedAt };
-  return saveEnglishImageEntry({ ...workingEntry, contextRoomStatus: "synced", contextRoomPreparedAt: syncedAt, contextRoomUrl: contextRoomUrl.toString(), contextRoomExport, contextRoomLinks: finalLinks });
+  return updateEnglishImageEntry(entry.id, (current) => ({ contextRoomStatus: "synced", contextRoomPreparedAt: syncedAt, contextRoomUrl: contextRoomUrl.toString(), contextRoomExport, contextRoomLinks: current.contextRoomLinks.map((link) => link.dispatchId === dispatchId ? syncedLink : link).filter((link, index, all) => link.status !== "synced" || all.findIndex((other) => other.status === "synced" && other.projectId === link.projectId && other.unitId === link.unitId) === index) }));
 }
 
 async function exportEnglishImageContextV1(params: {

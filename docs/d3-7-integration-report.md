@@ -36,11 +36,15 @@ Neither PR was merged or deployed while preparing this report. No production sou
 ## Persistence and recovery
 
 - Draft/proposal/execution state is persisted in Dojo’s existing Notion JSON repository, not React state or localStorage.
-- Context Room adds only `unit_arrangement_units` and `unit_arrangement_sources`; it reuses `material_batches`, topics and all existing Handoff v2 tables.
+- Context Room additionally persists approved runs/jobs and short-lived mutation leases. `coordinationVersion`, execution lease owner/expiry and a monotonic fence prevent a stale tab or process from writing after another executor takes over.
+- Allowed run progression is `approved → executing → partial/completed`, with `cancelled` terminal for user cancellation. Preview cannot overwrite approved/executing/completed/cancelled state; identical approval replays, while changed approval content is rejected as a new-intent conflict.
 - Advisory locks and unique constraints make double clicks, double tabs, response loss and concurrent proposals safe at the business-data boundary.
 - A successful ensure with a lost response returns the same Unit UUID on retry.
 - A successful Handoff with failed Dojo writeback becomes `unknown`; retry uses the same dispatch and receipt.
-- Existing successful items are not resent. Cancelling stops pending work and never deletes completed work.
+- Existing successful items are not resent. Cancelling atomically marks not-started/claimed work skipped. An already-issued dispatch may finish and be recorded, but the next source cannot start and the run stays cancelled.
+- Cancellation releases unused source reservations; an arrangement-created Unit is removed only when the whole group was never dispatched and it has no Source Item link, note, Micro Practice or Practice Session. Successful/unknown work is retained for receipt reconciliation.
+- “Already linked” is skipped only when receiver Unit linkage, revision and content fingerprint all match and no result is pending. A newer revision reuses the same Source Item/link and follows normal Handoff v2 conflict rules.
+- EnglishImage writes use a receiver-backed mutation lease and re-read the latest entry before changing integration fields, preserving OCR edits, newly appended attachments and unrelated destinations.
 
 ## Compatibility
 
@@ -60,7 +64,8 @@ Neither PR was merged or deployed while preparing this report. No production sou
 | Dojo `npm run build` | PASS — production build and TypeScript |
 | Dojo changed-file ESLint | PASS |
 | Dojo repository-wide ESLint | One unrelated pre-existing `<img>` warning in `app/plurk/page.tsx` |
-| Context static contract/regression tests | Added; CI/repository execution pending |
+| Context TypeScript (`npx tsc --noEmit`) | PASS on the reconstructed PR file set |
+| Context static contract/regression tests | PASS — 7 passed |
 | Context PostgreSQL uniqueness test | Added; skipped without `TEST_DATABASE_URL` |
 | True cross-repository PostgreSQL/API E2E | NOT TESTED — no isolated database was available |
 | Railway / real Notion image / physical iPhone | NOT TESTED; requires authorized staging or post-deploy verification |
@@ -70,7 +75,7 @@ Static or mocked checks are not reported as PostgreSQL acceptance.
 ## Deployment order and rollback
 
 1. Merge and deploy Context Room PR #23 first.
-2. Confirm migration `0014_unit_arrangement_units.sql` and authorized capability flags.
+2. Confirm migrations `0014_unit_arrangement_units.sql` and additive `0015_unit_arrangement_execution.sql`, then verify coordinator/mutation-lease capability flags.
 3. Run an isolated ensure retry and Handoff v2 write test.
 4. Merge and deploy Dojo PR #73.
 5. Run iPhone Safari acceptance with non-production or explicitly authorized sources.

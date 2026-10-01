@@ -38,6 +38,8 @@ export type UnitArrangementRecord = {
   groups: ArrangementGroup[];
   pending: ArrangementPending[];
   approvedSnapshotHash: string;
+  approvalFingerprint: string;
+  coordinationVersion: number;
   groupUnitIds: Record<string, string>;
   executions: ArrangementExecution[];
   createdAt: string;
@@ -51,7 +53,7 @@ function normalize(value: unknown): UnitArrangementRecord | null {
   if (!value || typeof value !== "object") return null;
   const item = value as UnitArrangementRecord;
   if (item.version !== 1 || item.recordType !== "unit-arrangement" || !item.id || !item.pack) return null;
-  return item;
+  return { ...item, approvalFingerprint: item.approvalFingerprint || "", coordinationVersion: Number(item.coordinationVersion) || 0 };
 }
 
 export async function getUnitArrangement(id: string) {

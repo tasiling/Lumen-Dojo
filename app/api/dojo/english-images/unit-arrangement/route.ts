@@ -5,8 +5,9 @@ import {
   createUnitArrangement,
   executeUnitArrangement,
   previewUnitArrangement,
+  refreshUnitArrangement,
 } from "@/lib/dojo/unitArrangementService";
-import { getUnitArrangement, listUnitArrangements } from "@/lib/dojo/unitArrangementStore";
+import { listUnitArrangements } from "@/lib/dojo/unitArrangementStore";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ function ids(value: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const id = request.nextUrl.searchParams.get("id")?.trim();
-    if (id) return NextResponse.json({ arrangement: await getUnitArrangement(id) });
+    if (id) return NextResponse.json({ arrangement: await refreshUnitArrangement(id) });
     const arrangements = (await listUnitArrangements()).map((record) => ({
       id: record.id,
       status: record.status,

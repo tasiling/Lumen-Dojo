@@ -29,6 +29,8 @@ const MAX_SOURCES = 20;
 const MAX_UNITS = 100;
 const FULL_TEXT_LIMIT = 12_000;
 const PACK_TEXT_LIMIT = 60_000;
+type CoordinatorJob = ArrangementExecution & { status: ArrangementExecution["status"] };
+type CoordinatorState = { status: UnitArrangementRecord["status"]; coordinationVersion: number; leaseFence: number; jobs: CoordinatorJob[] };
 
 function contextRoomBaseUrl() {
   return process.env.CONTEXT_ROOM_INTEGRATION_URL?.trim() || process.env.CONTEXT_ROOM_URL?.trim() || "https://lumen-context-room-production-4a2c.up.railway.app";
@@ -54,6 +56,21 @@ async function receiverJson(path: string, init: RequestInit = {}) {
   return result;
 }
 
+async function coordinate(action: string, body: Record<string, unknown>) {
+  return receiverJson("/api/integrations/lumen/unit-arrangements", { method: "POST", body: JSON.stringify({ action, ...body }) }) as Promise<CoordinatorState>;
+}
+
+function mergeCoordinator(record: UnitArrangementRecord, state: CoordinatorState) {
+  const bySource = new Map(state.jobs.map((job) => [job.sourceRecordId, job]));
+  return { ...record, status: state.status, coordinationVersion: state.coordinationVersion, executions: record.executions.map((execution) => ({ ...execution, ...(bySource.get(execution.sourceRecordId) || {}) })) };
+}
+export async function refreshUnitArrangement(id: string) {
+  const record = await getUnitArrangement(id);
+  if (!record.approvedSnapshotHash) return record;
+  const state = await coordinate("get", { arrangementId: id });
+  return saveUnitArrangement(mergeCoordinator(record, state));
+}
+
 function summaryOf(entry: Awaited<ReturnType<typeof getEnglishImageEntry>>["entry"]) {
   return (entry.englishRecord || entry.chineseExplanation || entry.contextNote || entry.ocrText).trim().slice(0, 2500);
 }
@@ -73,7 +90,7 @@ export async function createUnitArrangement(params: {
     if (!entry.englishRecord.trim() && !entry.ocrText.trim()) throw new Error(`「${entry.title}」缺少可供編排的英文內容`);
   }
   const catalog = await listEnglishImageContextCatalog(entries[0]);
-  if (catalog.capability.mode !== "v2" || !catalog.capability.supportsUnitArrangement || !catalog.capability.supportsEnsureUnit)
+  if (catalog.capability.mode !== "v2" || !catalog.capability.supportsUnitArrangement || !catalog.capability.supportsEnsureUnit || !catalog.capability.supportsArrangementCoordinator || !catalog.capability.supportsMutationLease)
     throw new Error("語境修習室尚未啟用素材編排能力；原本逐筆派送仍可使用");
   const project = catalog.projects.find((item) => item.id === params.projectId);
   if (!project || project.catalogRole !== "learning_project") throw new Error("請選擇接收端目錄中的正式長期學習專案");
@@ -161,7 +178,7 @@ export async function createUnitArrangement(params: {
   const now = new Date().toISOString();
   const record: UnitArrangementRecord = {
     version: 1, recordType: "unit-arrangement", id: packId, status: "packed", pack, sourceSnapshots,
-    prompt: unitArrangementPrompt(pack), rawResult: "", groups: [], pending: [], approvedSnapshotHash: "",
+    prompt: unitArrangementPrompt(pack), rawResult: "", groups: [], pending: [], approvedSnapshotHash: "", approvalFingerprint: "", coordinationVersion: 0,
     groupUnitIds: {}, executions: [], createdAt: now, updatedAt: now, approvedAt: null,
   };
   return saveUnitArrangement(record);
@@ -169,7 +186,7 @@ export async function createUnitArrangement(params: {
 
 export async function previewUnitArrangement(id: string, rawResult: string) {
   const record = await getUnitArrangement(id);
-  if (record.status === "cancelled") throw new Error("此編排已取消");
+  if (!["packed", "previewed"].includes(record.status)) throw new Error("已核准、執行或取消的編排不能被舊預覽覆蓋");
   const result = parseUnitArrangementResult(rawResult, {
     packId: record.id, snapshotHash: record.pack.snapshotHash, projectId: record.pack.project.id,
     sourceRecordIds: record.pack.sources.map((source) => source.recordId), existingUnitIds: record.pack.units.map((unit) => unit.id),
@@ -240,6 +257,7 @@ function normalizeEditedPlan(record: UnitArrangementRecord, groupsValue: unknown
 
 export async function approveUnitArrangement(id: string, groupsValue: unknown, pendingValue: unknown) {
   const record = await getUnitArrangement(id);
+  if (!["previewed", "approved"].includes(record.status)) throw new Error("此編排目前不能核准");
   const { groups, pending } = normalizeEditedPlan(record, groupsValue, pendingValue);
   validateEditedPlan(record, groups, pending);
   const currentEntries = await Promise.all(record.sourceSnapshots.map((source) => getEnglishImageEntry(source.recordId).then((row) => row.entry)));
@@ -268,16 +286,21 @@ export async function approveUnitArrangement(id: string, groupsValue: unknown, p
     }
   }
   const approvedSnapshotHash = arrangementSnapshotHash({ groups, pending, sources: record.sourceSnapshots.map((source) => ({ id: source.recordId, fingerprint: source.contentFingerprint })) });
+  const approvalFingerprint = arrangementSnapshotHash({ approvedSnapshotHash, groups, pending });
+  if (record.status === "approved" && record.approvalFingerprint && record.approvalFingerprint !== approvalFingerprint)
+    throw new Error("此編排已有不同核准內容；請建立新的編排意圖");
   const executions = groups.filter((group) => group.accepted).flatMap((group) => group.sourceRecordIds.map((sourceRecordId) => {
     const existing = record.executions.find((item) => item.sourceRecordId === sourceRecordId && item.groupRef === group.groupRef);
-    const alreadyLinked = group.action === "reuse_unit" && (receiverDestinations.get(sourceRecordId) || []).includes(group.unitId);
+    const binding = catalog.sourceBindings.find((item) => item.sourceRecordId === sourceRecordId);
+    const snapshot = record.sourceSnapshots.find((item) => item.recordId === sourceRecordId)!;
+    const alreadyLinked = group.action === "reuse_unit" && binding?.unitIds.includes(group.unitId) === true && binding.revision === snapshot.revision && binding.contentFingerprint === snapshot.contentFingerprint && binding.pendingResult !== true;
     return existing || { sourceRecordId, groupRef: group.groupRef, unitId: group.unitId, dispatchId: crypto.randomUUID(), requestFingerprint: "", status: alreadyLinked ? "skipped" : "pending", error: "", result: alreadyLinked ? { outcome: "already_linked" } : null, updatedAt: new Date().toISOString() } satisfies ArrangementExecution;
   }));
-  return saveUnitArrangement({ ...record, status: "approved", groups, pending, approvedSnapshotHash, executions, approvedAt: new Date().toISOString() });
+  const state = await coordinate("approve", { arrangementId: id, projectId: record.pack.project.id, approvedSnapshotHash, approvalFingerprint, jobs: executions });
+  return saveUnitArrangement(mergeCoordinator({ ...record, status: "approved", groups, pending, approvedSnapshotHash, approvalFingerprint, executions, approvedAt: record.approvedAt || new Date().toISOString() }, state));
 }
 
-async function ensureGroupUnit(record: UnitArrangementRecord, group: ArrangementGroup) {
-  if (record.groupUnitIds[group.groupRef]) return record.groupUnitIds[group.groupRef];
+async function ensureGroupUnit(record: UnitArrangementRecord, group: ArrangementGroup, executorId: string, leaseFence: number, sourceRecordId: string) {
   const payloadWithoutFingerprint = {
     contractVersion: UNIT_ARRANGEMENT_V1,
     operation: "ensure-unit",
@@ -290,6 +313,9 @@ async function ensureGroupUnit(record: UnitArrangementRecord, group: Arrangement
     unitName: group.unitName,
     learningGoal: group.learningGoal,
     sourceRecordIds: group.sourceRecordIds,
+    executorId,
+    leaseFence,
+    executionSourceRecordId: sourceRecordId,
   };
   const payload = { ...payloadWithoutFingerprint, requestFingerprint: calculateRequestFingerprint(payloadWithoutFingerprint) };
   const result = await receiverJson("/api/integrations/lumen/units/ensure", { method: "POST", body: JSON.stringify(payload) });
@@ -300,7 +326,7 @@ async function ensureGroupUnit(record: UnitArrangementRecord, group: Arrangement
   return unitId;
 }
 
-async function dispatchSnapshot(record: UnitArrangementRecord, execution: ArrangementExecution, unitId: string) {
+async function dispatchSnapshot(record: UnitArrangementRecord, execution: ArrangementExecution, unitId: string, executorId: string, leaseFence: number) {
   const snapshot = record.sourceSnapshots.find((item) => item.recordId === execution.sourceRecordId);
   if (!snapshot) throw new Error("找不到確認時的來源快照");
   const entryRow = await getEnglishImageEntry(snapshot.recordId);
@@ -317,6 +343,7 @@ async function dispatchSnapshot(record: UnitArrangementRecord, execution: Arrang
   const requestFingerprint = execution.requestFingerprint || calculateRequestFingerprint(requestWithoutFingerprint);
   const requestBody = { ...requestWithoutFingerprint, requestFingerprint };
   execution.requestFingerprint = requestFingerprint;
+  await coordinate("authorize", { arrangementId: record.id, executorId, leaseFence, sourceRecordId: execution.sourceRecordId, unitId, requestFingerprint });
   const now = new Date().toISOString();
   const pendingLink = {
     projectId: project.id, unitId, sourceItemId: "", sourceItemUnitId: "", projectTitle: project.title,
@@ -364,35 +391,42 @@ async function dispatchSnapshot(record: UnitArrangementRecord, execution: Arrang
 export async function executeUnitArrangement(id: string, retryFailedOnly = false) {
   let record = await getUnitArrangement(id);
   if (!record.approvedSnapshotHash || !["approved", "partial", "executing"].includes(record.status)) throw new Error("請先確認編排預覽");
-  record = await saveUnitArrangement({ ...record, status: "executing" });
-  for (const execution of record.executions) {
+  const executorId = crypto.randomUUID();
+  let state = await coordinate("acquire", { arrangementId: id, executorId });
+  record = await saveUnitArrangement(mergeCoordinator(record, state));
+  if (record.status === "cancelled" || record.status === "completed") return record;
+  const leaseFence = state.leaseFence;
+  for (const seed of record.executions) {
+    state = await coordinate("get", { arrangementId: id });
+    record = mergeCoordinator(await getUnitArrangement(id), state);
+    if (record.status === "cancelled") break;
+    const execution = record.executions.find((item) => item.sourceRecordId === seed.sourceRecordId)!;
     if (execution.status === "succeeded" || execution.status === "skipped") continue;
     if (retryFailedOnly && !["failed", "unknown"].includes(execution.status)) continue;
     const group = record.groups.find((item) => item.groupRef === execution.groupRef && item.accepted);
-    if (!group) { execution.status = "skipped"; execution.updatedAt = new Date().toISOString(); record = await saveUnitArrangement(record); continue; }
+    if (!group) continue;
     try {
-      const unitId = await ensureGroupUnit(record, group);
+      state = await coordinate("claim", { arrangementId: id, executorId, leaseFence, sourceRecordId: execution.sourceRecordId, unitId: execution.unitId });
+      record = mergeCoordinator(record, state);
+      const unitId = await ensureGroupUnit(record, group, executorId, leaseFence, execution.sourceRecordId);
       execution.unitId = unitId;
-      execution.status = "running";
-      execution.updatedAt = new Date().toISOString();
-      record = await saveUnitArrangement(record);
-      execution.result = await dispatchSnapshot(record, execution, unitId);
-      execution.status = "succeeded";
-      execution.error = "";
+      const result = await dispatchSnapshot(record, execution, unitId, executorId, leaseFence);
+      state = await coordinate("complete", { arrangementId: id, executorId, leaseFence, sourceRecordId: execution.sourceRecordId, status: "succeeded", result });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      execution.status = /timeout|aborted|network|fetch|結果未知/i.test(message) ? "unknown" : "failed";
-      execution.error = message;
+      if (/ARRANGEMENT_CANCELLED|編排已取消|STALE_EXECUTION_FENCE/.test(message)) break;
+      const status = /timeout|aborted|network|fetch|結果未知/i.test(message) ? "unknown" : "failed";
+      try { state = await coordinate("complete", { arrangementId: id, executorId, leaseFence, sourceRecordId: execution.sourceRecordId, status, error: message }); } catch { /* authoritative lease/cancel result wins */ }
     }
-    execution.updatedAt = new Date().toISOString();
-    record = await saveUnitArrangement(record);
+    record = await saveUnitArrangement(mergeCoordinator(record, state));
   }
-  const completed = record.executions.length > 0 && record.executions.every((item) => item.status === "succeeded" || item.status === "skipped");
-  return saveUnitArrangement({ ...record, status: completed ? "completed" : "partial" });
+  state = await coordinate("finish", { arrangementId: id, executorId, leaseFence });
+  return saveUnitArrangement(mergeCoordinator(await getUnitArrangement(id), state));
 }
 
 export async function cancelUnitArrangement(id: string) {
   const record = await getUnitArrangement(id);
   if (record.status === "completed") throw new Error("已完成的編排不能取消");
-  return saveUnitArrangement({ ...record, status: "cancelled", executions: record.executions.map((item) => item.status === "pending" ? { ...item, status: "skipped" as const, updatedAt: new Date().toISOString() } : item) });
+  const state = await coordinate("cancel", { arrangementId: id, executorId: "cancel-request", leaseFence: 0 });
+  return saveUnitArrangement(mergeCoordinator(record, state));
 }
