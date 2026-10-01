@@ -1,5 +1,6 @@
 // Browser interaction tests use isolated in-memory IO and the real foundation domain service.
 // Start local Next dev with ACCESS_KEY=r2-1-isolated-test first. No live Notion calls.
+import { isolatedServer } from "./isolated-practice-server.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
@@ -69,13 +70,13 @@ let capture = normalizeCaptureEntry(
   },
   { id: "isolated-capture" },
 );
-const base = process.env.UI_BASE_URL ?? "http://127.0.0.1:3017";
+const server = await isolatedServer(3017,"r2-1-isolated-test");
+const base = server.base;
 const output = process.env.R2_UI_OUTPUT_DIR ?? "/tmp/r2-1-ui";
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   headless: true,
-  executablePath:
-    process.env.CHROMIUM_EXECUTABLE_PATH ?? chromium.executablePath(),
+  ...(process.env.CHROMIUM_EXECUTABLE_PATH ? {executablePath: process.env.CHROMIUM_EXECUTABLE_PATH} : {}),
   args: ["--no-sandbox"],
 });
 const context = await browser.newContext({
@@ -100,7 +101,7 @@ if (process.env.UI_CJK_FONT) {
       .load()
       .then((font) => {
         document.fonts.add(font);
-      });
+      }).catch(() => null);
     document.addEventListener("DOMContentLoaded", () => {
       const style = document.createElement("style");
       style.textContent =
@@ -175,8 +176,7 @@ await page.route("**/api/**", async (route) => {
 });
 const manager = page.locator(".learning-foundation");
 async function openLearning() {
-  await page.goto(`${base}/practice`);
-  await page.getByRole("button", { name: "心", exact: true }).click();
+  await page.goto(`${base}/practice/manage`);
   await manager
     .getByRole("button", { name: "＋ 新增項目", exact: true })
     .waitFor();
@@ -379,9 +379,10 @@ try {
   );
   await manager
     .locator(".foundation-detail")
-    .getByRole("button", { name: "開始這次修習", exact: true })
+    .getByRole("button", { name: "輔助計時（選用）", exact: true })
     .click();
   await page.waitForURL("**/timer");
+  await page.getByRole("heading",{name:"修行計時",exact:true}).waitFor();
   await page.goBack();
   await manager
     .locator(".foundation-detail")
@@ -389,7 +390,7 @@ try {
     .waitFor();
   console.log("PASS timer navigation and Back restore selected learning item");
   await page.goto(`${base}/forage/captures`);
-  await page.getByRole("tab", { name: /已採用/ }).click();
+  await page.getByRole("tab", { name: /已採用.*1/ }).click();
   await page
     .getByText("隔離素材：心理學與中醫長中文", { exact: true })
     .waitFor();
@@ -404,7 +405,7 @@ try {
     .click();
   assert.equal(capture.learningItemIds.length, 2);
   await page.reload();
-  await page.getByRole("tab", { name: /已採用/ }).click();
+  await page.getByRole("tab", { name: /已採用.*1/ }).click();
   await page
     .getByText("隔離素材：心理學與中醫長中文", { exact: true })
     .waitFor();
@@ -419,6 +420,10 @@ try {
   assert.deepEqual(pageErrors, []);
   console.log("PASS no browser runtime errors");
   console.log(`Screenshots: ${output}`);
+} catch(error) {
+  await page.screenshot({path: join(output,"failure.png"),fullPage:true}).catch(()=>{});
+  throw error;
 } finally {
   await browser.close();
+  server.stop();
 }

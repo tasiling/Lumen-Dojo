@@ -17,7 +17,8 @@
     "test:weekly": "node scripts/test-weekly-bingo-v2.mjs",
     "test:learning-foundation": "node scripts/test-learning-foundation.mjs",
     "test:learning-foundation-api": "node scripts/test-learning-foundation-api.mjs",
-    "test:learning-foundation-ui": "node scripts/test-learning-foundation-ui.mjs"
+    "test:learning-foundation-ui": "node scripts/test-learning-foundation-ui.mjs",
+    "test:practice-workspaces": "node scripts/test-practice-workspaces.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",
