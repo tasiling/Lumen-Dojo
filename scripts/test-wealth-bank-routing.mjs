@@ -1,6 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { BankRoutingState,bankIntegrationConfigured } from "../lib/dojo/wealthBankRouting.ts";
+
+test("OCR integration bypasses only the app access-key proxy and keeps its bearer guard",()=>{
+  const proxy=readFileSync(join(process.cwd(),"proxy.ts"),"utf8");
+  const route=readFileSync(join(process.cwd(),"app/api/integrations/wealth-bank/ocr/route.ts"),"utf8");
+  assert.match(proxy,/api\/integrations\/wealth-bank\/ocr/);
+  assert.match(route,/LUMINARA_WEALTH_OCR_SECRET/);
+  assert.match(route,/Bearer /);
+  assert.match(route,/status: 401/);
+});
 
 test("disabled bank integration never probes Luminara for ordinary images",async()=>{
   const state=new BankRoutingState();let probes=0;
