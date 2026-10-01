@@ -11,11 +11,18 @@ function bearer(req: NextRequest): string {
   return value.startsWith("Bearer ") ? value.slice(7) : "";
 }
 
-function outputText(payload: any): string {
+function outputText(payload: unknown): string {
   const parts: string[] = [];
-  for (const item of Array.isArray(payload?.output) ? payload.output : []) {
-    for (const content of Array.isArray(item?.content) ? item.content : []) {
-      if (content?.type === "output_text" && typeof content.text === "string") parts.push(content.text);
+  const output = payload && typeof payload === "object" && "output" in payload
+    ? payload.output
+    : [];
+  for (const item of Array.isArray(output) ? output : []) {
+    const contentItems = item && typeof item === "object" && "content" in item
+      ? item.content
+      : [];
+    for (const content of Array.isArray(contentItems) ? contentItems : []) {
+      if (content && typeof content === "object" && "type" in content && content.type === "output_text"
+        && "text" in content && typeof content.text === "string") parts.push(content.text);
     }
   }
   return parts.join("\n").trim();
@@ -93,7 +100,7 @@ export async function POST(req: NextRequest) {
 
   if (!response.ok) return NextResponse.json({ error: `OCR 服務暫時失敗（${response.status}）` }, { status: 502 });
 
-  let payload: any;
+  let payload: unknown;
   try { payload = await response.json(); }
   catch { return NextResponse.json({ error: "OCR 回應格式無法解析" }, { status: 502 }); }
 
