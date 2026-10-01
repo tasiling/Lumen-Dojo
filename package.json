@@ -15,6 +15,8 @@
     "test:html-entity-overflow": "node scripts/test-html-entity-mobile-overflow.mjs",
     "lint": "eslint",
     "test:weekly": "node scripts/test-weekly-bingo-v2.mjs"
+    ,"test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs"
+    ,"check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

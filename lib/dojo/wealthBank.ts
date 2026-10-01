@@ -1,0 +1,24 @@
+import "server-only";
+import { createHash,createHmac,randomBytes } from "node:crypto";
+import { BankRoutingState,bankIntegrationConfigured,type BankImageRoute } from "./wealthBankRouting";
+type BankCounts={recorded?:number;review?:number;duplicate?:number;skipped?:number;failed?:number};
+export type BankIntake={batchId:string;status:string;counts:BankCounts;duplicateDelivery?:boolean;duplicateImage?:boolean};
+const routingState=new BankRoutingState();
+export function bankIntegrationEnabled(){return bankIntegrationConfigured()}
+const base=()=>{const value=process.env.LUMINARA_WEALTH_URL?.trim().replace(/\/$/,"");if(!value)throw new Error("Luminara 銀行記帳尚未設定");return value};
+const secret=()=>{const value=process.env.LUMINARA_WEALTH_S2S_SECRET??"";if(value.length<32)throw new Error("Luminara 跨服務密鑰尚未設定");return value};
+export const lineUserHash=(userId:string)=>createHash("sha256").update(userId).digest("hex");
+function signature(body:string,method:string,path:string,timestamp:string,nonce:string){const bodyHash=createHash("sha256").update(body).digest("hex");return createHmac("sha256",secret()).update(`${timestamp}.${nonce}.${method}.${path}.${bodyHash}`).digest("hex")}
+async function request<T>(path:string,userId:string,init:{method?:string;body?:unknown}={}):Promise<T>{const method=init.method??"GET",body=init.body===undefined?"":JSON.stringify(init.body),timestamp=String(Date.now()),nonce=randomBytes(18).toString("base64url");const response=await fetch(base()+path,{method,headers:{"Content-Type":"application/json","X-Wealth-Timestamp":timestamp,"X-Wealth-Nonce":nonce,"X-Wealth-Line-User":lineUserHash(userId),"X-Wealth-Signature":signature(body,method,path,timestamp,nonce)},body:method==="GET"?undefined:body,cache:"no-store",signal:AbortSignal.timeout(20_000)});let result:unknown={};try{result=await response.json()}catch{}if(!response.ok)throw new Error(typeof result==="object"&&result&&"error" in result?String((result as {error:unknown}).error):`Luminara 回應 ${response.status}`);return result as T}
+export async function bankMode(userId:string){return request<{mode:"bank"|"off";expiresAt?:string|null}>("/api/integrations/lumen/bank/mode",userId)}
+export async function setBankMode(userId:string,mode:"bank"|"off"){
+  if(!bankIntegrationEnabled())throw new Error("銀行記帳整合尚未啟用");
+  return request<{mode:"bank"|"off";expiresAt?:string|null}>("/api/integrations/lumen/bank/mode",userId,{method:"POST",body:{mode}});
+}
+export async function bankImageRoute(userId:string,eventId:string):Promise<BankImageRoute>{
+  return routingState.route(userId,eventId,bankIntegrationEnabled(),()=>request<{route:"ordinary"|"bank"}>("/api/integrations/lumen/bank/routes/claim",userId,{method:"POST",body:{sourceEventId:eventId}}));
+}
+export async function receiveBankImage(userId:string,input:{messageId:string;eventId:string;mimeType:string;bytes:Buffer}){return request<BankIntake>("/api/integrations/lumen/bank/images",userId,{method:"POST",body:{sourceEventId:input.eventId,idempotencyKey:`line:${input.eventId||input.messageId}`,mimeType:input.mimeType,imageBase64:input.bytes.toString("base64")}})}
+export async function processBankImage(userId:string,batchId:string){return request<BankIntake>(`/api/integrations/lumen/bank/batches/${batchId}/process`,userId,{method:"POST",body:{}})}
+export function wealthInboxUrl(){const app=process.env.LUMINARA_WEALTH_APP_URL?.trim()||process.env.LUMINARA_WEALTH_URL?.trim()||"";return app?`${app.replace(/\/$/,"")}/workspace#inbox`:""}
+export function bankSummary(result:BankIntake){const c=result.counts||{};return `銀行截圖已處理\n已記錄 ${c.recorded||0} 筆｜待確認 ${c.review||0} 筆｜重複 ${c.duplicate||0} 筆｜略過 ${c.skipped||0} 筆｜失敗 ${c.failed||0} 筆`}
