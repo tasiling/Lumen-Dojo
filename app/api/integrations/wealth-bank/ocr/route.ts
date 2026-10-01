@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,15 +35,7 @@ function parseJson(text: string): unknown {
 
 export async function POST(req: NextRequest) {
   const expected = process.env.LUMINARA_WEALTH_OCR_SECRET ?? "";
-  const provided = bearer(req);
-  if (expected.length < 32 || provided !== expected) {
-    const fingerprint = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 12);
-    console.warn("[wealth-bank-ocr] auth mismatch", {
-      expectedLength: expected.length,
-      providedLength: provided.length,
-      expectedFingerprint: fingerprint(expected),
-      providedFingerprint: fingerprint(provided),
-    });
+  if (expected.length < 32 || bearer(req) !== expected) {
     return NextResponse.json({ error: "OCR 驗證失敗" }, { status: 401 });
   }
 
