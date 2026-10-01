@@ -28,7 +28,8 @@ export const learningRecords = recordService({
       } else if(ref.type === "reading-book" || ref.type === "reading-note") {
         const page = await withNotionRateLimit(() => notion().pages.retrieve({ page_id: ref.id }));
         const allowed = ref.type === "reading-book" ? [DATA_SOURCES.DB21_書籍庫] : [DATA_SOURCES.DB21_書籍庫, DATA_SOURCES.DB22_洞察卡片庫];
-        if(!("parent" in page) || !("data_source_id" in page.parent) || !allowed.some(id => id.replaceAll("-", "") === page.parent.data_source_id.replaceAll("-", "")) || page.archived) throw new LearningError("閱讀來源不屬於本 owner 或已封存",403);
+        const parentId = "parent" in page && "data_source_id" in page.parent ? page.parent.data_source_id : null;
+        if(!parentId || !allowed.some(id => id.replaceAll("-", "") === parentId.replaceAll("-", "")) || ("archived" in page && page.archived)) throw new LearningError("閱讀來源不屬於本 owner 或已封存",403);
         result.push({ ...ref, status: "available" as const });
       } else result.push(ref);
     }

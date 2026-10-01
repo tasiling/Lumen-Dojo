@@ -29,6 +29,7 @@
 4. 投影 practicedOn 的 DailyRecord output。
 5. 僅在明確 binding 時投影現存週盤任務。
 
+事件最初保存有界的待寫正文 outbox；正文確認後清空 evidence，僅保留 learningRecordId，避免永久複製正文。
 跨 Notion request 沒有 transaction，可能部分成功。事件保存各步 `pending/applied/needs_retry/unlinked/unmatched`、`projectionRevision`、`error`。
 有已确认事件、投影失敗：重試只補尚未完成投影，不需重新完成練習。已 applied 是 no-op。
 事件 create response 遺失：503，保留 mutex／intent；不可自動重送 create。確定零 dispatch 的讀取失敗會釋放鎖。即使呼叫端捕捉 exception，未確認 mutation 仍由 writeOutcome 阻止派送並保留 mutex。

@@ -15,7 +15,7 @@ export function eventService(repo: EventRepository) {
   function owner(e: CompletionEvent) { if (e.owner !== repo.owner || e.eventVersion !== 1) throw new LearningError("事件無權存取或版本不符", 403); return e; }
   return {
     // Caller holds the same R2-1 lock throughout event + source + projection.
-    async accept(input: { sourceId: string; sourceRevision: string; occurredAt: string; practicedOn: string; timeZone: string; sourceDate: string; learningItemIds: string[]; binding?: TargetBinding | null; evidence: CompletionEvent["evidence"] }) {
+    async accept(input: { sourceId: string; sourceRevision: string; occurredAt: string; practicedOn: string; timeZone: string; sourceDate: string; learningItemIds: string[]; binding?: TargetBinding | null; evidence: NonNullable<CompletionEvent["evidence"]> }) {
       const id = sourceIdentity(repo.owner, "dojo", "english-journal-segment", input.sourceId);
       const existing = await repo.get(id); if (existing) return owner(existing);
       const e: CompletionEvent = { ...input, id, owner: repo.owner, eventVersion: 1, eventType: "practice.completed", sourceSystem: "dojo", sourceType: "english-journal-segment", learningRecordId: randomUUID(), completionKind: "journal-self-translation", quantity: 1, unit: "段", sourceStatus: "available", binding: input.binding ?? null, createdAt: new Date().toISOString(), projections: { record: "pending", output: "pending", weekly: "pending" }, projectionStatus: "pending", projectionRevision: 1, syncedAt: null, error: null };
@@ -41,7 +41,7 @@ export function eventService(repo: EventRepository) {
             state = result.state;
             if (state === "applied" && result.board) await repo.saveWeekly(event.binding!.weekStart, result.board);
           }
-          event = { ...event, projections: { ...event.projections, [step]: state }, projectionRevision: event.projectionRevision + 1, syncedAt: new Date().toISOString(), error: null };
+          event = { ...event, ...(step === "record" ? { evidence: null } : {}), projections: { ...event.projections, [step]: state }, projectionRevision: event.projectionRevision + 1, syncedAt: new Date().toISOString(), error: null };
         } catch (error) {
           repo.assertKnownOutcome(); // Never swallow an ambiguous SDK mutation.
           event = { ...event, projections: { ...event.projections, [step]: "needs_retry" }, projectionRevision: event.projectionRevision + 1, error: error instanceof Error ? error.message : String(error) };
@@ -54,4 +54,4 @@ export function eventService(repo: EventRepository) {
     },
   };
 }
-export function eventBody(event: CompletionEvent): LearningRecord { return { ...event.evidence, id: event.learningRecordId, owner: event.owner, recordType: "learning-record/v1", revision: 1, createdAt: event.createdAt, updatedAt: event.createdAt }; }
+export function eventBody(event: CompletionEvent): LearningRecord { if(!event.evidence) throw new LearningError("正文已投影，請讀取 learningRecordId；不得重建",409); return { ...event.evidence, id: event.learningRecordId, owner: event.owner, recordType: "learning-record/v1", revision: 1, createdAt: event.createdAt, updatedAt: event.createdAt }; }
