@@ -1,0 +1,28 @@
+import assert from "node:assert/strict";
+import { recordService, type Row } from "../lib/dojo/learningRecords/service";
+import type { LearningRecord } from "../lib/dojo/learningRecords/model";
+import type { LearningEntity } from "../lib/dojo/learningFoundation/model";
+async function main() {
+  const rows: Row<LearningRecord>[] = [];
+  const graph = [{ id: "psych", kind: "item", status: "active", name: "心理學" }, { id: "english", kind: "item", status: "active" }, { id: "topic", kind: "topic", itemId: "psych", stageId: "s1", status: "active" }] as LearningEntity[];
+  let writes = 0;
+  const repo = { owner: "owner", graph: async () => graph, exclusive: async <T>(fn: () => Promise<T>) => fn(), page: async (cursor?: string, limit = 20) => ({ rows: rows.slice(Number(cursor ?? 0), Number(cursor ?? 0) + limit), cursor: Number(cursor ?? 0) + limit < rows.length ? String(Number(cursor ?? 0) + limit) : null }), get: async (id: string) => rows.find(r => r.value.id === id) ?? null, create: async (value: LearningRecord) => { writes++; rows.push({ id: value.id, value }); }, update: async (id: string, value: LearningRecord) => { writes++; rows.find(r => r.id === id)!.value = value; } };
+  const service = recordService(repo);
+  const r = await service.create({ learningItemIds: ["psych", "english"], learningTopicId: "topic", practicedOn: "2026-10-01", whatIDid: "閱讀心理學，思考解牌中的投射。" });
+  assert.equal(r.status, "draft"); assert.equal(rows.length, 1); assert.equal(r.learningItemIds.length, 2);
+  const completed = await service.edit(r.id, r.revision, { status: "completed" }); assert.equal(completed.id, r.id);
+  graph[0].name = "心理諮商探索"; graph[2].stageId = "s2";
+  assert.equal((await service.read(r.id)).learningTopicId, "topic");
+  await assert.rejects(service.edit(r.id, 1, { whatIDid: "stale" }), /已更新/);
+  const archived = await service.edit(r.id, 2, { status: "archived" });
+  await service.edit(r.id, archived.revision, { status: "draft" });
+  await assert.rejects(service.create({ learningItemIds: ["foreign"], practicedOn: "2026-10-01", whatIDid: "禁止" }), /無權/);
+  for (let i = 0; i < 180; i++) await service.create({ learningItemIds: ["psych"], practicedOn: "2026-09-20", whatIDid: `隔離歷程 ${i}` });
+  let cursor: string | undefined; let count = 0;
+  const before = writes;
+  do { const page = await service.list({ cursor, limit: 17 }); count += page.records.length; cursor = page.cursor ?? undefined; } while(cursor);
+  assert.equal(count, 181); assert.equal(writes, before);
+  const foreign = recordService({ ...repo, owner: "another" }); await assert.rejects(foreign.read(r.id), /存取/);
+  console.log("PASS Learning Record: create, complete, one-body multi-subject, stable refs, archive/restore, auth, stale, 181-row pagination, read-only GET service");
+}
+main().catch(e => { console.error(e); process.exitCode = 1; });
