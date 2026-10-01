@@ -54,3 +54,57 @@ Daily/weekly/journal 相容寫入層保留 server projection metadata；journal 
 PR Environments OFF 沿用使用者已提供的設定證據。沒有登入 Railway、使用 preview writer、變更 autodeploy、建立正式資源或觸發部署操作；這不是本次重新執行 Railway runtime audit。
 
 CODE：完成。ISOLATED TESTS：完成。PR：獨立 stacked Draft。PRODUCTION：未合併／未部署／無正式驗收寫入。
+
+後續收緊：actual daily GET→PUT 可保存且保留 output，stale 每日／週盤 PUT 拒絕；flow progress 共用鎖及 reentrant activity writer 已測，背景 snapshot 不改 manual ledger。來源網址編輯保留既有 sourceRefs，UI 已測；event retry 按鈕只更新投影，不再建立正文。事件 GET 衍生 current bindingStatus，removed target 顯示未連結且不修改歷史 applied 事實。
+
+通用外站 completion receiver／withdraw 補償 API 不在本包，契約已定義語意供 R2-5 使用。實機／真實隔離 Notion／正式 runtime 未完成，保持 SKIPPED。
+
+## 本包修改檔案
+
+```text
+app/api/dojo/bingo/route.ts
+app/api/dojo/daily/route.ts
+app/api/dojo/english-journal/route.ts
+app/api/dojo/flow/route.ts
+app/api/dojo/learning/records/route.ts
+app/api/dojo/practice-events/route.ts
+app/components/EnglishJournalWorkbench.tsx
+app/components/JournalTargetPicker.tsx
+app/components/LearningRecordWorkspace.tsx
+app/components/PracticeEventHistory.tsx
+app/components/PracticeHome.tsx
+app/components/PracticeLearning.tsx
+app/components/PracticeWorkspace.tsx
+app/globals.css
+docs/R2-3-learning-records-events.md
+docs/evidence/r2-3/history-430.png
+docs/evidence/r2-3/record-375.png
+docs/evidence/r2-3/record-390.png
+docs/evidence/r2-3/record-430.png
+docs/fixtures/r2-3/event-v1.json
+docs/r2-practice-event-contract-v1.md
+lib/dojo/englishJournal.ts
+lib/dojo/formal.ts
+lib/dojo/learningFoundation/practiceWrite.ts
+lib/dojo/learningRecords/model.ts
+lib/dojo/learningRecords/service.ts
+lib/dojo/learningRecords/store.ts
+lib/dojo/learningStore.ts
+lib/dojo/notionStore.ts
+lib/dojo/practiceEvents/compatibility.ts
+lib/dojo/practiceEvents/journal.ts
+lib/dojo/practiceEvents/model.ts
+lib/dojo/practiceEvents/projection.ts
+lib/dojo/practiceEvents/service.ts
+lib/dojo/practiceEvents/store.ts
+lib/dojo/practiceNavigation.ts
+lib/notion/queries.ts
+package.json
+scripts/test-learning-records.mjs
+scripts/test-practice-events.mjs
+scripts/test-practice-workspaces.mjs
+scripts/test-r2-3-api.mjs
+scripts/test-r2-3-ui.mjs
+tests/learning-records.test.ts
+tests/practice-events.test.ts
+```
