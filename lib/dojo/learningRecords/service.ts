@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { LearningError, type LearningEntity } from "../learningFoundation/model";
 import { recordInput, type LearningRecord, type RecordFilter } from "./model";
 export type Row<T> = { id: string; value: T };
@@ -32,8 +32,15 @@ export function recordService(repo: RecordRepository) {
     },
     async create(input: Record<string, unknown>) {
       return repo.exclusive(async () => {
+        let id = randomUUID() as string;
+        if (input.createRequestId !== undefined) {
+          if(typeof input.createRequestId !== "string" || !/^[0-9a-f-]{36}$/i.test(input.createRequestId)) throw new LearningError("建立請求 ID 不正確");
+          const hash = createHash("sha256").update(JSON.stringify([repo.owner, "learning-record-create", input.createRequestId])).digest("hex");
+          id = `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-a${hash.slice(17,20)}-${hash.slice(20,32)}`;
+          const existing = await repo.get(id); if(existing) return assert(existing.value);
+        }
         const now = new Date().toISOString();
-        const record: LearningRecord = { ...recordInput(input, await repo.graph()), id: randomUUID(), owner: repo.owner, recordType: "learning-record/v1", createdAt: now, updatedAt: now, revision: 1 };
+        const record: LearningRecord = { ...recordInput(input, await repo.graph()), id, owner: repo.owner, recordType: "learning-record/v1", createdAt: now, updatedAt: now, revision: 1 };
         await repo.create(record); return record;
       });
     },

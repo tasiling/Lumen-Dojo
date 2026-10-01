@@ -13,7 +13,7 @@ export type LearningRecord = {
 export type RecordFilter = { learningItemId?: string; stageId?: string; topicId?: string; status?: string; cursor?: string; limit?: number };
 export const textFields = ["title", "practiceKind", "whatIDid", "myUnderstanding", "questions", "difficulties", "discoveries", "worthKeeping", "selectedExcerpt", "sourceSnapshot"] as const;
 export function validDate(value: unknown): value is string {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(`${value}T12:00:00Z`).toISOString().slice(0, 10) === value;
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T12:00:00Z`)) && new Date(`${value}T12:00:00Z`).toISOString().slice(0, 10) === value;
 }
 export function recordInput(input: Record<string, unknown>, graph: LearningEntity[], previous?: LearningRecord): Omit<LearningRecord, "id" | "owner" | "recordType" | "createdAt" | "updatedAt" | "revision"> {
   const merged = { ...previous, ...input };

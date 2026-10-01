@@ -1,4 +1,6 @@
 import "server-only";
+import { createPracticeOnce } from "../learningFoundation/practiceWrite";
+import { sourceIdentity } from "../practiceEvents/service";
 import { notion, withNotionRateLimit } from "@/lib/notion/client";
 import { DATA_SOURCES } from "@/lib/notion/schema";
 import { mapKnowledge } from "@/lib/notion/queries";
@@ -24,6 +26,6 @@ export const learningRecords = recordService({
     if (!result.results[0]) return null;
     const row = mapKnowledge(result.results[0]); return { id: row.id, value: parseJson(row.內容) as LearningRecord };
   },
-  async create(r) { await createKnowledgeEntry({ 標題: title(r), 內容: JSON.stringify(r) }, { retryCreate: false }); },
+  async create(r) { await createPracticeOnce(sourceIdentity(learningOwner, "dojo", "record-create", r.id), () => createKnowledgeEntry({ 標題: title(r), 內容: JSON.stringify(r) }, { retryCreate: false })); },
   async update(id, r) { await updateKnowledgeEntry(id, { 標題: title(r), 內容: JSON.stringify(r) }); },
 });

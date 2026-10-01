@@ -10,5 +10,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(await learningRecords.list({ learningItemId: q.get("learningItemId") ?? undefined, stageId: q.get("stageId") ?? undefined, topicId: q.get("topicId") ?? undefined, status: q.get("status") ?? undefined, cursor: q.get("cursor") ?? undefined, limit: Number(q.get("limit")) || 20 }));
   } catch(e) { return failure(e); }
 }
-export async function POST(req: NextRequest) { try { requireLearningOwner(req); const b = await req.json(); return NextResponse.json({ record: await learningRecords.create(b.input ?? {}) }, { status: 201 }); } catch(e) { return failure(e); } }
+export async function POST(req: NextRequest) { try { requireLearningOwner(req); const b = await req.json(); if(!b.input?.createRequestId) throw new LearningError("需要穩定建立請求 ID"); return NextResponse.json({ record: await learningRecords.create(b.input ?? {}) }, { status: 201 }); } catch(e) { return failure(e); } }
 export async function PATCH(req: NextRequest) { try { requireLearningOwner(req); const b = await req.json(); return NextResponse.json({ record: await learningRecords.edit(b.id, b.revision, b.input ?? {}) }); } catch(e) { return failure(e); } }

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "./PracticeRouteLink";
 import { usePracticeLeaveGuard } from "@/lib/dojo/usePracticeLeaveGuard";
@@ -8,6 +8,7 @@ import type { LearningEntity } from "@/lib/dojo/learningFoundation/model";
 import { taipeiTodayISO } from "@/lib/dojo/formal";
 const labels = { title: "標題（選填）", whatIDid: "這次學了什麼？", myUnderstanding: "我目前怎麼理解？", questions: "還有哪些問題？", worthKeeping: "有什麼值得留下？", difficulties: "困難", discoveries: "發現", selectedExcerpt: "選摘", sourceSnapshot: "必要來源摘要", practiceKind: "練習種類" };
 export default function LearningRecordWorkspace({ learningItemId, recent = false }: { learningItemId?: string; recent?: boolean }) {
+  const createRequestId = useRef("");
   const q = useSearchParams(); const recordId = q.get("record");
   const itemId = learningItemId ?? q.get("learningItem") ?? "";
   const editing = !recent && (Boolean(recordId) || q.get("new") === "1");
@@ -22,6 +23,7 @@ export default function LearningRecordWorkspace({ learningItemId, recent = false
   async function read(url: string) { const r = await fetch(url, { cache: "no-store" }); const j = await r.json(); if (!r.ok) throw Error(j.error ?? "紀錄不可用"); return j; }
   useEffect(() => { let live = true; read("/api/dojo/learning/foundation").then(j => { if(live) setItems(j.entities); }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, []);
   useEffect(() => { if(!editing) return; let live = true; setReady(false);
+    createRequestId.current = crypto.randomUUID();
     const initial = { practicedOn: taipeiTodayISO(), recordedOn: taipeiTodayISO(), learningItemIds: itemId ? [itemId] : [], primaryLearningItemId: itemId, whatIDid: "", status: "draft" as const };
     (recordId ? read(`/api/dojo/learning/records?id=${recordId}`).then(j => j.record) : Promise.resolve(initial)).then(r => { if(live) { setDraft(r); setSaved(JSON.stringify(r)); setReady(true); } }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, [recordId, itemId, editing]);
   useEffect(() => { if(editing) return; let live = true; const params = new URLSearchParams({ limit: recent ? "5" : "20" }); if(itemId) params.set("learningItemId", itemId); if(status) params.set("status", status); if(stage) params.set("stageId", stage); if(topic) params.set("topicId", topic);
@@ -29,7 +31,7 @@ export default function LearningRecordWorkspace({ learningItemId, recent = false
   async function more() { setBusy(true); try { const p = new URLSearchParams({ cursor: cursor!, limit: "20" }); if(itemId) p.set("learningItemId", itemId); if(status) p.set("status", status); if(stage) p.set("stageId", stage); if(topic) p.set("topicId", topic); const j = await read(`/api/dojo/learning/records?${p}`); setRecords(r => [...r, ...j.records]); setCursor(j.cursor); } catch(e) { setError(String(e)); } finally { setBusy(false); } }
   function change(key: string, value: unknown) { setDraft(d => ({ ...d, [key]: value })); }
   async function save(next: LearningRecord["status"]) { setBusy(true); setError(""); try {
-    const r = await fetch("/api/dojo/learning/records", { method: draft.id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: draft.id, revision: draft.revision, input: { ...draft, status: next } }) }); const j = await r.json(); if(!r.ok) throw Error(j.error);
+    const r = await fetch("/api/dojo/learning/records", { method: draft.id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: draft.id, revision: draft.revision, input: { ...draft, createRequestId: createRequestId.current, status: next } }) }); const j = await r.json(); if(!r.ok) throw Error(j.error);
     setDraft(j.record); setSaved(JSON.stringify(j.record)); window.history.replaceState(window.history.state, "", `/practice/records?record=${j.record.id}${itemId ? `&learningItem=${itemId}` : ""}`);
   } catch(e) { setError(String(e)); } finally { setBusy(false); } }
   const disciplines = items.filter(i => i.kind === "item");

@@ -164,6 +164,7 @@ export type DailyRecord = {
 };
 
 export type BingoCell = {
+  completionSources?: import("./practiceEvents/model").CompletionLedger;
   index: number;
   taskInstanceId: string | null;
   templateId: string | null;
@@ -769,6 +770,7 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
     const progress = Math.max(0, Math.min(target, Math.round(Number(completionSource?.progress) || legacyProgress)));
     return {
       index: fallback.index,
+      completionSources: cell.completionSources,
       taskInstanceId: nullableString(cell.taskInstanceId) ?? (stringValue(cell.text).trim() ? `legacy:${expectedWeekStart}:${fallback.index}` : null),
       templateId: nullableString(cell.templateId),
       text: stringValue(cell.text).slice(0, 300),

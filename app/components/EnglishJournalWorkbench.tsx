@@ -216,6 +216,7 @@ export default function EnglishJournalWorkbench({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: practice.date,
+          revision: practice.revision,
           practice: { segments: practice.segments },
           promptCopied: options?.promptCopied === true ? practice.segments[activeSegment]?.id : null,
           complete: options?.complete === true,
@@ -226,9 +227,9 @@ export default function EnglishJournalWorkbench({
       setDraft(structuredClone(result.practice));
       setPractices((current) => current.map((item) => item.date === result.practice.date ? result.practice : item));
       setNotice(options?.completeSegment
-        ? result.weeklySynced ? "這一段已完成，也已同步本週週盤。" : "這一段已完成；本週沒有尚未完成的自譯格。"
+        ? result.weeklySynced ? "這一段已完成，也已同步本週週盤。" : "這一段的完成事件已保存；未綁定週盤。可到修習歷程查看投影狀態。"
         : options?.complete
-        ? result.weeklySynced ? "英文自譯已完成，也已同步本週週盤。" : "英文自譯已完成；本週沒有對應格，因此未變更週盤。"
+        ? result.weeklySynced ? "英文自譯已完成，也已同步本週週盤。" : "英文自譯的完成事件已保存；未綁定週盤。可到修習歷程查看投影狀態。"
         : options?.promptCopied ? "這一段的指令已複製；取得 AI 回覆後貼回同一段。" : "這一段的進度已儲存。");
       if (options?.complete || options?.completeSegment) await onCompleted?.();
       return result.practice;
@@ -250,7 +251,7 @@ export default function EnglishJournalWorkbench({
       const response = await fetch("/api/dojo/english-journal", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: saved.date, structure: { type, segmentId: currentSegment.id } }),
+        body: JSON.stringify({ date: saved.date, revision: saved.revision, structure: { type, segmentId: currentSegment.id } }),
       });
       const result = await responseJson<{ practice: EnglishJournalPractice }>(response);
       setDraft(structuredClone(result.practice));
