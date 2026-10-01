@@ -49,5 +49,8 @@ assert.match(route, /refreshUnitArrangement/);
 assert.match(imageStore, /withIntegrationMutationLease/);
 assert.match(imageStore, /entry\.updatedAt !== current\.entry\.updatedAt/);
 assert.match(lease, /mutation-leases/);
+assert.match(lease, /action: "renew"/);
+assert.match(lease, /assertCurrent/);
+assert.match(imageStore, /guard\.assertCurrent\(\)/);
 
 console.log("unit arrangement contract checks passed");

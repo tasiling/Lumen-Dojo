@@ -69,12 +69,13 @@ export async function getEnglishImageEntry(id: string): Promise<{ entry: English
 }
 
 export async function saveEnglishImageEntry(entry: EnglishImageEntry): Promise<EnglishImageEntry> {
-  return withIntegrationMutationLease(`english-image:${entry.id}`, async () => {
+  return withIntegrationMutationLease(`english-image:${entry.id}`, async (guard) => {
     const current = await getEnglishImageEntry(entry.id);
     if (entry.updatedAt && current.entry.updatedAt && entry.updatedAt !== current.entry.updatedAt)
       throw new Error("英文影像已由另一個流程更新，請重新讀取後再儲存");
     const normalized = normalizeEnglishImageEntry(entry, { id: entry.id, capturedAt: current.entry.capturedAt, touch: true });
     if (!normalized) throw new Error("英文影像紀錄無法儲存");
+    await guard.assertCurrent();
     await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
     return normalized;
   });
@@ -84,10 +85,11 @@ export async function updateEnglishImageEntry(
   id: string,
   update: (current: EnglishImageEntry) => Partial<EnglishImageEntry>
 ): Promise<EnglishImageEntry> {
-  return withIntegrationMutationLease(`english-image:${id}`, async () => {
+  return withIntegrationMutationLease(`english-image:${id}`, async (guard) => {
     const current = await getEnglishImageEntry(id);
     const normalized = normalizeEnglishImageEntry({ ...current.entry, ...update(current.entry) }, { id, capturedAt: current.entry.capturedAt, touch: true });
     if (!normalized) throw new Error("英文影像紀錄無法儲存");
+    await guard.assertCurrent();
     await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
     return normalized;
   });
