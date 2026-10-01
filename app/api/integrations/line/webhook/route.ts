@@ -48,7 +48,7 @@ import {
   isEnglishImageLearningRoute,
   type EnglishImageEntry,
 } from "@/lib/dojo/englishImage";
-import { bankMode,bankSummary,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
+import { bankImageRoute,bankIntegrationEnabled,bankSummary,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -113,11 +113,19 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
   const replyToken = event.replyToken ?? "";
   const userId = event.source?.userId ?? "";
   if (command === "銀行記帳") {
+    if (!bankIntegrationEnabled()) {
+      await replyLineMessage(replyToken, "銀行記帳目前尚未啟用。一般野採與英文圖片仍可照常使用。", basicLineMenuQuickReply());
+      return true;
+    }
     await setBankMode(userId, "bank");
     await replyLineMessage(replyToken, "銀行記帳模式已開啟 30 分鐘。接下來的銀行截圖只會送往財富豐盛記錄本，不會進入野採、英文影像匣或 Notion。完成後請按「結束銀行記帳」。", basicLineMenuQuickReply());
     return true;
   }
   if (command === "結束銀行記帳") {
+    if (!bankIntegrationEnabled()) {
+      await replyLineMessage(replyToken, "銀行記帳目前沒有啟用；圖片會維持原本的野採流程。", basicLineMenuQuickReply());
+      return true;
+    }
     await setBankMode(userId, "off");
     await replyLineMessage(replyToken, "已結束銀行記帳模式。之後的圖片會恢復原本的野採流程。", basicLineMenuQuickReply());
     return true;
@@ -776,7 +784,9 @@ export async function POST(req: NextRequest) {
     for (const event of body.events ?? []) {
       const userId = event.source?.userId ?? "";
       if (userId !== allowedUserId || event.type !== "message" || event.message?.type !== "image") continue;
-      if ((await bankMode(userId)).mode !== "bank") continue;
+      const routing = await bankImageRoute(userId);
+      if (routing.route === "ordinary") continue;
+      if (routing.route === "bank-unavailable") throw new Error("銀行模式已開啟，但財富帳本暫時無法確認接收");
       const messageId = event.message.id ?? "";
       if (!messageId) throw new Error("LINE 圖片缺少 message id");
       const image = await fetchLineImage(messageId);
