@@ -4,7 +4,7 @@ import type { LearningRecord } from "../lib/dojo/learningRecords/model";
 import type { LearningEntity } from "../lib/dojo/learningFoundation/model";
 async function main() {
   const rows: Row<LearningRecord>[] = [];
-  const graph = [{ id: "psych", kind: "item", status: "active", name: "心理學" }, { id: "english", kind: "item", status: "active" }, { id: "topic", kind: "topic", itemId: "psych", stageId: "s1", status: "active" }] as LearningEntity[];
+  const graph = [{ id: "psych", kind: "item", status: "active", name: "心理學" }, { id: "english", kind: "item", status: "active" }, { id: "topic", kind: "topic", itemId: "psych", stageId: "s1", status: "active" }] as unknown as LearningEntity[];
   let writes = 0;
   const repo = { owner: "owner", graph: async () => graph, exclusive: async <T>(fn: () => Promise<T>) => fn(), page: async (cursor?: string, limit = 20) => ({ rows: rows.slice(Number(cursor ?? 0), Number(cursor ?? 0) + limit), cursor: Number(cursor ?? 0) + limit < rows.length ? String(Number(cursor ?? 0) + limit) : null }), get: async (id: string) => rows.find(r => r.value.id === id) ?? null, create: async (value: LearningRecord) => { writes++; rows.push({ id: value.id, value }); }, update: async (id: string, value: LearningRecord) => { writes++; rows.find(r => r.id === id)!.value = value; } };
   const service = recordService(repo);
