@@ -231,6 +231,7 @@ try {
     });
     await page.getByRole("link", { name: /續寫 2026-09-29/ }).click();
     await draft().waitFor();
+    await page.getByText(/9月29日/).first().waitFor();
     await draft().fill(`Saved at ${width}.`);
     await page.getByRole("button", { name: "儲存這段", exact: true }).click();
     await page.getByText("這一段的進度已儲存。", { exact: true }).waitFor();

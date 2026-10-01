@@ -40,7 +40,7 @@ export default function PracticeWorkspace({
   vocabularyUrl?: string;
 }) {
   const params = useSearchParams();
-  const { entries, entriesError, openQuickAdd } = useDojo();
+  const { entries, entriesLoading, entriesError, openQuickAdd } = useDojo();
   const [materials, setMaterials] = useState<CaptureEntry[]>([]);
   const [error, setError] = useState("");
   const noop = useCallback(() => {}, []);
@@ -150,6 +150,7 @@ export default function PracticeWorkspace({
       )}
       {workspace === "logs" && (
         <>
+          {entriesLoading && <p>讀取修習紀錄中…</p>}
           {entriesError && <p role="alert">{entriesError}</p>}
           {entries
             .filter((e) => e.space === "practice")
@@ -165,7 +166,7 @@ export default function PracticeWorkspace({
                 </small>
               </button>
             ))}
-          {!entriesError && !entries.some((e) => e.space === "practice") && (
+          {!entriesLoading && !entriesError && !entries.some((e) => e.space === "practice") && (
             <p>尚無修習紀錄。</p>
           )}
           <Link href="/history">歷史紀錄與計時</Link>

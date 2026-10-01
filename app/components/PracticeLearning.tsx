@@ -19,7 +19,7 @@ export default function PracticeLearning() {
   const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
   const [error, setError] = useState("");
   const [legacyError, setLegacyError] = useState("");
-  const { entries, entriesError, openQuickAdd } = useDojo();
+  const { entries, entriesLoading, entriesError, openQuickAdd } = useDojo();
   useEffect(() => {
     let live = true;
     async function read(url: string) {
@@ -244,6 +244,7 @@ export default function PracticeLearning() {
               )}
               {tab === "logs" && (
                 <>
+                  {entriesLoading && <p>讀取學習紀錄中…</p>}
                   {entriesError && <p role="alert">{entriesError}</p>}
                   {legacyError && <p role="alert">{legacyError}</p>}
                   {entries

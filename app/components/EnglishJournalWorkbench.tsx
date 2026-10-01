@@ -36,7 +36,7 @@ async function responseJson<T>(response: Response): Promise<T> {
 }
 
 function formatDate(date: string): string {
-  return new Intl.DateTimeFormat("zh-TW", { month: "long", day: "numeric", weekday: "short" })
+  return new Intl.DateTimeFormat("zh-TW", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Taipei" })
     .format(new Date(`${date}T12:00:00+08:00`));
 }
 

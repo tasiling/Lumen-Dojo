@@ -10,9 +10,9 @@ export default function PracticeRouteLink(props: ComponentProps<typeof Link>) {
     let prevented = false;
     props.onNavigate?.({preventDefault: () => {prevented = true;}});
     if (prevented) return;
-    event.preventDefault();
     const href = typeof props.href === "string" ? props.href : null;
     if (!href) return;
+    event.preventDefault();
     window.history.pushState(window.history.state, "", window.location.href);
     router.replace(href);
   }} />;
