@@ -13,12 +13,10 @@ async function request<T>(path:string,userId:string,init:{method?:string;body?:u
 export async function bankMode(userId:string){return request<{mode:"bank"|"off";expiresAt?:string|null}>("/api/integrations/lumen/bank/mode",userId)}
 export async function setBankMode(userId:string,mode:"bank"|"off"){
   if(!bankIntegrationEnabled())throw new Error("銀行記帳整合尚未啟用");
-  const result=await request<{mode:"bank"|"off";expiresAt?:string|null}>("/api/integrations/lumen/bank/mode",userId,{method:"POST",body:{mode}});
-  routingState.remember(userId,result);
-  return result;
+  return request<{mode:"bank"|"off";expiresAt?:string|null}>("/api/integrations/lumen/bank/mode",userId,{method:"POST",body:{mode}});
 }
-export async function bankImageRoute(userId:string):Promise<BankImageRoute>{
-  return routingState.route(userId,bankIntegrationEnabled(),()=>bankMode(userId));
+export async function bankImageRoute(userId:string,eventId:string):Promise<BankImageRoute>{
+  return routingState.route(userId,eventId,bankIntegrationEnabled(),()=>request<{route:"ordinary"|"bank"}>("/api/integrations/lumen/bank/routes/claim",userId,{method:"POST",body:{sourceEventId:eventId}}));
 }
 export async function receiveBankImage(userId:string,input:{messageId:string;eventId:string;mimeType:string;bytes:Buffer}){return request<BankIntake>("/api/integrations/lumen/bank/images",userId,{method:"POST",body:{sourceEventId:input.eventId,idempotencyKey:`line:${input.eventId||input.messageId}`,mimeType:input.mimeType,imageBase64:input.bytes.toString("base64")}})}
 export async function processBankImage(userId:string,batchId:string){return request<BankIntake>(`/api/integrations/lumen/bank/batches/${batchId}/process`,userId,{method:"POST",body:{}})}

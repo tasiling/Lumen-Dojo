@@ -784,13 +784,13 @@ export async function POST(req: NextRequest) {
     for (const event of body.events ?? []) {
       const userId = event.source?.userId ?? "";
       if (userId !== allowedUserId || event.type !== "message" || event.message?.type !== "image") continue;
-      const routing = await bankImageRoute(userId);
-      if (routing.route === "ordinary") continue;
-      if (routing.route === "bank-unavailable") throw new Error("銀行模式已開啟，但財富帳本暫時無法確認接收");
       const messageId = event.message.id ?? "";
       if (!messageId) throw new Error("LINE 圖片缺少 message id");
-      const image = await fetchLineImage(messageId);
       const eventId = event.webhookEventId ?? messageId;
+      const routing = await bankImageRoute(userId, eventId);
+      if (routing.route === "ordinary") continue;
+      if (routing.route === "bank-unavailable") throw new Error("財富帳本暫時無法可靠確認圖片路由");
+      const image = await fetchLineImage(messageId);
       bankIntakes.set(eventId, await receiveBankImage(userId, { messageId, eventId, mimeType: image.mimeType, bytes: Buffer.from(image.bytes) }));
     }
   } catch {
