@@ -48,6 +48,7 @@ import {
   isEnglishImageLearningRoute,
   type EnglishImageEntry,
 } from "@/lib/dojo/englishImage";
+import { bankMode,bankSummary,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -110,6 +111,17 @@ function forageUrl(englishImageId = ""): string {
 
 async function handleLineCommand(event: LineWebhookEvent, command: string): Promise<boolean> {
   const replyToken = event.replyToken ?? "";
+  const userId = event.source?.userId ?? "";
+  if (command === "銀行記帳") {
+    await setBankMode(userId, "bank");
+    await replyLineMessage(replyToken, "銀行記帳模式已開啟 30 分鐘。接下來的銀行截圖只會送往財富豐盛記錄本，不會進入野採、英文影像匣或 Notion。完成後請按「結束銀行記帳」。", basicLineMenuQuickReply());
+    return true;
+  }
+  if (command === "結束銀行記帳") {
+    await setBankMode(userId, "off");
+    await replyLineMessage(replyToken, "已結束銀行記帳模式。之後的圖片會恢復原本的野採流程。", basicLineMenuQuickReply());
+    return true;
+  }
   if (command === "野採圖片") {
     await replyLineMessage(replyToken, "如果圖片彼此相關，可以在相簿一次勾選多張送出。超過 10 張時 LINE 可能自行拆成多組，請先按「分次收一組」；即使一次選 23 張，也會收進同一筆，直到你按「完成這組」。", captureImageQuickReply());
     return true;
@@ -159,6 +171,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
       "行光野採｜LINE 指令",
       "",
       "野採圖片：單張、相簿多選，或分次收成一組",
+      "銀行記帳：暫時把銀行截圖安全送往財富帳本",
       "剪藏網址：保存網頁與摘要",
       "最近一筆：叫回最近素材的整理按鈕",
       "待整理：查看野採待處理數量",
@@ -756,12 +769,41 @@ export async function POST(req: NextRequest) {
   try { body = JSON.parse(rawBody) as LineWebhookBody; }
   catch { return NextResponse.json({ error: "LINE webhook JSON 格式錯誤" }, { status: 400 }); }
 
+  // In bank mode the receiver must durably accept the image before LINE gets
+  // a 200 response. Stable event/message ids make a LINE retry idempotent.
+  const bankIntakes = new Map<string, BankIntake>();
+  try {
+    for (const event of body.events ?? []) {
+      const userId = event.source?.userId ?? "";
+      if (userId !== allowedUserId || event.type !== "message" || event.message?.type !== "image") continue;
+      if ((await bankMode(userId)).mode !== "bank") continue;
+      const messageId = event.message.id ?? "";
+      if (!messageId) throw new Error("LINE 圖片缺少 message id");
+      const image = await fetchLineImage(messageId);
+      const eventId = event.webhookEventId ?? messageId;
+      bankIntakes.set(eventId, await receiveBankImage(userId, { messageId, eventId, mimeType: image.mimeType, bytes: Buffer.from(image.bytes) }));
+    }
+  } catch {
+    return NextResponse.json({ error: "銀行截圖尚未可靠保存，請讓 LINE 稍後重送" }, { status: 503 });
+  }
+
   // LINE expects the webhook endpoint to acknowledge receipt within about two
   // seconds. Image analysis and external integrations can take longer, so keep
   // the work alive after the HTTP response has already been returned.
   after(async () => {
     try {
-      for (const event of body.events ?? []) await handleEvent(event, allowedUserId);
+      for (const event of body.events ?? []) {
+        const eventId = event.webhookEventId ?? event.message?.id ?? "";
+        const intake = bankIntakes.get(eventId);
+        if (!intake) { await handleEvent(event, allowedUserId); continue; }
+        try {
+          const result = await processBankImage(event.source?.userId ?? "", intake.batchId);
+          const url = wealthInboxUrl();
+          await replyLineMessage(event.replyToken ?? "", `${bankSummary(result)}${url ? `\n\n待辦匣：${url}` : ""}`, basicLineMenuQuickReply());
+        } catch {
+          await replyLineMessage(event.replyToken ?? "", "銀行截圖已安全保存，但辨識暫時未完成；稍後可到財富待辦匣安全重試。", basicLineMenuQuickReply());
+        }
+      }
     } catch (error) {
       console.error("LINE clipping webhook background processing failed", error instanceof Error ? error.message : String(error));
     }
