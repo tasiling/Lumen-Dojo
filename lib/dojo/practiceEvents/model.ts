@@ -9,6 +9,7 @@ export type CompletionEvent = {
   completionKind: "journal-self-translation"; quantity: 1; unit: "段"; createdAt: string;
   sourceStatus: "available" | "archived" | "withdrawn";
   binding: TargetBinding | null; evidence: Omit<LearningRecord, "owner" | "id" | "revision" | "createdAt" | "updatedAt" | "recordType"> | null;
+  bindingStatus?: ProjectionState; // Derived GET view; never persisted by callers.
   projectionStatus: ProjectionState;
   projections: { record: ProjectionState; output: ProjectionState; weekly: ProjectionState };
   projectionRevision: number; syncedAt: string | null; error: string | null;

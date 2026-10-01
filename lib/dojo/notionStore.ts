@@ -27,11 +27,11 @@ export async function listJsonRecords(prefix: string) {
   return rows.map((row) => ({ id: row.id, title: row.標題, value: parseJson(row.內容) }));
 }
 
-export async function upsertJsonRecord(title: string, value: unknown, options?: { projection?: boolean }) {
+export async function upsertJsonRecord(title: string, value: unknown, options?: { projection?: boolean; manualCompletion?: boolean }) {
   const guarded = ["行光今日-", "行光週盤-", "行光英文自譯-"].some(prefix => title.startsWith(prefix));
   async function save() {
     const existing = await findKnowledgeEntryByTitle(title);
-    const merged = guarded ? preserveProjection(title, value, existing ? parseJson(existing.內容) : null, options?.projection) : value;
+    const merged = guarded ? preserveProjection(title, value, existing ? parseJson(existing.內容) : null, options?.projection, options?.manualCompletion) : value;
     const content = JSON.stringify(merged);
     if (existing) {
       await updateKnowledgeEntry(existing.id, { 內容: content });

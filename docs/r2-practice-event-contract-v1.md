@@ -40,7 +40,7 @@
 每日 output 是 set 類別，三段仍一個 output。共用鎖下讀最新 DailyRecord，保留 input/vocabulary/transfer、note、vocabForgeRounds、所有其他欄位。
 舊每日表單 PUT 以 updatedAt 檢查版本；server-owned `practiceEventOutput` 由相容寫入層保留，不接受前端新設旗標。
 
-binding 是 `{ weekStart, taskInstanceId }`，由使用者選擇現存本週任務；拒絕由 index 組成的 legacy ID。移格不改來源事件與 task ID。
+binding 是 `{ weekStart, taskInstanceId }`，由使用者選擇現存本週任務；拒絕由 index 組成的 legacy ID。移格不改來源事件與 task ID。事件 GET 唯讀核對目前 binding，衍生 bindingStatus；已移除 target 顯示未連結，但不改寫既有投影事實。
 不存在／封存／被移除／歧義：事件保留，週盤未連結；不搜尋相似文字，不新增格子，不改範本或歷史設定。
 只支援單位完全相同的 single/count 自動投影。count 一個事件 +1，single 達 target；段／篇不轉換，specified/free 未匹配。
 同週 cell `completionSources` 保存處理過的 event ID 與手動 progress，顯示 progress = min(target, max(manual, automatic))，不是盲目相加。相容 normalizer 保留 ledger；舊表單不能換掉事件來源。

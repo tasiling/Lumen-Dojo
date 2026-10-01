@@ -1,7 +1,7 @@
 import { LearningError } from "../learningFoundation/model";
 import type { CompletionLedger } from "./model";
 // Server-owned projection metadata cannot be replaced by old forms/normalizers.
-export function preserveProjection(title: string, incoming: unknown, previous: unknown, projection = false): unknown {
+export function preserveProjection(title: string, incoming: unknown, previous: unknown, projection = false, manualCompletion = false): unknown {
   if (!incoming || typeof incoming !== "object") return incoming;
   const next = { ...incoming } as Record<string, unknown>;
   const old = (previous && typeof previous === "object" ? previous : {}) as Record<string, unknown>;
@@ -19,7 +19,7 @@ export function preserveProjection(title: string, incoming: unknown, previous: u
       if (!ledger) { const clean = { ...cell }; delete clean.completionSources; return clean; }
       const completion = cell.completion as { mode: string; target: number; progress: number };
       const before = prior!.completion as { progress: number };
-      const manual = completion.progress === before.progress ? ledger.manualProgress : completion.progress;
+      const manual = manualCompletion && completion.progress !== before.progress ? completion.progress : ledger.manualProgress;
       const automatic = completion.mode === "single" && ledger.events.length ? completion.target : ledger.events.reduce((s, e) => s + e.quantity, 0);
       const progress = Math.min(completion.target, Math.max(manual, automatic));
       return { ...cell, completionSources: { ...ledger, manualProgress: manual }, completion: { ...completion, progress }, completed: progress >= completion.target, completedAt: progress >= completion.target ? cell.completedAt ?? prior!.completedAt : null };

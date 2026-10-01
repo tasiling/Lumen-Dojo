@@ -6,8 +6,10 @@ import {
 } from "./learning";
 import { readJsonRecord, upsertJsonRecord } from "./notionStore";
 
+import { learningWriteOutcome } from './learningFoundation/writeOutcome';
 import { withLearningWriteLock } from './learningFoundation/fileLock';
 async function legacyLearningWrite<T>(task: () => Promise<T>): Promise<T> {
+  if (learningWriteOutcome.getStore()) return task();
   if (!process.env.LEARNING_WRITE_LOCK_DIR) return task();
   // Existing callers use Promise.all. Retry lock acquisition, never the Notion write itself.
   for (let attempt = 0; ; attempt++) {
