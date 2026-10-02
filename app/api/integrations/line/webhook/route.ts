@@ -48,7 +48,8 @@ import {
   isEnglishImageLearningRoute,
   type EnglishImageEntry,
 } from "@/lib/dojo/englishImage";
-import { bankImageRoute,bankIntegrationEnabled,bankSummary,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
+import { bankImageRoute,bankIntegrationEnabled,bankSummary,receivePerformance,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
+import {isPerformanceText,parsePerformanceText,performanceReply} from "@/lib/dojo/wealthPerformance";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -780,9 +781,17 @@ export async function POST(req: NextRequest) {
   // In bank mode the receiver must durably accept the image before LINE gets
   // a 200 response. Stable event/message ids make a LINE retry idempotent.
   const bankIntakes = new Map<string, BankIntake>();
+  const performanceReplies=new Map<string,string>();
   try {
     for (const event of body.events ?? []) {
       const userId = event.source?.userId ?? "";
+      if(userId===allowedUserId&&event.type==="message"&&event.message?.type==="text"&&isPerformanceText(event.message.text||"")){
+        const eventId=event.webhookEventId||event.message.id||"";
+        let parsed;
+        try{const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Australia/Melbourne",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());parsed=parsePerformanceText(event.message.text||"",today)}catch(e){performanceReplies.set(eventId,e instanceof Error?e.message:"業績格式不正確");continue}
+        try{const result=await receivePerformance(userId,eventId,parsed);performanceReplies.set(eventId,performanceReply(result))}catch(e){const status=(e as {status?:number}).status;if(status&&[400,409,422].includes(status)){performanceReplies.set(eventId,e instanceof Error?e.message:"業績需核對");continue}throw e}
+        continue;
+      }
       if (userId !== allowedUserId || event.type !== "message" || event.message?.type !== "image") continue;
       const messageId = event.message.id ?? "";
       if (!messageId) throw new Error("LINE 圖片缺少 message id");
@@ -794,7 +803,7 @@ export async function POST(req: NextRequest) {
       bankIntakes.set(eventId, await receiveBankImage(userId, { messageId, eventId, mimeType: image.mimeType, bytes: Buffer.from(image.bytes) }));
     }
   } catch {
-    return NextResponse.json({ error: "銀行截圖尚未可靠保存，請讓 LINE 稍後重送" }, { status: 503 });
+    return NextResponse.json({ error: "財務紀錄尚未可靠保存，請讓 LINE 稍後重送" }, { status: 503 });
   }
 
   // LINE expects the webhook endpoint to acknowledge receipt within about two
@@ -804,6 +813,8 @@ export async function POST(req: NextRequest) {
     try {
       for (const event of body.events ?? []) {
         const eventId = event.webhookEventId ?? event.message?.id ?? "";
+        const performanceMessage=performanceReplies.get(eventId);
+        if(performanceMessage){await replyLineMessage(event.replyToken??"",performanceMessage,basicLineMenuQuickReply());continue}
         const intake = bankIntakes.get(eventId);
         if (!intake) { await handleEvent(event, allowedUserId); continue; }
         try {
