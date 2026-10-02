@@ -29,8 +29,23 @@ test("focused recovery fills only visibly supported fields and preserves row ide
 
 test("invalid or unsupported amounts remain null instead of being guessed",()=>{
   const recovered=normalizeBankOcrPayload({transactions:[
-    {date:null,description:"David's Master Pot (Box Hill)",amount:"$48.20",currency:"AUD",direction:"outflow",status:"pending",kind:"merchant",evidence:{...evidence,amount_visible:true,direction_visible:true}},
+    {date:null,description:"David's Master Pot (Box Hill)",amount:"$48.2x",currency:"AUD",direction:"outflow",status:"pending",kind:"merchant",evidence:{...evidence,amount_visible:true,direction_visible:true}},
     {date:null,description:"The Boxhill",amount:"12.00",currency:"AUD",direction:"outflow",status:"pending",kind:"merchant",evidence:{...evidence,amount_visible:false,direction_visible:true}},
   ]});
   assert.deepEqual(mergeAmountRecovery(first,recovered).transactions.map(row=>row.amount),[null,null]);
+});
+
+test("visible numeric and currency-formatted amounts are retained without guessing",()=>{
+ for (const [value, expected] of [[11,"11"],[11.05,"11.05"],["$11.00","11.00"],["AUD 1,234.56","1234.56"],["A$ 11.00","11.00"]]) {
+  assert.equal(normalizeBankOcrPayload({transactions:[{amount:value,currency:"AUD"}]}).transactions[0].amount,expected);
+ }
+ for (const value of ["TWD 11", "11,00", "11.001", "about 11", "11 or 12", -11, Infinity]) {
+  assert.equal(normalizeBankOcrPayload({transactions:[{amount:value,currency:"AUD"}]}).transactions[0].amount,null);
+ }
+});
+
+test("repeated merchant names are not assigned recovery amounts without unique references",()=>{
+ const original=normalizeBankOcrPayload({transactions:[{description:'Cafe',amount:null,currency:'AUD'},{description:'Cafe',amount:null,currency:'AUD'}]});
+ const recovery=normalizeBankOcrPayload({transactions:[{description:'Cafe',amount:'11',currency:'AUD',evidence:{amount_visible:true}},{description:'Cafe',amount:'12',currency:'AUD',evidence:{amount_visible:true}}]});
+ assert.deepEqual(mergeAmountRecovery(original,recovery).transactions.map(x=>x.amount),[null,null]);
 });

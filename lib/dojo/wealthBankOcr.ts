@@ -30,10 +30,19 @@ const record = (value: unknown): Record<string, unknown> => value && typeof valu
 const text = (value: unknown, limit: number): string => typeof value === "string" ? value.trim().slice(0, limit) : "";
 const choice = <T extends string>(value: unknown, allowed: Set<string>, fallback: T | null): T | null => allowed.has(String(value)) ? String(value) as T : fallback;
 
-function amount(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const cleaned = value.trim();
-  if (!/^\d+(?:\.\d{1,2})?$/.test(cleaned)) return null;
+function amount(value: unknown, currency: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  if (typeof value === "number" && (!Number.isFinite(value) || Math.abs(value) > 1e12)) return null;
+  let cleaned = String(value).trim();
+  const marker = cleaned.match(/^(AUD|TWD|NT\$|A\$|\$)\s*/i);
+  if (marker) {
+    const unit = marker[1].toUpperCase();
+    if ((unit === "AUD" || unit === "A$") && currency !== "AUD") return null;
+    if ((unit === "TWD" || unit === "NT$") && currency !== "TWD") return null;
+    cleaned = cleaned.slice(marker[0].length);
+  }
+  if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(cleaned)) return null;
+  cleaned = cleaned.replaceAll(",", "");
   if (!/[1-9]/.test(cleaned)) return null;
   return cleaned;
 }
@@ -57,7 +66,7 @@ export function normalizeBankOcrPayload(value: unknown): { transactions: BankOcr
     return {
       date: date(row.date),
       description: text(row.description, 180),
-      amount: amount(row.amount),
+      amount: amount(row.amount, String(row.currency ?? "").toUpperCase()),
       currency: choice<"AUD" | "TWD">(String(row.currency ?? "").toUpperCase(), currencies, null),
       direction: choice<"inflow" | "outflow">(row.direction, directions, null),
       status: choice<"pending" | "completed" | "unknown">(row.status, statuses, "unknown") ?? "unknown",
@@ -80,6 +89,7 @@ export function mergeAmountRecovery(first: { transactions: BankOcrTransaction[] 
   const unused = new Set(recovered.transactions.map((_, index) => index));
   return { transactions: first.transactions.map((row, index) => {
     const key = identity(row);
+    if (!key || first.transactions.filter(x => identity(x) === key).length !== 1 || recovered.transactions.filter(x => identity(x) === key).length !== 1) return row;
     let match = recovered.transactions.findIndex((candidate, candidateIndex) => unused.has(candidateIndex) && key && identity(candidate) === key);
     if (match < 0 && recovered.transactions[index] && identity(recovered.transactions[index]) === key) match = index;
     if (match < 0) return row;
