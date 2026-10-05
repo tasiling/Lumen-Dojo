@@ -390,7 +390,8 @@ async function dispatchSnapshot(record: UnitArrangementRecord, execution: Arrang
 
 export async function executeUnitArrangement(id: string, retryFailedOnly = false) {
   let record = await getUnitArrangement(id);
-  if (!record.approvedSnapshotHash || !["approved", "partial", "executing"].includes(record.status)) throw new Error("請先確認編排預覽");
+  if (!record.approvedSnapshotHash || !["approved", "partial", "executing", "completed"].includes(record.status)) throw new Error("請先確認編排預覽");
+  if (record.status === "completed") return refreshUnitArrangement(id);
   const executorId = crypto.randomUUID();
   let state = await coordinate("acquire", { arrangementId: id, executorId });
   record = await saveUnitArrangement(mergeCoordinator(record, state));
