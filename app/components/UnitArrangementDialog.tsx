@@ -150,7 +150,7 @@ export default function UnitArrangementDialog({ entries, selectedIds, onClose, o
       {arrangement && ["executing", "partial", "completed", "cancelled"].includes(arrangement.status) && <div className="unit-arrangement-step">
         <h4>{arrangement.status === "completed" ? "派送完成" : arrangement.status === "cancelled" ? "已取消尚未開始項目" : "部分完成／可恢復"}</h4>
         <div className="unit-arrangement-results">{arrangement.executions.map((item) => <div key={`${item.groupRef}-${item.sourceRecordId}`}><b>{sourceNames.get(item.sourceRecordId) || item.sourceRecordId}</b><span className={`status-${item.status}`}>{item.status}</span>{item.error && <small>{item.error}</small>}</div>)}</div>
-        {arrangement.status === "executing" && <button className="primary" disabled={Boolean(busy)} onClick={() => void execute("execute")}>{busy === "execute" ? "核對並繼續中…" : "安全繼續未完成項目"}</button>}
+        {(arrangement.status === "executing" || (arrangement.status === "partial" && arrangement.executions.some((item) => item.status === "pending" || item.status === "running"))) && <button className="primary" disabled={Boolean(busy)} onClick={() => void execute("execute")}>{busy === "execute" ? "核對並繼續中…" : "安全繼續未完成項目"}</button>}
         {arrangement.status !== "cancelled" && arrangement.executions.some((item) => item.status === "failed" || item.status === "unknown") && <button className="primary" disabled={Boolean(busy)} onClick={() => void execute("retry")}>{busy === "retry" ? "重試中…" : "只重試失敗／結果未知項目"}</button>}
       </div>}
       {arrangement && !["completed", "cancelled"].includes(arrangement.status) && <button className="unit-arrangement-cancel" disabled={Boolean(busy)} onClick={() => void post("cancel")}>取消尚未開始的項目</button>}
