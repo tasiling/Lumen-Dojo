@@ -11,6 +11,7 @@
     "start": "node scripts/setup-line-rich-menu.mjs --allow-failure && next start",
     "line:rich-menu": "node scripts/setup-line-rich-menu.mjs",
     "test:english-images": "node scripts/test-english-image-completion.mjs",
+    "test:unit-arrangement": "node scripts/test-unit-arrangement.mjs && node scripts/test-unit-arrangement-contract.mjs && node scripts/test-unit-arrangement-completed-retry.mjs",
     "test:capture-exploration": "node scripts/test-capture-exploration.mjs",
     "test:html-entity-overflow": "node scripts/test-html-entity-mobile-overflow.mjs",
     "lint": "eslint",
@@ -22,7 +23,9 @@
     "test:learning-records": "node scripts/test-learning-records.mjs",
     "test:practice-events": "node scripts/test-practice-events.mjs",
     "test:r2-3-api": "node scripts/test-r2-3-api.mjs",
-    "test:r2-3-ui": "node scripts/test-r2-3-ui.mjs"
+    "test:r2-3-ui": "node scripts/test-r2-3-ui.mjs",
+    "test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-performance.mjs",
+    "check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

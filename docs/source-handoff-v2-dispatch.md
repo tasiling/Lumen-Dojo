@@ -56,6 +56,10 @@ Lumen-Dojo 需設定：
 
 若需回復，先回復 Lumen-Dojo 派送端，使新派送停止；語境修習室可保留相容接收與已保存的 Source Item。D-2 沒有歷史 backfill，也不需刪除既有 links。
 
+## D-3.7 批次素材編排
+
+可選的「請 GPT 協助安排學習單元」沿用本文件的 Handoff v2 做每筆正式來源派送；它不改變 Source Item 身分、附件、revision 或 receipt 規則。批次流程與 `context-room-unit-arrangement/v1` 的生成包、人工確認、Unit ensure、部分失敗及恢復規則見 [unit-arrangement-dispatch.md](./unit-arrangement-dispatch.md)。接收端未同時宣告 `supportsUnitArrangement` 與 `supportsEnsureUnit` 時，新入口不會啟用或暗中降級。
+
 ## 手機驗收
 
 - iPhone Safari 可切換新／既有 Project 與新／既有 Unit，無橫向溢出。
@@ -70,4 +74,3 @@ Lumen-Dojo 需設定：
 - 真實 PostgreSQL 的 v2 寫入與 receipt/revision 逐欄驗收。
 - Railway 兩端 Secret 設定後的真實圖片串流、逾時與大小限制。
 - iPhone Safari 實機操作。
-
