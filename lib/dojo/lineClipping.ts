@@ -218,11 +218,12 @@ export function imageBatchCollectQuickReply(entryId?: string) {
 
 export function basicLineMenuQuickReply() {
   return { items: [
+    messageQuickReplyItem("銀行記帳", "銀行記帳"),
     messageQuickReplyItem("野採圖片", "野採圖片"),
     messageQuickReplyItem("剪藏網址", "剪藏網址"),
     messageQuickReplyItem("最近一筆", "最近一筆"),
     messageQuickReplyItem("待整理", "待整理"),
-    messageQuickReplyItem("豆倉", "豆倉"),
+    messageQuickReplyItem("結束銀行記帳", "結束銀行記帳"),
   ] };
 }
 
