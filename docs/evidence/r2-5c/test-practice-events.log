@@ -1,0 +1,5 @@
+
+> liiy2111@0.1.0 test:practice-events
+> node scripts/test-practice-events.mjs
+
+PASS practice events: transition rules, source dedup, retry date/timezone, event-first failures, daily preservation, stable weekly binding/count/unit/manual provenance, projection no-op, concurrent lock, unknown response fail-closed intent

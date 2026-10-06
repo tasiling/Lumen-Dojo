@@ -1,0 +1,5 @@
+
+> liiy2111@0.1.0 test:english-images
+> node scripts/test-english-image-completion.mjs
+
+english-image-completion: model assertions passed

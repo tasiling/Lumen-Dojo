@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:r2-5c-ui
+> node scripts/test-r2-5c-ui.mjs
+
+READY isolated UI server 3025
+PASS R2-5C isolated Chromium UI 375/390/430: cache-only load/reload/back, not connected/no fake zero, explicit sync/reconcile/retry, legacy date/context limits, long Chinese/English without overflow, safe-area padding/reduced viewport, offline preserves source/local UI. Mock transport; not live integration/iPhone Safari.
