@@ -1,0 +1,22 @@
+{
+  "fixtureVersion": "r2-5c-receipts/v1",
+  "serverOwner": "fixture-owner",
+  "identityInput": ["fixture-owner", "context-room", "practice-session", "00000000-0000-4000-8000-000000000001"],
+  "identitySha256": "0e5b455a24113d7f05f2cbc9c5cb85118b6ba6030ffb8bb0475ae7f55f2547d7",
+  "sourceFixture": {"repo": "tasiling/lumen-context-room", "head": "397599a03266f1d9f0c5a99ab8881f3666181811", "path": "tests/fixtures/r2-5a-event-identity.json"},
+  "expected": {"uniqueSourceSessions": 2, "acceptedCompletionEvents": 0, "reason": "R2_3_EXTERNAL_CONTRACT_PENDING", "notionSyncVersion": "schema version only, never overrides API sourceRevision"},
+  "revisionCases": [
+    {"sourceRevision": "legacy:opaque", "updatedAt": "2026-10-06T01:00:00.000001Z", "action": "store metadata; no count"},
+    {"sourceRevision": "opaque:new", "updatedAt": "2026-10-06T01:00:00.000002Z", "action": "update same receipt; preserve original dates/context and local body"},
+    {"sourceRevision": "legacy:opaque", "updatedAt": "2026-10-06T01:00:00.000001Z", "action": "ignore late older version"},
+    {"sourceRevision": "conflict", "updatedAt": "2026-10-06T01:00:00.000002Z", "action": "reject same-timestamp conflicting revision; checkpoint does not advance"}
+  ],
+  "recoveryCases": [
+    {"failure": "page partial confirmed rejection", "recovery": "replay last durable source cursor; stable UUID upsert; no second event"},
+    {"failure": "receipt create committed but response lost", "recovery": "retain shared learning-writer.lock and fsynced practice-{sha}.intent; owner inspects DB14 and provider request result; do not resend or TTL unlock"},
+    {"failure": "source 503 or empty list", "recovery": "retain cached receipts; mark unavailable on 503; never infer deletion"},
+    {"failure": "source explicit deleted/withdrawn", "recovery": "retain identity/history; no new projection/ack; prior legacy receipt requires owner review, no automatic compensation"},
+    {"failure": "unapproved external event mapping", "recovery": "retry reads saved receipt only; contract pending; no incompatible Completion Event or body is created"}
+  ],
+  "vf": {"state": "not_connected", "missing": ["R2-5B reviewed contract", "actual endpoint", "round identity fixtures", "true completion rules", "original dates/timezone semantics"]}
+}

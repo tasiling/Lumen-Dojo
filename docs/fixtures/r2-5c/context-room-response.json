@@ -1,0 +1,51 @@
+{
+  "contractVersion": "context-room-practice-results/v1",
+  "results": [
+    {
+      "contractVersion": "context-room-practice-results/v1",
+      "eventVersion": 1,
+      "eventType": "practice.completed",
+      "sourceSystem": "context-room",
+      "sourceType": "practice-session",
+      "sourceId": "00000000-0000-4000-8000-000000000001",
+      "sourceEventId": "00000000-0000-4000-8000-000000000001",
+      "sourceRevision": "2",
+      "completionStatus": "completed",
+      "sourceStatus": "available",
+      "sourceAvailability": "available",
+      "practicedOn": "2026-10-01",
+      "occurredAt": "2026-10-01T10:00:00+00:00",
+      "timeZone": null,
+      "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+      "originalContext": {
+        "projectId": "project-uuid",
+        "projectName": "首次保存時的專案名稱",
+        "unitId": "unit-uuid",
+        "unitName": "首次保存時的單元名稱",
+        "capturedAt": "2026-10-01T10:00:00+00:00"
+      },
+      "currentContext": {
+        "projectId": "project-uuid",
+        "projectName": "目前名稱",
+        "unitId": "unit-uuid",
+        "unitName": "目前單元名稱"
+      },
+      "activityMode": "topic_speaking",
+      "completionKind": "context-room-session",
+      "quantity": 1,
+      "unit": "次",
+      "summary": {
+        "mode": "topic_speaking",
+        "firstDone": true,
+        "feedbackReceived": true,
+        "secondDone": true
+      },
+      "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000001",
+      "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+      "updatedAt": "2026-10-01T10:01:00.000001Z"
+    }
+  ],
+  "nextCursor": null,
+  "windowUpper": "2026-10-01T11:00:00.000000Z",
+  "incrementalSemantics": "bounded-live-window; inclusive overlapping refresh required"
+}

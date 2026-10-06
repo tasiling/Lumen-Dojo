@@ -22,7 +22,10 @@
     "test:learning-records": "node scripts/test-learning-records.mjs",
     "test:practice-events": "node scripts/test-practice-events.mjs",
     "test:r2-3-api": "node scripts/test-r2-3-api.mjs",
-    "test:r2-3-ui": "node scripts/test-r2-3-ui.mjs"
+    "test:r2-3-ui": "node scripts/test-r2-3-ui.mjs",
+    "test:external-results": "node scripts/test-external-results.mjs",
+    "test:r2-5c-api": "node scripts/test-r2-5c-api.mjs",
+    "test:r2-5c-ui": "node scripts/test-r2-5c-ui.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

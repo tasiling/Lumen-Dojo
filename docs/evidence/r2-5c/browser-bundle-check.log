@@ -1,0 +1,1 @@
+PASS compiled .next/static: isolated build secret sentinel and server secret variable names absent. Supplemental artifact check, not live integration.
