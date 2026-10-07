@@ -16,7 +16,7 @@
     "test:html-entity-overflow": "node scripts/test-html-entity-mobile-overflow.mjs",
     "lint": "eslint",
     "test:weekly": "node scripts/test-weekly-bingo-v2.mjs"
-    ,"test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-performance.mjs"
+    ,"test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-bank-route.mjs scripts/test-wealth-bank-summary.mjs scripts/test-wealth-bank-request.mjs scripts/test-wealth-performance.mjs"
     ,"check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build"
   },
   "dependencies": {
@@ -36,3 +36,4 @@
     "typescript": "^5"
   }
 }
+
