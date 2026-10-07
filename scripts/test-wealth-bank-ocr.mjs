@@ -2,6 +2,26 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { amountRecoveryInstruction,mergeAmountRecovery,needsAmountRecovery,normalizeBankOcrPayload } from "../lib/dojo/wealthBankOcr.ts";
 
+test('visible section headings keep October 7 purchases separate from October 6 credit',()=>{
+ const out=normalizeBankOcrPayload({transactions:[
+  {date:null,date_header:'Wed 07 Oct Today',description:'Coles',amount:'8.09',currency:'AUD',direction:'outflow',status:'pending',kind:'merchant',account_hint:'Smart Access',evidence:{date_visible:true}},
+  {date:null,date_header:'Tue 06 Oct Yesterday',description:'Medibank',amount:'45.05',currency:'AUD',direction:'inflow',status:'completed',evidence:{date_visible:true}},
+  {date:null,date_header:'Mon 07 Oct',description:'Wrong weekday',evidence:{date_visible:true}},
+  {date:null,date_header:'Yesterday',description:'No visible calendar date',evidence:{date_visible:true}},
+ ]},{referenceDate:'2026-10-07'});
+ assert.deepEqual(out.transactions.map(x=>x.date),['2026-10-07','2026-10-06',null,null]);
+ assert.equal(normalizeBankOcrPayload({transactions:[{date_header:'Wed 07 Oct',evidence:{date_visible:true}}]}).transactions[0].date,null);
+});
+test('field recovery runs when amounts exist but dates or account evidence are missing',()=>{
+ const first=normalizeBankOcrPayload({transactions:[{description:'Coles',amount:'8.09',currency:'AUD',direction:'outflow',status:'pending',kind:'merchant',evidence:{amount_visible:true,direction_visible:true,description_visible:true}}]});
+ assert.equal(needsAmountRecovery(first),true);
+ const recovered=normalizeBankOcrPayload({transactions:[{description:'Coles',amount:'8.09',currency:'AUD',date:'2026-10-07',direction:'outflow',account_hint:'Smart Access',status:'pending',kind:'merchant',evidence:{date_visible:true,account_visible:true,amount_visible:true,direction_visible:true,description_visible:true}}]});
+ const out=mergeAmountRecovery(first,recovered).transactions[0];
+ assert.equal(out.date,'2026-10-07');assert.equal(out.account_hint,'Smart Access');assert.equal(out.evidence.account_visible,true);assert.equal(out.status,'pending');
+ const conflict=normalizeBankOcrPayload({transactions:[{...recovered.transactions[0],amount:'18.09'}]});
+ assert.equal(mergeAmountRecovery(first,conflict).transactions[0].date,null);
+});
+
 const evidence = { date_visible:false,amount_visible:false,direction_visible:false,description_visible:true,account_visible:false };
 const first = normalizeBankOcrPayload({transactions:[
   {date:null,description:"David's Master Pot (Box Hill)",amount:null,currency:null,direction:null,status:"pending",kind:"merchant",account_hint:"",stable_reference:"",category:"dining",evidence},
