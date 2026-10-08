@@ -38,7 +38,7 @@ class OcrServiceError extends Error {
   constructor(readonly kind: "network" | "upstream" | "response" | "shape", readonly upstreamStatus?: number) { super(kind); }
 }
 
-async function requestOcr(apiKey: string, model: string, instruction: string, mimeType: string, imageBase64: string, timeoutMs: number) {
+async function requestOcr(apiKey: string, model: string, instruction: string, mimeType: string, imageBase64: string, timeoutMs: number, referenceDate?: string) {
   let response: Response;
   try {
     response = await fetch("https://api.openai.com/v1/responses", {
@@ -66,7 +66,7 @@ async function requestOcr(apiKey: string, model: string, instruction: string, mi
   let payload: unknown;
   try { payload = await response.json(); }
   catch { throw new OcrServiceError("response"); }
-  try { return normalizeBankOcrPayload(parseJson(outputText(payload))); }
+  try { return normalizeBankOcrPayload(parseJson(outputText(payload)),{referenceDate}); }
   catch { throw new OcrServiceError("shape"); }
 }
 
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "OCR 驗證失敗" }, { status: 401 });
   }
 
-  let body: { mimeType?: string; imageBase64?: string; schema?: string };
+  let body: { mimeType?: string; imageBase64?: string; schema?: string; referenceDate?: string };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "OCR 請求格式不正確" }, { status: 400 }); }
 
@@ -85,6 +85,10 @@ export async function POST(req: NextRequest) {
   if (!allowedMime.has(mimeType) || !imageBase64 || imageBase64.length > MAX_BASE64 || !/^[A-Za-z0-9+/=\r\n]+$/.test(imageBase64)) {
     return NextResponse.json({ error: "OCR 圖片格式不正確" }, { status: 400 });
   }
+
+  const referenceDate = typeof body.referenceDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.referenceDate)
+    && Number.isFinite(Date.parse(`${body.referenceDate}T12:00:00Z`))
+    && new Date(`${body.referenceDate}T12:00:00Z`).toISOString().slice(0,10) === body.referenceDate ? body.referenceDate : undefined;
 
   const apiKey = process.env.OPENAI_API_KEY ?? "";
   if (!apiKey) return NextResponse.json({ error: "OpenAI OCR 尚未設定" }, { status: 503 });
@@ -100,7 +104,11 @@ export async function POST(req: NextRequest) {
     "For each transaction card/row, inspect the amount aligned at the far right or immediately above/below the merchant inside the same card. Pair it with that merchant, not a neighboring row.",
     "A Pending label is a settlement status. It does not make the visible purchase amount optional: extract that amount and keep status pending.",
     "Return ONLY one valid JSON object with key transactions.",
-    "Each transaction must contain: date, description, amount, currency, direction, status, kind, account_hint, stable_reference, category, evidence.",
+    "Each transaction must contain: date, date_header, description, amount, currency, direction, status, kind, account_hint, stable_reference, category, evidence.",
+    `Reference date in the owner's timezone: ${referenceDate || "unavailable"}. This resolves the YEAR of visible day/month headings; it is not the transaction date for every row.`,
+    "Read each visible date section heading; its date applies to the following rows until the NEXT date heading. Preserve separate dates in multi-day screenshots.",
+    "date_header: exact visible section heading for this row. Resolve year only when a reference date is provided; without enough calendar evidence return date null. Never use upload day or Today/Yesterday alone as a missing date.",
+    "The visible account title (e.g. Smart Access) applies to all rows in that account screenshot; set account_hint and account_visible accordingly.",
     "date: YYYY-MM-DD or null. amount: positive decimal string without currency symbols or commas, or null.",
     "currency: AUD or TWD when visible, otherwise null. direction: inflow or outflow when visible, otherwise null.",
     "status: pending, completed, or unknown.",
@@ -113,7 +121,7 @@ export async function POST(req: NextRequest) {
 
   let recognized;
   try {
-    recognized = await requestOcr(apiKey,model,instruction,mimeType,imageBase64,24_000);
+    recognized = await requestOcr(apiKey,model,instruction,mimeType,imageBase64,24_000,referenceDate);
   } catch (error) {
     if (error instanceof OcrServiceError && error.kind === "network") return NextResponse.json({ error: "OCR 服務暫時無法連線" }, { status: 502 });
     if (error instanceof OcrServiceError && error.kind === "upstream") return NextResponse.json({ error: `OCR 服務暫時失敗（${error.upstreamStatus}）` }, { status: 502 });
@@ -123,9 +131,10 @@ export async function POST(req: NextRequest) {
 
   if (needsAmountRecovery(recognized)) {
     try {
-      const recovered = await requestOcr(apiKey,model,amountRecoveryInstruction(recognized),mimeType,imageBase64,14_000);
+      const recovered = await requestOcr(apiKey,model,amountRecoveryInstruction(recognized,referenceDate),mimeType,imageBase64,14_000,referenceDate);
       recognized = mergeAmountRecovery(recognized,recovered);
     } catch { /* Preserve the first conservative result; never replace it with guessed data. */ }
   }
   return NextResponse.json(recognized);
 }
+
