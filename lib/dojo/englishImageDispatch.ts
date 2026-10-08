@@ -1,4 +1,5 @@
 import "server-only";
+import { containsLearningWord, learningUsageIssues } from "./englishImageLearningUsage";
 
 import type { EnglishImageContextExport, EnglishImageContextLink, EnglishImageEntry, EnglishImageVocabExport, EnglishImageVocabSyncState } from "./englishImage";
 import { getEnglishImageEntry, saveEnglishImageEntry, updateEnglishImageEntry } from "./englishImageStore";
@@ -109,16 +110,13 @@ export type EnglishImageContextCatalog = {
   sourceBindings: Array<{ sourceRecordId: string; sourceItemId: string; projectId: string; revision: number; contentFingerprint: string; unitIds: string[]; pendingResult?: boolean }>;
 };
 
-function candidateKey(expression: string): string {
-  return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/\s+/g, "_").slice(0, 180);
+export function candidateKey(expression: string): string {
+  return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/^[\s\'"“”「」]+|[\s\'"“”「」]+$/g, "").replace(/\s+/g, "_").slice(0, 180);
 }
 
 function sourceSentenceFor(entry: EnglishImageEntry, expression: string): string {
-  const escaped = expression.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const stem = expression.length >= 7 ? expression.slice(0, expression.length - 2).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : escaped;
-  const target = new RegExp(`\\b(?:${escaped}|${stem}[A-Za-z]*)\\b`, "i");
   const sentences = entry.ocrText.match(/[^.!?\n]+[.!?]?/g) ?? [];
-  return (sentences.find((sentence) => target.test(sentence)) ?? "").trim().slice(0, 1900);
+  return (sentences.find(sentence => containsLearningWord(expression, sentence)) ?? "").trim().slice(0, 1900);
 }
 
 function sourceContextFor(entry: EnglishImageEntry): string {
@@ -138,7 +136,7 @@ export function englishImageContextCandidates(entry: EnglishImageEntry): English
     const clean = line.replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "").trim();
     if (!clean) return [];
     const [rawText = "", rawMeaning = "", ...usageParts] = clean.split(/\s*(?:\||｜)\s*/);
-    const value = rawText.trim().replace(/^[\s'“”「」]+|[\s'“”「」]+$/g, "").slice(0, 500);
+    const value = rawText.trim().replace(/^[\s'"“”「」]+|[\s'"“”「」]+$/g, "").slice(0, 500);
     if (!value || /^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(value)) return [];
     const meaning = rawMeaning.trim().slice(0, 1000);
     const usage = usageParts.join("｜").trim().slice(0, 1000);
@@ -149,7 +147,7 @@ export function englishImageContextCandidates(entry: EnglishImageEntry): English
 
 export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishImageVocabCandidate[] {
   const structured = entry.vocabularyCandidates.flatMap((candidate) => {
-    const expression = candidate.expression.trim().replace(/^[\s'“”「」]+|[\s'“”「」]+$/g, "").slice(0, 240);
+    const expression = candidate.expression.trim().replace(/^[\s'"“”「」]+|[\s'"“”「」]+$/g, "").slice(0, 240);
     if (!/^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(expression)) return [];
     return [{
       key: candidateKey(expression),
@@ -175,7 +173,7 @@ export function englishImageVocabCandidates(entry: EnglishImageEntry): EnglishIm
     const clean = line.replace(/^\s*(?:[-*•]|\d+[.)、])\s*/, "").trim();
     if (!clean) return [];
     const [rawExpression = "", ...meaningParts] = clean.split(/\s*(?:\||｜|—|–|：|\s-\s)\s*/);
-    const expression = rawExpression.trim().replace(/^[\s'“”「」]+|[\s'“”「」]+$/g, "").slice(0, 240);
+    const expression = rawExpression.trim().replace(/^[\s'"“”「」]+|[\s'"“”「」]+$/g, "").slice(0, 240);
     // VocabForge 專注單字；片語與句型留給語境修習室。
     if (!/^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(expression)) return [];
     return [{
@@ -554,6 +552,12 @@ export async function exportEnglishImageVocabs(
   if (!pending.length) {
     return { entry, exports: selected.flatMap((candidate) => existingByKey.get(candidate.key) ?? []), failures: [] };
   }
+
+  const invalid = pending.flatMap(candidate => {
+    const issues = learningUsageIssues({ expression: candidate.expression, usage: candidate.usage.sentence, usageTranslation: candidate.usage.translation });
+    return issues.length ? [`${candidate.expression}：${issues.join("、")}`] : [];
+  });
+  if (invalid.length) throw new Error(`學習例句待修正，尚未派送：${invalid.join("；")}。請先重製短例句。`);
 
   const attemptAt = new Date().toISOString();
   const previousStates = new Map(entry.vocabForgeSyncStates.map((item) => [item.key, item]));

@@ -6,6 +6,8 @@ import {
   recommendedFocusDecks,
 } from "@/lib/dojo/englishImageDispatch";
 import { getEnglishImageEntry } from "@/lib/dojo/englishImageStore";
+import { rewriteEnglishImageLearningUsages } from "@/lib/dojo/englishImageAnalysis";
+import { learningUsageIssues } from "@/lib/dojo/englishImageLearningUsage";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
     const [{ entry }, books] = await Promise.all([getEnglishImageEntry(id), listVocabForgeBooks({ forceRefresh: true })]);
     return NextResponse.json({
-      candidates: englishImageVocabCandidates(entry),
+      candidates: candidatePreviews(entry),
       books,
       exports: entry.vocabForgeExports,
       syncStates: entry.vocabForgeSyncStates,
@@ -40,6 +42,10 @@ export async function POST(req: NextRequest) {
       ? body.candidateKeys.filter((value: unknown): value is string => typeof value === "string")
       : [];
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
+    if (body.action === "rewriteUsages") {
+      const entry = await rewriteEnglishImageLearningUsages(id, candidateKeys);
+      return NextResponse.json({ entry, candidates: candidatePreviews(entry) });
+    }
     const result = await exportEnglishImageVocabs(id, candidateKeys, vocabBook, {
       sourceName: typeof body.sourceName === "string" ? body.sourceName : "",
       focusDecks: Array.isArray(body.focusDecks) ? body.focusDecks : [vocabBook],
@@ -50,4 +56,8 @@ export async function POST(req: NextRequest) {
     const status = /請先|請至少|最多|候選/.test(message) ? 400 : /串接尚未完成/.test(message) ? 503 : 500;
     return NextResponse.json({ error: message }, { status });
   }
+}
+
+function candidatePreviews(entry: Parameters<typeof englishImageVocabCandidates>[0]) {
+  return englishImageVocabCandidates(entry).map(candidate => ({ ...candidate, usageIssues: learningUsageIssues({ expression: candidate.expression, usage: candidate.usage.sentence, usageTranslation: candidate.usage.translation }) }));
 }

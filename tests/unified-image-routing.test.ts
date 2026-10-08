@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { currentMonthEstimatedSpend, normalizeEnglishImageEntry } from '../lib/dojo/englishImage';
+import { learningUsageIssues } from '../lib/dojo/englishImageLearningUsage';
 import { normalizeRoutingSelection, dispatchSelectedDestinations, routingEntryUrl } from '../lib/dojo/englishImageRouting';
 
 async function main() {
@@ -10,6 +12,21 @@ async function main() {
   assert.throws(() => normalizeRoutingSelection({ sourceName: 'Game', focusDecks: ['作品名稱'], selectedKeys: ['reef'] }), /常駐/);
   assert.throws(() => normalizeRoutingSelection({ sourceName: 'Game', focusDecks: ['故事閱讀'], selectedKeys: ['a','b','c','d','e','f'] }), /五個/);
   assert.throws(() => normalizeRoutingSelection({ sourceName: '', focusDecks: ['故事閱讀'], selectedKeys: ['reef'] }), /來源/);
+  const good = { expression: 'reef', usage: 'We saw a reef beneath the boat.', usageTranslation: '我們看見船底下有一座珊瑚礁。' };
+  assert.deepEqual(learningUsageIssues(good), []);
+  assert.ok(learningUsageIssues({ ...good, usage: 'Reef beneath the boat' }).some(issue => issue.includes('完整')));
+  assert.ok(learningUsageIssues({ ...good, usage: 'We saw a fish beneath the boat.' }).some(issue => issue.includes('目標')));
+  assert.ok(learningUsageIssues({ ...good, usage: 'We saw a reef. We saw some fish.' }).some(issue => issue.includes('單句')));
+  assert.ok(learningUsageIssues({ ...good, usageTranslation: '' }).some(issue => issue.includes('翻譯')));
+  assert.ok(learningUsageIssues({ ...good, usageTranslation: '劇情摘要：我們看到了珊瑚礁。' }).some(issue => issue.includes('摘要')));
+  assert.deepEqual(learningUsageIssues({ expression: 'find', usage: 'We found a reef beneath the boat.', usageTranslation: '我們在船下發現一座珊瑚礁。' }), []);
+  assert.deepEqual(learningUsageIssues({ expression: 'outfit', usage: 'I bought an outfit for $12.50.', usageTranslation: '我花了 12.50 元買了一套服裝。' }), []);
+  assert.ok(learningUsageIssues({ expression: 'outfit', usage: 'I bought an outfit for $12.50. It looks nice.', usageTranslation: '我花了 12.50 元買了一套服裝。' }).some(issue => issue.includes('單句')));
+  assert.ok(learningUsageIssues({ ...good, usageTranslation: '我們看見一座珊瑚礁。魚也出現了。' }).some(issue => issue.includes('單句')));
+  const historical = normalizeEnglishImageEntry({ attachment: {blockId:'test'}, analyzedAt:'2026-09-20T00:00:00Z', estimatedCostUsd:2, learningUsageRewriteCosts:[{spentAt:'2026-10-02T00:00:00Z',estimatedCostUsd:0.25},{spentAt:'2026-09-25T00:00:00Z',estimatedCostUsd:0.5}] }, {id:'old'})!;
+  assert.equal(currentMonthEstimatedSpend([historical], new Date('2026-10-08T00:00:00Z')), 0.25, 'old material rewrites must count when spent');
+  assert.equal(currentMonthEstimatedSpend([historical], new Date('2026-09-28T00:00:00Z')), 2.5, 'prior analysis and rewrites must stay in their own month');
+  assert.equal(currentMonthEstimatedSpend([{...historical,analyzedAt:null}], new Date('2026-10-08T00:00:00Z')), 0.25, 'never-analyzed material must not skip rewrite costs');
   const calls: string[] = [];
   const result = await dispatchSelectedDestinations({ context: async () => { calls.push('context'); throw new Error('receiver unavailable'); }, vocab: async () => { calls.push('vocab'); return { failures: [] }; } });
   assert.deepEqual(calls, ['context', 'vocab']);

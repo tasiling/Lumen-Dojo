@@ -141,6 +141,7 @@ export type EnglishImageEntry = {
   inputTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
+  learningUsageRewriteCosts?: Array<{ spentAt: string; estimatedCostUsd: number }>;
   capturedAt: string;
   updatedAt: string;
 };
@@ -384,6 +385,10 @@ export function normalizeEnglishImageEntry(
     inputTokens: Number.isFinite(source.inputTokens) ? Math.max(0, Math.floor(Number(source.inputTokens))) : 0,
     outputTokens: Number.isFinite(source.outputTokens) ? Math.max(0, Math.floor(Number(source.outputTokens))) : 0,
     estimatedCostUsd: Number.isFinite(source.estimatedCostUsd) ? Math.max(0, Number(source.estimatedCostUsd)) : 0,
+    learningUsageRewriteCosts: Array.isArray(source.learningUsageRewriteCosts) ? source.learningUsageRewriteCosts.flatMap(value => {
+      if (!value || typeof value !== "object" || typeof value.spentAt !== "string" || Number.isNaN(Date.parse(value.spentAt)) || !Number.isFinite(value.estimatedCostUsd) || value.estimatedCostUsd < 0) return [];
+      return [{ spentAt: new Date(value.spentAt).toISOString(), estimatedCostUsd: value.estimatedCostUsd }];
+    }) : [],
     capturedAt,
     updatedAt: params.touch ? now : iso(source.updatedAt, capturedAt),
   };
@@ -393,4 +398,13 @@ export function englishImageContent(entry: EnglishImageEntry): Omit<EnglishImage
   const { id: _id, ...content } = entry;
   void _id;
   return content;
+}
+
+/** Existing Taiwan calendar month, with rewrite charges dated independently of analysis. */
+export function currentMonthEstimatedSpend(entries: EnglishImageEntry[], now = new Date()): number {
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit" });
+  const month = formatter.format(now);
+  const inMonth = (date: string | null) => !!date && !Number.isNaN(Date.parse(date)) && formatter.format(new Date(date)) === month;
+  return entries.reduce((sum, entry) => sum + (inMonth(entry.analyzedAt) ? entry.estimatedCostUsd : 0)
+    + (entry.learningUsageRewriteCosts || []).reduce((cost, charge) => cost + (inMonth(charge.spentAt) ? charge.estimatedCostUsd : 0), 0), 0);
 }

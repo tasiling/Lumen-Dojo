@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 const temp = await mkdtemp(join(tmpdir(), 'dojo-routing-'));
-let entry = { id:'source-1', route:'game', title:'A reef encounter', sourceLabel:'Dave the Diver', englishRecord:'A reef appeared.', ocrText:'A reef appeared.', chineseExplanation:'出現珊瑚礁', contextNote:'', analysisReviewReason:'', capturedAt:'2026-10-08T00:00:00Z', lineImageSetId:'group-1', attachments:[{id:'img-1',blockId:'block-1',sourceMessageId:'line-1',mimeType:'image/jpeg',batchIndex:1}], contextRoomSourceRevision:0, contextRoomContentFingerprint:'', contextRoomLinks:[], vocabularyCandidates:[{expression:'reef',meaning:'珊瑚礁',usage:'A reef appeared.',usageTranslation:'出現了一座珊瑚礁。',partOfSpeech:'noun',usageProvenance:'source',cefrLevel:'B1',suggestedFocusDecks:['JRPG／冒險遊戲'],origin:'source',recommendationReason:'source'}], vocabForgeDraft:{sourceName:'Dave the Diver',focusDecks:['JRPG／冒險遊戲','故事閱讀'],selectedKeys:['reef']}, vocabForgeExports:[],vocabForgeSyncStates:[],learningPhrases:'',vocabularyWords:'' };
+let entry = { id:'source-1', route:'game', title:'A reef encounter', sourceLabel:'Dave the Diver', englishRecord:'A reef appeared.', ocrText:'A reef appeared while the diver explored the deep ocean and watched many different fish swimming slowly around the ancient rocks beneath the surface.', chineseExplanation:'出現珊瑚礁', contextNote:'', analysisReviewReason:'', capturedAt:'2026-10-08T00:00:00Z', lineImageSetId:'group-1', attachments:[{id:'img-1',blockId:'block-1',sourceMessageId:'line-1',mimeType:'image/jpeg',batchIndex:1}], contextRoomSourceRevision:0, contextRoomContentFingerprint:'', contextRoomLinks:[], vocabularyCandidates:[{expression:'reef',meaning:'珊瑚礁',usage:'A reef appeared.',usageTranslation:'出現了一座珊瑚礁。',partOfSpeech:'noun',usageProvenance:'generated',cefrLevel:'B1',suggestedFocusDecks:['JRPG／冒險遊戲'],origin:'source',recommendationReason:'source'}], vocabForgeDraft:{sourceName:'Dave the Diver',focusDecks:['JRPG／冒險遊戲','故事閱讀'],selectedKeys:['reef']}, inputTokens:0,outputTokens:0,estimatedCostUsd:0,vocabForgeExports:[],vocabForgeSyncStates:[],learningPhrases:'',vocabularyWords:'' };
 const actions=[];
 let loseContextResponse=false;
 globalThis.__routingStore={ get:async()=>({entry:structuredClone(entry)}), save:async value=>(entry=structuredClone(value)), update:async(id,fn)=>(entry={...entry,...fn(structuredClone(entry))}) };
@@ -18,19 +18,72 @@ const server=createServer(async(req,res)=>{
  if(body.contractVersion)res.end(JSON.stringify({projectId:'project-1',unitId:'unit-1',sourceItemId:'item-1',sourceItemUnitId:'link-1'}));
  else res.end(JSON.stringify({items:body.items.map(item=>({key:item.key,expression:item.expression,result:'created',vocabBook:'JRPG／冒險遊戲'}))}));
 });
+const originalFetch=globalThis.fetch;
+const previousOpenAI=process.env.OPENAI_API_KEY;
 const previous={context:process.env.CONTEXT_ROOM_INTEGRATION_URL,vocab:process.env.VOCABFORGE_INTEGRATION_URL,cs:process.env.LUMEN_CONTEXT_ROOM_SYNC_SECRET,vs:process.env.LUMEN_VOCABFORGE_SYNC_SECRET};
 try {
- for(const name of ['englishImageDispatch','englishImageRouting','sourceHandoffV2','englishImage']){
+ for(const name of ['englishImageDispatch','englishImageRouting','sourceHandoffV2','englishImage','englishImageLearningUsage','englishImageAnalysis']){
    let code=ts.transpileModule(await readFile(new URL(`../lib/dojo/${name}.ts`,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
    code=code.replace(/import ["']server-only["'];?/g,'').replace(/from (["'])(\.[^"']+)\1/g,(_,q,p)=>`from ${q}${p}.mjs${q}`);
    await writeFile(join(temp,name+'.mjs'),code);
  }
- await writeFile(join(temp,'englishImageStore.mjs'),'export const getEnglishImageEntry=(...a)=>globalThis.__routingStore.get(...a);export const saveEnglishImageEntry=(...a)=>globalThis.__routingStore.save(...a);export const updateEnglishImageEntry=(...a)=>globalThis.__routingStore.update(...a);');
+ await writeFile(join(temp,'englishImageStore.mjs'),'export const englishImageAttachmentBytes=async()=>{throw new Error("must not reread images")};export const listEnglishImageEntries=async()=>[(await globalThis.__routingStore.get()).entry];export {currentMonthEstimatedSpend} from "./englishImage.mjs";export const getEnglishImageEntry=(...a)=>globalThis.__routingStore.get(...a);export const saveEnglishImageEntry=(...a)=>globalThis.__routingStore.save(...a);export const updateEnglishImageEntry=(...a)=>globalThis.__routingStore.update(...a);');
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const base=`http://127.0.0.1:${server.address().port}`;
  process.env.CONTEXT_ROOM_INTEGRATION_URL=process.env.VOCABFORGE_INTEGRATION_URL=base;
  process.env.LUMEN_CONTEXT_ROOM_SYNC_SECRET=process.env.LUMEN_VOCABFORGE_SYNC_SECRET='isolated-test';
  const {exportEnglishImageContext,exportEnglishImageVocabs}=await import(pathToFileURL(join(temp,'englishImageDispatch.mjs')));
+ const originalEntry=structuredClone(entry);
+ entry.vocabularyCandidates[0].usage='A reef appeared while the diver explored the deep ocean and watched many different fish swimming slowly around the ancient rocks beneath the surface.';
+ await assert.rejects(()=>exportEnglishImageVocabs('source-1',['reef'],'JRPG／冒險遊戲',{focusDecks:['JRPG／冒險遊戲'],sourceName:'Dave the Diver'}),/學習例句/,'long game sentences must be rejected before VF receives them');
+ assert.equal(actions.length,0,'rejected sentence must cause no remote write');
+ entry=originalEntry;
+ const {rewriteEnglishImageLearningUsages}=await import(pathToFileURL(join(temp,'englishImageAnalysis.mjs')));
+ process.env.OPENAI_API_KEY='isolated-fixture';
+ let generated={key:'reef',sentence:'We saw a colorful reef under the boat.',translation:'我們看見船底下有一座色彩繽紛的珊瑚礁。',completeSentence:true,meaningMatches:true,translationMatches:true};
+ let beforeReply=()=>{};
+ globalThis.fetch=async(url,options)=>{
+  if(url!=='https://api.openai.com/v1/responses')return originalFetch(url,options);
+  const prompt=JSON.parse(options.body).input[0].content[0].text;
+  assert.ok(prompt.includes(entry.ocrText),'rewrite must have real original context');
+  beforeReply();
+  return new Response(JSON.stringify({output_text:JSON.stringify({items:[generated]}),usage:{input_tokens:10,output_tokens:20}}),{status:200,headers:{'Content-Type':'application/json'}});
+ };
+ const preserved=structuredClone(entry);
+ await rewriteEnglishImageLearningUsages('source-1',['reef']);
+ assert.equal(entry.ocrText,preserved.ocrText);assert.equal(entry.englishRecord,preserved.englishRecord);assert.equal(entry.vocabularyCandidates[0].meaning,preserved.vocabularyCandidates[0].meaning);
+ assert.equal(entry.vocabularyCandidates[0].usage,generated.sentence);assert.equal(entry.vocabularyCandidates[0].usageProvenance,'generated');assert.equal(entry.vocabularyCandidates[0].usageTranslation,generated.translation);assert.equal(entry.vocabForgeDraft.focusDecks.length,2);
+ const validUsage=entry.vocabularyCandidates[0].usage;
+ generated={...generated,sentence:'A reef appeared while the diver explored the deep ocean and watched many different fish swimming slowly around the ancient rocks beneath the surface.'};
+ await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/學習例句/);assert.equal(entry.vocabularyCandidates[0].usage,validUsage,'failed rewrite must preserve previous good usage');assert.equal(entry.inputTokens,20,'invalid provider output must still count cost');
+ generated={...generated,sentence:'We saw a reef beneath the boat.',translationMatches:false};
+ await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/詞義或翻譯/);
+ generated={...generated,translationMatches:true};beforeReply=()=>{entry.contextNote='Changed while AI was running';};
+ await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/已變更/);assert.equal(entry.vocabularyCandidates[0].usage,validUsage);
+ beforeReply=()=>{};entry=structuredClone(originalEntry);
+ entry.vocabularyCandidates[0].expression='“reef”';
+ await rewriteEnglishImageLearningUsages('source-1',['reef']);
+ assert.equal(entry.vocabularyCandidates[0].usage,generated.sentence,'quoted expressions must receive the generated replacement');
+ entry=structuredClone(originalEntry);entry.vocabularyCandidates[0].expression='"reef"';
+ await rewriteEnglishImageLearningUsages('source-1',['reef']);
+ assert.equal(entry.vocabularyCandidates[0].usage,generated.sentence,'ASCII quoted expressions must match too');
+ for(const field of ['vocabularyWords','learningPhrases']) {
+  entry=structuredClone(originalEntry);entry.vocabularyCandidates=[];entry.vocabularyWords='reef｜珊瑚礁';
+  beforeReply=()=>{entry[field]='reef｜較新的編輯';};
+  await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/已變更/,'legacy concurrent edits must reject stale rewrites');
+  assert.equal(entry[field],'reef｜較新的編輯');assert.deepEqual(entry.vocabularyCandidates,[]);
+ }
+ beforeReply=()=>{};entry=structuredClone(originalEntry);entry.analyzedAt='2026-01-01T00:00:00Z';entry.estimatedCostUsd=100;
+ await rewriteEnglishImageLearningUsages('source-1',['reef']);
+ const {currentMonthEstimatedSpend}=await import(pathToFileURL(join(temp,'englishImage.mjs')));
+ assert.ok(currentMonthEstimatedSpend([entry])>0,'old material must charge the present month');
+ assert.equal(entry.estimatedCostUsd,100,'original analysis charge must retain its date');
+ const previousBudget=process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD;
+ process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD='0.000001';
+ let providerCalls=0;beforeReply=()=>{providerCalls++;};
+ await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/預算/);assert.equal(providerCalls,0,'budget rejection must happen before AI work');
+ if(previousBudget===undefined)delete process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD;else process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD=previousBudget;
+ beforeReply=()=>{};globalThis.fetch=originalFetch;entry=originalEntry;
  const params={id:'source-1',contractMode:'v2',projectMode:'create',materialTitle:'Dave the Diver',unitMode:'create',eventTitle:'Reef encounter',candidateKeys:[]};
  await exportEnglishImageContext(params);
  await exportEnglishImageContext(params);
@@ -39,6 +92,8 @@ try {
  const vocab=actions.at(-1).body;
  assert.deepEqual(vocab.focusDecks,['JRPG／冒險遊戲','故事閱讀']);
  assert.equal(vocab.sourceName,'Dave the Diver');
+ assert.equal(vocab.items[0].sourceSentence,entry.ocrText,'original long sentence must be preserved separately');
+ assert.equal(vocab.items[0].usage.sentence,'A reef appeared.','review usage must remain concise independently of source length');
  assert.equal(vocab.sourceRecordId,'source-1');
  assert.equal(vocab.items[0].usage.translation,'出現了一座珊瑚礁。');
  const count=actions.length;
@@ -71,6 +126,7 @@ try {
  console.log('Unified POST route: preflight validation, persisted settings, both receipts PASS');
  console.log('Real sender / local HTTP receiver: exact context replay, two decks, source and word dedupe PASS');
 } finally {
+ globalThis.fetch=originalFetch;if(previousOpenAI===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=previousOpenAI;
  for(const [key,value] of [['CONTEXT_ROOM_INTEGRATION_URL',previous.context],['VOCABFORGE_INTEGRATION_URL',previous.vocab],['LUMEN_CONTEXT_ROOM_SYNC_SECRET',previous.cs],['LUMEN_VOCABFORGE_SYNC_SECRET',previous.vs]]){if(value===undefined)delete process.env[key];else process.env[key]=value;}
  delete globalThis.__routingStore;
  await new Promise(resolve=>server.close(resolve));await rm(temp,{recursive:true,force:true});
