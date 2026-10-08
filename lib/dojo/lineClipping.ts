@@ -323,7 +323,7 @@ export function englishImageVocabQuickReply(entryId: string, candidates: English
 
 export function contextRoomQuickReply(entryId: string, url: string) {
   return { items: [
-    uriQuickReplyItem("到野採安排批次", url),
+    uriQuickReplyItem("開啟派送確認表單", url),
     quickReplyItem("送 VocabForge", new URLSearchParams({ action: "imageDispatch", entryId, target: "vocab" }).toString()),
     quickReplyItem("先留野採", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
   ] };

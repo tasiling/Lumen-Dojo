@@ -46,6 +46,12 @@ export type EnglishImageContextExport = {
   syncedAt: string;
 };
 
+export type EnglishImageContextDispatchDraft = {
+  contractMode: "v2"; projectMode: "create" | "existing"; materialId: string; materialTitle: string;
+  unitMode: "create" | "existing"; unitId: string; eventTitle: string; projectType: string;
+  crossTypeConfirmed: boolean; candidateKeys: string[];
+};
+
 export type EnglishImageContextLink = {
   projectId: string;
   unitId: string;
@@ -119,6 +125,7 @@ export type EnglishImageEntry = {
   contextRoomUrl: string;
   contextRoomExport: EnglishImageContextExport | null;
   contextRoomLinks: EnglishImageContextLink[];
+  contextRoomDispatchDraft?: EnglishImageContextDispatchDraft | null;
   contextRoomSourceRevision: number;
   contextRoomContentFingerprint: string;
   vocabForgeExports: EnglishImageVocabExport[];
@@ -285,6 +292,15 @@ export function normalizeEnglishImageEntry(
         duplicate: value.duplicate === true,
         syncedAt,
       };
+    })() : null,
+    contextRoomDispatchDraft: source.contextRoomDispatchDraft ? (() => {
+      const value = source.contextRoomDispatchDraft;
+      return { contractMode: "v2" as const, projectMode: value.projectMode === "existing" ? "existing" as const : "create" as const,
+        materialId: text(value.materialId, 200), materialTitle: text(value.materialTitle, 300),
+        unitMode: value.unitMode === "existing" ? "existing" as const : "create" as const,
+        unitId: text(value.unitId, 200), eventTitle: text(value.eventTitle, 300), projectType: text(value.projectType, 100),
+        crossTypeConfirmed: value.crossTypeConfirmed === true,
+        candidateKeys: Array.isArray(value.candidateKeys) ? value.candidateKeys.filter((key): key is string => typeof key === "string").slice(0, 5) : [] };
     })() : null,
     contextRoomLinks: Array.isArray(source.contextRoomLinks) ? source.contextRoomLinks.flatMap((item) => {
       if (!item || typeof item !== "object") return [];

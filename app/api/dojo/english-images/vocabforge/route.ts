@@ -3,6 +3,7 @@ import {
   englishImageVocabCandidates,
   exportEnglishImageVocabs,
   listVocabForgeBooks,
+  recommendedFocusDecks,
 } from "@/lib/dojo/englishImageDispatch";
 import { getEnglishImageEntry } from "@/lib/dojo/englishImageStore";
 
@@ -18,6 +19,11 @@ export async function GET(req: NextRequest) {
       books,
       exports: entry.vocabForgeExports,
       syncStates: entry.vocabForgeSyncStates,
+      defaults: {
+        sourceName: entry.vocabForgeDraft.sourceName || entry.sourceLabel || entry.title,
+        focusDecks: entry.vocabForgeDraft.focusDecks.length ? entry.vocabForgeDraft.focusDecks : recommendedFocusDecks(entry, entry.sourceLabel),
+        selectedKeys: entry.vocabForgeDraft.selectedKeys,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -34,7 +40,10 @@ export async function POST(req: NextRequest) {
       ? body.candidateKeys.filter((value: unknown): value is string => typeof value === "string")
       : [];
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
-    const result = await exportEnglishImageVocabs(id, candidateKeys, vocabBook);
+    const result = await exportEnglishImageVocabs(id, candidateKeys, vocabBook, {
+      sourceName: typeof body.sourceName === "string" ? body.sourceName : "",
+      focusDecks: Array.isArray(body.focusDecks) ? body.focusDecks : [vocabBook],
+    });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

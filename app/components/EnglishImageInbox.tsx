@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   englishImageRouteLabel,
   type EnglishImageEntry,
@@ -15,7 +15,12 @@ import {
   type EnglishImageSort,
   type EnglishImageStage,
 } from "@/lib/dojo/englishImageInboxView";
+import { PERMANENT_FOCUS_DECKS, type RoutingResults } from "@/lib/dojo/englishImageRouting";
 import UnitArrangementDialog from "./UnitArrangementDialog";
+
+async function fetchResult<T>(url: string, options: RequestInit): Promise<T> {
+  return json<T>(await fetch(url, options));
+}
 
 async function json<T>(response: Response): Promise<T> {
   const result = await response.json().catch(() => ({}));
@@ -70,7 +75,7 @@ type ContextCapability = { mode: "v2" | "v1"; supportsExistingUnit: boolean; ima
 type ContextDispatchDraft = { entryId: string; contractMode: "v2" | "v1"; projectMode: "create" | "existing"; materialId: string; materialTitle: string; projectType: string; unitMode: "create" | "existing"; unitId: string; eventTitle: string; crossTypeConfirmed: boolean; candidateKeys: string[]; candidates: ContextCandidate[]; projects: ContextProject[]; capability: ContextCapability };
 type VocabCandidate = { key: string; expression: string; meaning: string; origin: "source" | "extension"; recommendationReason: string };
 type VocabBook = { name: string; count: number; source: "postgres" | "notion"; updatedAt: string; countDefinition: "focus_deck_membership" };
-type VocabDispatchDraft = { entryId: string; vocabBook: string; candidateKeys: string[]; candidates: VocabCandidate[]; exportedKeys: string[]; syncStates: { key: string; status: "pending_sync" | "synced" | "already_exists" | "failed"; lastError: string }[]; books: VocabBook[] };
+type VocabDispatchDraft = { entryId: string; sourceName: string; focusDecks: string[]; candidateKeys: string[]; candidates: VocabCandidate[]; exportedKeys: string[]; syncStates: { key: string; status: "pending_sync" | "synced" | "already_exists" | "failed"; lastError: string }[]; books: VocabBook[] };
 
 const CONTEXT_KIND_LABEL: Record<ContextCandidate["kind"], string> = { chunk: "片語／語塊", pattern: "句型", repair: "修復策略", usage: "用法／語氣" };
 
@@ -89,7 +94,7 @@ function EnglishImageAsset({ entry, index, variant }: { entry: EnglishImageEntry
 function DispatchBadges({ entry }: { entry: EnglishImageEntry }) {
   const failures = entry.vocabForgeSyncStates.filter((item) => item.status === "failed").length;
   const destinations = entry.contextRoomLinks.filter((link) => link.status === "synced").length || (entry.contextRoomExport ? 1 : 0);
-  return <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.status === "organized" && <span className="is-organized">✓ 已完成整理</span>}<span>{entry.vocabForgeExports.length ? `VF 已同步 ${entry.vocabForgeExports.length} 字` : "VF 尚未派送"}</span>{entry.contextRoomStatus === "idle" || !entry.contextRoomUrl ? <span>語境尚未派送</span> : <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境 {destinations} 個目的地 ↗</a>}{failures > 0 && <span className="is-error">同步失敗 {failures} 字</span>}</div>;
+  return <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.status === "organized" && <span className="is-organized">✓ 已完成整理</span>}<span>{entry.vocabForgeExports.length ? `VF 已同步 ${entry.vocabForgeExports.length} 字` : "VF 尚未派送"}</span>{entry.contextRoomStatus !== "synced" || !entry.contextRoomUrl ? <span>語境尚未派送</span> : <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境 {destinations} 個目的地 ↗</a>}{failures > 0 && <span className="is-error">同步失敗 {failures} 字</span>}</div>;
 }
 
 export default function EnglishImageInbox() {
@@ -110,6 +115,10 @@ export default function EnglishImageInbox() {
   const [busy, setBusy] = useState<string | null>(null);
   const [contextDraft, setContextDraft] = useState<ContextDispatchDraft | null>(null);
   const [vocabDraft, setVocabDraft] = useState<VocabDispatchDraft | null>(null);
+  const [routingSourceName, setRoutingSourceName] = useState("");
+  const [routingTargets, setRoutingTargets] = useState({ context: true, vocab: true });
+  const [routingResults, setRoutingResults] = useState<RoutingResults | null>(null);
+  const deepLinkOpened = useRef(false);
   const [completionPromptId, setCompletionPromptId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -182,33 +191,88 @@ export default function EnglishImageInbox() {
     catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
   }
 
-  async function openContextDispatch(entry: EnglishImageEntry) {
+  const openUnifiedDispatch = useCallback(async (entry: EnglishImageEntry, target: "context" | "vocab" | "both" = "both") => {
+    setBusy(entry.id); setError(""); setRoutingResults(null); setRoutingSourceName(entry.vocabForgeDraft.sourceName || entry.sourceLabel || entry.title);
+    setRoutingTargets({ context: target !== "vocab", vocab: target !== "context" });
+    // A disconnected receiver must not prevent configuring the other destination.
+    const [contextResult, vocabResult] = await Promise.allSettled([
+      fetchResult<{ candidates: ContextCandidate[]; projects: ContextProject[]; capability: ContextCapability; defaults: { materialId: string; materialTitle: string; eventTitle: string; unitId: string } }>(`/api/dojo/english-images/context-room?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" }),
+      fetchResult<{ candidates: VocabCandidate[]; books: VocabBook[]; exports: { key: string }[]; syncStates: VocabDispatchDraft["syncStates"]; defaults: { sourceName: string; focusDecks: string[]; selectedKeys: string[] } }>(`/api/dojo/english-images/vocabforge?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" }),
+    ]);
+    if (contextResult.status === "fulfilled") {
+      const result = contextResult.value;
+      const project = result.projects.find(item => item.id === result.defaults.materialId);
+      const unit = project?.units.find(item => item.id === result.defaults.unitId && item.status === "active");
+      setContextDraft({ entryId: entry.id, projectMode: project ? "existing" : "create", materialId: project?.id || "", materialTitle: project?.title || result.defaults.materialTitle, projectType: project?.type || "", unitMode: unit ? "existing" : "create", unitId: unit?.id || "", eventTitle: unit?.label || result.defaults.eventTitle, crossTypeConfirmed: false, candidateKeys: result.candidates.map(item => item.key).slice(0, 3), ...(entry.contextRoomDispatchDraft || {}), contractMode: result.capability.mode, candidates: result.candidates, projects: result.projects, capability: result.capability });
+    } else setContextDraft(null);
+    if (vocabResult.status === "fulfilled") {
+      const result = vocabResult.value;
+      const exportedKeys = result.exports.map(item => item.key);
+      setVocabDraft({ entryId: entry.id, sourceName: result.defaults.sourceName, focusDecks: result.defaults.focusDecks, candidateKeys: result.defaults.selectedKeys.filter(key => !exportedKeys.includes(key) && result.candidates.some(item => item.key === key)), candidates: result.candidates, exportedKeys, syncStates: result.syncStates, books: result.books });
+    } else setVocabDraft(null);
+    setRoutingTargets({ context: target !== "vocab" && contextResult.status === "fulfilled" && contextResult.value.capability.mode === "v2", vocab: target !== "context" && vocabResult.status === "fulfilled" });
+    const errors = [contextResult.status === "rejected" ? `語境修習室：${String(contextResult.reason)}` : "", vocabResult.status === "rejected" ? `VF：${String(vocabResult.reason)}` : ""].filter(Boolean);
+    if (errors.length) setError(errors.join("；"));
+    setBusy(null);
+  }, []);
+
+  useEffect(() => {
+    if (!loaded || deepLinkOpened.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get("dispatch");
+    const entry = entries.find(item => item.id === params.get("englishImageId"));
+    if (!entry || (target !== "both" && target !== "context" && target !== "vocab")) return;
+    deepLinkOpened.current = true;
+    const timer = window.setTimeout(() => void openUnifiedDispatch(entry, target), 0);
+    return () => window.clearTimeout(timer);
+  }, [loaded, entries, openUnifiedDispatch]);
+
+  async function sendUnifiedDispatch(entry: EnglishImageEntry) {
     setBusy(entry.id); setError("");
-    try { const result = await json<{ candidates: ContextCandidate[]; projects: ContextProject[]; capability: ContextCapability; defaults: { materialId: string; materialTitle: string; eventTitle: string } }>(await fetch(`/api/dojo/english-images/context-room?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" })); const selectedProject = result.projects.find((item) => item.id === result.defaults.materialId); setContextDraft({ entryId: entry.id, contractMode: result.capability.mode, projectMode: selectedProject ? "existing" : "create", materialId: selectedProject?.id || "", materialTitle: selectedProject?.title || result.defaults.materialTitle, projectType: selectedProject?.type || "", unitMode: "create", unitId: "", eventTitle: result.defaults.eventTitle, crossTypeConfirmed: false, candidateKeys: result.candidates.map((item) => item.key).slice(0, 3), candidates: result.candidates, projects: result.projects, capability: result.capability }); setVocabDraft(null); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
-  }
-
-  async function openVocabDispatch(entry: EnglishImageEntry) {
-    setBusy(entry.id); setError("");
-    try { const result = await json<{ candidates: VocabCandidate[]; books: VocabBook[]; exports: { key: string; vocabBook: string }[]; syncStates: VocabDispatchDraft["syncStates"] }>(await fetch(`/api/dojo/english-images/vocabforge?id=${encodeURIComponent(entry.id)}`, { cache: "no-store" })); setVocabDraft({ entryId: entry.id, vocabBook: "", candidateKeys: [], candidates: result.candidates, exportedKeys: result.exports.map((item) => item.key), syncStates: result.syncStates, books: result.books }); setContextDraft(null); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
-  }
-
-  async function sendVocabDispatch() {
-    if (!vocabDraft) return; setBusy(vocabDraft.entryId); setError("");
-    try { const requestedCount = vocabDraft.candidateKeys.length; const result = await json<{ entry: EnglishImageEntry; failures: { expression: string; lastError: string }[] }>(await fetch("/api/dojo/english-images/vocabforge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: vocabDraft.entryId, vocabBook: vocabDraft.vocabBook, candidateKeys: vocabDraft.candidateKeys }) })); replaceEntries([result.entry]); if (result.failures.length) setError(`${result.failures.length} 個單字尚未同步，可保留候選後重試：${result.failures.map((item) => item.expression).join("、")}`); if (result.failures.length < requestedCount) setCompletionPromptId(result.entry.id); setVocabDraft(null); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
-  }
-
-  async function sendContextDispatch() {
-    if (!contextDraft) return; setBusy(contextDraft.entryId); setError("");
-    try { const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images/context-room", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: contextDraft.entryId, contractMode: contextDraft.contractMode, projectMode: contextDraft.projectMode, materialId: contextDraft.materialId, materialTitle: contextDraft.materialTitle, projectType: contextDraft.projectType, unitMode: contextDraft.unitMode, unitId: contextDraft.unitId, eventTitle: contextDraft.eventTitle, crossTypeConfirmed: contextDraft.crossTypeConfirmed, candidateKeys: contextDraft.candidateKeys }) })); replaceEntries([result.entry]); setCompletionPromptId(result.entry.id); setNotice("素材已安全派送；原始圖片與既有目的地紀錄均已保留。"); setContextDraft(null); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
+    const sourceName = routingSourceName;
+    try {
+      const result = await json<{ entry: EnglishImageEntry; results: RoutingResults }>(await fetch("/api/dojo/english-images/dispatch", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+          id: entry.id, sourceName,
+          context: routingTargets.context ? contextDraft : undefined,
+          vocab: routingTargets.vocab && vocabDraft ? { focusDecks: vocabDraft.focusDecks, selectedKeys: vocabDraft.candidateKeys } : undefined,
+        }),
+      }));
+      replaceEntries([result.entry]);
+      setRoutingResults(previous => previous ? {
+        context: result.results.context.status === "not-selected" ? previous.context : result.results.context,
+        vocab: result.results.vocab.status === "not-selected" ? previous.vocab : result.results.vocab,
+      } : result.results);
+      setRoutingTargets({ context: ["failed", "partial"].includes(result.results.context.status), vocab: ["failed", "partial"].includes(result.results.vocab.status) });
+      setVocabDraft(old => old ? { ...old, exportedKeys: result.entry.vocabForgeExports.map(item => item.key), syncStates: result.entry.vocabForgeSyncStates, candidateKeys: old.candidateKeys.filter(key => !result.entry.vocabForgeExports.some(item => item.key === key)) } : old);
+      const failures = [result.results.context, result.results.vocab].filter(item => item.status === "failed" || item.status === "partial");
+      if (!failures.length) setCompletionPromptId(entry.id);
+      else setError(failures.map(item => item.error).join("；"));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+      // Refresh durable receipts after an unknown HTTP outcome; do not auto-retry.
+      try {
+        const fresh = await fetchResult<{ entries: EnglishImageEntry[] }>("/api/dojo/english-images", { cache: "no-store" });
+        setEntries(fresh.entries);
+        const updated = fresh.entries.find(item => item.id === entry.id);
+        if (updated) {
+          const contextReceived = routingTargets.context && updated.contextRoomLinks.some(link => link.status === "synced" && !entry.contextRoomLinks.some(previous => previous.dispatchId === link.dispatchId && previous.status === "synced" && previous.dispatchedAt === link.dispatchedAt));
+          const remainingKeys = vocabDraft?.candidateKeys.filter(key => !updated.vocabForgeExports.some(item => item.key === key)) || [];
+          const vocabReceived = routingTargets.vocab && remainingKeys.length === 0;
+          setRoutingTargets({ context: routingTargets.context && !contextReceived, vocab: routingTargets.vocab && !vocabReceived });
+          setRoutingResults(previous => ({
+            context: contextReceived ? { status: "received", error: "" } : previous?.context || { status: routingTargets.context ? "failed" : "not-selected", error: "結果待確認，請重試" },
+            vocab: vocabReceived ? { status: "received", error: "" } : previous?.vocab || { status: routingTargets.vocab ? "failed" : "not-selected", error: "結果待確認，請重試" },
+          }));
+          setVocabDraft(old => old ? { ...old, exportedKeys: updated.vocabForgeExports.map(item => item.key), syncStates: updated.vocabForgeSyncStates, candidateKeys: remainingKeys } : old);
+        }
+      } catch { /* Keep the original error and exact draft for a manual retry. */ }
+    } finally { setBusy(null); }
   }
 
   function renderVocabDispatch(entry: EnglishImageEntry) {
     if (vocabDraft?.entryId !== entry.id) return null;
-    return <div className="english-image-vocab-dispatch"><div className="english-image-context-head"><div><small>VocabForge</small><h5>挑選要記住的單字</h5></div><button className="text-link" onClick={() => setVocabDraft(null)}>關閉</button></div><label>選擇豆倉<select className="field" value={vocabDraft.vocabBook} onChange={(event) => setVocabDraft({ ...vocabDraft, vocabBook: event.target.value })}><option value="">請選擇要放入的豆倉</option>{vocabDraft.books.map((book) => <option key={book.name} value={book.name}>{book.name}（正式詞庫歸屬 {book.count}）</option>)}</select></label><p className="muted-note">{vocabDraft.books[0]?.source === "postgres" ? "數量是 VocabForge PostgreSQL 正式詞庫的豆倉歸屬；同一個字可同時計入多個豆倉。" : "目前由 Notion 備援計算豆倉歸屬；正式存在仍以 VocabForge 接收結果為準。"}</p><fieldset><legend>選擇真正想複習的單字（每筆素材最多 5 字）</legend>{vocabDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的單一英文單字。</p> : vocabDraft.candidates.map((candidate) => { const exported = vocabDraft.exportedKeys.includes(candidate.key); const syncState = vocabDraft.syncStates.find((item) => item.key === candidate.key); const checked = vocabDraft.candidateKeys.includes(candidate.key); const remaining = Math.max(0, 5 - vocabDraft.exportedKeys.length); return <label className={`english-image-context-choice ${exported ? "is-exported" : ""}`} key={candidate.key}><input type="checkbox" checked={checked || exported} disabled={exported || (!checked && vocabDraft.candidateKeys.length >= remaining)} onChange={(event) => setVocabDraft({ ...vocabDraft, candidateKeys: event.target.checked ? [...vocabDraft.candidateKeys, candidate.key] : vocabDraft.candidateKeys.filter((key) => key !== candidate.key) })} /><span><small>{exported ? "已同步" : syncState?.status === "failed" ? "同步失敗・可重試" : syncState?.status === "pending_sync" ? "等待確認" : candidate.origin === "extension" ? "延伸推薦・非原文" : "原素材候選"}</small><b>{candidate.expression}</b>{candidate.meaning && <em>{candidate.meaning}</em>}{candidate.recommendationReason && <i>{candidate.recommendationReason}</i>}{syncState?.status === "failed" && syncState.lastError && <i>{syncState.lastError}</i>}</span></label>; })}</fieldset><p className="muted-note">只送出這次勾選的單字；已存在的資料不會建立重複卡片。</p><button className="primary" disabled={busy === entry.id || !vocabDraft.vocabBook || vocabDraft.candidateKeys.length === 0} onClick={() => void sendVocabDispatch()}>{busy === entry.id ? "派送中…" : `送出 ${vocabDraft.candidateKeys.length} 字至 VocabForge`}</button></div>;
+    return <div className="english-image-vocab-dispatch"><div className="english-image-context-head"><div><small>VocabForge</small><h5>挑選要記住的單字</h5></div></div><fieldset><legend>常駐豆倉（最多兩個）</legend>{vocabDraft.books.filter(book => PERMANENT_FOCUS_DECKS.includes(book.name as typeof PERMANENT_FOCUS_DECKS[number])).map(book => { const checked = vocabDraft.focusDecks.includes(book.name); return <label className="english-image-context-choice" key={book.name}><input type="checkbox" checked={checked} disabled={!checked && vocabDraft.focusDecks.length >= 2} onChange={event => setVocabDraft({ ...vocabDraft, focusDecks: event.target.checked ? [...vocabDraft.focusDecks, book.name] : vocabDraft.focusDecks.filter(name => name !== book.name) })} /><span>{book.name}（{book.count}）</span></label>; })}</fieldset><p className="muted-note">作品名稱保留為來源，不會建立新豆倉。</p><p className="muted-note">{vocabDraft.books[0]?.source === "postgres" ? "數量是 VocabForge PostgreSQL 正式詞庫的豆倉歸屬；同一個字可同時計入多個豆倉。" : "目前由 Notion 備援計算豆倉歸屬；正式存在仍以 VocabForge 接收結果為準。"}</p><fieldset><legend>選擇真正想複習的單字（每筆素材最多 5 字）</legend>{vocabDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的單一英文單字。</p> : vocabDraft.candidates.map((candidate) => { const exported = vocabDraft.exportedKeys.includes(candidate.key); const syncState = vocabDraft.syncStates.find((item) => item.key === candidate.key); const checked = vocabDraft.candidateKeys.includes(candidate.key); const remaining = Math.max(0, 5 - vocabDraft.exportedKeys.length); return <label className={`english-image-context-choice ${exported ? "is-exported" : ""}`} key={candidate.key}><input type="checkbox" checked={checked || exported} disabled={exported || (!checked && vocabDraft.candidateKeys.length >= remaining)} onChange={(event) => setVocabDraft({ ...vocabDraft, candidateKeys: event.target.checked ? [...vocabDraft.candidateKeys, candidate.key] : vocabDraft.candidateKeys.filter((key) => key !== candidate.key) })} /><span><small>{exported ? "已同步" : syncState?.status === "failed" ? "同步失敗・可重試" : syncState?.status === "pending_sync" ? "等待確認" : candidate.origin === "extension" ? "延伸推薦・非原文" : "原素材候選"}</small><b>{candidate.expression}</b>{candidate.meaning && <em>{candidate.meaning}</em>}{candidate.recommendationReason && <i>{candidate.recommendationReason}</i>}{syncState?.status === "failed" && syncState.lastError && <i>{syncState.lastError}</i>}</span></label>; })}</fieldset><p className="muted-note">只送出這次勾選的單字；已存在的資料不會建立重複卡片。</p></div>;
   }
 
   function renderContextDispatch(entry: EnglishImageEntry) {
@@ -218,9 +282,8 @@ export default function EnglishImageInbox() {
     const activeUnits = project?.units.filter((unit) => unit.status === "active") ?? [];
     const expectedType = entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom";
     const crossType = contextDraft.projectMode === "existing" && Boolean(project?.type) && project?.type !== expectedType;
-    const canSend = contextDraft.materialTitle.trim() && contextDraft.eventTitle.trim() && (!crossType || contextDraft.crossTypeConfirmed) && (contextDraft.unitMode !== "existing" || Boolean(contextDraft.unitId));
     return <div className="english-image-context-dispatch">
-      <div className="english-image-context-head"><div><small>語境修習室・{contextDraft.contractMode === "v2" ? "Source Handoff v2" : "相容模式 v1"}</small><h5>{form.heading}</h5></div><button className="text-link" onClick={() => setContextDraft(null)}>關閉</button></div>
+      <div className="english-image-context-head"><div><small>語境修習室・{contextDraft.contractMode === "v2" ? "Source Handoff v2" : "相容模式 v1"}</small><h5>{form.heading}</h5></div></div>
       {contextDraft.contractMode === "v1" && <p className="english-image-capability-warning">接收端尚未確認 v2 capability。本次只提供舊版「新 Project／既有 Project＋新學習單元」，不會假裝可加入既有單元。</p>}
       <label>學習專案<select className="field" value={contextDraft.projectMode === "create" ? "__new__" : contextDraft.materialId} onChange={(event) => { const materialId = event.target.value === "__new__" ? "" : event.target.value; const selected = contextDraft.projects.find((item) => item.id === materialId); setContextDraft({ ...contextDraft, projectMode: selected ? "existing" : "create", materialId, materialTitle: selected?.title || contextDraft.materialTitle, projectType: selected?.type || "", unitMode: "create", unitId: "", crossTypeConfirmed: false }); }}><option value="__new__">建立新的學習專案</option>{contextDraft.projects.map((item) => <option key={item.id} value={item.id}>加入「{item.title}」（{item.batchCount} 單元）</option>)}</select></label>
       <label>{form.materialLabel}<input className="field" value={contextDraft.materialTitle} disabled={contextDraft.projectMode === "existing"} onChange={(event) => setContextDraft({ ...contextDraft, materialTitle: event.target.value })} placeholder={form.materialPlaceholder} /></label>
@@ -230,7 +293,7 @@ export default function EnglishImageInbox() {
       {entry.contextRoomLinks.length > 0 && <div className="english-image-context-history"><b>既有派送目的地</b>{entry.contextRoomLinks.map((link) => <div key={link.dispatchId}><span>{link.projectTitle || link.projectId} → {link.unitTitle || link.unitId}</span><small className={`status-${link.status}`}>{link.status === "synced" ? "已接收" : link.status === "unknown" ? "結果未知・再次送出會安全重試" : link.status === "failed" ? "失敗・可重試" : "派送中"}</small>{link.lastError && <em>{link.lastError}</em>}</div>)}</div>}
       <fieldset><legend>選擇真正想留下的表達（最多 5 項）</legend>{contextDraft.candidates.length === 0 ? <p className="muted-note">目前沒有可派送的片語、句型或用法。</p> : contextDraft.candidates.map((candidate) => { const checked = contextDraft.candidateKeys.includes(candidate.key); return <label className="english-image-context-choice" key={candidate.key}><input type="checkbox" checked={checked} disabled={!checked && contextDraft.candidateKeys.length >= 5} onChange={(event) => setContextDraft({ ...contextDraft, candidateKeys: event.target.checked ? [...contextDraft.candidateKeys, candidate.key] : contextDraft.candidateKeys.filter((key) => key !== candidate.key) })}/><span><small>{CONTEXT_KIND_LABEL[candidate.kind]}</small><b>{candidate.text}</b>{candidate.meaning && <em>{candidate.meaning}</em>}{candidate.usage && <i>{candidate.usage}</i>}</span></label>; })}</fieldset>
       <p className="muted-note">一組 {entry.attachments.length} 張圖片會成為一份 Source Item；未勾選的 AI 建議仍留在野採。</p>
-      <button className="primary" disabled={busy === entry.id || !canSend} onClick={() => void sendContextDispatch()}>{busy === entry.id ? "派送中…" : contextDraft.unitMode === "existing" ? "加入既有學習單元" : contextDraft.projectMode === "existing" ? "建立新學習單元並派送" : "建立新專案與學習單元"}</button>
+
     </div>;
   }
 
@@ -243,8 +306,24 @@ export default function EnglishImageInbox() {
       <details className="english-image-detail-section"><summary>中文理解 <span>{entry.chineseExplanation ? "已有內容" : "尚未建立"}</span></summary><p>{entry.chineseExplanation || "尚無中文理解。"}</p></details>
       <details className="english-image-detail-section"><summary>可學詞句 <span>{entry.learningPhrases ? "可查看" : "尚無內容"}</span></summary><p>{entry.learningPhrases || "尚無可學詞句。"}</p></details>
       <details className="english-image-detail-section"><summary>單字候選 <span>{entry.vocabularyCandidates.length || 0} 項結構化候選</span></summary><p>{entry.vocabularyWords || "尚無單字候選。"}</p></details>
-      <details className="english-image-detail-section english-image-dispatch-section" open={vocabDraft?.entryId === entry.id}><summary>VocabForge 派送 <span>{entry.vocabForgeExports.length ? `已同步 ${entry.vocabForgeExports.length} 字` : "尚未派送"}</span></summary><div className="english-image-section-body"><button disabled={busy === entry.id || entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => void openVocabDispatch(entry)}>{busy === entry.id ? "讀取中…" : entry.vocabForgeExports.length ? "查看／繼續選字" : "選擇 VocabForge 單字"}</button>{renderVocabDispatch(entry)}</div></details>
-      <details className="english-image-detail-section english-image-dispatch-section" open={contextDraft?.entryId === entry.id}><summary>語境修習室派送 <span>{entry.contextRoomLinks.filter((link) => link.status === "synced").length || (entry.contextRoomExport ? 1 : 0)} 個目的地</span></summary><div className="english-image-section-body"><button className="primary" disabled={entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => { setSelectedIds([entry.id]); setArrangementOpen(true); }}>請 GPT 協助安排，並可加入其他素材</button><button disabled={busy === entry.id || entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => void openContextDispatch(entry)}>{busy === entry.id ? "讀取中…" : entry.contextRoomStatus === "synced" ? "查看目的地／再次派送" : "逐筆選擇學習專案與單元"}</button>{renderContextDispatch(entry)}</div></details>
+      <details className="english-image-detail-section english-image-dispatch-section" open={vocabDraft?.entryId === entry.id || contextDraft?.entryId === entry.id}>
+        <summary>整理與派送 <span>確認一次，分別接收</span></summary>
+        <div className="english-image-section-body">
+          <button className="primary" disabled={busy === entry.id || entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => void openUnifiedDispatch(entry)}>確認來源與派送目的地</button>
+          <button disabled={busy === entry.id || entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => { setSelectedIds([entry.id]); setArrangementOpen(true); }}>請 GPT 協助安排多份素材</button>
+          {(vocabDraft?.entryId === entry.id || contextDraft?.entryId === entry.id) && <>
+            <p className="muted-note">設定與 LINE 共用同一筆素材；勾選目的地後確認送出，才會建立學習內容。</p>
+            <label><input type="checkbox" checked={routingTargets.context} disabled={!contextDraft || contextDraft.contractMode !== "v2" || busy === entry.id || routingResults?.context.status === "received"} onChange={event => setRoutingTargets({ ...routingTargets, context: event.target.checked })} />語境修習室：圖片、事件、片語與句型</label>
+            <label><input type="checkbox" checked={routingTargets.vocab} disabled={!vocabDraft || busy === entry.id || routingResults?.vocab.status === "received"} onChange={event => setRoutingTargets({ ...routingTargets, vocab: event.target.checked })} />VocabForge：所選單字</label>
+            {routingTargets.vocab && vocabDraft?.entryId === entry.id && renderVocabDispatch(entry)}
+            <label>作品／生活情境來源<input className="field" value={routingSourceName} onChange={event => setRoutingSourceName(event.target.value)} placeholder="例如：Dave the Diver／按摩工作情境" /></label>
+            {routingTargets.context && renderContextDispatch(entry)}
+            {routingResults && <div role="status"><p>語境修習室：{routingResults.context.status === "received" ? "已接收" : routingResults.context.status === "not-selected" ? "未選擇" : routingResults.context.error}</p><p>VocabForge：{routingResults.vocab.status === "received" ? "已接收" : routingResults.vocab.status === "not-selected" ? "未選擇" : routingResults.vocab.error}</p></div>}
+            <button className="primary" disabled={busy === entry.id || !routingSourceName.trim() || (!routingTargets.context && !routingTargets.vocab) || (routingTargets.vocab && (!vocabDraft || !vocabDraft.focusDecks.length || !vocabDraft.candidateKeys.length)) || (routingTargets.context && (!contextDraft?.materialTitle.trim() || !contextDraft.eventTitle.trim() || contextDraft.contractMode !== "v2" || (contextDraft.unitMode === "existing" && !contextDraft.unitId) || (contextDraft.projectMode === "existing" && !contextDraft.materialId) || (contextDraft.projectMode === "existing" && contextDraft.projects.find(project => project.id === contextDraft.materialId)?.type !== (entry.route === "game" ? "game_journey" : entry.route === "reading" ? "reading" : entry.route === "classroom" ? "class_topic" : "custom") && !contextDraft.crossTypeConfirmed)))} onClick={() => void sendUnifiedDispatch(entry)}>{busy === entry.id ? "派送中…" : routingResults ? "重試尚未接收的部分" : "確認送出"}</button>
+            <button disabled={busy === entry.id} onClick={() => { setContextDraft(null); setVocabDraft(null); setRoutingResults(null); }}>關閉</button>
+          </>}
+        </div>
+      </details>
       <details className="english-image-detail-section" open={Boolean(openEditor)}><summary>素材整理 <span>分類與文字修訂</span></summary>{!openEditor ? <div className="english-image-section-body"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>編輯素材內容</button></div> : <div className="english-image-editor"><label>類型</label><select className="field" value={draft.route} onChange={(event) => setDraft({ ...draft, route: event.target.value as EnglishImageRoute })}><option value="pending">待分類</option><option value="game">遊戲英文</option><option value="daily">英文日常</option><option value="classroom">課堂英文</option><option value="reading">閱讀英文</option></select><label>標題／作品或場景</label><input className="field" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /><label>情境補充</label><textarea className="field" rows={2} value={draft.contextNote} onChange={(event) => setDraft({ ...draft, contextNote: event.target.value })} /><label>圖片英文原文</label><textarea className="field" rows={5} value={draft.ocrText} onChange={(event) => setDraft({ ...draft, ocrText: event.target.value })} /><label>{englishRecordLabel(draft.route)}</label><textarea className="field" rows={4} value={draft.englishRecord} onChange={(event) => setDraft({ ...draft, englishRecord: event.target.value })} /><label>中文解釋</label><textarea className="field" rows={4} value={draft.chineseExplanation} onChange={(event) => setDraft({ ...draft, chineseExplanation: event.target.value })} /><label>可學詞句</label><textarea className="field" rows={5} value={draft.learningPhrases} onChange={(event) => setDraft({ ...draft, learningPhrases: event.target.value })} /><label>單字候選</label><textarea className="field" rows={5} value={draft.vocabularyWords} onChange={(event) => setDraft({ ...draft, vocabularyWords: event.target.value })} /><div className="english-image-actions"><button onClick={() => { setEditing(null); setDraft(null); }}>取消</button><button className="primary" disabled={busy === entry.id} onClick={() => void save(entry.route === "pending" && draft.route !== "pending")}>{busy === entry.id ? "儲存中…" : entry.route === "pending" && draft.route !== "pending" ? "儲存並分析" : "儲存"}</button></div></div>}</details>
       {entry.route === "pending" && <div className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>遊戲英文並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "daily")}>英文日常並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "classroom")}>課堂英文並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "reading")}>閱讀英文並分析</button></div>}
       {completionPromptId === entry.id && entry.status === "inbox" && <div className="english-image-completion-prompt"><div><small>{completionWarnings(entry).length ? "派送請求已結束・仍有狀態需確認" : "派送已完成"}</small><b>這筆素材還需要其他處理嗎？</b></div><div className="english-image-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void setEntryStatus(entry, "organized")}>✓ 完成整理</button><button onClick={() => setCompletionPromptId(null)}>稍後繼續</button></div></div>}
