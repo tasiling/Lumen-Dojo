@@ -27,7 +27,7 @@ try {
    code=code.replace(/import ["']server-only["'];?/g,'').replace(/from (["'])(\.[^"']+)\1/g,(_,q,p)=>`from ${q}${p}.mjs${q}`);
    await writeFile(join(temp,name+'.mjs'),code);
  }
- await writeFile(join(temp,'englishImageStore.mjs'),'export const englishImageAttachmentBytes=async()=>{throw new Error("must not reread images")};export const listEnglishImageEntries=async()=>[(await globalThis.__routingStore.get()).entry];export const currentMonthEstimatedSpend=entries=>entries.reduce((sum,e)=>sum+(e.estimatedCostUsd||0),0);export const getEnglishImageEntry=(...a)=>globalThis.__routingStore.get(...a);export const saveEnglishImageEntry=(...a)=>globalThis.__routingStore.save(...a);export const updateEnglishImageEntry=(...a)=>globalThis.__routingStore.update(...a);');
+ await writeFile(join(temp,'englishImageStore.mjs'),'export const englishImageAttachmentBytes=async()=>{throw new Error("must not reread images")};export const listEnglishImageEntries=async()=>[(await globalThis.__routingStore.get()).entry];export {currentMonthEstimatedSpend} from "./englishImage.mjs";export const getEnglishImageEntry=(...a)=>globalThis.__routingStore.get(...a);export const saveEnglishImageEntry=(...a)=>globalThis.__routingStore.save(...a);export const updateEnglishImageEntry=(...a)=>globalThis.__routingStore.update(...a);');
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const base=`http://127.0.0.1:${server.address().port}`;
  process.env.CONTEXT_ROOM_INTEGRATION_URL=process.env.VOCABFORGE_INTEGRATION_URL=base;
@@ -60,6 +60,29 @@ try {
  await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/詞義或翻譯/);
  generated={...generated,translationMatches:true};beforeReply=()=>{entry.contextNote='Changed while AI was running';};
  await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/已變更/);assert.equal(entry.vocabularyCandidates[0].usage,validUsage);
+ beforeReply=()=>{};entry=structuredClone(originalEntry);
+ entry.vocabularyCandidates[0].expression='“reef”';
+ await rewriteEnglishImageLearningUsages('source-1',['reef']);
+ assert.equal(entry.vocabularyCandidates[0].usage,generated.sentence,'quoted expressions must receive the generated replacement');
+ entry=structuredClone(originalEntry);entry.vocabularyCandidates[0].expression='"reef"';
+ await rewriteEnglishImageLearningUsages('source-1',['reef']);
+ assert.equal(entry.vocabularyCandidates[0].usage,generated.sentence,'ASCII quoted expressions must match too');
+ for(const field of ['vocabularyWords','learningPhrases']) {
+  entry=structuredClone(originalEntry);entry.vocabularyCandidates=[];entry.vocabularyWords='reef｜珊瑚礁';
+  beforeReply=()=>{entry[field]='reef｜較新的編輯';};
+  await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/已變更/,'legacy concurrent edits must reject stale rewrites');
+  assert.equal(entry[field],'reef｜較新的編輯');assert.deepEqual(entry.vocabularyCandidates,[]);
+ }
+ beforeReply=()=>{};entry=structuredClone(originalEntry);entry.analyzedAt='2026-01-01T00:00:00Z';entry.estimatedCostUsd=100;
+ await rewriteEnglishImageLearningUsages('source-1',['reef']);
+ const {currentMonthEstimatedSpend}=await import(pathToFileURL(join(temp,'englishImage.mjs')));
+ assert.ok(currentMonthEstimatedSpend([entry])>0,'old material must charge the present month');
+ assert.equal(entry.estimatedCostUsd,100,'original analysis charge must retain its date');
+ const previousBudget=process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD;
+ process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD='0.000001';
+ let providerCalls=0;beforeReply=()=>{providerCalls++;};
+ await assert.rejects(()=>rewriteEnglishImageLearningUsages('source-1',['reef']),/預算/);assert.equal(providerCalls,0,'budget rejection must happen before AI work');
+ if(previousBudget===undefined)delete process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD;else process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD=previousBudget;
  beforeReply=()=>{};globalThis.fetch=originalFetch;entry=originalEntry;
  const params={id:'source-1',contractMode:'v2',projectMode:'create',materialTitle:'Dave the Diver',unitMode:'create',eventTitle:'Reef encounter',candidateKeys:[]};
  await exportEnglishImageContext(params);

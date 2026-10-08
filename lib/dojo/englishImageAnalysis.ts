@@ -2,7 +2,7 @@ import "server-only";
 
 import { englishImageAttachmentBytes, getEnglishImageEntry, listEnglishImageEntries, saveEnglishImageEntry, updateEnglishImageEntry, currentMonthEstimatedSpend } from "./englishImageStore";
 import type { EnglishImageEntry } from "./englishImage";
-import { englishImageVocabCandidates } from "./englishImageDispatch";
+import { candidateKey, englishImageVocabCandidates } from "./englishImageDispatch";
 import { LEARNING_USAGE_PROMPT, learningUsageIssues } from "./englishImageLearningUsage";
 
 const INPUT_USD_PER_MILLION = 0.2;
@@ -305,7 +305,7 @@ export async function rewriteEnglishImageLearningUsages(id: string, requestedKey
   const outputTokens = Number(tokenUsage?.output_tokens) || 0;
   // Account for successful provider work even if its output later fails validation.
   await updateEnglishImageEntry(id, current => ({ inputTokens: current.inputTokens + inputTokens, outputTokens: current.outputTokens + outputTokens,
-    estimatedCostUsd: current.estimatedCostUsd + inputTokens / 1_000_000 * INPUT_USD_PER_MILLION + outputTokens / 1_000_000 * OUTPUT_USD_PER_MILLION }));
+    learningUsageRewriteCosts: [...(current.learningUsageRewriteCosts || []), { spentAt: new Date().toISOString(), estimatedCostUsd: inputTokens / 1_000_000 * INPUT_USD_PER_MILLION + outputTokens / 1_000_000 * OUTPUT_USD_PER_MILLION }] }));
   const decoded = JSON.parse(outputText(payload)) as { items?: Array<{ key: string; sentence: string; translation: string; completeSentence: boolean; meaningMatches: boolean; translationMatches: boolean }> };
   const items = decoded.items || [];
   if (items.length !== keys.length || new Set(items.map(item => item.key)).size !== keys.length || items.some(item => !keys.includes(item.key))) throw new Error("重製結果未完整對應所選單字，未更新例句");
@@ -316,14 +316,14 @@ export async function rewriteEnglishImageLearningUsages(id: string, requestedKey
     if (issues.length) throw new Error(`${candidate.expression}：${issues.join("、")}；未更新例句，請重新製作`);
   }
   return updateEnglishImageEntry(id, current => {
-    if (current.ocrText !== entry.ocrText || current.contextNote !== entry.contextNote || JSON.stringify(current.vocabularyCandidates) !== JSON.stringify(entry.vocabularyCandidates) || keys.some(key => current.vocabForgeExports.some(item => item.key === key))) throw new Error("素材或候選已變更，未套用重製結果，請重新確認");
+    if (current.ocrText !== entry.ocrText || current.contextNote !== entry.contextNote || current.vocabularyWords !== entry.vocabularyWords || current.learningPhrases !== entry.learningPhrases || JSON.stringify(current.vocabularyCandidates) !== JSON.stringify(entry.vocabularyCandidates) || keys.some(key => current.vocabForgeExports.some(item => item.key === key))) throw new Error("素材或候選已變更，未套用重製結果，請重新確認");
     const originals = current.vocabularyCandidates.length ? current.vocabularyCandidates : candidates.map(candidate => ({
       expression: candidate.expression, meaning: candidate.meaning, usage: candidate.usage.sentence, usageTranslation: candidate.usage.translation,
       partOfSpeech: candidate.usage.partOfSpeech, usageProvenance: candidate.usage.provenance, cefrLevel: candidate.cefrLevel,
       suggestedFocusDecks: candidate.suggestedFocusDecks, origin: candidate.origin, recommendationReason: candidate.recommendationReason,
     }));
     const vocabularyCandidates = originals.map(candidate => {
-      const match = candidates.find(item => item.expression === candidate.expression);
+      const match = candidates.find(item => item.key === candidateKey(candidate.expression));
       const replacement = items.find(item => item.key === match?.key);
       return replacement ? { ...candidate, usage: replacement.sentence.trim(), usageTranslation: replacement.translation.trim(), usageProvenance: "generated" as const } : candidate;
     });
