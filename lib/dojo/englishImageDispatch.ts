@@ -32,14 +32,8 @@ export type VocabForgeBook = {
   countDefinition: "focus_deck_membership";
 };
 
-export const PERMANENT_FOCUS_DECKS = [
-  "日常啟動",
-  "按摩工作",
-  "JRPG／冒險遊戲",
-  "生活模擬遊戲",
-  "故事閱讀",
-  "影音口語",
-] as const;
+export { PERMANENT_FOCUS_DECKS } from "./englishImageRouting";
+import { PERMANENT_FOCUS_DECKS } from "./englishImageRouting";
 
 export function normalizeSourceName(value: string): string {
   const name = value.normalize("NFKC").trim().slice(0, 300);
@@ -359,8 +353,7 @@ export async function exportEnglishImageContext(params: {
     expressions: selected,
   });
   const retryLink = [...entry.contextRoomLinks].reverse().find((link) =>
-    link.status !== "synced" &&
-    `${link.targetProjectMode}:${link.projectId || link.projectTitle}|${link.targetUnitMode}:${link.unitId || link.unitTitle}` === targetSignature &&
+    `${link.targetProjectMode}:${link.targetProjectMode === "existing" ? link.projectId : link.projectTitle}|${link.targetUnitMode}:${link.targetUnitMode === "existing" ? link.unitId : link.unitTitle}` === targetSignature &&
     link.contentFingerprint === contentFingerprint &&
     link.requestFingerprint === calculateRequestFingerprint(requestForDispatch(link.dispatchId))
   );
