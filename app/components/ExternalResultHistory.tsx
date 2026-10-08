@@ -1,4 +1,5 @@
 "use client";
+import Link from "./PracticeRouteLink";
 import { useEffect, useState } from "react";
 import type { Receipt, Checkpoint } from "@/lib/dojo/externalResults/model";
 const origin = "https://lumen-context-room-production-4a2c.up.railway.app";
@@ -28,8 +29,10 @@ const availability = {
 };
 export default function ExternalResultHistory({
   recent = false,
+  onChanged,
 }: {
   recent?: boolean;
+  onChanged?: () => void;
 }) {
   const [cache, setCache] = useState<Cache | null>(null),
     [error, setError] = useState(""),
@@ -69,13 +72,15 @@ export default function ExternalResultHistory({
       });
       const j = await r.json();
       if (!r.ok) throw Error(j.code ?? "SOURCE_TEMPORARILY_UNAVAILABLE");
-      setCache(await read());
+      onChanged?.();
+      const refreshed = await read();
+      setCache(refreshed);
       setMessage(
         action === "retry"
-          ? "契約待確認，未建立事件、投影或確認 Notion。"
+          ? refreshed.contractStatus === "active" ? "已核對來源投影；同一 Session 保留原事件。" : "契約待確認，未建立事件、投影或確認 Notion。"
           : j.remaining
             ? "本頁已保存，尚有下一頁；請繼續同步。"
-            : "來源查核已保存；待確認項不計入完成次數。",
+            : refreshed.contractStatus === "active" ? `來源成果已保存；本次新增 ${j.counted ?? 0} 次。待核對項不計入。` : "來源查核已保存；待確認項不計入完成次數。",
       );
     } catch (e) {
       const code = e instanceof Error ? e.message : "";
@@ -115,7 +120,7 @@ export default function ExternalResultHistory({
   return (
     <section className="external-result-history" aria-label="外部修習來源">
       <h3>外部修習來源</h3>
-      <p>來源收據待事件契約核准，不列入完成次數。VF：尚未接入。</p>
+      <p>{cache?.contractStatus === "active" ? "來源成果由同一 Session 更新原事件。" : "來源收據待事件契約核准，不列入完成次數。"}VF：尚未接入。</p>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       {!cache && !error && <p>讀取已保存的來源快取…</p>}
@@ -144,6 +149,7 @@ export default function ExternalResultHistory({
               完整來源對帳
             </button>
           </div>
+          <p>已載入來源：{cache.receipts.length} 筆；已接收 {cache.receipts.filter(r => r.acceptance === "accepted").length} 筆（此載入範圍，非全站總數）。</p>
           {!cache.receipts.length && (
             <p>尚無來源快取；這不表示沒有完成過修習。</p>
           )}
@@ -158,10 +164,10 @@ export default function ExternalResultHistory({
                 <h4>語境修習室・{modes[s.activityMode] ?? "未支援模式"}</h4>
                 <p>
                   {completions[s.completionStatus]} ·{" "}
-                  {availability[s.sourceAvailability]} · 待核對
+                  {availability[s.sourceAvailability]} · {({accepted:"已接收",needs_review:"待核對",withdrawn:"已撤回",unverified:"證據不足"})[r.acceptance]}
                 </p>
                 <p>
-                  來源原日期：{s.practicedOn ?? "未知"}；保存／匯入時間：
+                  來源原日期：{s.practicedOn ?? "來源日期未知"}；保存／匯入時間：
                   {s.occurredAt ?? "未知"}
                 </p>
                 <p>
@@ -187,9 +193,10 @@ export default function ExternalResultHistory({
                     : `修訂內容 ${s.summary.secondDone ? "已完成" : "不足"}`}
                 </p>
                 <p>
-                  學科待連結 · 週盤未連結 · 光步／正文投影未啟用 · Notion{" "}
-                  {r.aliases.length ? "待契約確認；不新增 ack" : "不適用"}
+                  尚未連結學科 · 週盤未連結 · 光步未連結 · 正文{r.projections.record === "applied" ? "已保存" : r.projections.record === "needs_retry" ? "待重試" : "待處理"} · Notion{" "}
+                  {r.aliases.length ? "保留既有確認；不新增 ack" : "不適用"}
                 </p>
+                {r.legacyUnidentified && <p>舊收據缺少穩定來源 ID，需核對後才能計次。</p>}
                 {r.legacyReceipts.length > 0 && (
                   <p>
                     已有 {r.legacyReceipts.length}{" "}
@@ -208,6 +215,7 @@ export default function ExternalResultHistory({
                     返回來源工作台（需要登入）
                   </a>
                 )}
+                {r.learningRecordId && /^[a-f0-9-]{36}$/.test(r.learningRecordId) && <Link href={`/practice/records?record=${r.learningRecordId}`}>查看歷程</Link>}
                 <button
                   disabled={busy}
                   onClick={() => void action("retry", r.id)}

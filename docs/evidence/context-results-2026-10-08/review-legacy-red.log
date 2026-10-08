@@ -1,0 +1,39 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:external-results
+> node scripts/test-external-results.mjs
+
+AssertionError [ERR_ASSERTION]: new revision must preserve unidentified legacy guard
+
+1 !== 0
+
+    at main (/tmp/r25c-MrcBdF/tests/external-results.test.js:235:22) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+node:internal/errors:985
+  const err = new Error(message);
+              ^
+
+Error: Command failed: node /tmp/r25c-MrcBdF/tests/external-results.test.js
+    at genericNodeError (node:internal/errors:985:15)
+    at wrappedFn (node:internal/errors:539:14)
+    at checkExecSyncError (node:child_process:942:11)
+    at execFileSync (node:child_process:978:15)
+    at file:///workspace/scratch/3c8ef09c40b7/dojo-routing/scripts/test-external-results.mjs:24:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 35,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v24.19.0

@@ -1,0 +1,11 @@
+READY isolated UI server 3022
+PASS 375px home/resume/save/refresh/keyboard/reduced viewport
+PASS 390px home/resume/save/refresh/keyboard/reduced viewport
+PASS 430px home/resume/save/refresh/keyboard/reduced viewport
+PASS legacy date/source/return workspace and refresh
+PASS nine disciplines, no default English, empty path starts real record
+PASS body has no unsaved checkboxes, intention/spirit/history distinct, unavailable VF explicit
+PASS completed deep link and source read do not auto-create
+PASS unsaved link/browser back cancellation, failed save retains draft, successful save releases guard
+PASS real auth rejection, login date retention, explicit service errors; zero external requests/runtime errors
+Screenshots: /tmp/r2-2-ui

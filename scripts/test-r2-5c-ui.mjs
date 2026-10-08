@@ -9,7 +9,9 @@ await mkdir(output, { recursive: true });
 let browser;
 let mutations = 0,
   connected = false,
-  offline = false;
+  offline = false,
+  active = false,
+  completion = "completed";
 let receipts = [];
 const id = "00000000-0000-4000-8000-000000000001";
 const fixture = {
@@ -55,7 +57,7 @@ const fixture = {
   },
 };
 try {
-  browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}), args: ["--no-sandbox"] });
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true,
@@ -79,9 +81,9 @@ try {
     if (u.pathname === "/api/dojo/learning/foundation")
       body = { entities: [], missing: [] };
     else if (u.pathname === "/api/dojo/learning/records")
-      body = { records: [], cursor: null };
+      body = { records: active ? [{id:"00000000-0000-4000-8000-000000000010",title:"語境回流正文",whatIDid:"語境修習摘要",practicedOn:null,status:"completed",learningItemIds:[]}] : [], cursor: null };
     else if (u.pathname === "/api/dojo/practice-events")
-      body = { events: [], cursor: null };
+      body = { events: active ? [{id:"b".repeat(64),sourceSystem:"context-room",completionStatus:completion,sourceAvailability:"available",practicedOn:null,occurredAt:null,quantity:1,unit:"次",learningItemIds:[],learningRecordId:"00000000-0000-4000-8000-000000000010",projectionStatus:"applied",projections:{record:"applied",output:"unlinked",weekly:"unlinked"}}] : [], cursor: null };
     else if (u.pathname === "/api/dojo/external-results") {
       if (req.method() === "POST") {
         mutations++;
@@ -96,14 +98,14 @@ try {
         } else if (b.action === "retry")
           body = { outcome: "CONTRACT_PENDING_NO_PROJECTION" };
         else {
-          receipts = [fixture];
+          if(!active) receipts = [fixture];
           body = { remaining: false, counted: 0 };
         }
       } else
         body = {
           receipts,
           cursor: null,
-          contractStatus: "pending",
+          contractStatus: active ? "active" : "pending",
           sources: {
             contextRoom: connected ? "configured" : "not_connected",
             vocabForge: "not_connected",
@@ -147,6 +149,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   for (const width of [375, 390, 430]) {
+    active = false;completion="completed";
     connected = false;
     receipts = [];
     offline = false;
@@ -214,6 +217,21 @@ try {
     await page.goBack();
     await panel.getByText(/快速重說不強制 Second Take/).waitFor();
     assert.equal(mutations, count + 3);
+    active=true;offline=false;
+    receipts=[{...fixture,eventId:"b".repeat(64),learningRecordId:"00000000-0000-4000-8000-000000000010",acceptance:"accepted",source:{...fixture.source,practicedOn:null},projections:{...fixture.projections,record:"applied"}}];
+    const savedMutations=mutations;
+    await panel.getByRole("button",{name:"刷新來源成果"}).click();
+    await page.getByText(/已載入有效完成：1 次／1 筆事件/).waitFor();
+    await page.getByRole("link",{name:"語境回流正文",exact:true}).waitFor();
+    await panel.getByText("已接收",{exact:false}).first().waitFor();
+    await panel.getByText(/來源日期未知/).waitFor();
+    assert.equal(await panel.getByRole("link",{name:"查看歷程"}).getAttribute("href"),"/practice/records?record=00000000-0000-4000-8000-000000000010");
+    assert.equal(mutations,savedMutations+1);
+    assert.equal(await panel.locator("article").count(),1);
+    completion="withdrawn";receipts=receipts.map(r=>({...r,acceptance:"withdrawn",source:{...r.source,completionStatus:"withdrawn"}}));
+    await panel.getByRole("button",{name:"刷新來源成果"}).click();
+    await page.getByText(/已載入有效完成：0 次／1 筆事件/).waitFor();
+
   }
   assert.deepEqual(errors, []);
   console.log(

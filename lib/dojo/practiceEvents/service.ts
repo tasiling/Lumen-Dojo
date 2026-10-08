@@ -87,4 +87,11 @@ export function eventService(repo: EventRepository) {
     },
   };
 }
-export function eventBody(event: CompletionEvent): LearningRecord { if(!event.evidence) throw new LearningError("正文已投影，請讀取 learningRecordId；不得重建",409); return { ...event.evidence, id: event.learningRecordId, owner: event.owner, recordType: "learning-record/v1", revision: 1, createdAt: event.createdAt, updatedAt: event.createdAt }; }
+export function contextBodyMetadata(record:LearningRecord,event:ContextEvent):LearningRecord {
+  return {...record,sourceRevision:event.sourceRevision,sourceCompletionStatus:event.completionStatus,sourceAvailability:event.sourceAvailability,dateSemantics:event.dateSemantics,sourceRefs:record.sourceRefs.map(ref=>ref.type === "context" && ref.id === event.sourceId ? {...ref,url:event.sourceMetadata.sourceLocation ?? undefined,status:event.sourceAvailability === "deleted" ? "missing" : event.sourceAvailability}:ref)};
+}
+export function eventBody(event: CompletionEvent): LearningRecord {
+  if(!event.evidence) throw new LearningError("正文已投影，請讀取 learningRecordId；不得重建",409);
+  const record:LearningRecord={...event.evidence,id:event.learningRecordId,owner:event.owner,recordType:"learning-record/v1",revision:1,createdAt:event.createdAt,updatedAt:event.createdAt};
+  return event.sourceSystem === "context-room" ? contextBodyMetadata(record,event) : record;
+}

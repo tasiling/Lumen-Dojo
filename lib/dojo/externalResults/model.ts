@@ -2,6 +2,7 @@ import type { ProjectionState } from "../practiceEvents/model";
 import { LearningError } from "../learningFoundation/model";
 import { sourceIdentity } from "../practiceEvents/service";
 import { validDate } from "../learningRecords/model";
+export const LEGACY_SCAN_VERSION = 1;
 export const CONTRACT = "context-room-practice-results/v1";
 export const RECEIPT_PREFIX = "行光外部來源收據-";
 export const CHECKPOINT_PREFIX = "行光外部來源游標-";
@@ -255,6 +256,7 @@ export type Receipt = {
   learningRecordId?: string | null;
   legacyCursor?: string | null;
   legacyUnidentified?: boolean;
+  legacyScanVersion?: number;
   acceptance: "needs_review" | "accepted" | "withdrawn" | "unverified";
   reasons: string[];
   receivedAt: string;
@@ -358,6 +360,9 @@ export function mergeReceipt(
     aliases: previous?.aliases ?? [],
     legacyReceipts,
     legacyLookupComplete,
+    legacyCursor: previous?.legacyCursor ?? null,
+    legacyUnidentified: previous?.legacyUnidentified,
+    legacyScanVersion: previous?.legacyScanVersion,
     projections: {
       record: "blocked",
       lightStep: "blocked",
@@ -379,4 +384,5 @@ export type Checkpoint = {
   errorCode: string | null;
   // Confirmed source snapshots within the current page; not a source cursor.
   pageReceipts?: string[];
+  acceptanceVersion?: 1;
 };

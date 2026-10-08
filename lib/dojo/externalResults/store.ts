@@ -189,6 +189,7 @@ function publicReceipt(row: Receipt): Receipt {
     learningRecordId:row.learningRecordId??null,
     legacyCursor:row.legacyCursor??null,
     legacyUnidentified:!!row.legacyUnidentified,
+    legacyScanVersion:row.legacyScanVersion,
     acceptance: row.acceptance,
     reasons: row.reasons.filter(
       (x) => typeof x === "string" && /^[A-Z0-9_]+$/.test(x),

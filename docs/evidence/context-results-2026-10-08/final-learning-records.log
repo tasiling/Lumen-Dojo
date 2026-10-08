@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:learning-records
+> node scripts/test-learning-records.mjs
+
+PASS Learning Record: create, complete, one-body multi-subject, stable refs, archive/restore, auth, stale, 181-row pagination, read-only GET service

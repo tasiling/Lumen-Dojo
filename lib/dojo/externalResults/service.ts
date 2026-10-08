@@ -1,5 +1,6 @@
 import {
   BridgeError,
+  LEGACY_SCAN_VERSION,
   EPOCH,
   mergeReceipt,
   receiptIdentity,
@@ -63,6 +64,12 @@ export function bridgeService(
         connection: "ready",
         errorCode: null,
       };
+      // Pre-admission checkpoints only acknowledged cached facts. A one-time
+      // bounded full replay must prove event/body admission under this contract.
+      if(repo.acceptSource && repo.retrySource && prior?.acceptanceVersion !== 1) {
+        checkpoint={...checkpoint,acceptanceVersion:1,after:EPOCH,cursor:null,windowUpper:null,pageReceipts:[],reconciling:true};
+        await repo.saveCheckpoint(checkpoint);
+      }
       // Never abandon an interrupted full reconciliation. Incremental refresh also
       // starts full reconciliation every seven days; absences never mean deletion.
       if (!checkpoint.cursor && (full || due)) {
@@ -114,7 +121,8 @@ export function bridgeService(
           throw new BridgeError("SYNC_PAUSED_REPLAY_PAGE", 503);
         const id = receiptIdentity(repo.owner, source.sourceId),
           previous = await repo.read(id);
-        const foundLegacy = previous?.legacyLookupComplete ? [] : await repo.legacy(source.sourceId,previous?.legacyCursor);
+        const verifiedLegacy = previous?.legacyLookupComplete && previous.legacyScanVersion === LEGACY_SCAN_VERSION && typeof previous.legacyUnidentified === "boolean";
+        const foundLegacy = verifiedLegacy ? [] : await repo.legacy(source.sourceId,previous?.legacyScanVersion === LEGACY_SCAN_VERSION ? previous.legacyCursor : null);
         const legacy = Array.isArray(foundLegacy)
           ? { receipts: foundLegacy, complete: true }
           : foundLegacy;
@@ -126,12 +134,13 @@ export function bridgeService(
           legacy.receipts,
           legacy.complete,
         );
-        if(!previous?.legacyLookupComplete) {
+        if(!verifiedLegacy) {
           const entries=[...(previous?.legacyReceipts??[]),...legacy.receipts];
-          row={...row,legacyLookupComplete:legacy.complete,legacyCursor:"cursor" in legacy ? legacy.cursor??null:null,legacyUnidentified:previous?.legacyUnidentified || ("unidentified" in legacy && legacy.unidentified) || false,legacyReceipts:[...new Map(entries.map(x=>[x.pageId,x])).values()]};
+          row={...row,legacyScanVersion:LEGACY_SCAN_VERSION,legacyLookupComplete:legacy.complete,legacyCursor:"cursor" in legacy ? legacy.cursor??null:null,legacyUnidentified:previous?.legacyUnidentified || ("unidentified" in legacy && legacy.unidentified) || false,legacyReceipts:[...new Map(entries.map(x=>[x.pageId,x])).values()]};
           if(row.legacyUnidentified && !row.reasons.includes("LEGACY_SOURCE_ID_UNKNOWN")) row.reasons.push("LEGACY_SOURCE_ID_UNKNOWN");
           if(legacy.complete) row.reasons=row.reasons.filter(x=>x!=="LEGACY_SCAN_INCOMPLETE");
         }
+        if(row.legacyUnidentified && !row.reasons.includes("LEGACY_SOURCE_ID_UNKNOWN")) row.reasons.push("LEGACY_SOURCE_ID_UNKNOWN");
         if (!previous || JSON.stringify(row) !== JSON.stringify(previous)) await repo.save(row);
         if(repo.acceptSource && repo.retrySource) {
           if(!row.legacyLookupComplete) throw new BridgeError("LEGACY_SCAN_PENDING",503);
@@ -208,7 +217,7 @@ export function bridgeService(
       const row = await repo.read(id);
       if (!row) throw new BridgeError("SOURCE_RECEIPT_MISSING", 404);
       owned(row);
-      if(repo.acceptSource && repo.retrySource && row.legacyLookupComplete && !row.legacyReceipts.length && !row.legacyUnidentified) {
+      if(repo.acceptSource && repo.retrySource && row.legacyLookupComplete && row.legacyScanVersion === LEGACY_SCAN_VERSION && row.legacyUnidentified === false && !row.legacyReceipts.length) {
         const accepted=await repo.acceptSource(row.source);
         const event=accepted.event ? await repo.retrySource(accepted.event.id):null;
         const next:Receipt={...row,eventId:event?.id??null,learningRecordId:event?.learningRecordId??null,acceptance:row.source.completionStatus !== "completed" ? row.source.completionStatus : event?.projections.record === "applied" ? "accepted":"needs_review",projections:{...row.projections,record:event?.projections.record??"blocked"}};

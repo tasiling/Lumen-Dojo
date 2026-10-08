@@ -30,6 +30,7 @@ async function main() {
   const edited = await service.edit(external.id, external.revision, { myUnderstanding: "保留自己的筆記", sourceRefs: [] });
   assert.equal(edited.practicedOn, null); assert.equal(edited.primaryLearningItemId, null);
   assert.equal(edited.myUnderstanding, "保留自己的筆記"); assert.deepEqual(edited.sourceRefs, external.sourceRefs);
+  await assert.rejects(service.edit(edited.id, edited.revision, { recordedOn: "2026-10-08" }), /保存日期/);
   await assert.rejects(service.edit(edited.id, edited.revision, { practicedOn: "2026-10-08" }), /來源日期/);
   await assert.rejects(service.create({ originEventId: "forged", practicedOn: null, learningItemIds: [], whatIDid: "偽造" }), /日期|學科/);
   console.log("PASS Learning Record: create, complete, one-body multi-subject, stable refs, archive/restore, auth, stale, 181-row pagination, read-only GET service");

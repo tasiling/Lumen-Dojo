@@ -1,0 +1,47 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:r2-3-ui
+> node scripts/test-r2-3-ui.mjs
+
+READY isolated UI server 3023
+UI 375: create + refresh + edit + archive + guard
+list url http://127.0.0.1:3023/practice/records?learningItem=10000000-0000-4000-8000-000000000001
+failure URL http://127.0.0.1:3023/practice/records?learningItem=10000000-0000-4000-8000-000000000001
+‹ 返回學科工作空間
+學習歷程
+最近修習歷程
+
+紀錄完成代表正文寫完，不表示能力已掌握。
+
+＋ 留下學習紀錄
+狀態
+全部
+草稿
+完成紀錄
+封存
+階段
+全部
+主題
+全部
+
+讀取歷程中…
+
+實際完成事件
+
+完成一次活動，不表示能力已學成。
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('link', { name: /本次真正學習內容/ }).first() to be visible[22m
+
+    at /workspace/scratch/3c8ef09c40b7/dojo-routing/scripts/test-r2-3-ui.mjs:38:528 {
+  log: [
+    "  - waiting for getByRole('link', { name: /本次真正學習內容/ }).first() to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

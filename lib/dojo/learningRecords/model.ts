@@ -20,6 +20,7 @@ export function validDate(value: unknown): value is string {
 export function recordInput(input: Record<string, unknown>, graph: LearningEntity[], previous?: LearningRecord): Omit<LearningRecord, "id" | "owner" | "recordType" | "createdAt" | "updatedAt" | "revision"> {
   const merged = { ...previous, ...input };
   const external = !!previous?.originEventId;
+  if (external && merged.recordedOn !== previous.recordedOn) throw new LearningError("來源正文保存日期不可改寫",409);
   if (external && merged.practicedOn !== previous.practicedOn) throw new LearningError("來源日期不可由筆記編輯改寫", 409);
   if ((!(external && merged.practicedOn === null) && !validDate(merged.practicedOn)) || !validDate(merged.recordedOn ?? merged.practicedOn)) throw new LearningError("日期不正確");
   const ids = merged.learningItemIds;
@@ -65,3 +66,6 @@ export function recordInput(input: Record<string, unknown>, graph: LearningEntit
   if (!Array.isArray(tags) || tags.length > 30 || tags.some(t => typeof t !== "string" || t.length > 100)) throw new LearningError("標籤格式不正確");
   return { ...fields, status: status as LearningRecord["status"], practicedOn: merged.practicedOn as string | null, recordedOn: (merged.recordedOn ?? merged.practicedOn) as string, learningItemIds, primaryLearningItemId: primary, learningStageId: stage, learningTopicId: topic, sourceRefs: refs, tags };
 }
+
+// Stable undated group sorts after dated history; this token is not a date.
+export function recordStorageTitle(r: Pick<LearningRecord,"id"|"practicedOn">) { return `${RECORD_PREFIX}${r.practicedOn ?? "0-undated"}:${r.id}`; }

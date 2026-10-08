@@ -1,0 +1,20 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:unit-arrangement
+> node scripts/test-unit-arrangement.mjs && node scripts/test-unit-arrangement-contract.mjs && node scripts/test-unit-arrangement-completed-retry.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+✔ parses marker plus strict ASCII JSON (1.177841ms)
+✔ normalizes delimiter smart quotes without corrupting typographic quotes in content (0.504811ms)
+✔ rejects malformed JSON, unknown fields and unselected sources (0.866283ms)
+✔ requires every selected source to be grouped or explicitly pending (0.172954ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8.014877
+unit arrangement contract checks passed
+completed unit arrangement retry checks passed

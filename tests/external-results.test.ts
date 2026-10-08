@@ -307,6 +307,20 @@ async function main() {
   assert.equal(eventRows.size,1);assert.equal(bodyRows.size,1);
   assert.equal([...rowMap.values()][0].acceptance,"accepted");
   assert.equal((await connected.sync(true)).counted,0,"same snapshot must not count twice");
+  // Independent acknowledged-write failures must replay event/body identity.
+  for(const failure of ["receipt","checkpoint"] as const) {
+    checkpoint=null;rowMap.clear();eventRows.clear();bodyRows.clear();
+    let rejectOnce=true;
+    const recovering={...connectedRepo,
+      save:async(row:ReturnType<typeof mergeReceipt>)=>{if(failure === "receipt" && rejectOnce && bodyRows.size===1){rejectOnce=false;throw Error("confirmed receipt rejection");}await repo.save(row);},
+      saveCheckpoint:async(c:Checkpoint)=>{if(failure === "checkpoint" && rejectOnce && bodyRows.size===1){rejectOnce=false;throw Error("confirmed checkpoint rejection");}await repo.saveCheckpoint(c);},
+    };
+    await assert.rejects(bridgeService(recovering,adapter,()=>"2026-10-06T03:00:00Z").sync(true),/confirmed/);
+    assert.equal(eventRows.size,1);assert.equal(bodyRows.size,1);
+    await bridgeService(recovering,adapter,()=>"2026-10-06T03:00:00Z").sync(true);
+    assert.equal(eventRows.size,1);assert.equal(bodyRows.size,1);
+    assert.equal([...rowMap.values()][0].acceptance,"accepted");
+  }
   checkpoint=null;rowMap.clear();eventRows.clear();bodyRows.clear();
   let legacyCalls=0;
   const pagedRepo={...connectedRepo,legacy:async(_id:string,cursor?:string|null)=>{
@@ -322,6 +336,21 @@ async function main() {
   const unknownLegacy={...connectedRepo,legacy:async()=>({receipts:[],complete:true,unidentified:true})};
   await bridgeService(unknownLegacy,adapter).sync(true);
   assert.equal(eventRows.size,0,"unidentified legacy must not be guessed or counted");
+  page.results=[validateResult(result({sourceRevision:"legacy:newer",updatedAt:"2026-10-06T01:00:00.000002Z"}),"https://fixture.invalid")];
+  await bridgeService(unknownLegacy,adapter).sync(true);
+  assert.equal(eventRows.size,0,"new revision must preserve unidentified legacy guard");
+  page.results=[r];
+
+  checkpoint=null;rowMap.clear();
+  checkpoint=null;rowMap.clear();eventRows.clear();bodyRows.clear();
+  rowMap.set(receiptIdentity(repo.owner,r.sourceId),mergeReceipt(null,r,repo.owner,"2026-10-06T03:00:00Z",[],true));
+  checkpoint={schema:"external-source-checkpoint/v1",owner:repo.owner,after:page.windowUpper,cursor:null,windowUpper:null,reconciling:false,lastSuccessAt:"2026-10-06T03:00:00Z",lastReconciledAt:"2026-10-06T03:00:00Z",connection:"ready",errorCode:null,pageReceipts:["old-cache-confirmation"]};
+  let upgradeAfter="";
+  let oldScanCalls=0;
+  await bridgeService({...connectedRepo,legacy:async()=>{oldScanCalls++;return {receipts:[],complete:true,unidentified:true};}},{...adapter,page:async(after:string)=>{upgradeAfter=after;return adapter.page();}},()=>"2026-10-06T03:00:00Z").sync(false);
+  assert.equal(upgradeAfter,"1970-01-01T00:00:00.000Z","pre-contract checkpoint needs bounded admission replay");
+  assert.equal(oldScanCalls,1,"old completed receipt requires versioned legacy scan proof");
+  assert.equal(eventRows.size,0);
   checkpoint=null;rowMap.clear();
   const service = bridgeService(repo, adapter, () => "2026-10-06T03:00:00Z");
   await service.sync(false);

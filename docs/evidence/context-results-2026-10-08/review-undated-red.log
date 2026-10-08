@@ -1,0 +1,23 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:r2-5c-api
+> node scripts/test-r2-5c-api.mjs
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^行光學習正文-0-undated:/. Input:
+
+'行光學習正文-unknown:384dcfb6-4b7c-4d4f-aa84-5ce5dead6960'
+
+    at file:///workspace/scratch/3c8ef09c40b7/dojo-routing/scripts/test-r2-5c-api.mjs:414:30 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '行光學習正文-unknown:384dcfb6-4b7c-4d4f-aa84-5ce5dead6960',
+  expected: /^行光學習正文-0-undated:/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

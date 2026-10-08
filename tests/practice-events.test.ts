@@ -56,6 +56,13 @@ async function main() {
  await assert.rejects(contextApi.updateContext({ ...contextInput, sourceRevision: "4", updatedAt: "2026-10-09T01:00:00.000001Z", practicedOn: "2026-10-05" }), /日期/);
  const nextContext = await contextApi.acceptContext({ ...contextInput, sourceId: "00000000-0000-4000-8000-000000000002", sourceLocation: "https://lumen-context-room-production-4a2c.up.railway.app/practice-results/00000000-0000-4000-8000-000000000002" });
  assert.notEqual(nextContext.id, contextEvent.id);
+ await contextApi.updateContext({...contextInput,sourceId:nextContext.sourceId,sourceRevision:"deleted-v2",updatedAt:"2026-10-07T01:00:00.000001Z",completionStatus:"withdrawn",sourceAvailability:"deleted",sourceLocation:null});
+ await service.retry(nextContext.id);
+ const lateBody=bodies.get(nextContext.learningRecordId);
+ assert.equal(lateBody.sourceRevision,"deleted-v2","first body must use current event source metadata");
+ assert.equal(lateBody.sourceCompletionStatus,"withdrawn");assert.equal(lateBody.sourceAvailability,"deleted");
+ assert.equal(lateBody.sourceRefs[0].url,undefined);assert.equal(lateBody.sourceRefs[0].status,"missing");
+
  // Keep original journal count assertions scoped to journals.
  events.clear(); bodies.clear(); creates=0; bodyWrites=0;
  const event = await service.accept(input); assert.equal(creates,1);

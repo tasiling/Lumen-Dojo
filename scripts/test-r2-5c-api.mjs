@@ -404,12 +404,16 @@ try {
   assert.equal(cached.body.receipts.length, 1);
   assert.equal(cached.body.receipts[0].aliases.length, 1);
   const secondId = "00000000-0000-4000-8000-000000000002";
-  remoteResults = [raw(), raw(secondId)];
+  remoteResults = [raw(), raw(secondId,{practicedOn:null,occurredAt:null})];
   await post({ action: "reconcile" });
   cached = await payload(
     await api.GET(request("GET", "/api/dojo/external-results")),
   );
   assert.equal(cached.body.receipts.length, 2);
+  const undated=[...rows.values()].find(r=>r.value.originEventId && r.value.practicedOn === null);
+  assert.ok(undated); assert.match(undated.title,/^行光學習正文-0-undated:/);
+  const firstHistory=await load("lib/dojo/learningRecords/store.ts").learningRecords.list({limit:1});
+  assert.equal(firstHistory.records[0].practicedOn,"2026-09-20","undated source must not displace dated history");
   // New source revision carries status/current context only; body is untouched.
   rows.set("local-body", {
     id: "local-body",
@@ -550,7 +554,7 @@ try {
   assert.equal((await post({ action: "sync" })).status, 409);
   assert.equal(writes, blocked);
   console.log(
-    "PASS R2-5C actual handler + store + writer/intent using disk-backed isolated Notion transport fixture: owner/origin, no source claims, API/Notion UUID dedup across restart, no counts/ack while pending, cache GET no writes/no fetch/private text, new session, opaque newer/older revisions, local body preserved, archived/deleted/withdrawn vs 503/empty, ambiguous create retains mutex/intent. Real cross-site integration SKIPPED.",
+    "PASS R2-5C actual handler + store + writer/intent using disk-backed isolated Notion transport fixture: owner/origin, no source claims, API/Notion UUID dedup across restart, single accepted event/body, versioned legacy guard/no ack, cache GET no writes/no fetch/private text, new session, opaque newer/older revisions, local notes preserved, undated history placement, archived/deleted/withdrawn vs 503/empty, ambiguous create retains mutex/intent. Real cross-site integration SKIPPED.",
   );
 } finally {
   globalThis.fetch = savedFetch;
