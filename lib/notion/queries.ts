@@ -623,6 +623,7 @@ export async function findKnowledgeEntryByTitle(title: string) {
     property: "標題",
     title: { equals: title },
   });
+  if (pages.length > 1) throw new Error("同名知識庫紀錄重複，請核對；不選第一筆覆寫");
   return pages[0] ? mapKnowledge(pages[0]) : null;
 }
 

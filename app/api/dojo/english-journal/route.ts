@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   DAILY_TITLE_PREFIX,
-  bingoRecordTitle,
-  mondayOf,
   normalizeDailyRecord,
-  normalizeWeeklyBoard,
   taipeiTodayISO,
+  mondayOf,
 } from "@/lib/dojo/formal";
 import {
   ENGLISH_JOURNAL_TITLE_PREFIX,
@@ -17,7 +15,13 @@ import {
   type EnglishJournalPractice,
 } from "@/lib/dojo/englishJournal";
 import { formatDailyJournalText } from "@/lib/dojo/journalExport";
-import { syncLearningActivity } from "@/lib/dojo/learningStore";
+import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
+import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
+import { LearningError } from "@/lib/dojo/learningFoundation/model";
+import { learningFoundation } from "@/lib/dojo/learningFoundation/store";
+import { practiceEvents } from "@/lib/dojo/practiceEvents/store";
+import { journalCompletions } from "@/lib/dojo/practiceEvents/journal";
+import type { CompletionEvent, TargetBinding } from "@/lib/dojo/practiceEvents/model";
 import {
   archiveJsonRecordById,
   listJsonRecords,
@@ -44,48 +48,6 @@ async function sourceForDate(date: string): Promise<string> {
   const record = normalizeDailyRecord(row.value, date);
   const source = formatDailyJournalText({ date, record, mode: "review" });
   return isUsefulSource(source) ? source : "";
-}
-
-async function completeWeeklyJournalCell(practice: EnglishJournalPractice, segmentId: string): Promise<boolean> {
-  const weekStart = mondayOf(taipeiTodayISO());
-  const row = await readJsonRecord(bingoRecordTitle(weekStart));
-  if (!row) return false;
-  const board = normalizeWeeklyBoard(row.value, weekStart);
-  const journalKeys = new Set(["journal-translation", "journal-translation-1", "journal-translation-2"]);
-  const available = board.cells.filter((cell) =>
-    cell.learning?.trackKey === "english" && journalKeys.has(cell.learning.templateKey)
-  );
-  if (available.length === 0) return false;
-  const segment = practice.segments.find((item) => item.id === segmentId);
-  if (!segment?.completedAt) return false;
-  const completedAt = segment.completedAt;
-  let remaining = 1;
-  const changed: typeof board.cells = [];
-  const cells = board.cells.map((cell) => {
-    if (remaining <= 0 || cell.completed || cell.learning?.trackKey !== "english" || !journalKeys.has(cell.learning.templateKey)) return cell;
-    remaining -= 1;
-    const completedCell = {
-      ...cell,
-      completion: { ...cell.completion, progress: cell.completion.target },
-      evidenceNote: `英文自譯工作台・${practice.date}・${segment.label}`,
-      completed: true,
-      completedAt,
-    };
-    changed.push(completedCell);
-    return completedCell;
-  });
-  if (changed.length === 0) {
-    await Promise.all(available.filter((cell) => cell.completed).map((cell) => syncLearningActivity({ weekStart, cell })));
-    return false;
-  }
-  const updatedBoard = {
-    ...board,
-    cells,
-    updatedAt: new Date().toISOString(),
-  };
-  await upsertJsonRecord(bingoRecordTitle(weekStart), updatedBoard);
-  await Promise.all(changed.map((cell) => syncLearningActivity({ weekStart, cell })));
-  return true;
 }
 
 function joinField(left: string, right: string): string {
@@ -153,7 +115,8 @@ function applyStructureChange(practice: EnglishJournalPractice, structure: unkno
   return practice;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  try { requireLearningOwner(req); } catch(e) { return failure(e); }
   try {
     const [practiceRows, dailyRows] = await Promise.all([
       listJsonRecords(ENGLISH_JOURNAL_TITLE_PREFIX),
@@ -183,11 +146,11 @@ export async function GET() {
       .slice(0, 30);
     return NextResponse.json({ practices, sources });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
-export async function POST(req: NextRequest) {
+async function postUnlocked(req: NextRequest) {
   try {
     const body = await req.json();
     const date = typeof body.date === "string" && DATE_RE.test(body.date) ? body.date : "";
@@ -203,14 +166,14 @@ export async function POST(req: NextRequest) {
     const sourceText = suppliedSource || await sourceForDate(date);
     if (!sourceText) return NextResponse.json({ error: "這一天還沒有可供自譯的日記內容" }, { status: 400 });
     const practice = emptyEnglishJournalPractice(date, sourceText);
-    await upsertJsonRecord(title, practice);
-    return NextResponse.json({ ok: true, practice, created: true }, { status: 201 });
+    const saved = await upsertJsonRecord(title, practice);
+    return NextResponse.json({ ok: true, practice: normalizeEnglishJournalPractice(saved.value, date), created: true }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function patchUnlocked(req: NextRequest) {
   try {
     const body = await req.json();
     const date = typeof body.date === "string" && DATE_RE.test(body.date) ? body.date : "";
@@ -220,6 +183,7 @@ export async function PATCH(req: NextRequest) {
     if (!row) return NextResponse.json({ error: "找不到這篇英文練習" }, { status: 404 });
     const previous = normalizeEnglishJournalPractice(row.value, date);
     if (!previous) return NextResponse.json({ error: "英文練習內容無法讀取" }, { status: 409 });
+    if(body.revision !== previous.revision) throw new LearningError("英文練習版本已變更，請重新讀取後再保存", 409);
     const structuredPrevious = applyStructureChange(previous, body.structure);
     const incoming = body.practice && typeof body.practice === "object" ? body.practice : {};
     const incomingSegments = Array.isArray((incoming as { segments?: unknown }).segments)
@@ -264,9 +228,7 @@ export async function PATCH(req: NextRequest) {
         }, date)
       : merged;
     const completeSegmentId = typeof body.completeSegmentId === "string" ? body.completeSegmentId : null;
-    const wasAlreadyCompleted = completeSegmentId
-      ? Boolean(previous.segments.find((segment) => segment.id === completeSegmentId)?.completedAt)
-      : false;
+
     if (candidate && completeSegmentId) {
       const target = candidate.segments.find((segment) => segment.id === completeSegmentId);
       if (!target) return NextResponse.json({ error: "找不到要完成的段落" }, { status: 404 });
@@ -286,17 +248,29 @@ export async function PATCH(req: NextRequest) {
     if (requestedComplete && !canCompleteEnglishJournal(candidate)) {
       return NextResponse.json({ error: "每個未略過的段落都需要英文初稿，以及 AI 修正版或自己的定稿" }, { status: 400 });
     }
-    await upsertJsonRecord(title, candidate);
-    const weeklySynced = candidate && completeSegmentId && !wasAlreadyCompleted
-      ? await completeWeeklyJournalCell(candidate, completeSegmentId)
-      : false;
-    return NextResponse.json({ ok: true, practice: candidate, weeklySynced });
+    let binding: TargetBinding | null = null;
+    if (body.binding != null) {
+      if (typeof body.binding.weekStart !== "string" || body.binding.weekStart !== mondayOf(taipeiTodayISO()) || typeof body.binding.taskInstanceId !== "string" || !body.binding.taskInstanceId || body.binding.taskInstanceId.startsWith("legacy:")) throw new LearningError("週盤綁定格式不正確；需本週穩定任務 ID");
+      binding = { weekStart: body.binding.weekStart, taskInstanceId: body.binding.taskInstanceId };
+    }
+    const events: CompletionEvent[] = [];
+    const completions = journalCompletions(previous, candidate, row.id, (await learningFoundation.snapshot()).entities, new Date(), binding);
+    for (const input of completions) {
+      const event = await practiceEvents.accept(input); events.push(event);
+      candidate.segments = candidate.segments.map(segment => `${row.id}:${segment.id}` === event.sourceId ? { ...segment, completedAt: event.occurredAt } : segment);
+    }
+    // Durable completion fact first; body, daily and weekly projections follow.
+    const saved = await upsertJsonRecord(title, candidate);
+    candidate = normalizeEnglishJournalPractice(saved.value, date)!;
+    const projected: CompletionEvent[] = [];
+    for (const event of events) projected.push(await practiceEvents.retry(event.id));
+    return NextResponse.json({ ok: true, practice: candidate, events: projected, weeklySynced: projected.some(e => e.projections.weekly === "applied") });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
-export async function DELETE(req: NextRequest) {
+async function deleteUnlocked(req: NextRequest) {
   try {
     const date = req.nextUrl.searchParams.get("date") ?? "";
     if (!DATE_RE.test(date)) {
@@ -305,9 +279,17 @@ export async function DELETE(req: NextRequest) {
     const title = englishJournalRecordTitle(date);
     const row = await readJsonRecord(title);
     if (!row) return NextResponse.json({ error: "找不到這篇英文練習" }, { status: 404 });
+    const practice = normalizeEnglishJournalPractice(row.value, date);
     await archiveJsonRecordById(row.id, ENGLISH_JOURNAL_TITLE_PREFIX);
+    for (const segment of practice?.segments ?? []) await practiceEvents.sourceArchived(`${row.id}:${segment.id}`);
     return NextResponse.json({ ok: true, date });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
+
+function failure(e: unknown) { return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: e instanceof LearningError ? e.status : 503 }); }
+async function mutation(req: NextRequest, fn: (req: NextRequest) => Promise<NextResponse>) { try { requireLearningOwner(req); return await withLearningWriteLock(() => fn(req)); } catch(e) { return failure(e); } }
+export const POST = (req: NextRequest) => mutation(req, postUnlocked);
+export const PATCH = (req: NextRequest) => mutation(req, patchUnlocked);
+export const DELETE = (req: NextRequest) => mutation(req, deleteUnlocked);

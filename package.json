@@ -20,6 +20,10 @@
     "test:learning-foundation-api": "node scripts/test-learning-foundation-api.mjs",
     "test:learning-foundation-ui": "node scripts/test-learning-foundation-ui.mjs",
     "test:practice-workspaces": "node scripts/test-practice-workspaces.mjs",
+    "test:learning-records": "node scripts/test-learning-records.mjs",
+    "test:practice-events": "node scripts/test-practice-events.mjs",
+    "test:r2-3-api": "node scripts/test-r2-3-api.mjs",
+    "test:r2-3-ui": "node scripts/test-r2-3-ui.mjs",
     "test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-bank-route.mjs scripts/test-wealth-bank-summary.mjs scripts/test-wealth-bank-request.mjs scripts/test-wealth-performance.mjs",
     "check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build",
     "test:image-routing": "node scripts/test-unified-image-routing.mjs && node scripts/test-unified-image-dispatch.mjs"

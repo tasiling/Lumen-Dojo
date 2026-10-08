@@ -1,4 +1,6 @@
 "use client";
+import JournalTargetPicker from "./JournalTargetPicker";
+import type { TargetBinding, CompletionEvent } from "@/lib/dojo/practiceEvents/model";
 
 import { usePracticeLeaveGuard } from "@/lib/dojo/usePracticeLeaveGuard";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -56,6 +58,7 @@ export default function EnglishJournalWorkbench({
   initialDate?: string | null;
   onCompleted?: () => void | Promise<void>;
 }) {
+  const [binding, setBinding] = useState<TargetBinding | null>(null);
   const [practices, setPractices] = useState<EnglishJournalPractice[]>([]);
   const [sources, setSources] = useState<JournalSource[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(initialDate ?? null);
@@ -216,20 +219,23 @@ export default function EnglishJournalWorkbench({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: practice.date,
+          revision: practice.revision,
+          binding: options?.completeSegment || options?.complete ? binding : null,
           practice: { segments: practice.segments },
           promptCopied: options?.promptCopied === true ? practice.segments[activeSegment]?.id : null,
           complete: options?.complete === true,
           completeSegmentId: options?.completeSegment === true ? practice.segments[activeSegment]?.id : null,
         }),
       });
-      const result = await responseJson<{ practice: EnglishJournalPractice; weeklySynced: boolean }>(response);
+      const result = await responseJson<{ practice: EnglishJournalPractice; weeklySynced: boolean; events?: CompletionEvent[] }>(response);
       setDraft(structuredClone(result.practice));
       setPractices((current) => current.map((item) => item.date === result.practice.date ? result.practice : item));
       setNotice(options?.completeSegment
-        ? result.weeklySynced ? "這一段已完成，也已同步本週週盤。" : "這一段已完成；本週沒有尚未完成的自譯格。"
+        ? result.weeklySynced ? "這一段已完成，也已同步本週週盤。" : "這一段的完成事件已保存；未綁定週盤。可到修習歷程查看投影狀態。"
         : options?.complete
-        ? result.weeklySynced ? "英文自譯已完成，也已同步本週週盤。" : "英文自譯已完成；本週沒有對應格，因此未變更週盤。"
+        ? result.weeklySynced ? "英文自譯已完成，也已同步本週週盤。" : "英文自譯的完成事件已保存；未綁定週盤。可到修習歷程查看投影狀態。"
         : options?.promptCopied ? "這一段的指令已複製；取得 AI 回覆後貼回同一段。" : "這一段的進度已儲存。");
+      if (result.events?.some(e => e.projectionStatus === "needs_retry")) setNotice("完成事件與正文已保存；部分投影需重試。請到修習歷程按『只重試投影』，不必重新完成練習。");
       if (options?.complete || options?.completeSegment) await onCompleted?.();
       return result.practice;
     } catch (caught) {
@@ -250,7 +256,7 @@ export default function EnglishJournalWorkbench({
       const response = await fetch("/api/dojo/english-journal", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: saved.date, structure: { type, segmentId: currentSegment.id } }),
+        body: JSON.stringify({ date: saved.date, revision: saved.revision, structure: { type, segmentId: currentSegment.id } }),
       });
       const result = await responseJson<{ practice: EnglishJournalPractice }>(response);
       setDraft(structuredClone(result.practice));
@@ -381,6 +387,7 @@ export default function EnglishJournalWorkbench({
 
   return (
     <section className="english-journal-workbench">
+      <JournalTargetPicker value={binding} onChange={setBinding} />
       {dirty && <p role="status">尚有未儲存內容，請保存這段再離開。</p>}
       {initialDate && !loading && !draft && <p role="status">此日期尚無已保存的自譯。若下方有來源，可明確選擇加入；開啟頁面不會自動建立紀錄。</p>}
       <div className="english-journal-head">

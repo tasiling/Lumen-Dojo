@@ -1,4 +1,5 @@
 "use client";
+import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import Link from "./PracticeRouteLink";
 import { useEffect, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
@@ -68,6 +69,7 @@ export default function PracticeHome() {
       ) : (
         <p>目前沒有未完成的自譯。可從日記頁選擇來源。</p>
       )}
+      <LearningRecordWorkspace recent />
       <h2>常用工具</h2>
       <div className="practice-shortcuts">
         {[
