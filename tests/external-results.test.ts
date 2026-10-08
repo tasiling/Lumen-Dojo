@@ -1,5 +1,8 @@
 import { FORMAL_STATE_TITLE_PREFIXES } from "../lib/dojo/formal";
 import { readFileSync } from "node:fs";
+import { receiptIdentity } from "../lib/dojo/externalResults/model";
+import { eventService, eventBody } from "../lib/dojo/practiceEvents/service";
+import type { CompletionEvent } from "../lib/dojo/practiceEvents/model";
 import assert from "node:assert/strict";
 import {
   validateResult,
@@ -292,11 +295,39 @@ async function main() {
       return page;
     },
   };
-  const service = bridgeService(repo, adapter);
+  const eventRows=new Map<string,CompletionEvent>(); const bodyRows=new Map(); let failBody=true;
+  const eventRepo={ owner:repo.owner,get:async(id:string)=>eventRows.get(id)??null,create:async(e:CompletionEvent)=>{eventRows.set(e.id,structuredClone(e));},update:async(e:CompletionEvent)=>{eventRows.set(e.id,structuredClone(e));},body:async(e:CompletionEvent)=>{if(failBody)throw Error("explicit body rejection");if(!bodyRows.has(e.learningRecordId))bodyRows.set(e.learningRecordId,eventBody(e));},daily:async()=>{throw Error("external daily prohibited");},saveDaily:async()=>{throw Error("external daily prohibited");},weekly:async()=>null,saveWeekly:async()=>{throw Error("external weekly prohibited");},assertKnownOutcome:()=>{} };
+  const eventApi=eventService(eventRepo);
+  const connectedRepo={...repo,acceptSource:async(source:typeof r)=>{const exists=eventRows.has(receiptIdentity(repo.owner,source.sourceId));const event=source.completionStatus === "completed" ? await eventApi.acceptContext({...source,sourceLocation:`https://lumen-context-room-production-4a2c.up.railway.app/practice-results/${source.sourceId}`}):await eventApi.updateContext({...source,sourceLocation:`https://lumen-context-room-production-4a2c.up.railway.app/practice-results/${source.sourceId}`});return {event,created:!exists&&!!event};},retrySource:async(id:string)=>eventApi.retry(id)};
+  const connected=bridgeService(connectedRepo,adapter,()=>"2026-10-06T03:00:00Z");
+  await assert.rejects(connected.sync(true), /PROJECTION/);
+  assert.equal(eventRows.size,1,"event survives body rejection");
+  failBody=false;
+  await connected.sync(true);
+  assert.equal(eventRows.size,1);assert.equal(bodyRows.size,1);
+  assert.equal([...rowMap.values()][0].acceptance,"accepted");
+  assert.equal((await connected.sync(true)).counted,0,"same snapshot must not count twice");
+  checkpoint=null;rowMap.clear();eventRows.clear();bodyRows.clear();
+  let legacyCalls=0;
+  const pagedRepo={...connectedRepo,legacy:async(_id:string,cursor?:string|null)=>{
+    legacyCalls++;
+    if(!cursor) return {receipts:[],complete:false,cursor:"100"};
+    assert.equal(cursor,"100"); return {receipts:[{pageId:"legacy-101",linkedActivityId:"already-counted",completedAt:"2026-09-20"}],complete:true,cursor:null};
+  }};
+  await assert.rejects(bridgeService(pagedRepo,adapter).sync(true),/LEGACY_SCAN_PENDING/);
+  assert.equal(eventRows.size,0);assert.equal([...rowMap.values()][0].legacyCursor,"100");
+  await bridgeService(pagedRepo,adapter).sync(true);
+  assert.equal(legacyCalls,2);assert.equal(eventRows.size,0);assert.equal([...rowMap.values()][0].acceptance,"needs_review");
+  checkpoint=null;rowMap.clear();
+  const unknownLegacy={...connectedRepo,legacy:async()=>({receipts:[],complete:true,unidentified:true})};
+  await bridgeService(unknownLegacy,adapter).sync(true);
+  assert.equal(eventRows.size,0,"unidentified legacy must not be guessed or counted");
+  checkpoint=null;rowMap.clear();
+  const service = bridgeService(repo, adapter, () => "2026-10-06T03:00:00Z");
   await service.sync(false);
   assert.equal(rowMap.size, 1);
   assert.equal(currentCheckpoint().after, page.windowUpper);
-  const restart = bridgeService(repo, adapter);
+  const restart = bridgeService(repo, adapter, () => "2026-10-06T03:00:00Z");
   await restart.sync(true);
   assert.equal(rowMap.size, 1);
   assert.equal([...rowMap.values()][0].eventId, null);
@@ -449,6 +480,7 @@ async function main() {
         return pages[pageIndex];
       },
     },
+    () => "2026-10-06T03:00:00Z",
   );
   await interrupted.sync(true);
   assert.equal(currentCheckpoint().cursor, keysetCursor);

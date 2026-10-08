@@ -218,11 +218,12 @@ export function imageBatchCollectQuickReply(entryId?: string) {
 
 export function basicLineMenuQuickReply() {
   return { items: [
+    messageQuickReplyItem("銀行記帳", "銀行記帳"),
     messageQuickReplyItem("野採圖片", "野採圖片"),
     messageQuickReplyItem("剪藏網址", "剪藏網址"),
     messageQuickReplyItem("最近一筆", "最近一筆"),
     messageQuickReplyItem("待整理", "待整理"),
-    messageQuickReplyItem("豆倉", "豆倉"),
+    messageQuickReplyItem("結束銀行記帳", "結束銀行記帳"),
   ] };
 }
 
@@ -322,7 +323,7 @@ export function englishImageVocabQuickReply(entryId: string, candidates: English
 
 export function contextRoomQuickReply(entryId: string, url: string) {
   return { items: [
-    uriQuickReplyItem("到野採安排批次", url),
+    uriQuickReplyItem("開啟派送確認表單", url),
     quickReplyItem("送 VocabForge", new URLSearchParams({ action: "imageDispatch", entryId, target: "vocab" }).toString()),
     quickReplyItem("先留野採", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
   ] };

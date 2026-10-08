@@ -46,6 +46,12 @@ export type EnglishImageContextExport = {
   syncedAt: string;
 };
 
+export type EnglishImageContextDispatchDraft = {
+  contractMode: "v2"; projectMode: "create" | "existing"; materialId: string; materialTitle: string;
+  unitMode: "create" | "existing"; unitId: string; eventTitle: string; projectType: string;
+  crossTypeConfirmed: boolean; candidateKeys: string[];
+};
+
 export type EnglishImageContextLink = {
   projectId: string;
   unitId: string;
@@ -119,6 +125,7 @@ export type EnglishImageEntry = {
   contextRoomUrl: string;
   contextRoomExport: EnglishImageContextExport | null;
   contextRoomLinks: EnglishImageContextLink[];
+  contextRoomDispatchDraft?: EnglishImageContextDispatchDraft | null;
   contextRoomSourceRevision: number;
   contextRoomContentFingerprint: string;
   vocabForgeExports: EnglishImageVocabExport[];
@@ -134,6 +141,7 @@ export type EnglishImageEntry = {
   inputTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
+  learningUsageRewriteCosts?: Array<{ spentAt: string; estimatedCostUsd: number }>;
   capturedAt: string;
   updatedAt: string;
 };
@@ -286,6 +294,15 @@ export function normalizeEnglishImageEntry(
         syncedAt,
       };
     })() : null,
+    contextRoomDispatchDraft: source.contextRoomDispatchDraft ? (() => {
+      const value = source.contextRoomDispatchDraft;
+      return { contractMode: "v2" as const, projectMode: value.projectMode === "existing" ? "existing" as const : "create" as const,
+        materialId: text(value.materialId, 200), materialTitle: text(value.materialTitle, 300),
+        unitMode: value.unitMode === "existing" ? "existing" as const : "create" as const,
+        unitId: text(value.unitId, 200), eventTitle: text(value.eventTitle, 300), projectType: text(value.projectType, 100),
+        crossTypeConfirmed: value.crossTypeConfirmed === true,
+        candidateKeys: Array.isArray(value.candidateKeys) ? value.candidateKeys.filter((key): key is string => typeof key === "string").slice(0, 5) : [] };
+    })() : null,
     contextRoomLinks: Array.isArray(source.contextRoomLinks) ? source.contextRoomLinks.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const value = item as Partial<EnglishImageContextLink>;
@@ -368,6 +385,10 @@ export function normalizeEnglishImageEntry(
     inputTokens: Number.isFinite(source.inputTokens) ? Math.max(0, Math.floor(Number(source.inputTokens))) : 0,
     outputTokens: Number.isFinite(source.outputTokens) ? Math.max(0, Math.floor(Number(source.outputTokens))) : 0,
     estimatedCostUsd: Number.isFinite(source.estimatedCostUsd) ? Math.max(0, Number(source.estimatedCostUsd)) : 0,
+    learningUsageRewriteCosts: Array.isArray(source.learningUsageRewriteCosts) ? source.learningUsageRewriteCosts.flatMap(value => {
+      if (!value || typeof value !== "object" || typeof value.spentAt !== "string" || Number.isNaN(Date.parse(value.spentAt)) || !Number.isFinite(value.estimatedCostUsd) || value.estimatedCostUsd < 0) return [];
+      return [{ spentAt: new Date(value.spentAt).toISOString(), estimatedCostUsd: value.estimatedCostUsd }];
+    }) : [],
     capturedAt,
     updatedAt: params.touch ? now : iso(source.updatedAt, capturedAt),
   };
@@ -377,4 +398,13 @@ export function englishImageContent(entry: EnglishImageEntry): Omit<EnglishImage
   const { id: _id, ...content } = entry;
   void _id;
   return content;
+}
+
+/** Existing Taiwan calendar month, with rewrite charges dated independently of analysis. */
+export function currentMonthEstimatedSpend(entries: EnglishImageEntry[], now = new Date()): number {
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit" });
+  const month = formatter.format(now);
+  const inMonth = (date: string | null) => !!date && !Number.isNaN(Date.parse(date)) && formatter.format(new Date(date)) === month;
+  return entries.reduce((sum, entry) => sum + (inMonth(entry.analyzedAt) ? entry.estimatedCostUsd : 0)
+    + (entry.learningUsageRewriteCosts || []).reduce((cost, charge) => cost + (inMonth(charge.spentAt) ? charge.estimatedCostUsd : 0), 0), 0);
 }

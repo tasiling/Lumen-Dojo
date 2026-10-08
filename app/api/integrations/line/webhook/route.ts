@@ -17,7 +17,8 @@ import {
   saveEnglishImageEntry,
   undoLatestEnglishImageMerge,
 } from "@/lib/dojo/englishImageStore";
-import { englishImageVocabCandidates, exportEnglishImageVocabs, listVocabForgeBooks, prepareEnglishImageForContextRoom, recommendedFocusDecks, PERMANENT_FOCUS_DECKS } from "@/lib/dojo/englishImageDispatch";
+import { routingEntryUrl, normalizeRoutingSelection } from "@/lib/dojo/englishImageRouting";
+import { englishImageVocabCandidates, exportEnglishImageVocabs, listVocabForgeBooks, recommendedFocusDecks, PERMANENT_FOCUS_DECKS } from "@/lib/dojo/englishImageDispatch";
 import {
   basicLineMenuQuickReply,
   captureImageQuickReply,
@@ -26,7 +27,6 @@ import {
   englishImageBookQuickReply,
   englishImageFocusDeckQuickReply,
   englishImageOrganizeQuickReply,
-  englishImageSourceQuickReply,
   englishImageVocabQuickReply,
   extractFirstUrl,
   forageQuickReply,
@@ -48,6 +48,8 @@ import {
   isEnglishImageLearningRoute,
   type EnglishImageEntry,
 } from "@/lib/dojo/englishImage";
+import { bankImageRoute,bankIntegrationEnabled,bankSummary,receivePerformance,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
+import {isPerformanceText,parsePerformanceText,performanceReply} from "@/lib/dojo/wealthPerformance";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -110,6 +112,25 @@ function forageUrl(englishImageId = ""): string {
 
 async function handleLineCommand(event: LineWebhookEvent, command: string): Promise<boolean> {
   const replyToken = event.replyToken ?? "";
+  const userId = event.source?.userId ?? "";
+  if (command === "銀行記帳") {
+    if (!bankIntegrationEnabled()) {
+      await replyLineMessage(replyToken, "銀行記帳目前尚未啟用。一般野採與英文圖片仍可照常使用。", basicLineMenuQuickReply());
+      return true;
+    }
+    await setBankMode(userId, "bank");
+    await replyLineMessage(replyToken, "銀行記帳模式已開啟 30 分鐘。接下來的銀行截圖只會送往財富豐盛記錄本，不會進入野採、英文影像匣或 Notion。完成後請按「結束銀行記帳」。", basicLineMenuQuickReply());
+    return true;
+  }
+  if (command === "結束銀行記帳") {
+    if (!bankIntegrationEnabled()) {
+      await replyLineMessage(replyToken, "銀行記帳目前沒有啟用；圖片會維持原本的野採流程。", basicLineMenuQuickReply());
+      return true;
+    }
+    await setBankMode(userId, "off");
+    await replyLineMessage(replyToken, "已結束銀行記帳模式。之後的圖片會恢復原本的野採流程。", basicLineMenuQuickReply());
+    return true;
+  }
   if (command === "野採圖片") {
     await replyLineMessage(replyToken, "如果圖片彼此相關，可以在相簿一次勾選多張送出。超過 10 張時 LINE 可能自行拆成多組，請先按「分次收一組」；即使一次選 23 張，也會收進同一筆，直到你按「完成這組」。", captureImageQuickReply());
     return true;
@@ -159,6 +180,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
       "行光野採｜LINE 指令",
       "",
       "野採圖片：單張、相簿多選，或分次收成一組",
+      "銀行記帳：暫時把銀行截圖安全送往財富帳本",
       "剪藏網址：保存網頁與摘要",
       "最近一筆：叫回最近素材的整理按鈕",
       "待整理：查看野採待處理數量",
@@ -478,43 +500,11 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     if (action === "imageDispatch") {
       const target = params.get("target");
       if (target !== "context" && target !== "vocab" && target !== "both") return;
-      try {
-        let current = entry;
-        if (target === "context" || target === "both") current = await prepareEnglishImageForContextRoom(current.id);
-        if (target === "vocab" || target === "both") {
-          const candidates = englishImageVocabCandidates(current);
-          if (!candidates.length) {
-            await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。語境內容仍可到野採選擇要加入的既有專案與批次。", target === "both" ? contextRoomQuickReply(current.id, forageUrl(current.id)) : englishImageOrganizeQuickReply(current.id));
-            return;
-          }
-          if ((current.route === "game" || current.route === "reading") && !current.vocabForgeDraft.sourceName) {
-            const isReading = current.route === "reading";
-            await replyLineMessage(
-              event.replyToken ?? "",
-              `${target === "both" ? "語境素材已備妥。" : ""}送出前先確認${isReading ? "書名或文章來源" : "作品名稱"}。來源會保留在單字的遇見紀錄中，不會另外建立豆倉。`,
-              englishImageSourceQuickReply(current.id, current.sourceLabel, isReading ? "reading" : "game"),
-            );
-            return;
-          }
-          const sourceName = current.vocabForgeDraft.sourceName || current.sourceLabel || (current.route === "classroom" ? "本期課堂" : current.route === "reading" ? "閱讀內容" : "英文日常");
-          const focusDecks = current.vocabForgeDraft.focusDecks.length
-            ? current.vocabForgeDraft.focusDecks
-            : recommendedFocusDecks(current, sourceName);
-          current = await saveEnglishImageEntry({
-            ...current,
-            vocabForgeDraft: { sourceName, focusDecks, selectedKeys: [] },
-          });
-          await replyLineMessage(
-            event.replyToken ?? "",
-            `${target === "both" ? "語境素材已備妥。" : ""}系統已先勾選建議分類。請確認或調整常駐豆倉，最多兩個。`,
-            englishImageFocusDeckQuickReply(current.id, focusDecks),
-          );
-          return;
-        }
-        await replyLineMessage(event.replyToken ?? "", "語境素材已備妥。請到野採選擇「加入既有專案」或「建立新專案」；確認後會連同原文、摘要與表達建立新的內容批次。", contextRoomQuickReply(current.id, forageUrl(current.id)));
-      } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", `派送尚未完成：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
-      }
+      await replyLineMessage(
+        event.replyToken ?? "",
+        "尚未派送。請開啟同一份確認表單，確認來源、目的專案與單元、最多五個單字及兩個常駐豆倉，再按一次「確認送出」。兩站會分別回報接收結果。",
+        contextRoomQuickReply(entry.id, routingEntryUrl(forageUrl(entry.id), entry.id, target)),
+      );
       return;
     }
     if (action === "imageVocabSourceInput") {
@@ -638,7 +628,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageVocabConfirm") {
       try {
-        const { focusDecks, sourceName, selectedKeys } = entry.vocabForgeDraft;
+        const { focusDecks, sourceName, selectedKeys } = normalizeRoutingSelection(entry.vocabForgeDraft);
         if (!focusDecks.length) throw new Error("請先確認常駐豆倉");
         if (!selectedKeys.length) throw new Error("請先勾選至少一個單字");
         const result = await exportEnglishImageVocabs(entry.id, selectedKeys, focusDecks[0], { focusDecks, sourceName });
@@ -756,12 +746,53 @@ export async function POST(req: NextRequest) {
   try { body = JSON.parse(rawBody) as LineWebhookBody; }
   catch { return NextResponse.json({ error: "LINE webhook JSON 格式錯誤" }, { status: 400 }); }
 
+  // In bank mode the receiver must durably accept the image before LINE gets
+  // a 200 response. Stable event/message ids make a LINE retry idempotent.
+  const bankIntakes = new Map<string, BankIntake>();
+  const performanceReplies=new Map<string,string>();
+  try {
+    for (const event of body.events ?? []) {
+      const userId = event.source?.userId ?? "";
+      if(userId===allowedUserId&&event.type==="message"&&event.message?.type==="text"&&isPerformanceText(event.message.text||"")){
+        const eventId=event.webhookEventId||event.message.id||"";
+        let parsed;
+        try{const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Australia/Melbourne",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());parsed=parsePerformanceText(event.message.text||"",today)}catch(e){performanceReplies.set(eventId,e instanceof Error?e.message:"業績格式不正確");continue}
+        try{const result=await receivePerformance(userId,eventId,parsed);performanceReplies.set(eventId,performanceReply(result))}catch(e){const status=(e as {status?:number}).status;if(status&&[400,409,422].includes(status)){performanceReplies.set(eventId,e instanceof Error?e.message:"業績需核對");continue}throw e}
+        continue;
+      }
+      if (userId !== allowedUserId || event.type !== "message" || event.message?.type !== "image") continue;
+      const messageId = event.message.id ?? "";
+      if (!messageId) throw new Error("LINE 圖片缺少 message id");
+      const eventId = event.webhookEventId ?? messageId;
+      const routing = await bankImageRoute(userId, eventId);
+      if (routing.route === "ordinary") continue;
+      if (routing.route === "bank-unavailable") throw new Error("財富帳本暫時無法可靠確認圖片路由");
+      const image = await fetchLineImage(messageId);
+      bankIntakes.set(eventId, await receiveBankImage(userId, { messageId, eventId, mimeType: image.mimeType, bytes: Buffer.from(image.bytes) }));
+    }
+  } catch {
+    return NextResponse.json({ error: "財務紀錄尚未可靠保存，請讓 LINE 稍後重送" }, { status: 503 });
+  }
+
   // LINE expects the webhook endpoint to acknowledge receipt within about two
   // seconds. Image analysis and external integrations can take longer, so keep
   // the work alive after the HTTP response has already been returned.
   after(async () => {
     try {
-      for (const event of body.events ?? []) await handleEvent(event, allowedUserId);
+      for (const event of body.events ?? []) {
+        const eventId = event.webhookEventId ?? event.message?.id ?? "";
+        const performanceMessage=performanceReplies.get(eventId);
+        if(performanceMessage){await replyLineMessage(event.replyToken??"",performanceMessage,basicLineMenuQuickReply());continue}
+        const intake = bankIntakes.get(eventId);
+        if (!intake) { await handleEvent(event, allowedUserId); continue; }
+        try {
+          const result = await processBankImage(event.source?.userId ?? "", intake.batchId);
+          const url = wealthInboxUrl();
+          await replyLineMessage(event.replyToken ?? "", `${bankSummary(result)}${url ? `\n\n待辦匣：${url}` : ""}`, basicLineMenuQuickReply());
+        } catch {
+          await replyLineMessage(event.replyToken ?? "", "銀行截圖已安全保存，但辨識暫時未完成；稍後可到財富待辦匣安全重試。", basicLineMenuQuickReply());
+        }
+      }
     } catch (error) {
       console.error("LINE clipping webhook background processing failed", error instanceof Error ? error.message : String(error));
     }

@@ -11,6 +11,7 @@
     "start": "node scripts/setup-line-rich-menu.mjs --allow-failure && next start",
     "line:rich-menu": "node scripts/setup-line-rich-menu.mjs",
     "test:english-images": "node scripts/test-english-image-completion.mjs",
+    "test:unit-arrangement": "node scripts/test-unit-arrangement.mjs && node scripts/test-unit-arrangement-contract.mjs && node scripts/test-unit-arrangement-completed-retry.mjs",
     "test:capture-exploration": "node scripts/test-capture-exploration.mjs",
     "test:html-entity-overflow": "node scripts/test-html-entity-mobile-overflow.mjs",
     "lint": "eslint",
@@ -23,6 +24,9 @@
     "test:practice-events": "node scripts/test-practice-events.mjs",
     "test:r2-3-api": "node scripts/test-r2-3-api.mjs",
     "test:r2-3-ui": "node scripts/test-r2-3-ui.mjs",
+    "test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-bank-route.mjs scripts/test-wealth-bank-summary.mjs scripts/test-wealth-bank-request.mjs scripts/test-wealth-performance.mjs",
+    "check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build",
+    "test:image-routing": "node scripts/test-unified-image-routing.mjs && node scripts/test-unified-image-dispatch.mjs",
     "test:external-results": "node scripts/test-external-results.mjs",
     "test:r2-5c-api": "node scripts/test-r2-5c-api.mjs",
     "test:r2-5c-ui": "node scripts/test-r2-5c-ui.mjs"

@@ -1,3 +1,4 @@
+import type { ProjectionState } from "../practiceEvents/model";
 import { LearningError } from "../learningFoundation/model";
 import { sourceIdentity } from "../practiceEvents/service";
 import { validDate } from "../learningRecords/model";
@@ -250,8 +251,11 @@ export type Receipt = {
   id: string;
   owner: string;
   source: SourceResult;
-  eventId: null;
-  acceptance: "needs_review";
+  eventId: string | null;
+  learningRecordId?: string | null;
+  legacyCursor?: string | null;
+  legacyUnidentified?: boolean;
+  acceptance: "needs_review" | "accepted" | "withdrawn" | "unverified";
   reasons: string[];
   receivedAt: string;
   lastVerifiedAt: string;
@@ -260,7 +264,7 @@ export type Receipt = {
   legacyReceipts: LegacyReceipt[];
   legacyLookupComplete: boolean;
   projections: {
-    record: "blocked";
+    record: ProjectionState | "blocked";
     lightStep: "blocked";
     weekly: "unlinked";
     ack: "not_applicable" | "blocked";

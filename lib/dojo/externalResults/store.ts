@@ -6,6 +6,7 @@ import { mapKnowledge } from "@/lib/notion/queries";
 import { readJsonRecord, updateJsonRecordById } from "../notionStore";
 import { learningOwner } from "../learningFoundation/store";
 import { createPracticeOnce } from "../learningFoundation/practiceWrite";
+import { practiceEvents } from "../practiceEvents/store";
 import { sourceIdentity } from "../practiceEvents/service";
 import { parseJson } from "../formal";
 import { readContextRoomNotionIdentity } from "../contextRoomNotionInbox";
@@ -20,6 +21,7 @@ import {
   type Checkpoint,
   type Receipt,
   type LegacyReceipt,
+  uuid,
 } from "./model";
 export const SOURCE_ORIGIN =
   "https://lumen-context-room-production-4a2c.up.railway.app";
@@ -86,6 +88,12 @@ export async function checkpoint() {
 export const externalResults = bridgeService(
   {
     owner: learningOwner,
+    async acceptSource(source) {
+      const existing=await practiceEvents.read(receiptIdentity(learningOwner,source.sourceId));
+      const event=source.completionStatus === "completed" ? await practiceEvents.acceptContext(source):await practiceEvents.updateContext(source);
+      return {event,created:!existing&&!!event};
+    },
+    retrySource: (id)=>practiceEvents.retry(id),
     async read(id) {
       const row = await readJsonRecord(RECEIPT_PREFIX + id);
       return row ? owned(row.value as Receipt) : null;
@@ -98,7 +106,7 @@ export const externalResults = bridgeService(
     async saveCheckpoint(row) {
       await save(checkpointTitle(), CHECKPOINT_PREFIX, row);
     },
-    async legacy(sourceId) {
+    async legacy(sourceId, cursor) {
       // Bounded old-card lookup: do not call queryAll inside a bounded sync.
       // If older pages remain, the receipt stays explicitly legacy-unchecked.
       const page = await withNotionRateLimit(() =>
@@ -107,6 +115,7 @@ export const externalResults = bridgeService(
           filter: { property: "標題", title: { starts_with: "行光語境成果-" } },
           sorts: [{ timestamp: "created_time", direction: "descending" }],
           page_size: 100,
+          ...(cursor ? {start_cursor:cursor}:{}),
         }),
       );
       const rows = page.results.map((p) => ({
@@ -129,7 +138,7 @@ export const externalResults = bridgeService(
             ]
           : [];
       });
-      return { receipts, complete: !page.has_more };
+      return { receipts, unidentified:rows.some(row=> !uuid((row.value as {sourceEventId?:unknown})?.sourceEventId)), complete: !page.has_more, cursor:page.has_more ? page.next_cursor:null };
     },
     async alias(pageId) {
       const verified = await readContextRoomNotionIdentity(pageId);
@@ -148,6 +157,11 @@ export const externalResults = bridgeService(
   contextAdapter(sourceConfig()),
 );
 function publicReceipt(row: Receipt): Receipt {
+  if ((row.eventId !== null && !/^[a-f0-9]{64}$/.test(row.eventId)) ||
+      (row.learningRecordId != null && !uuid(row.learningRecordId)) ||
+      !["accepted","needs_review","withdrawn","unverified"].includes(row.acceptance) ||
+      !["blocked","pending","applied","needs_retry","unlinked","unmatched"].includes(row.projections.record))
+    throw new BridgeError("RECEIPT_STATE_INVALID",422);
   const location = row.source.sourceLocation;
   if (
     location !== null &&
@@ -171,8 +185,11 @@ function publicReceipt(row: Receipt): Receipt {
     id: row.id,
     owner: row.owner,
     source,
-    eventId: null,
-    acceptance: "needs_review",
+    eventId: row.eventId,
+    learningRecordId:row.learningRecordId??null,
+    legacyCursor:row.legacyCursor??null,
+    legacyUnidentified:!!row.legacyUnidentified,
+    acceptance: row.acceptance,
     reasons: row.reasons.filter(
       (x) => typeof x === "string" && /^[A-Z0-9_]+$/.test(x),
     ),
@@ -193,7 +210,7 @@ function publicReceipt(row: Receipt): Receipt {
       completedAt: r.completedAt,
     })),
     projections: {
-      record: "blocked",
+      record: row.projections.record,
       lightStep: "blocked",
       weekly: "unlinked",
       ack: row.aliases.length ? "blocked" : "not_applicable",
@@ -223,6 +240,6 @@ export async function cachedResults(cursor: string | null) {
       contextRoom: sourceConfig() ? "configured" : "not_connected",
       vocabForge: "not_connected",
     },
-    contractStatus: "pending",
+    contractStatus: "active",
   };
 }

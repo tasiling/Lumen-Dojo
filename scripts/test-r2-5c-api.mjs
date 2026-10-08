@@ -309,12 +309,14 @@ try {
   assert.equal(remoteCalls, 0);
   const one = await payload(await post({ action: "sync" }));
   assert.equal(one.status, 200);
-  assert.equal(one.body.counted, 0);
+  assert.equal(one.body.counted, 1);
   let cached = await payload(
     await api.GET(request("GET", "/api/dojo/external-results")),
   );
   let receipt = cached.body.receipts[0];
-  assert.equal(receipt.eventId, null);
+  assert.match(receipt.eventId, /^[a-f0-9]{64}$/);
+  assert.equal(receipt.acceptance,"accepted");
+  assert.ok(receipt.learningRecordId);
   assert.equal(receipt.source.practicedOn, "2026-09-20");
   assert.equal(receipt.source.timeZone, null);
   const json = JSON.stringify(cached);
@@ -342,7 +344,8 @@ try {
   assert.equal(ackWrites, 0);
   const retryWrites = writes;
   assert.equal((await post({ action: "retry", id: receipt.id })).status, 200);
-  assert.equal(writes, retryWrites);
+  assert.equal([...rows.values()].filter(r=>r.title.startsWith("行光完成事件-")).length,1);
+  assert.ok(writes >= retryWrites);
   const legacyId = await payload(
     await legacy.POST(
       request("POST", "/api/dojo/context-room-results", {
@@ -413,6 +416,8 @@ try {
     title: "行光學習正文-local",
     value: { whatIDid: "LOCAL EVIDENCE", revision: 42 },
   });
+  const sourceBody=[...rows.values()].find(r=>r.value.id === receipt.learningRecordId);
+  sourceBody.value.myUnderstanding="USER NOTES";
   remoteResults = [
     raw(sourceId, {
       sourceRevision: "opaque:new",
@@ -437,6 +442,8 @@ try {
   assert.equal(receipt.source.sourceRevision, "opaque:new");
   assert.equal(receipt.source.originalContext, null);
   assert.equal(rows.get("local-body").value.revision, 42);
+  assert.equal(rows.get(sourceBody.id).value.myUnderstanding,"USER NOTES");
+  assert.equal(rows.get(sourceBody.id).value.sourceAvailability,"archived");
   remoteFailure = true;
   assert.equal((await post({ action: "sync" })).status, 503);
   cached = await payload(
@@ -483,7 +490,7 @@ try {
   assert.equal(
     [...rows.values()].filter((r) => r.title.startsWith("行光完成事件-"))
       .length,
-    0,
+    2,
   );
   assert.equal(
     [...rows.values()].filter(
@@ -527,7 +534,7 @@ try {
   assert.equal(
     [...rows.values()].filter((r) => r.title.startsWith("行光完成事件-"))
       .length,
-    0,
+    2,
   );
   // Unknown committed receipt create retains fsynced intent and shared mutex.
   remoteResults = [raw("00000000-0000-4000-8000-000000000003")];

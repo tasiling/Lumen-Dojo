@@ -8,18 +8,22 @@ import {
   type LegacyReceipt,
   type Alias,
 } from "./model";
+import type { CompletionEvent } from "../practiceEvents/model";
+import type { SourceResult } from "./model";
 import { sourceIdentity } from "../practiceEvents/service";
 import type { Adapter } from "./adapter";
 export type BridgeRepository = {
+  acceptSource?(source:SourceResult):Promise<{event:CompletionEvent|null;created:boolean}>;
+  retrySource?(id:string):Promise<CompletionEvent>;
   owner: string;
   read(id: string): Promise<Receipt | null>;
   save(row: Receipt): Promise<void>;
   checkpoint(): Promise<Checkpoint | null>;
   saveCheckpoint(row: Checkpoint): Promise<void>;
   legacy(
-    sourceId: string,
+    sourceId: string, cursor?: string | null,
   ): Promise<
-    LegacyReceipt[] | { receipts: LegacyReceipt[]; complete: boolean }
+    LegacyReceipt[] | { receipts: LegacyReceipt[]; complete: boolean; cursor?:string|null; unidentified?:boolean }
   >;
   alias(pageId: string): Promise<{ sourceId: string; alias: Alias } | null>;
 };
@@ -97,7 +101,7 @@ export function bridgeService(
         (checkpoint.pageReceipts ?? []).filter((h) => currentHashes.has(h)),
       );
       const started = Date.now();
-      let saved = 0;
+      let saved = 0, counted = 0;
       // One source page (50) per explicit mutation. A partial page replays from the
       // previous durable checkpoint; upsert identity makes that replay harmless.
       for (const source of page.results) {
@@ -110,11 +114,11 @@ export function bridgeService(
           throw new BridgeError("SYNC_PAUSED_REPLAY_PAGE", 503);
         const id = receiptIdentity(repo.owner, source.sourceId),
           previous = await repo.read(id);
-        const foundLegacy = previous ? [] : await repo.legacy(source.sourceId);
+        const foundLegacy = previous?.legacyLookupComplete ? [] : await repo.legacy(source.sourceId,previous?.legacyCursor);
         const legacy = Array.isArray(foundLegacy)
           ? { receipts: foundLegacy, complete: true }
           : foundLegacy;
-        const row = mergeReceipt(
+        let row = mergeReceipt(
           previous,
           source,
           repo.owner,
@@ -122,8 +126,26 @@ export function bridgeService(
           legacy.receipts,
           legacy.complete,
         );
-        if (!previous || JSON.stringify(row) !== JSON.stringify(previous))
-          await repo.save(row);
+        if(!previous?.legacyLookupComplete) {
+          const entries=[...(previous?.legacyReceipts??[]),...legacy.receipts];
+          row={...row,legacyLookupComplete:legacy.complete,legacyCursor:"cursor" in legacy ? legacy.cursor??null:null,legacyUnidentified:previous?.legacyUnidentified || ("unidentified" in legacy && legacy.unidentified) || false,legacyReceipts:[...new Map(entries.map(x=>[x.pageId,x])).values()]};
+          if(row.legacyUnidentified && !row.reasons.includes("LEGACY_SOURCE_ID_UNKNOWN")) row.reasons.push("LEGACY_SOURCE_ID_UNKNOWN");
+          if(legacy.complete) row.reasons=row.reasons.filter(x=>x!=="LEGACY_SCAN_INCOMPLETE");
+        }
+        if (!previous || JSON.stringify(row) !== JSON.stringify(previous)) await repo.save(row);
+        if(repo.acceptSource && repo.retrySource) {
+          if(!row.legacyLookupComplete) throw new BridgeError("LEGACY_SCAN_PENDING",503);
+          // Exact legacy provenance requires owner reconciliation; never guess a
+          // new event for an old activity that already counted elsewhere.
+          if(!row.legacyReceipts.length && !row.legacyUnidentified) {
+            const accepted=await repo.acceptSource(row.source);
+            const event=accepted.event ? await repo.retrySource(accepted.event.id) : null;
+            row={...row,eventId:event?.id??null,learningRecordId:event?.learningRecordId??null,acceptance:row.source.completionStatus !== "completed" ? row.source.completionStatus : event?.projections.record === "applied" ? "accepted" : "needs_review",reasons:row.reasons.filter(x=>x!=="R2_3_EXTERNAL_CONTRACT_PENDING"),projections:{...row.projections,record:event?.projections.record??"blocked"}};
+            await repo.save(row);
+            if(event?.projections.record === "needs_retry" || event?.projections.record === "pending") throw new BridgeError("SOURCE_PROJECTION_PENDING",503);
+            if(accepted.created && row.acceptance === "accepted") counted++;
+          }
+        }
         // Only after the source fact has an acknowledged durable save. Progress
         // is persistent but the source cursor stays at the previous full page.
         // A restart skips exact snapshots without paying a network-read prefix.
@@ -157,8 +179,8 @@ export function bridgeService(
         saved,
         remaining: !!checkpoint.cursor,
         checkpoint,
-        counted: 0,
-        contractStatus: "pending" as const,
+        counted,
+        contractStatus: repo.acceptSource ? "active" : "pending",
       };
     },
     async verifyNotion(pageId: string) {
@@ -186,6 +208,12 @@ export function bridgeService(
       const row = await repo.read(id);
       if (!row) throw new BridgeError("SOURCE_RECEIPT_MISSING", 404);
       owned(row);
+      if(repo.acceptSource && repo.retrySource && row.legacyLookupComplete && !row.legacyReceipts.length && !row.legacyUnidentified) {
+        const accepted=await repo.acceptSource(row.source);
+        const event=accepted.event ? await repo.retrySource(accepted.event.id):null;
+        const next:Receipt={...row,eventId:event?.id??null,learningRecordId:event?.learningRecordId??null,acceptance:row.source.completionStatus !== "completed" ? row.source.completionStatus : event?.projections.record === "applied" ? "accepted":"needs_review",projections:{...row.projections,record:event?.projections.record??"blocked"}};
+        await repo.save(next); return {receipt:next,outcome:event?.projectionStatus??"SOURCE_UNVERIFIED"};
+      }
       // R2-3 accepts journal events only. Retrying quarantined metadata must never
       // secretly create an incompatible event/body/projection or acknowledge Notion.
       return {

@@ -5,9 +5,11 @@ export const EVENT_PREFIX = "行光完成事件-";
 export type SourceRef = { type: "capture" | "english-image" | "reading-book" | "reading-note" | "context" | "url" | "manual"; id: string; label: string; url?: string; status: "available" | "archived" | "missing" | "unverified" };
 export type LearningRecord = {
   id: string; owner: string; recordType: "learning-record/v1"; status: "draft" | "completed" | "archived";
-  title: string; practicedOn: string; recordedOn: string; createdAt: string; updatedAt: string; revision: number;
-  learningItemIds: string[]; primaryLearningItemId: string; learningStageId: string | null; learningTopicId: string | null;
+  title: string; practicedOn: string | null; recordedOn: string; createdAt: string; updatedAt: string; revision: number;
+  learningItemIds: string[]; primaryLearningItemId: string | null; learningStageId: string | null; learningTopicId: string | null;
   practiceKind: string; whatIDid: string; myUnderstanding: string; questions: string; difficulties: string; discoveries: string; worthKeeping: string;
+  sourceCompletionStatus?: "completed"|"withdrawn"|"unverified"; sourceAvailability?: "available"|"archived"|"deleted";
+  originEventId?: string; sourceRevision?: string; dateSemantics?: string;
   sourceRefs: SourceRef[]; selectedExcerpt: string; sourceSnapshot: string; tags: string[];
 };
 export type RecordFilter = { learningItemId?: string; stageId?: string; topicId?: string; status?: string; cursor?: string; limit?: number };
@@ -17,16 +19,18 @@ export function validDate(value: unknown): value is string {
 }
 export function recordInput(input: Record<string, unknown>, graph: LearningEntity[], previous?: LearningRecord): Omit<LearningRecord, "id" | "owner" | "recordType" | "createdAt" | "updatedAt" | "revision"> {
   const merged = { ...previous, ...input };
-  if (!validDate(merged.practicedOn) || !validDate(merged.recordedOn ?? merged.practicedOn)) throw new LearningError("日期不正確");
+  const external = !!previous?.originEventId;
+  if (external && merged.practicedOn !== previous.practicedOn) throw new LearningError("來源日期不可由筆記編輯改寫", 409);
+  if ((!(external && merged.practicedOn === null) && !validDate(merged.practicedOn)) || !validDate(merged.recordedOn ?? merged.practicedOn)) throw new LearningError("日期不正確");
   const ids = merged.learningItemIds;
-  if (!Array.isArray(ids) || !ids.length || ids.length > 20 || ids.some(id => typeof id !== "string")) throw new LearningError("請選擇學科");
+  if (!Array.isArray(ids) || (!external && !ids.length) || ids.length > 20 || ids.some(id => typeof id !== "string")) throw new LearningError("請選擇學科");
   const learningItemIds = [...new Set(ids)] as string[];
   for (const id of learningItemIds) {
     const item = graph.find(e => e.id === id && e.kind === "item");
     if ((!item || item.status === "archived") && !previous?.learningItemIds.includes(id)) throw new LearningError("學科不存在或無權關聯", 403);
   }
-  const primary = typeof merged.primaryLearningItemId === "string" ? merged.primaryLearningItemId : learningItemIds[0];
-  if (!learningItemIds.includes(primary)) throw new LearningError("主要學科必須在關聯中");
+  const primary = typeof merged.primaryLearningItemId === "string" && merged.primaryLearningItemId ? merged.primaryLearningItemId : learningItemIds[0] ?? null;
+  if (!(external && !learningItemIds.length && primary === null) && (!primary || !learningItemIds.includes(primary))) throw new LearningError("主要學科必須在關聯中");
   const stage = typeof merged.learningStageId === "string" && merged.learningStageId ? merged.learningStageId : null;
   const topic = typeof merged.learningTopicId === "string" && merged.learningTopicId ? merged.learningTopicId : null;
   for (const [id, kind, old] of [[stage, "stage", previous?.learningStageId], [topic, "topic", previous?.learningTopicId]] as const) {
@@ -50,7 +54,14 @@ export function recordInput(input: Record<string, unknown>, graph: LearningEntit
     const old = previous?.sourceRefs.find(s => s.type === r.type && s.id === r.id);
     return { type: r.type, id: r.id, label: r.label, ...(r.url ? { url: r.url } : {}), status: old?.status ?? "unverified" } as SourceRef;
   });
+  if (external) {
+    const authoritative = previous.sourceRefs.filter(r => r.type === "context");
+    for (const ref of authoritative) {
+      const at = refs.findIndex(r => r.type === ref.type && r.id === ref.id);
+      if (at >= 0) refs[at] = ref; else refs.push(ref);
+    }
+  }
   const tags = merged.tags ?? [];
   if (!Array.isArray(tags) || tags.length > 30 || tags.some(t => typeof t !== "string" || t.length > 100)) throw new LearningError("標籤格式不正確");
-  return { ...fields, status: status as LearningRecord["status"], practicedOn: merged.practicedOn, recordedOn: (merged.recordedOn ?? merged.practicedOn) as string, learningItemIds, primaryLearningItemId: primary, learningStageId: stage, learningTopicId: topic, sourceRefs: refs, tags };
+  return { ...fields, status: status as LearningRecord["status"], practicedOn: merged.practicedOn as string | null, recordedOn: (merged.recordedOn ?? merged.practicedOn) as string, learningItemIds, primaryLearningItemId: primary, learningStageId: stage, learningTopicId: topic, sourceRefs: refs, tags };
 }

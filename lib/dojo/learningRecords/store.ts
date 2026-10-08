@@ -11,7 +11,7 @@ import { LearningError } from "../learningFoundation/model";
 import { learningFoundation, learningOwner } from "../learningFoundation/store";
 import { RECORD_PREFIX, type LearningRecord } from "./model";
 import { recordService } from "./service";
-const title = (r: LearningRecord) => `${RECORD_PREFIX}${r.practicedOn}:${r.id}`;
+const title = (r: LearningRecord) => `${RECORD_PREFIX}${r.practicedOn ?? "unknown"}:${r.id}`;
 export const learningRecords = recordService({
   owner: learningOwner, graph: async () => (await learningFoundation.snapshot()).entities,
   exclusive: withLearningWriteLock,

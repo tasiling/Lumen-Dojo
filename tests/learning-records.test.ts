@@ -25,6 +25,13 @@ async function main() {
   assert.equal((await service.list({ learningItemId: "english" })).records.length,1);
   assert.equal((await service.list({ status: "completed" })).records.length,0); assert.equal(writes, before);
   const foreign = recordService({ ...repo, owner: "another" }); await assert.rejects(foreign.read(r.id), /存取/);
+  const external: LearningRecord = { ...r, id: "context-body", originEventId: "event", practicedOn: null, learningItemIds: [], primaryLearningItemId: null, learningTopicId: null, sourceRevision: "v1", sourceRefs: [{ type: "context", id: "session", label: "來源", url: "https://source.invalid/result", status: "available" }] };
+  rows.push({ id: external.id, value: external });
+  const edited = await service.edit(external.id, external.revision, { myUnderstanding: "保留自己的筆記", sourceRefs: [] });
+  assert.equal(edited.practicedOn, null); assert.equal(edited.primaryLearningItemId, null);
+  assert.equal(edited.myUnderstanding, "保留自己的筆記"); assert.deepEqual(edited.sourceRefs, external.sourceRefs);
+  await assert.rejects(service.edit(edited.id, edited.revision, { practicedOn: "2026-10-08" }), /來源日期/);
+  await assert.rejects(service.create({ originEventId: "forged", practicedOn: null, learningItemIds: [], whatIDid: "偽造" }), /日期|學科/);
   console.log("PASS Learning Record: create, complete, one-body multi-subject, stable refs, archive/restore, auth, stale, 181-row pagination, read-only GET service");
 }
 main().catch(e => { console.error(e); process.exitCode = 1; });
