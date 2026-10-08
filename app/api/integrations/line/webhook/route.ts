@@ -17,7 +17,8 @@ import {
   saveEnglishImageEntry,
   undoLatestEnglishImageMerge,
 } from "@/lib/dojo/englishImageStore";
-import { englishImageVocabCandidates, exportEnglishImageVocabs, listVocabForgeBooks, prepareEnglishImageForContextRoom, recommendedFocusDecks, PERMANENT_FOCUS_DECKS } from "@/lib/dojo/englishImageDispatch";
+import { routingEntryUrl, normalizeRoutingSelection } from "@/lib/dojo/englishImageRouting";
+import { englishImageVocabCandidates, exportEnglishImageVocabs, listVocabForgeBooks, recommendedFocusDecks, PERMANENT_FOCUS_DECKS } from "@/lib/dojo/englishImageDispatch";
 import {
   basicLineMenuQuickReply,
   captureImageQuickReply,
@@ -26,7 +27,6 @@ import {
   englishImageBookQuickReply,
   englishImageFocusDeckQuickReply,
   englishImageOrganizeQuickReply,
-  englishImageSourceQuickReply,
   englishImageVocabQuickReply,
   extractFirstUrl,
   forageQuickReply,
@@ -500,43 +500,11 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     if (action === "imageDispatch") {
       const target = params.get("target");
       if (target !== "context" && target !== "vocab" && target !== "both") return;
-      try {
-        let current = entry;
-        if (target === "context" || target === "both") current = await prepareEnglishImageForContextRoom(current.id);
-        if (target === "vocab" || target === "both") {
-          const candidates = englishImageVocabCandidates(current);
-          if (!candidates.length) {
-            await replyLineMessage(event.replyToken ?? "", "目前沒有適合送入 VocabForge 的單字。語境內容仍可到野採選擇要加入的既有專案與批次。", target === "both" ? contextRoomQuickReply(current.id, forageUrl(current.id)) : englishImageOrganizeQuickReply(current.id));
-            return;
-          }
-          if ((current.route === "game" || current.route === "reading") && !current.vocabForgeDraft.sourceName) {
-            const isReading = current.route === "reading";
-            await replyLineMessage(
-              event.replyToken ?? "",
-              `${target === "both" ? "語境素材已備妥。" : ""}送出前先確認${isReading ? "書名或文章來源" : "作品名稱"}。來源會保留在單字的遇見紀錄中，不會另外建立豆倉。`,
-              englishImageSourceQuickReply(current.id, current.sourceLabel, isReading ? "reading" : "game"),
-            );
-            return;
-          }
-          const sourceName = current.vocabForgeDraft.sourceName || current.sourceLabel || (current.route === "classroom" ? "本期課堂" : current.route === "reading" ? "閱讀內容" : "英文日常");
-          const focusDecks = current.vocabForgeDraft.focusDecks.length
-            ? current.vocabForgeDraft.focusDecks
-            : recommendedFocusDecks(current, sourceName);
-          current = await saveEnglishImageEntry({
-            ...current,
-            vocabForgeDraft: { sourceName, focusDecks, selectedKeys: [] },
-          });
-          await replyLineMessage(
-            event.replyToken ?? "",
-            `${target === "both" ? "語境素材已備妥。" : ""}系統已先勾選建議分類。請確認或調整常駐豆倉，最多兩個。`,
-            englishImageFocusDeckQuickReply(current.id, focusDecks),
-          );
-          return;
-        }
-        await replyLineMessage(event.replyToken ?? "", "語境素材已備妥。請到野採選擇「加入既有專案」或「建立新專案」；確認後會連同原文、摘要與表達建立新的內容批次。", contextRoomQuickReply(current.id, forageUrl(current.id)));
-      } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", `派送尚未完成：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
-      }
+      await replyLineMessage(
+        event.replyToken ?? "",
+        "尚未派送。請開啟同一份確認表單，確認來源、目的專案與單元、最多五個單字及兩個常駐豆倉，再按一次「確認送出」。兩站會分別回報接收結果。",
+        contextRoomQuickReply(entry.id, routingEntryUrl(forageUrl(entry.id), entry.id, target)),
+      );
       return;
     }
     if (action === "imageVocabSourceInput") {
@@ -660,7 +628,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageVocabConfirm") {
       try {
-        const { focusDecks, sourceName, selectedKeys } = entry.vocabForgeDraft;
+        const { focusDecks, sourceName, selectedKeys } = normalizeRoutingSelection(entry.vocabForgeDraft);
         if (!focusDecks.length) throw new Error("請先確認常駐豆倉");
         if (!selectedKeys.length) throw new Error("請先勾選至少一個單字");
         const result = await exportEnglishImageVocabs(entry.id, selectedKeys, focusDecks[0], { focusDecks, sourceName });

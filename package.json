@@ -19,8 +19,9 @@
     "test:learning-foundation": "node scripts/test-learning-foundation.mjs",
     "test:learning-foundation-api": "node scripts/test-learning-foundation-api.mjs",
     "test:learning-foundation-ui": "node scripts/test-learning-foundation-ui.mjs",
-    "test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-performance.mjs",
-    "check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build"
+    "test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-bank-route.mjs scripts/test-wealth-bank-summary.mjs scripts/test-wealth-bank-request.mjs scripts/test-wealth-performance.mjs",
+    "check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build",
+    "test:image-routing": "node scripts/test-unified-image-routing.mjs && node scripts/test-unified-image-dispatch.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

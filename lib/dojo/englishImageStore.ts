@@ -276,19 +276,4 @@ export async function moveEnglishImageToCapture(entry: EnglishImageEntry) {
   return capture;
 }
 
-export function currentMonthEstimatedSpend(entries: EnglishImageEntry[], now = new Date()): number {
-  const month = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Taipei",
-    year: "numeric",
-    month: "2-digit",
-  }).format(now);
-  return entries.reduce((sum, entry) => {
-    if (!entry.analyzedAt) return sum;
-    const analyzedMonth = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Taipei",
-      year: "numeric",
-      month: "2-digit",
-    }).format(new Date(entry.analyzedAt));
-    return analyzedMonth === month ? sum + entry.estimatedCostUsd : sum;
-  }, 0);
-}
+export { currentMonthEstimatedSpend } from "./englishImage";
