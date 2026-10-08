@@ -1,4 +1,5 @@
 import "server-only";
+import { containsLearningWord, learningUsageIssues } from "./englishImageLearningUsage";
 
 import type { EnglishImageContextExport, EnglishImageContextLink, EnglishImageEntry, EnglishImageVocabExport, EnglishImageVocabSyncState } from "./englishImage";
 import { getEnglishImageEntry, saveEnglishImageEntry, updateEnglishImageEntry } from "./englishImageStore";
@@ -114,11 +115,8 @@ function candidateKey(expression: string): string {
 }
 
 function sourceSentenceFor(entry: EnglishImageEntry, expression: string): string {
-  const escaped = expression.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const stem = expression.length >= 7 ? expression.slice(0, expression.length - 2).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : escaped;
-  const target = new RegExp(`\\b(?:${escaped}|${stem}[A-Za-z]*)\\b`, "i");
   const sentences = entry.ocrText.match(/[^.!?\n]+[.!?]?/g) ?? [];
-  return (sentences.find((sentence) => target.test(sentence)) ?? "").trim().slice(0, 1900);
+  return (sentences.find(sentence => containsLearningWord(expression, sentence)) ?? "").trim().slice(0, 1900);
 }
 
 function sourceContextFor(entry: EnglishImageEntry): string {
@@ -554,6 +552,12 @@ export async function exportEnglishImageVocabs(
   if (!pending.length) {
     return { entry, exports: selected.flatMap((candidate) => existingByKey.get(candidate.key) ?? []), failures: [] };
   }
+
+  const invalid = pending.flatMap(candidate => {
+    const issues = learningUsageIssues({ expression: candidate.expression, usage: candidate.usage.sentence, usageTranslation: candidate.usage.translation });
+    return issues.length ? [`${candidate.expression}：${issues.join("、")}`] : [];
+  });
+  if (invalid.length) throw new Error(`學習例句待修正，尚未派送：${invalid.join("；")}。請先重製短例句。`);
 
   const attemptAt = new Date().toISOString();
   const previousStates = new Map(entry.vocabForgeSyncStates.map((item) => [item.key, item]));
