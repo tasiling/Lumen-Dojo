@@ -1,5 +1,6 @@
 "use client";
 
+import { usePracticeLeaveGuard } from "@/lib/dojo/usePracticeLeaveGuard";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   canCompleteEnglishJournal,
@@ -35,7 +36,7 @@ async function responseJson<T>(response: Response): Promise<T> {
 }
 
 function formatDate(date: string): string {
-  return new Intl.DateTimeFormat("zh-TW", { month: "long", day: "numeric", weekday: "short" })
+  return new Intl.DateTimeFormat("zh-TW", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Taipei" })
     .format(new Date(`${date}T12:00:00+08:00`));
 }
 
@@ -70,6 +71,11 @@ export default function EnglishJournalWorkbench({
   const [selectedContextKeys, setSelectedContextKeys] = useState<string[]>([]);
   const [sendingToContextRoom, setSendingToContextRoom] = useState(false);
 
+  const dirty = Boolean(draft && JSON.stringify(draft.segments) !== JSON.stringify(practices.find(p => p.date === draft.date)?.segments));
+  usePracticeLeaveGuard(dirty);
+  function discardAllowed() { return !dirty || window.confirm("尚有未儲存的自譯內容，確定放棄修改？"); }
+  function keepDate(date: string) { const url = new URL(window.location.href); url.searchParams.set("journal",date); window.history.replaceState(null,"",url); }
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -82,11 +88,10 @@ export default function EnglishJournalWorkbench({
       const requestedPractice = requestedDate
         ? result.practices.find((practice) => practice.date === requestedDate) ?? null
         : null;
-      const practiceToOpen = requestedPractice && requestedPractice.status !== "completed"
-        ? requestedPractice
-        : result.practices.find((practice) => practice.status !== "completed") ?? null;
-      setSelectedDate(practiceToOpen?.date ?? null);
+      const practiceToOpen = requestedDate ? requestedPractice : [...result.practices].filter(p => p.status !== "completed").sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
+      setSelectedDate(practiceToOpen?.date ?? requestedDate ?? null);
       setDraft(practiceToOpen ? structuredClone(practiceToOpen) : null);
+      setReviewing(practiceToOpen?.status === "completed");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -101,28 +106,6 @@ export default function EnglishJournalWorkbench({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!initialDate || loading) return;
-    const existing = practices.find((practice) => practice.date === initialDate);
-    if (existing) {
-      if (existing.status === "completed") return;
-      if (selectedDate !== initialDate) {
-        const timer = window.setTimeout(() => {
-          setSelectedDate(initialDate);
-          setDraft(structuredClone(existing));
-          setActiveSegment(0);
-          setReviewing(false);
-        }, 0);
-        return () => window.clearTimeout(timer);
-      }
-      return;
-    }
-    const source = sources.find((item) => item.date === initialDate);
-    if (!source) return;
-    const timer = window.setTimeout(() => void queueSource(source), 0);
-    return () => window.clearTimeout(timer);
-  }, [initialDate, loading, practices, selectedDate, sources]);
-
   const pending = useMemo(() => practices.filter((practice) => practice.status !== "completed"), [practices]);
   const completed = useMemo(() => practices.filter((practice) => practice.status === "completed"), [practices]);
   const currentSegment = draft?.segments[activeSegment] ?? null;
@@ -135,10 +118,12 @@ export default function EnglishJournalWorkbench({
   const exportedContextKeys = useMemo(() => new Set(draft?.contextExports.map((item) => item.key) ?? []), [draft]);
 
   function selectPractice(practice: EnglishJournalPractice) {
+    if (!discardAllowed()) return;
+    keepDate(practice.date);
     setSelectedDate(practice.date);
     setDraft(structuredClone(practice));
     setActiveSegment(0);
-    setReviewing(false);
+    setReviewing(practice.status === "completed");
     setNotice(null);
     setError(null);
     setSelectedVocabKeys([]);
@@ -156,6 +141,7 @@ export default function EnglishJournalWorkbench({
   }
 
   async function queueSource(source: JournalSource) {
+    if (!discardAllowed()) return;
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -169,6 +155,7 @@ export default function EnglishJournalWorkbench({
       setPractices((current) => [result.practice, ...current.filter((item) => item.date !== result.practice.date)]
         .sort((a, b) => b.date.localeCompare(a.date)));
       setSources((current) => current.filter((item) => item.date !== result.practice.date));
+      keepDate(result.practice.date);
       setSelectedDate(result.practice.date);
       setDraft(structuredClone(result.practice));
       setActiveSegment(0);
@@ -394,13 +381,15 @@ export default function EnglishJournalWorkbench({
 
   return (
     <section className="english-journal-workbench">
+      {dirty && <p role="status">尚有未儲存內容，請保存這段再離開。</p>}
+      {initialDate && !loading && !draft && <p role="status">此日期尚無已保存的自譯。若下方有來源，可明確選擇加入；開啟頁面不會自動建立紀錄。</p>}
       <div className="english-journal-head">
         <div>
           <span className="eyebrow">英文寫作練習</span>
           <h4>英文自譯工作台</h4>
           <p>一次只處理一段：先自己翻譯，再用 AI 對照與定稿。</p>
         </div>
-        <span>{pending.length} 篇待處理</span>
+        <span>{loading ? "讀取中" : error && !practices.length ? "待處理數量未知" : `${pending.length} 篇待處理`}</span>
       </div>
 
       {loading && <div className="empty">正在整理英文日記…</div>}
@@ -432,7 +421,7 @@ export default function EnglishJournalWorkbench({
                   <b>{reviewing ? "全文中英回看" : `第 ${activeSegment + 1} 段，共 ${draft.segments.length} 段`}</b>
                 </div>
                 <div className="english-journal-editor-controls">
-                  <button type="button" className="text-link" onClick={() => { setDraft(null); setSelectedDate(null); }}>收起</button>
+                  <button type="button" className="text-link" onClick={() => { if(discardAllowed()){setDraft(null); setSelectedDate(null);} }}>收起</button>
                   <button type="button" className="text-link danger" disabled={saving} onClick={() => void deletePractice(draft)}>刪除這篇</button>
                 </div>
               </div>
@@ -472,7 +461,7 @@ export default function EnglishJournalWorkbench({
                       </section>
 
                       <label>我的英文自譯</label>
-                      <textarea
+                      <textarea disabled={saving}
                         className="field"
                         rows={7}
                         value={currentSegment.draft}
@@ -487,7 +476,7 @@ export default function EnglishJournalWorkbench({
                       <details className="english-comparison-block" open={Boolean(currentSegment.aiRevision || currentSegment.promptCopiedAt)}>
                         <summary>AI 對照與我的定稿</summary>
                         <label>AI 修正版／說明</label>
-                        <textarea
+                        <textarea disabled={saving}
                           className="field"
                           rows={7}
                           value={currentSegment.aiRevision}
@@ -496,7 +485,7 @@ export default function EnglishJournalWorkbench({
                         />
 
                         <label>我最後採用的英文</label>
-                        <textarea
+                        <textarea disabled={saving}
                           className="field"
                           rows={6}
                           value={currentSegment.finalVersion}
@@ -505,7 +494,7 @@ export default function EnglishJournalWorkbench({
                         />
 
                         <label>這段想記住的生詞（選填，最多 1–3 個）</label>
-                        <textarea
+                        <textarea disabled={saving}
                           className="field"
                           rows={3}
                           value={currentSegment.phrases}
@@ -515,7 +504,7 @@ export default function EnglishJournalWorkbench({
                         <small className="field-help">格式：英文單字｜中文意思。只有單字會出現在 VocabForge 候選匣。</small>
 
                         <label>想換情境再練的句型／語法（選填，最多 1–2 個）</label>
-                        <textarea
+                        <textarea disabled={saving}
                           className="field"
                           rows={4}
                           value={currentSegment.contextNotes}
@@ -616,7 +605,7 @@ export default function EnglishJournalWorkbench({
             </article>
           )}
 
-          <details className="english-journal-sources">
+          <details className="english-journal-sources" open={Boolean(initialDate && sources.some(s=>s.date===initialDate))}>
             <summary>從最近日記選擇</summary>
             <div>
               {sources.slice(0, 8).map((source) => (
