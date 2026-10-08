@@ -640,6 +640,9 @@ export async function listKnowledgeEntriesByPrefix(prefix: string) {
 // 卡片拿到對應的 Notion page id,不需要再靠標題比對重新找一次)。
 export async function getKnowledgeEntry(id: string) {
   const p = await withNotionRateLimit(() => notion().pages.retrieve({ page_id: id }));
+  if (!('parent' in p) || !('data_source_id' in p.parent) || p.parent.data_source_id.replaceAll('-', '') !== DATA_SOURCES.DB14_知識庫.replaceAll('-', '') || !('archived' in p) || p.archived || ('in_trash' in p && p.in_trash)) {
+    throw new Error('拒絕存取非本擁有者知識庫的紀錄');
+  }
   return mapKnowledge(p as NotionPage);
 }
 

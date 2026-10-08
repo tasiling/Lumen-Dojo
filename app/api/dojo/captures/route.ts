@@ -5,21 +5,22 @@ import {
   captureRecordTitle,
   isValidCaptureSourceUrl,
   normalizeCaptureEntry,
-  parseJson,
 } from "@/lib/dojo/formal";
 import {
   archiveJsonRecordById,
   listJsonRecords,
-  updateJsonRecordById,
 } from "@/lib/dojo/notionStore";
 import { createKnowledgeEntry } from "@/lib/notion/mutations";
-import { getKnowledgeEntry } from "@/lib/notion/queries";
-import { appendCaptureExplorationRecord, saveCaptureInitialReflection } from "@/lib/dojo/captureStore";
+import { appendCaptureExplorationRecord, saveCaptureInitialReflection, updateCaptureEntry } from "@/lib/dojo/captureStore";
+
+import { requireLearningOwner } from '@/lib/dojo/learningFoundation/access';
+import { LearningError } from '@/lib/dojo/learningFoundation/model';
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    requireLearningOwner(req);
     const requestedStatus = req.nextUrl.searchParams.get("status");
     const rows = await listJsonRecords(CAPTURE_TITLE_PREFIX);
     const captures = rows
@@ -34,13 +35,14 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { status: error instanceof LearningError ? error.status : 500 }
     );
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    requireLearningOwner(req);
     const body = await req.json();
     if (!isValidCaptureSourceUrl(body.sourceUrl)) {
       return NextResponse.json({ error: "來源網址格式不正確" }, { status: 400 });
@@ -66,6 +68,7 @@ export async function POST(req: NextRequest) {
         explorationRecords: [],
         knowledgeLinks: [],
         learningTracks: [],
+      learningItemIds: [],
         destinations: [],
         pinned: false,
         fadedAt: null,
@@ -94,13 +97,14 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { status: error instanceof LearningError ? error.status : 500 }
     );
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
+    requireLearningOwner(req);
     const body = await req.json();
     if (typeof body.id !== "string") {
       return NextResponse.json({ error: "缺少 id" }, { status: 400 });
@@ -124,46 +128,23 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "來源網址格式不正確" }, { status: 400 });
     }
 
-    const row = await getKnowledgeEntry(body.id);
-    if (!row.標題.startsWith(CAPTURE_TITLE_PREFIX)) {
-      return NextResponse.json({ error: "紀錄類型不符" }, { status: 400 });
-    }
-    const previous = normalizeCaptureEntry(parseJson(row.內容), { id: body.id });
-    if (!previous) {
-      return NextResponse.json({ error: "既有捕捉內容無法讀取" }, { status: 409 });
-    }
-
     const requestedCapture = body.capture && typeof body.capture === "object" ? body.capture : {};
-    const capture = normalizeCaptureEntry({
-      ...previous,
-      ...requestedCapture,
-      explorationRecords: Array.isArray(requestedCapture.explorationRecords)
-        ? requestedCapture.explorationRecords
-        : previous.explorationRecords,
-    }, {
-      id: body.id,
-      capturedAt: previous.capturedAt,
-      touch: true,
+    const capture = await updateCaptureEntry(body.id, previous => {
+      if (requestedCapture.updatedAt !== previous.updatedAt) throw new LearningError('素材版本已變更或缺少版本，請重新讀取再編輯', 409);
+      return { ...requestedCapture, explorationRecords: previous.explorationRecords };
     });
-    if (!capture) return NextResponse.json({ error: "標題為必填" }, { status: 400 });
-
-    await updateJsonRecordById(
-      body.id,
-      CAPTURE_TITLE_PREFIX,
-      row.標題,
-      captureContent(capture)
-    );
     return NextResponse.json({ ok: true, capture });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { status: error instanceof LearningError ? error.status : 500 }
     );
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
+    requireLearningOwner(req);
     const id = req.nextUrl.searchParams.get("id");
     if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
     await archiveJsonRecordById(id, CAPTURE_TITLE_PREFIX);
@@ -171,7 +152,7 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { status: error instanceof LearningError ? error.status : 500 }
     );
   }
 }
