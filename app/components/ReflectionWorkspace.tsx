@@ -24,7 +24,7 @@ export default function ReflectionWorkspace(){
  return <div className="reflection-workspace"><p>選一種工具整理此刻。可留白、不必得到正向結論；私人整理不計分，也不會成為心理學學成。</p>
   <label htmlFor="reflection-tool">整理工具</label><select id="reflection-tool" className="field" value={toolId} disabled={busy} onChange={e=>{setToolId(e.target.value);createId.current=null;setPendingCreateId(null);}}>{REFLECTION_TOOLS.map(t=><option value={t.id} key={t.id}>{t.name}</option>)}</select><button className="primary" disabled={busy} onClick={()=>void create()}>開始新的整理</button>
   {error&&<p role="alert">{error} {note&&<button disabled={busy} onClick={()=>void open(note.id)}>重新開啟已保存版本</button>}{pendingCreateId&&<button disabled={busy} onClick={()=>void open(pendingCreateId!)}>核對這次建立結果</button>}</p>}{message&&<p role="status">{message}</p>}
-  {note&&<section className="card reflection-editor" aria-label="私人整理內容"><small>私人 · {note.toolName} · {note.status==="completed"?"已完成":note.status==="pending"?"待修習":"草稿"} · 模板 v{note.toolVersion}</small>
+  {note&&<section className="card reflection-editor" aria-label="私人整理內容"><fieldset disabled={busy} style={{border:0,padding:0,margin:0,minWidth:0}}><small>私人 · {note.toolName} · {note.status==="completed"?"已完成":note.status==="pending"?"待修習":"草稿"} · 模板 v{note.toolVersion}</small>
    <label htmlFor="reflection-title">筆記標題</label><input id="reflection-title" className="field" value={note.title} maxLength={180} onChange={e=>patch({title:e.target.value})}/>
    <label htmlFor="reflection-date">日期</label><input id="reflection-date" className="field" type="date" value={note.date} onChange={e=>patch({date:e.target.value})}/>
    <label htmlFor="reflection-topic">主題群組（選填）</label><input id="reflection-topic" className="field" value={note.topicGroup} maxLength={180} onChange={e=>patch({topicGroup:e.target.value})}/>
@@ -35,7 +35,7 @@ export default function ReflectionWorkspace(){
    {note.questions.filter(q=>note.modes[note.depth].includes(q.id)).map(q=><div key={q.id}><label htmlFor={q.id}>{q.text}</label><textarea id={q.id} className="field" rows={4} maxLength={20000} value={note.answers[q.id]??""} onChange={e=>patch({answers:{...note.answers,[q.id]:e.target.value}})} placeholder="依自己的節奏書寫，也可以先跳過"/></div>)}
    <details><summary>光之圖鑑與標記（選填）</summary><LightCodex selected={note.lightTags} onChange={lightTags=>patch({lightTags})}/></details>
    <div className="reflection-save"><button className="primary" disabled={busy} onClick={()=>void save("draft")}>保存草稿</button><button disabled={busy||!Object.values(note.answers).some(a=>a.trim())} onClick={()=>void save("completed")}>完成這次整理</button></div><small>{dirty?"有未保存內容":"已保存"} · 深度只隱藏問題，所有回答都會保留。</small>
-  </section>}
+  </fieldset></section>}
   <section><h2>待修習與私人筆記</h2>{!notes.length&&!error&&<p>尚無私人整理。</p>}{notes.map(n=><button className="card practice-link" key={n.id} disabled={busy} onClick={()=>void open(n.id)}><b>{n.title}</b><small>{n.toolName} · {n.date} · {n.status==="pending"?"待修習":n.status==="completed"?"已完成":"草稿"}{n.topicGroup?` · ${n.topicGroup}`:""}</small><span>{n.status==="completed"?"回看與編輯":"繼續書寫"}</span></button>)}</section>
  </div>;
 }

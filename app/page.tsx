@@ -63,7 +63,7 @@ function formatToday(dateISO: string) {
     month: "long",
     day: "numeric",
     weekday: "long",
-  }).format(new Date(`${dateISO}T12:00:00+08:00`));
+  }).format(new Date(`${dateISO}T12:00:00+08:00`)).replace(/\s+/g, "");
 }
 
 function carryOptionLabel(iso: string, index: number) {
@@ -96,6 +96,7 @@ export default function TodayPage() {
   const carryOptions = useMemo(() => carryDateOptions(date), [date]);
   const todayEntries = useMemo(() => entries.filter((entry) => entry.date === date), [date, entries]);
   const [record, setRecord] = useState<DailyRecord>(() => emptyDailyRecord(date));
+  const [handoffBusy, setHandoffBusy] = useState(false);
   const [board, setBoard] = useState<WeeklyBoard | null>(null);
   const [continuations, setContinuations] = useState<PersonalContinuation[]>([]);
   const [continuationError, setContinuationError] = useState<string | null>(null);
@@ -529,6 +530,7 @@ export default function TodayPage() {
   const displayedRole = record.morning.roleSnapshot ?? creativeRole;
   return (
     <section className="screen today-screen">
+      <fieldset disabled={handoffBusy} style={{border:0,padding:0,margin:0,minWidth:0,width:"100%"}}>
       <div className="hero today-hero">
         <div className="eyebrow">今天 · {formatToday(date)}</div>
         <h1>把光放回今天</h1>
@@ -1109,7 +1111,7 @@ export default function TodayPage() {
                         }))}
                         placeholder={placeholder}
                       />
-                      {(field === "highlight" || field === "block" || field === "insight") && <ReflectionHandoff field={field} prepare={async () => {
+                      {(field === "highlight" || field === "block" || field === "insight") && <ReflectionHandoff field={field} onBusyChange={setHandoffBusy} prepare={async () => {
                         const saved = await persist(record, "日復盤草稿已保存，可帶入選取片段。");
                         const response = await fetch(`/api/dojo/daily?date=${date}`, { cache: "no-store" });
                         const json = await readResponse<{ id: string | null; record: DailyRecord }>(response);
@@ -1195,6 +1197,7 @@ export default function TodayPage() {
           </section>
         </>
       )}
+      </fieldset>
     </section>
   );
 }

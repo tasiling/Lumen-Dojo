@@ -26,7 +26,11 @@
     "test:r2-3-ui": "node scripts/test-r2-3-ui.mjs",
     "test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-bank-route.mjs scripts/test-wealth-bank-summary.mjs scripts/test-wealth-bank-request.mjs scripts/test-wealth-performance.mjs",
     "check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build",
-    "test:image-routing": "node scripts/test-unified-image-routing.mjs && node scripts/test-unified-image-dispatch.mjs"
+    "test:image-routing": "node scripts/test-unified-image-routing.mjs && node scripts/test-unified-image-dispatch.mjs",
+    "test:reflection": "node scripts/test-reflection.mjs",
+    "test:reflection-api": "node scripts/test-reflection-api.mjs",
+    "test:reflection-ui": "node scripts/test-reflection-ui.mjs",
+    "test:reflection-ui:production": "node scripts/test-reflection-production-ui.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

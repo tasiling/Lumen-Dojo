@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { Module, createRequire } from 'node:module';
@@ -13,6 +13,7 @@ try {
  assert.equal(REFLECTION_TOOLS.length,6);
  const maps=[[[1,2,5],[1,2,3,4,5],6],[[1,2,5],[1,2,3,5,7],7],[[1,4,5],[1,2,3,4,5],6],[[1,6,8],[1,2,4,6,8],8],[[1,5,7],[1,2,3,5,7],7],[[1,4,6],[1,3,4,5,6],7]];
  REFLECTION_TOOLS.forEach((t,i)=>{assert.equal(t.questions.length,maps[i][2]);for(const [j,mode] of ['light','moderate'].entries())assert.deepEqual(t.modes[mode],maps[i][j].map(n=>t.questions[n-1].id));assert.deepEqual(t.modes.deep,t.questions.map(q=>q.id));});
+ const {LIGHT_CODEX,normalizeLightTags}=load('lib/dojo/lightCodex.ts');assert.equal(LIGHT_CODEX.length,10);assert.deepEqual(normalizeLightTags({guangxing:'ning',guangfa:'ju'}),['ning','ju']);assert.deepEqual(normalizeLightTags({lightTags:['ning','ju','ning']}),['ning','ju']);
  const {fileReflectionRepository}=load('lib/dojo/reflection/store.ts'),{reflectionService}=load('lib/dojo/reflection/service.ts');
  const source={id:'daily-fixture',date:'2026-10-13',field:'highlight',revision:'source-v1',excerpt:'謝謝朋友陪我散步'};
  const repo=fileReflectionRepository();const service=reflectionService({owner:'owner-a',repository:repo,source:async s=>{assert.deepEqual(s,source);return {...s};},role:async()=>({id:'existing-role',title:'耐心的創作者',traits:['理解'],updatedAt:'v1'})});
@@ -34,5 +35,6 @@ try {
  const old=await service.get(a.id);old.questions[0].text='舊版問句';await repo.write(old);const edited=await service.update(old.id,old.revision,{title:'保留快照'});assert.equal(edited.questions[0].text,'舊版問句');
  const {withLearningWriteLock}=load('lib/dojo/learningFoundation/fileLock.ts'),{trackLearningWrite}=load('lib/dojo/learningFoundation/writeOutcome.ts');
  await assert.rejects(()=>withLearningWriteLock(()=>trackLearningWrite(async()=>{throw Error('unknown commit');})),/結果未確認/);assert.ok((await readdir(directory)).includes('learning-writer.lock'));await assert.rejects(()=>service.create({...request,createRequestId:crypto.randomUUID()}),/寫入進行中/);
- console.log('PASS R2-4 real filesystem: templates/modes, immutable IDs, blank completion, hidden answers, draft/complete, restart, owner, stale and concurrent writers, handoff dedup/semantics, role snapshot, private metadata, unknown-outcome lock');
+ assert.equal((await service.get(edited.id)).title,'保留快照');
+ console.log('PASS R2-4 real filesystem: templates/modes, immutable IDs, blank completion, hidden answers, draft/complete, restart, owner, stale and concurrent writers, handoff dedup/semantics, role snapshot, private metadata, codex/legacy tags, unknown-outcome lock with read-only recovery');
 } finally {await rm(directory,{recursive:true,force:true});delete process.env.LEARNING_WRITE_LOCK_DIR;}
