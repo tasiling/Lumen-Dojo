@@ -84,7 +84,7 @@ try {
     else if (u.pathname === "/api/dojo/learning/records")
       body = { records: active ? [{id:"00000000-0000-4000-8000-000000000010",title:"語境回流正文",whatIDid:"語境修習摘要",practicedOn:null,status:"completed",learningItemIds:[]}] : [], cursor: null };
     else if (u.pathname === "/api/dojo/practice-events")
-      body = { events: active ? [{id:"b".repeat(64),sourceSystem:"context-room",completionStatus:completion,sourceAvailability:"available",practicedOn:null,occurredAt:null,quantity:1,unit:"次",learningItemIds:[],learningRecordId:"00000000-0000-4000-8000-000000000010",projectionStatus:"applied",projections:{record:"applied",output:"unlinked",weekly:"unlinked"}}] : [], cursor: null };
+      body = { events: active ? [{id:"b".repeat(64),sourceSystem:vfConnected ? "vocabforge" : "context-room",completionStatus:completion,sourceAvailability:"available",practicedOn:vfConnected ? "2026-10-13" : null,occurredAt:vfConnected ? "2026-10-12T23:59:59Z" : null,quantity:1,unit:vfConnected ? "輪" : "次",learningItemIds:[],learningRecordId:"00000000-0000-4000-8000-000000000010",projectionStatus:"applied",projections:{record:"applied",output:"unlinked",weekly:"unlinked"}}] : [], cursor: null };
     else if (u.pathname === "/api/dojo/external-results") {
       if (req.method() === "POST") {
         mutations++;
@@ -239,6 +239,7 @@ try {
   const vfBefore=mutations;await page.reload();
   const vfPanel=page.getByRole("region",{name:"外部修習來源"});
   await vfPanel.getByText(/VocabForge・標準五詞回合/).waitFor();
+  await page.getByText("VocabForge・1 輪",{exact:true}).waitFor();
   assert.equal(mutations,vfBefore);
   for(const width of [375,390,430]){await page.setViewportSize({width,height:430});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${output}/vocab-${width}.png`,fullPage:true});}
   await vfPanel.getByRole("button",{name:"刷新 VF 成果"}).click();await vfPanel.getByRole("status").waitFor();assert.equal(mutations,vfBefore+1);
