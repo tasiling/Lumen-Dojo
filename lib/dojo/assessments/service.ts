@@ -114,7 +114,9 @@ export function assessmentService(repo: AssessmentRepository) {
       const old = previous?.find(x => x.id === e.id && x.kind === e.kind && x.referenceId === e.referenceId && x.fileBlockId === e.fileBlockId && x.selectedText === e.selectedText && x.url === e.url);
       if (e.status === "available" && old?.nativeMediaIdentity && old.nativeMediaIdentity !== e.nativeMediaIdentity)
         return { ...old, status: "unverified" as const };
-      return { ...e, snapshot: old?.snapshot ?? e.snapshot };
+      // Loss of availability must not erase the original native-object identity
+      // used by historical proof correspondence. Current status still gates use.
+      return { ...e, snapshot: old?.snapshot ?? e.snapshot, ...(e.status !== "available" && old?.nativeMediaIdentity ? { nativeMediaIdentity: old.nativeMediaIdentity } : {}) };
     });
   }
   async function mutate(value: string, revision: number, fn: (a: Attempt) => Promise<void>) {

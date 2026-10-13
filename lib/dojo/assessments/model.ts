@@ -4,6 +4,7 @@ export type EvidenceKind = "text" | "learning-record" | "url" | "file" | "audio"
 export type EvidenceInput = { id: string; kind: EvidenceKind; label: string; selectedText?: string; url?: string; referenceId?: string; fileBlockId?: string };
 export type EvidenceContext = { attemptId: string; definitionVersion: number; answerDigest: string };
 export type ProofAttestation = EvidenceContext & { evaluator: { type: "teacher" | "professional"; name: string }; nativeMediaIdentity: string; reviewStatus: "verified" };
+export type ProofRecord = { recordType: "assessment-proof/v1"; owner: string; reviewedBy: string; provenance: "owner-recorded-source-correspondence"; evidenceId: string; submittedRevision: number; requestFingerprint: string; reviewNote: string; createdAt: string; attestation: ProofAttestation };
 export type Evidence = EvidenceInput & { status: "available" | "archived" | "missing" | "unverified"; snapshot: string; nativeMediaIdentity?: string; attestation?: ProofAttestation };
 export type Scope = { learningItemId: string; stageId?: string; topicId?: string; level: "topic" | "stage" | "path"; languageDimension: "none" | "reading" | "writing" | "listening" | "speaking" | "pronunciation" | "fluency" };
 export type ConfirmationMethod = "self" | "teacher" | "professional";

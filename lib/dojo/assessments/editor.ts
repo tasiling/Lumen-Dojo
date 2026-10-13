@@ -1,4 +1,4 @@
-import type {EvidenceInput,Evaluation} from './model';
+import type {EvidenceInput,Evaluation,Attempt,ProofRecord} from './model';
 export function answerEvidence(evidence:EvidenceInput[],answer:string,include:boolean):EvidenceInput[]{
  if(!include)return evidence.filter(e=>!(e.id==='answer-as-evidence'&&e.kind==='text'));
  if(!answer.trim())throw Error('空白作答不能作為文字證據');
@@ -17,6 +17,12 @@ export function preparedExportText(prepared:PreparedExport|null,includeAnswer:bo
  if(!prepared||prepared.includeAnswer!==includeAnswer||JSON.stringify([...prepared.evidenceIds].sort())!==JSON.stringify([...evidenceIds].sort()))return '';
  return prepared.text;
 }
-export function editorDirty(status:string,draftChanged:boolean,review:string,baseline:string,imported:string):boolean{
- return status==='draft'?draftChanged:status==='submitted'&&(review!==baseline||imported.length>0);
+export function editorDirty(status:string,draftChanged:boolean,review:string,baseline:string,imported:string,proofInputsChanged=false):boolean{
+ return status==='draft'?draftChanged:status==='submitted'&&(review!==baseline||imported.length>0||proofInputsChanged);
+}
+export function initialEvaluation(attempt:Attempt,proofs:ProofRecord[]):Evaluation{
+ if(attempt.evaluation)return attempt.evaluation;
+ const proof=proofs.find(p=>attempt.definitionSnapshot.confirmationMethods.includes(p.attestation.evaluator.type));
+ const type=attempt.definitionSnapshot.confirmationMethods[0];
+ return {attemptId:attempt.id,definitionVersion:attempt.definitionVersion,attemptRevision:attempt.revision,evaluator:proof?{...proof.attestation.evaluator,proofEvidenceId:proof.evidenceId}:{type,name:type==='self'?'自己':''},criteria:attempt.definitionSnapshot.criteria.map(c=>({criterionId:c.id,verdict:'insufficient',feedback:''}))};
 }

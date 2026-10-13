@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
-import { assessments, assessmentRepository } from "@/lib/dojo/assessments/store";
+import { assessments, assessmentRepository, recordAssessmentProof, assessmentProofRecords } from "@/lib/dojo/assessments/store";
 import { nativeSources, nativeAttachments } from "@/lib/dojo/assessments/nativeCatalog";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   try { requireLearningOwner(req); const q = req.nextUrl.searchParams;
     if (q.get("native-sources")) return respond(await nativeSources(q.get("cursor") ?? undefined));
     if (q.get("native-page")) return respond(await nativeAttachments(q.get("native-page")!));
-    if (q.get("attempt")) { const id = q.get("attempt")!; return respond({ attempt: await assessments.getAttempt(id), evidenceAvailability: await assessments.evidenceAvailability(id) }); }
+    if (q.get("attempt")) { const id = q.get("attempt")!; return respond({ attempt: await assessments.getAttempt(id), evidenceAvailability: await assessments.evidenceAvailability(id), proofs: await assessmentProofRecords(id) }); }
     if (q.get("mastery")) { const id = q.get("mastery")!; return respond({ mastery: await assessments.confirmedMastery(id), evidenceAvailability: await assessments.evidenceAvailability(id) }); }
     const definitions = await assessmentRepository.definitions(), attempts = await assessmentRepository.attempts();
     return respond({ definitions, attempts: attempts.map(a => ({ id: a.id, capabilityId: a.capabilityId, definitionVersion: a.definitionVersion, capabilityName: a.definitionSnapshot.name, revision: a.revision, status: a.status, verdict: a.verdict, confirmedAt: a.confirmedAt, revisitOf: a.revisitOf, updatedAt: a.updatedAt })) });
@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
   try { requireLearningOwner(req); const b = await body(req);
     if (b.action === "define") return respond({ definition: await assessments.define(b) }, 201);
     if (b.action === "attempt") return respond({ attempt: await assessments.createAttempt(b) }, 201);
+    if (b.action === "record-proof") return respond({ proof: await recordAssessmentProof(b) }, 201);
     if (b.action === "preview-feedback") return respond(await assessments.previewFeedback(b.id, b.evaluation));
     if (b.action === "export") return respond({ package: await assessments.exportSelected(b.id, b) });
     throw new LearningError("未知驗收操作");

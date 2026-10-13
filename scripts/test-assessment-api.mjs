@@ -59,12 +59,66 @@ try{
  const proofInput={id:'proof',kind:'professional-proof',label:'teacher proof',referenceId:crypto.randomUUID(),fileBlockId:crypto.randomUUID()},proofKey=createHash('sha256').update(JSON.stringify([a.id,proofInput.id])).digest('hex');
  const proofRows=[page('行光能力證明-'+proofKey,{}),page('行光能力證明-'+proofKey,{})];for(const p of proofRows)rows.set(p.id,p);
  await assert.rejects(()=>verifyOwnedEvidence([proofInput],undefined,{attemptId:a.id,definitionVersion:1,answerDigest:'test'}),/證明 ID 重複/);
- for(const p of proofRows)rows.delete(p.id);nativeModule.ownedNativeAttachment=originalNative;
+ for(const p of proofRows)rows.delete(p.id);
+ // Removing proof recording or trusting caller identity/context must fail these actual-handler assertions.
+ for(const evaluatorType of ['teacher','professional']){
+  const humanDefinition={...definition,professionalPractice:true,confirmationMethods:[evaluatorType],criteria:[{...definition.criteria[0],requiredEvidenceKinds:['professional-proof']}]};
+  const humanD=(await call('POST',{action:'define',requestId:crypto.randomUUID(),definition:humanDefinition})).body.definition;
+  let human=(await call('POST',{action:'attempt',requestId:crypto.randomUUID(),capabilityId:humanD.capabilityId,definitionVersion:1})).body.attempt;
+  const recordProof=(extra={},attempt=human)=>call('POST',{action:'record-proof',id:attempt.id,revision:attempt.revision,evidenceId:proofInput.id,evaluator:{type:evaluatorType,name:'Real evaluator'},correspondenceChecked:true,reviewNote:'Reviewed original assessment report against this work',...extra});
+  assert.equal((await recordProof()).status,409,'draft proof recording refused');
+  human=(await patch('draft',{answer:'Human reviewed answer',evidence:[proofInput]},human)).body.attempt;
+  human=(await patch('submit',{},human)).body.attempt;
+  const beforeProof=writes;
+  assert.equal((await recordProof({correspondenceChecked:false})).status,400);
+  assert.equal((await recordProof({reviewNote:''})).status,400);
+  assert.equal((await recordProof({revision:1})).status,409);
+  assert.equal((await recordProof({evidenceId:'not-selected'})).status,409);
+  nativeModule.ownedNativeAttachment=async()=>({status:'available',identity:'changed-native',snapshot:'changed'});
+  assert.equal((await recordProof()).status,409,'changed submitted object cannot be newly attested');
+  nativeModule.ownedNativeAttachment=async()=>({status:'available',identity:'test-native',snapshot:'test proof'});
+  assert.equal(writes,beforeProof);
+  const recorded=await recordProof({answerDigest:'FORGED',nativeMediaIdentity:'FORGED',reviewedBy:'FORGED',attestation:{reviewStatus:'verified'}});
+  assert.equal(recorded.status,201);assert.equal(recorded.body.proof.reviewedBy,learningOwner);
+  assert.equal(recorded.body.proof.attestation.answerDigest,createHash('sha256').update(JSON.stringify(human.answer)).digest('hex'));
+  assert.equal(recorded.body.proof.attestation.nativeMediaIdentity,'test-native');
+  assert.equal(recorded.body.proof.provenance,'owner-recorded-source-correspondence');
+  const afterProof=writes;assert.equal((await recordProof()).status,201);assert.equal(writes,afterProof,'same proof retry must not duplicate');
+  assert.equal((await recordProof({evaluator:{type:evaluatorType,name:'Different evaluator'}})).status,409);assert.equal(writes,afterProof);
+  const unchanged=(await call('GET',null,'?attempt='+human.id)).body.attempt;assert.deepEqual(unchanged,human,'proof record does not rewrite submitted work or increment revision');
+  const proofRead=await call('GET',null,'?attempt='+human.id);assert.equal(proofRead.body.proofs.length,1);assert.equal(proofRead.body.proofs[0].attestation.evaluator.name,'Real evaluator');assert.equal(writes,afterProof,'reloading registered correspondence is read-only');
+  const evaluated=await patch('evaluate',{evaluation:{attemptId:human.id,definitionVersion:1,attemptRevision:human.revision,evaluator:{type:evaluatorType,name:'Real evaluator',proofEvidenceId:proofInput.id},criteria:[{criterionId:'meaning',verdict:'meets',feedback:'Verified report'}]}},human);
+  assert.equal(evaluated.status,200);human=evaluated.body.attempt;assert.equal(human.verdict,'meets');
+  assert.equal((await recordProof()).status,409,'assessed history cannot rebind examiner');
+  nativeModule.ownedNativeAttachment=async()=>({status:'available',identity:'changed-native',snapshot:'changed'});
+  assert.equal((await patch('confirm',{confirmationMethod:evaluatorType},human)).status,409,'confirmation must recheck media');
+  nativeModule.ownedNativeAttachment=async()=>({status:'available',identity:'test-native',snapshot:'test proof'});
+  const confirmed=await patch('confirm',{confirmationMethod:evaluatorType},human);assert.equal(confirmed.status,200);assert.ok(confirmed.body.attempt.confirmedAt);
+  for(const sourceStatus of ['missing','archived']){
+   human=(await call('POST',{action:'attempt',requestId:crypto.randomUUID(),capabilityId:humanD.capabilityId,definitionVersion:1})).body.attempt;
+   human=(await patch('draft',{answer:'Human reviewed answer',evidence:[proofInput]},human)).body.attempt;human=(await patch('submit',{},human)).body.attempt;assert.equal((await recordProof()).status,201);
+   nativeModule.ownedNativeAttachment=async()=>({status:sourceStatus,snapshot:'unavailable original'});
+   const unavailable=await patch('evaluate',{evaluation:{attemptId:human.id,definitionVersion:1,attemptRevision:human.revision,evaluator:{type:evaluatorType,name:'Real evaluator',proofEvidenceId:proofInput.id},criteria:[{criterionId:'meaning',verdict:'meets',feedback:'Previously reviewed'}]}},human);
+   assert.equal(unavailable.status,200);human=unavailable.body.attempt;assert.equal(human.verdict,'insufficient');
+   const beforeUnavailableRead=writes,history=await call('GET',null,'?attempt='+human.id);assert.equal(history.status,200,'unavailable evidence cannot block reloading assessed historical work');assert.equal(history.body.proofs.length,1);assert.equal(history.body.evidenceAvailability[0].status,sourceStatus);assert.equal(writes,beforeUnavailableRead);
+   nativeModule.ownedNativeAttachment=async()=>({status:'available',identity:'test-native',snapshot:'test proof'});
+  }
+
+ }
+ nativeModule.ownedNativeAttachment=originalNative;
  failRead=true;const failed=await call('POST',{...create,requestId:crypto.randomUUID()});assert.equal(failed.status,503);assert.ok(!(await readdir(directory)).includes('learning-writer.lock'));
  const foreignRecordId=crypto.randomUUID();const foreignRecord=page('行光學習正文-2026-10-13:'+foreignRecordId,{recordType:'learning-record/v1',id:foreignRecordId,owner:'other',whatIDid:'OTHER PRIVATE',status:'completed'});rows.set(foreignRecord.id,foreignRecord);let foreignAttempt=(await call('POST',{...create,requestId:crypto.randomUUID()})).body.attempt;assert.equal((await patch('draft',{answer:'X',evidence:[{id:'foreign',kind:'learning-record',label:'foreign',referenceId:foreignRecordId}]},foreignAttempt)).status,403);
  for(let i=0;i<181;i++){const id=crypto.randomUUID(),value={...a,id,requestFingerprint:'fixture-'+i,confirmedAt:null};const p=page('行光能力嘗試-'+id,value);rows.set(p.id,p)}
  assert.ok((await call('GET')).body.attempts.length>=183);const nativeFirst=await call('GET',null,'?native-sources=1');assert.equal(nativeFirst.status,200);assert.ok(nativeFirst.body.cursor);assert.equal((await call('GET',null,'?native-sources=1&cursor='+encodeURIComponent(nativeFirst.body.cursor))).status,200);repeatCursor=true;assert.equal((await call('GET')).status,503);repeatCursor=false;
+ // The proof write must retain the same durable-intent and ambiguous-write guards as other assessment writes.
+ nativeModule.ownedNativeAttachment=async()=>({status:'available',identity:'test-native',snapshot:'test proof'});
+ const durabilityD=(await call('POST',{action:'define',requestId:crypto.randomUUID(),definition:{...definition,confirmationMethods:['teacher']}})).body.definition;
+ const prepareProof=async()=>{let v=(await call('POST',{action:'attempt',requestId:crypto.randomUUID(),capabilityId:durabilityD.capabilityId,definitionVersion:1})).body.attempt;v=(await patch('draft',{answer:'original',evidence:[proofInput]},v)).body.attempt;v=(await patch('submit',{},v)).body.attempt;return {action:'record-proof',id:v.id,revision:v.revision,evidenceId:proofInput.id,evaluator:{type:'teacher',name:'Teacher'},correspondenceChecked:true,reviewNote:'Compared original report and work'};};
+ const hiddenProof=await prepareProof(),uncertainProof=await prepareProof();
+ hideCreated=true;assert.equal((await call('POST',hiddenProof)).status,201);const proofWrites=writes;assert.equal((await call('POST',hiddenProof)).status,409);assert.equal(writes,proofWrites,'temporarily invisible proof must not be recreated');hideCreated=false;hidden.clear();
+ assert.equal((await call('GET',null,'?attempt='+hiddenProof.id)).body.proofs.length,1);
+ nativeModule.ownedNativeAttachment=originalNative;
  hideCreated=true;const invisible={...create,requestId:crypto.randomUUID()};assert.equal((await call('POST',invisible)).status,201);const writesBeforeRetry=writes;assert.equal((await call('POST',invisible)).status,409);assert.equal(writes,writesBeforeRetry);hideCreated=false;hidden.clear();
- lostWrite=true;const uncertain=await call('POST',{...create,requestId:crypto.randomUUID()});assert.equal(uncertain.status,503);assert.ok((await readdir(directory)).includes('learning-writer.lock'));assert.equal((await call('POST',{...create,requestId:crypto.randomUUID()})).status,409);assert.equal((await call('GET',null,'?attempt='+a.id)).status,200);
+ nativeModule.ownedNativeAttachment=async()=>({status:'available',identity:'test-native',snapshot:'test proof'});lostWrite=true;const uncertain=await call('POST',uncertainProof);assert.equal(uncertain.status,503);assert.ok((await readdir(directory)).includes('learning-writer.lock'));assert.equal((await call('POST',{...create,requestId:crypto.randomUUID()})).status,409);assert.equal((await call('GET',null,'?attempt='+a.id)).status,200);
  console.log('PASS actual assessment handlers/persistence/serializer: auth/origin, immutable records, retry intents, read-only metadata, private production exclusion, owner refusal, 181+ pagination/cursor failure, prewrite-read release, unknown-write lock and read-only inspection');
 }finally{await rm(directory,{recursive:true,force:true});delete process.env.ACCESS_KEY;delete process.env.LEARNING_WRITE_LOCK_DIR;}
