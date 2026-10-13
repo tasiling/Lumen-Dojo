@@ -1,3 +1,6 @@
+import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
+import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
+import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import { NextRequest, NextResponse } from "next/server";
 import {
   BINGO_TITLE_PREFIX,
@@ -78,20 +81,27 @@ export async function GET(req: NextRequest) {
     const weekStart = mondayOf(requested);
     const row = await readJsonRecord(bingoRecordTitle(weekStart));
     const board = row ? normalizeWeeklyBoard(row.value, weekStart) : emptyWeeklyBoard(weekStart);
+    if(row && row.value && typeof row.value === "object") board.updatedAt = (row.value as { updatedAt: string }).updatedAt;
     return NextResponse.json({ board, persisted: Boolean(row) });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
+    requireLearningOwner(req);
     const body = await req.json();
     const week = typeof body.weekStart === "string" ? body.weekStart : "";
     if (!DATE_RE.test(week)) return NextResponse.json({ error: "週起始日格式不正確" }, { status: 400 });
     const weekStart = mondayOf(week);
     const board = normalizeWeeklyBoard(body.board, weekStart);
-    const saved = await upsertJsonRecord(bingoRecordTitle(weekStart), board);
+    const saved = await withLearningWriteLock(async () => {
+      const current = await readJsonRecord(bingoRecordTitle(weekStart));
+      if(current && body.board?.updatedAt !== (current.value as { updatedAt?: string }).updatedAt) throw new LearningError("週盤版本已變更，請重新讀取",409);
+      return upsertJsonRecord(bingoRecordTitle(weekStart), board, { manualCompletion: true });
+    });
+    Object.assign(board, saved.value);
     for (const cell of board.cells) {
       if (cell.assignedDate) await syncDailyTaskFromCell(cell, weekStart);
       if (cell.learning) await syncLearningActivity({ weekStart, cell });
@@ -100,7 +110,7 @@ export async function PUT(req: NextRequest) {
     const synced = vocabForgeCell ? await syncVocabForgeWeeklyBingo(weekStart) : null;
     return NextResponse.json({ ok: true, id: saved.id, board: synced?.board ?? board });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
@@ -139,7 +149,7 @@ export async function PATCH(req: NextRequest) {
     await upsertJsonRecord(bingoRecordTitle(weekStart), next);
     return NextResponse.json({ ok: true, board: next, removed: selected.length, preservedDailyTasks });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
@@ -161,6 +171,6 @@ export async function DELETE(req: NextRequest) {
     await archiveJsonRecordById(row.id, BINGO_TITLE_PREFIX);
     return NextResponse.json({ ok: true, board: emptyWeeklyBoard(weekStart), deleted: true, preservedDailyTasks });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }

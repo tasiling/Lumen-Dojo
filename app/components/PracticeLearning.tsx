@@ -1,6 +1,7 @@
 "use client";
+import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import Link from "./PracticeRouteLink";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
 import {
@@ -13,6 +14,7 @@ const sorted = (e: LearningEntity[]) =>
   [...e].sort((a, b) => a.order - b.order);
 export default function PracticeLearning() {
   const params = useSearchParams();
+  const router = useRouter();
   const requested = params.get("learningItem");
   const tab = params.get("tab") ?? "overview";
   const [data, setData] = useState<FoundationSnapshot | null>(null);
@@ -57,12 +59,7 @@ export default function PracticeLearning() {
     return `/practice/learning?${q}`;
   }
   function record() {
-    if (item)
-      openQuickAdd({
-        presetSpace: "practice",
-        presetKind: `學習／${item.name}`,
-        learningItemId: item.id,
-      });
+    if (item) router.push(`/practice/records?new=1&learningItem=${item.id}`);
   }
   const legacy = tracks.find((t) => t.key === item?.legacyKey);
   const stages = sorted(
@@ -244,6 +241,8 @@ export default function PracticeLearning() {
               )}
               {tab === "logs" && (
                 <>
+                  <LearningRecordWorkspace learningItemId={item.id} recent />
+                  <details><summary>既有相容摘要（不是完成事件）</summary>
                   {entriesLoading && <p>讀取學習紀錄中…</p>}
                   {entriesError && <p role="alert">{entriesError}</p>}
                   {legacyError && <p role="alert">{legacyError}</p>}
@@ -273,6 +272,7 @@ export default function PracticeLearning() {
                       </p>
                     </article>
                   ))}
+                  </details>
                   <p>尚無紀錄時，可從工具或此處留下真實修習紀錄。</p>
                   <button onClick={record}>留下學習紀錄</button>
                 </>

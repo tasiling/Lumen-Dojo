@@ -1,0 +1,21 @@
+{
+  "fixtureOnly": true,
+  "owner": "isolated-owner",
+  "eventVersion": 1,
+  "eventType": "practice.completed",
+  "sourceSystem": "dojo",
+  "sourceType": "english-journal-segment",
+  "sourceId": "isolated-page-id:stable-segment-id",
+  "sourceRevision": "2",
+  "sourceDate": "2026-09-20",
+  "occurredAt": "2026-10-01T04:00:00Z",
+  "practicedOn": "2026-10-01",
+  "timeZone": "fixture uses the configured DOJO_TIME_ZONE at execution",
+  "learningItemIds": ["isolated-english-item-id"],
+  "learningRecordId": "isolated-record-id",
+  "completionKind": "journal-self-translation",
+  "quantity": 1,
+  "unit": "段",
+  "binding": null,
+  "projections": {"record": "applied", "output": "needs_retry", "weekly": "pending"}
+}

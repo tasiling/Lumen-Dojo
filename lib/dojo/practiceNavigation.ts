@@ -1,5 +1,6 @@
 export const WORKSPACES = [
   "learning",
+  "records",
   "manage",
   "legacy",
   "journal",

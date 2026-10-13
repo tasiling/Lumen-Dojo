@@ -1,0 +1,14 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:learning-foundation-ui
+> node scripts/test-learning-foundation-ui.mjs
+
+READY isolated UI server 3017
+PASS UI initialization preview is read-only; explicit confirmation creates nine items
+PASS UI tenth custom item, long bilingual name, blank path and refresh selection persistence
+PASS UI stage/topic creation, order, movement, pause/archive/restore without ID change
+PASS 375/390/430px long text, keyboard focus/Tab and CSS safe-area padding (Chromium emulation)
+PASS timer navigation and Back restore selected learning item
+PASS forage UI links psychology/Chinese medicine and survives refresh
+PASS no browser runtime errors
+Screenshots: /tmp/r2-3-upstream-ui

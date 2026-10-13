@@ -18,6 +18,7 @@ export type EnglishJournalSegment = {
 };
 
 export type EnglishJournalPractice = {
+  revision: number;
   version: 4;
   recordType: "english-journal-practice";
   date: string;
@@ -67,6 +68,7 @@ export type EnglishContextExport = {
 };
 
 type LegacyEnglishJournalPractice = {
+  revision?: unknown;
   date?: unknown;
   sourceText?: unknown;
   draft?: unknown;
@@ -397,6 +399,7 @@ export function emptyEnglishJournalPractice(date: string, sourceText: string): E
   const now = new Date().toISOString();
   const cleanSource = sourceText.trim().slice(0, 30000);
   return {
+    revision: 0,
     version: 4,
     recordType: "english-journal-practice",
     date,
@@ -434,6 +437,7 @@ export function normalizeEnglishJournalPractice(
 
   return {
     ...base,
+    revision: typeof source.revision === "number" && Number.isInteger(source.revision) ? source.revision : 0,
     segments,
     vocabForgeExports,
     contextExports,
