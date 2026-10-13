@@ -83,6 +83,7 @@ export default function PracticeLearning() {
         >
           管理學習項目
         </Link>
+        <Link href="/practice/assessments">能力驗收</Link>
       </div>
       {error ? (
         <p role="alert">{error}</p>

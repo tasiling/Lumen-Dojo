@@ -1,0 +1,25 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import Link from './PracticeRouteLink';
+import AssessmentAttempts from './AssessmentAttempts';
+import AssessmentDefinitionForm from './AssessmentDefinitionForm';
+import {usePracticeLeaveGuard} from '@/lib/dojo/usePracticeLeaveGuard';
+import type {Definition,DefinitionInput} from '@/lib/dojo/assessments/model';
+import type {LearningEntity} from '@/lib/dojo/learningFoundation/model';
+import {capabilityProgress,exampleDefinition,type AttemptSummary} from '@/lib/dojo/assessments/progress';
+const labels={'not-started':'尚未開始',practicing:'修習中','awaiting-review':'待評估或確認',mastered:'已確認掌握'};
+async function request(url:string,body?:unknown){const r=await fetch(url,{cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});const j=await r.json();if(!r.ok)throw Error(j.error??'資料暫時不可用');return j;}
+export default function AssessmentWorkspace(){
+ const [definitions,setDefinitions]=useState<Definition[]>([]),[attempts,setAttempts]=useState<AttemptSummary[]>([]),[entities,setEntities]=useState<LearningEntity[]>([]),[draft,setDraft]=useState<DefinitionInput|null>(null),[previous,setPrevious]=useState<Definition|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
+ const lock=useRef(false),intent=useRef<{fingerprint:string,id:string}|null>(null);
+ usePracticeLeaveGuard(Boolean(draft));
+ async function reload(){const [a,f]=await Promise.all([request('/api/dojo/assessments'),request('/api/dojo/learning/foundation')]);setDefinitions(a.definitions);setAttempts(a.attempts);setEntities(f.entities);}
+ useEffect(()=>{let alive=true;Promise.all([request('/api/dojo/assessments'),request('/api/dojo/learning/foundation')]).then(([a,f])=>{if(alive){setDefinitions(a.definitions);setAttempts(a.attempts);setEntities(f.entities);}}).catch(e=>{if(alive)setError(e.message)}).finally(()=>{if(alive)setLoading(false)});return()=>{alive=false}},[]);
+ const items=entities.filter(e=>e.kind==='item'&&e.status==='active');
+ function start(kind:'english'|'concept'){setPrevious(null);setDraft(exampleDefinition(kind,items[0]?.id??''));setNotice('範例只是可編輯的規準草稿，尚未建立能力或通過驗收。');setError('');}
+ async function save(){if(!draft||lock.current)return;lock.current=true;setBusy(true);setError('');const input={definition:{...draft,tasks:draft.tasks.filter(x=>x.trim()),aids:draft.aids.filter(x=>x.trim())},...(previous?{capabilityId:previous.capabilityId,previousVersion:previous.definitionVersion}:{})},fingerprint=JSON.stringify(input);if(intent.current?.fingerprint!==fingerprint)intent.current={fingerprint,id:crypto.randomUUID()};try{await request('/api/dojo/assessments',{action:'define',requestId:intent.current.id,...input});setDraft(null);intent.current=null;setNotice('規準已保存；尚未作答或確認達標。');await reload();}catch(e){setError(e instanceof Error?e.message:'保存未確認，請保留草稿後重試。')}finally{lock.current=false;setBusy(false)}}
+ const latest=definitions.filter(d=>!definitions.some(other=>other.capabilityId===d.capabilityId&&other.definitionVersion>d.definitionVersion));
+ return <main style={{maxWidth:780,margin:'0 auto',padding:'20px 16px 100px',overflowWrap:'anywhere'}}><Link href='/practice/learning'>← 返回心・知</Link><h1>能力驗收</h1><p>以明確規準驗收自己的作品；評估達標後，再由你確認成果。</p>{error&&<p role='alert'>{error}</p>}{notice&&<p role='status'>{notice}</p>}{loading?<p>讀取能力與規準中…</p>:<><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><button disabled={busy||!items.length||Boolean(draft)} onClick={()=>start('english')}>建立英文表達規準</button><button disabled={busy||!items.length||Boolean(draft)} onClick={()=>start('concept')}>建立學科概念規準</button></div>{!items.length&&<p>請先在心・知建立或恢復一個學科。</p>}
+ {draft&&<AssessmentDefinitionForm draft={draft} entities={entities} versioning={Boolean(previous)} busy={busy} onChange={setDraft} onSave={()=>void save()} onCancel={()=>{setDraft(null);setPrevious(null)}}/>}
+ <AssessmentAttempts definitions={latest} attempts={attempts} disabled={busy||Boolean(draft)}/><h2>目前能力</h2>{!latest.length&&<p>尚無能力規準。先編輯並保存一份規準，再開始獨立嘗試。</p>}{latest.map(d=>{const p=capabilityProgress(d,attempts);return <section key={d.id} style={{borderTop:'1px solid #bbb',padding:'16px 0'}}><h3>{d.name} · 規準 v{d.definitionVersion}</h3><p>{labels[p.state]}</p><p>{d.objective}</p><p>本版嘗試 {p.currentAttempts} 次；舊版已確認成果 {p.historicalConfirmed} 份。</p><details><summary>查看規準與歷史版本</summary>{definitions.filter(x=>x.capabilityId===d.capabilityId).sort((a,b)=>b.definitionVersion-a.definitionVersion).map(x=><div key={x.id}><h4>v{x.definitionVersion} · {x.name}</h4>{x.tasks.map((t,n)=><p key={n}>{t}</p>)}{x.criteria.map(c=><p key={c.id}>{c.mandatory?'必過：':''}{c.description} — {c.meetsDescription}</p>)}</div>)}</details><button disabled={busy||Boolean(draft)} onClick={()=>{setPrevious(d);setDraft(structuredClone(d));setNotice('修改後保存為新版本；歷史成果仍保留，不會自動算作新版掌握。')}}>編輯為新版規準</button><button disabled={busy||Boolean(draft)} onClick={()=>{setPrevious(null);setDraft(structuredClone(d));setNotice("建立另一能力的草稿；可重新選擇範圍，原能力與歷史成果保留。")}}>以此建立另一能力</button></section>})}</>}</main>;
+}
