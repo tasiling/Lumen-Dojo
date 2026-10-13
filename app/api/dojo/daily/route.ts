@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     const row = await readJsonRecord(dailyRecordTitle(date));
     const record = row ? normalizeDailyRecord(row.value, date) : emptyDailyRecord(date);
     if (row && row.value && typeof row.value === "object") record.updatedAt = (row.value as { updatedAt: string }).updatedAt;
-    return NextResponse.json({ record, persisted: Boolean(row) });
+    return NextResponse.json({ record, persisted: Boolean(row), id: row?.id ?? null });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }

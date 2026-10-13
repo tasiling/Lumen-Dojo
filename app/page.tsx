@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import ReflectionHandoff from "./components/ReflectionHandoff";
 import { useEffect, useMemo, useState } from "react";
 import EntryMeasurePanel from "@/app/components/EntryMeasurePanel";
 import ManifestationMilestoneCapture from "@/app/components/ManifestationMilestoneCapture";
@@ -1108,6 +1109,13 @@ export default function TodayPage() {
                         }))}
                         placeholder={placeholder}
                       />
+                      {(field === "highlight" || field === "block" || field === "insight") && <ReflectionHandoff field={field} prepare={async () => {
+                        const saved = await persist(record, "日復盤草稿已保存，可帶入選取片段。");
+                        const response = await fetch(`/api/dojo/daily?date=${date}`, { cache: "no-store" });
+                        const json = await readResponse<{ id: string | null; record: DailyRecord }>(response);
+                        if (!json.id || json.record.updatedAt !== saved.updatedAt) throw new Error("來源版本已變更，請重新選取片段。");
+                        return { id: json.id, date, revision: saved.updatedAt };
+                      }} />}
                     </div>
                   );
                 })}
