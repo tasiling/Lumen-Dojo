@@ -5,6 +5,8 @@ import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import {
   cachedResults,
   externalResults,
+  vocabResults,
+  retryExternal,
 } from "@/lib/dojo/externalResults/store";
 import { BridgeError, uuid } from "@/lib/dojo/externalResults/model";
 export const dynamic = "force-dynamic";
@@ -61,13 +63,13 @@ export async function POST(req: NextRequest) {
         ? ["action", "pageId"]
         : body.action === "retry"
           ? ["action", "id"]
-          : ["action"];
+          : ["action", "source"];
     if (Object.keys(body).some((k) => !allowed.includes(k)))
       throw new BridgeError("CLIENT_SOURCE_CLAIM_REJECTED", 400);
     return NextResponse.json(
       await withLearningWriteLock(async () => {
         if (body.action === "sync" || body.action === "reconcile")
-          return externalResults.sync(body.action === "reconcile");
+          return body.source === "vocabforge" ? vocabResults.sync(body.action === "reconcile") : body.source === undefined || body.source === "context-room" ? externalResults.sync(body.action === "reconcile") : Promise.reject(new BridgeError("SOURCE_SELECTION_INVALID",400));
         if (body.action === "notion-alias" && uuid(body.pageId))
           return {
             receipt: await externalResults.verifyNotion(body.pageId),
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
           typeof body.id === "string" &&
           /^[a-f0-9]{64}$/.test(body.id)
         )
-          return externalResults.retry(body.id);
+          return retryExternal(body.id);
         throw new BridgeError("ACTION_INVALID", 400);
       }),
     );

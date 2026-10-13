@@ -1,15 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
 import { LearningError } from "../learningFoundation/model";
 import type { DailyRecord, WeeklyBoard } from "../formal";
-import type { CompletionEvent, JournalEvent, ContextEvent, TargetBinding } from "./model";
+import type { CompletionEvent, JournalEvent, ContextEvent, VocabEvent, TargetBinding } from "./model";
 import type { LearningRecord } from "../learningRecords/model";
 import { validDate } from "../learningRecords/model";
 import type { SourceResult } from "../externalResults/model";
-import { addOutput, projectWeekly } from "./projection";
+import type { VocabResult } from "../externalResults/vocabModel";
+import { addVocabulary, addOutput, projectWeekly } from "./projection";
 export function sourceIdentity(owner: string, system: string, type: string, id: string) { return createHash("sha256").update(JSON.stringify([owner, system, type, id])).digest("hex"); }
 export type EventRepository = {
   owner: string; get(id: string): Promise<CompletionEvent | null>; create(e: CompletionEvent): Promise<void>; update(e: CompletionEvent): Promise<void>;
-  body(e: CompletionEvent): Promise<void>; daily(date: string): Promise<DailyRecord>; saveDaily(date: string, value: DailyRecord): Promise<void>;
+  body(e: CompletionEvent): Promise<void>; daily(date: string): Promise<DailyRecord>; saveDaily(date: string, value: DailyRecord, kind?: "output" | "vocabulary"): Promise<void>;
   weekly(week: string): Promise<WeeklyBoard | null>; saveWeekly(week: string, value: WeeklyBoard): Promise<void>;
   assertKnownOutcome(): void;
 };
@@ -47,6 +48,13 @@ export function eventService(repo: EventRepository) {
       const e:ContextEvent={id,owner:repo.owner,eventVersion:1,eventType:"practice.completed",sourceSystem:"context-room",sourceType:"practice-session",sourceId:i.sourceId,sourceRevision:i.sourceRevision,sourceUpdatedAt:i.updatedAt,sourceMetadata:{sourceLocation:i.sourceLocation,activityMode:i.activityMode,title},occurredAt:i.occurredAt,practicedOn:i.practicedOn,timeZone:i.timeZone,sourceDate:i.practicedOn,dateSemantics:i.dateSemantics,completionStatus:i.completionStatus,sourceAvailability:i.sourceAvailability,sourceStatus:status(i),learningItemIds:[],learningRecordId:randomUUID(),completionKind:"context-room-session",quantity:1,unit:"次",createdAt:now,binding:null,evidence:{status:"completed",title,practicedOn:i.practicedOn,recordedOn:now.slice(0,10),learningItemIds:[],primaryLearningItemId:null,learningStageId:null,learningTopicId:null,practiceKind:"context-room-session",whatIDid:`完成語境修習：${i.activityMode}`,myUnderstanding:"",questions:"",difficulties:"",discoveries:"",worthKeeping:"",selectedExcerpt:"",sourceSnapshot:"",tags:[],sourceRefs:[{type:"context",id:i.sourceId,label:title,...(i.sourceLocation ? {url:i.sourceLocation}:{}),status:i.sourceAvailability === "deleted" ? "missing" : i.sourceAvailability}],originEventId:id,sourceRevision:i.sourceRevision,dateSemantics:i.dateSemantics,sourceCompletionStatus:i.completionStatus,sourceAvailability:i.sourceAvailability},projections:{record:"pending",output:"unlinked",weekly:"unlinked"},projectionStatus:"pending",projectionRevision:1,syncedAt:null,error:null};
       await repo.create(e); return e;
     },
+    async acceptVocab(i:VocabResult):Promise<CompletionEvent> {
+      const id=sourceIdentity(repo.owner,"vocabforge","review-round",i.sourceId);
+      const existing=await repo.get(id);if(existing){owner(existing);if(existing.sourceSystem!=="vocabforge" || existing.sourceRevision!==i.sourceRevision || existing.practicedOn!==i.practicedOn || existing.occurredAt!==i.occurredAt || existing.unit!==i.unit || existing.completionKind!==i.completionKind || existing.sourceUpdatedAt!==i.updatedAt)throw new LearningError("來源版本或原日期衝突",409);return existing;}
+      const now=new Date().toISOString(),title=`VocabForge・${i.summary}`;
+      const e:VocabEvent={id,owner:repo.owner,eventVersion:1,eventType:"practice.completed",sourceSystem:"vocabforge",sourceType:"review-round",sourceId:i.sourceId,sourceRevision:i.sourceRevision,sourceUpdatedAt:i.updatedAt,sourceMetadata:{sourceLocation:i.sourceLocation,title,summary:i.summary,standardRounds:i.metrics.standardRounds,actualWordCount:i.metrics.actualWordCount},occurredAt:i.occurredAt,practicedOn:i.practicedOn,timeZone:i.timeZone,sourceDate:i.practicedOn,dateSemantics:i.dateSemantics,completionStatus:"completed",sourceAvailability:"available",sourceStatus:"available",learningItemIds:[],learningRecordId:randomUUID(),completionKind:i.completionKind,quantity:1,unit:i.unit,createdAt:now,binding:null,evidence:{status:"completed",title,practicedOn:i.practicedOn,recordedOn:now.slice(0,10),learningItemIds:[],primaryLearningItemId:null,learningStageId:null,learningTopicId:null,practiceKind:i.completionKind,whatIDid:i.summary,myUnderstanding:"",questions:"",difficulties:"",discoveries:"",worthKeeping:"",selectedExcerpt:"",sourceSnapshot:"",tags:[],sourceRefs:[{type:"vocabforge",id:i.sourceId,label:title,url:i.sourceLocation,status:"available"}],originEventId:id,sourceRevision:i.sourceRevision,dateSemantics:i.dateSemantics,sourceCompletionStatus:"completed",sourceAvailability:"available"},projections:{record:"pending",output:"pending",weekly:"unlinked"},projectionStatus:"pending",projectionRevision:1,syncedAt:null,error:null};
+      await repo.create(e);return e;
+    },
     // Caller holds the same R2-1 lock throughout event + source + projection.
     async accept(input: { sourceId: string; sourceRevision: string; occurredAt: string; practicedOn: string; timeZone: string; sourceDate: string; learningItemIds: string[]; binding?: TargetBinding | null; evidence: NonNullable<CompletionEvent["evidence"]> }):Promise<JournalEvent> {
       const id = sourceIdentity(repo.owner, "dojo", "english-journal-segment", input.sourceId);
@@ -68,7 +76,8 @@ export function eventService(repo: EventRepository) {
         try {
           let state: CompletionEvent["projectionStatus"] = "applied";
           if (step === "record") await repo.body(event);
-          if (step === "output" && event.sourceSystem === "dojo") await repo.saveDaily(event.practicedOn, addOutput(await repo.daily(event.practicedOn), event));
+          if (step === "output" && event.sourceSystem === "dojo") await repo.saveDaily(event.practicedOn, addOutput(await repo.daily(event.practicedOn), event), "output");
+          if (step === "output" && event.sourceSystem === "vocabforge" && isEffectiveCompletion(event)) await repo.saveDaily(event.practicedOn, addVocabulary(await repo.daily(event.practicedOn), { id:event.id,practicedOn:event.practicedOn,occurredAt:event.occurredAt,standardRound:event.sourceMetadata.standardRounds===1 }), "vocabulary");
           if (step === "weekly") {
             const result = projectWeekly(event.binding ? await repo.weekly(event.binding.weekStart) : null, event);
             state = result.state;

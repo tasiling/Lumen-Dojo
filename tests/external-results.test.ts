@@ -734,6 +734,13 @@ async function main() {
     documented.results[0].originalContext?.capturedAt,
     "2026-10-01T10:00:00+00:00",
   );
+  const actualReader=JSON.parse(readFileSync("docs/fixtures/r2-5c/context-room-reader-snapshots.json","utf8"));
+  for(const phase of ["initial","archived","deleted"]){
+    const page=await contextAdapter({origin:"https://fixture.invalid",secret:"fixture",fetch:async()=>new Response(JSON.stringify(actualReader[phase]))}).page("1970-01-01T00:00:00.000Z",null);
+    assert.equal(page.results.length,5);
+    assert.equal(page.results.filter(r=>r.completionStatus === "completed").length,phase === "initial" ? 5 : 3);
+    if(phase === "deleted")assert.ok(page.results.every(r=>r.sourceAvailability === "deleted" && r.sourceLocation === null));
+  }
   console.log(
     "PASS R2-5C executable adapter/service: five modes, quick-retell, deny invalid, UUID, date/context restrictions, microseconds, opaque revisions, restart, overlap/reconciliation, rejection/no checkpoint advance, transient unavailable, allowlist/no full text. Fixture transport; not live cross-site integration.",
   );

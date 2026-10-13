@@ -2,7 +2,7 @@ import type { LearningEntity } from "../learningFoundation/model";
 import { LearningError } from "../learningFoundation/model";
 export const RECORD_PREFIX = "行光學習正文-";
 export const EVENT_PREFIX = "行光完成事件-";
-export type SourceRef = { type: "capture" | "english-image" | "reading-book" | "reading-note" | "context" | "url" | "manual"; id: string; label: string; url?: string; status: "available" | "archived" | "missing" | "unverified" };
+export type SourceRef = { type: "capture" | "english-image" | "reading-book" | "reading-note" | "context" | "vocabforge" | "url" | "manual"; id: string; label: string; url?: string; status: "available" | "archived" | "missing" | "unverified" };
 export type LearningRecord = {
   id: string; owner: string; recordType: "learning-record/v1"; status: "draft" | "completed" | "archived";
   title: string; practicedOn: string | null; recordedOn: string; createdAt: string; updatedAt: string; revision: number;
@@ -50,13 +50,13 @@ export function recordInput(input: Record<string, unknown>, graph: LearningEntit
   // References are historical pointers, never evidence of caller ownership. Internal
   // IDs remain unverified until a source-specific, owner-validating adapter resolves them.
   const refs = sourceRefs.map((r: SourceRef) => {
-    if (!r || !["capture", "english-image", "reading-book", "reading-note", "context", "url", "manual"].includes(r.type) || typeof r.id !== "string" || !r.id || r.id.length > 500 || typeof r.label !== "string" || r.label.length > 1000) throw new LearningError("來源格式不正確");
+    if (!r || !["capture", "english-image", "reading-book", "reading-note", "context", "vocabforge", "url", "manual"].includes(r.type) || typeof r.id !== "string" || !r.id || r.id.length > 500 || typeof r.label !== "string" || r.label.length > 1000) throw new LearningError("來源格式不正確");
     if (r.url && !/^https?:\/\//.test(r.url)) throw new LearningError("来源 URL 不正確");
     const old = previous?.sourceRefs.find(s => s.type === r.type && s.id === r.id);
     return { type: r.type, id: r.id, label: r.label, ...(r.url ? { url: r.url } : {}), status: old?.status ?? "unverified" } as SourceRef;
   });
   if (external) {
-    const authoritative = previous.sourceRefs.filter(r => r.type === "context");
+    const authoritative = previous.sourceRefs.filter(r => r.type === "context" || r.type === "vocabforge");
     for (const ref of authoritative) {
       const at = refs.findIndex(r => r.type === ref.type && r.id === ref.id);
       if (at >= 0) refs[at] = ref; else refs.push(ref);

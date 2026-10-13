@@ -10,6 +10,9 @@ import { practiceEvents } from "../practiceEvents/store";
 import { sourceIdentity } from "../practiceEvents/service";
 import { parseJson } from "../formal";
 import { readContextRoomNotionIdentity } from "../contextRoomNotionInbox";
+import { vocabAdapter } from "./vocabAdapter";
+import { VOCAB_ORIGIN, validateVocab } from "./vocabModel";
+import { vocabService, vocabIdentity, type VocabReceipt } from "./vocabService";
 import { contextAdapter } from "./adapter";
 import { bridgeService } from "./service";
 import {
@@ -39,11 +42,11 @@ export function sourceConfig() {
     secret: process.env.LUMEN_CONTEXT_ROOM_SYNC_SECRET.trim(),
   };
 }
-const checkpointTitle = () =>
+const checkpointTitle = (system = "context-room") =>
   CHECKPOINT_PREFIX +
   sourceIdentity(
     learningOwner,
-    "context-room",
+    system,
     "checkpoint",
     "practice-results/v1",
   );
@@ -74,8 +77,8 @@ async function save(title: string, prefix: string, value: unknown) {
         ),
     );
 }
-export async function checkpoint() {
-  const row = await readJsonRecord(checkpointTitle());
+export async function checkpoint(system = "context-room") {
+  const row = await readJsonRecord(checkpointTitle(system));
   if (!row) return null;
   const value = row.value as Checkpoint;
   if (
@@ -156,6 +159,26 @@ export const externalResults = bridgeService(
   },
   contextAdapter(sourceConfig()),
 );
+export function vocabConfig() {
+  if(process.env.VOCABFORGE_RESULTS_ENABLED!=="1" || process.env.VOCABFORGE_RESULTS_OWNER!==learningOwner || !process.env.VOCABFORGE_RESULTS_SOURCE_OWNER?.trim() || !process.env.LUMEN_VOCABFORGE_SYNC_SECRET?.trim())return null;
+  return {origin:VOCAB_ORIGIN,sourceOwner:process.env.VOCABFORGE_RESULTS_SOURCE_OWNER.trim(),secret:process.env.LUMEN_VOCABFORGE_SYNC_SECRET.trim()};
+}
+function publicVocabReceipt(row:VocabReceipt):VocabReceipt {
+  if(row.owner!==learningOwner || row.schema!=="external-vocab-source-receipt/v1" || row.id!==vocabIdentity(learningOwner,row.source.sourceId))throw new BridgeError("OWNER_MISMATCH",403);
+  const source=validateVocab({...row.source,sourceLocation:row.source.sourceLocation===`${VOCAB_ORIGIN}/`?"/":row.source.sourceLocation},VOCAB_ORIGIN);
+  if((row.eventId!==null && !/^[a-f0-9]{64}$/.test(row.eventId)) || (row.learningRecordId!==null && !uuid(row.learningRecordId)) || !["accepted","needs_review"].includes(row.acceptance) || !["pending","applied","needs_retry","unlinked","unmatched"].includes(row.projections.record) || !["pending","applied","needs_retry","unlinked","unmatched"].includes(row.projections.lightStep))throw new BridgeError("RECEIPT_STATE_INVALID",422);
+  return {schema:row.schema,id:row.id,owner:row.owner,source,eventId:row.eventId,learningRecordId:row.learningRecordId,acceptance:row.acceptance,receivedAt:row.receivedAt,lastVerifiedAt:row.lastVerifiedAt,projections:{record:row.projections.record,lightStep:row.projections.lightStep,weekly:"unlinked",ack:"not_applicable"}};
+}
+export const vocabResults=vocabService({
+  owner:learningOwner,
+  async read(id){const row=await readJsonRecord(RECEIPT_PREFIX+id);return row?publicVocabReceipt(row.value as VocabReceipt):null;},
+  async save(row){publicVocabReceipt(row);await save(RECEIPT_PREFIX+row.id,RECEIPT_PREFIX,row);},
+  checkpoint:()=>checkpoint("vocabforge"),
+  saveCheckpoint:row=>save(checkpointTitle("vocabforge"),CHECKPOINT_PREFIX,row),
+  async acceptSource(source){const prior=await practiceEvents.read(vocabIdentity(learningOwner,source.sourceId)),event=await practiceEvents.acceptVocab(source);return {event,created:!prior};},
+  retrySource:id=>practiceEvents.retry(id),
+},vocabAdapter(vocabConfig()));
+export async function retryExternal(id:string){const row=await readJsonRecord(RECEIPT_PREFIX+id);if(!row)throw new BridgeError("SOURCE_RECEIPT_MISSING",404);return (row.value as {schema?:string}).schema==="external-vocab-source-receipt/v1"?vocabResults.retry(id):externalResults.retry(id);}
 function publicReceipt(row: Receipt): Receipt {
   if ((row.eventId !== null && !/^[a-f0-9]{64}$/.test(row.eventId)) ||
       (row.learningRecordId != null && !uuid(row.learningRecordId)) ||
@@ -231,15 +254,16 @@ export async function cachedResults(cursor: string | null) {
     }),
   );
   const receipts = page.results.map((p) =>
-    publicReceipt(owned(parseJson(mapKnowledge(p).內容) as Receipt)),
+    (parseJson(mapKnowledge(p).內容) as {schema?:string})?.schema === "external-vocab-source-receipt/v1" ? publicVocabReceipt(parseJson(mapKnowledge(p).內容) as VocabReceipt) : publicReceipt(owned(parseJson(mapKnowledge(p).內容) as Receipt)),
   );
   return {
     receipts,
     cursor: page.has_more ? page.next_cursor : null,
     checkpoint: await checkpoint(),
+    vocabCheckpoint: await checkpoint("vocabforge"),
     sources: {
       contextRoom: sourceConfig() ? "configured" : "not_connected",
-      vocabForge: "not_connected",
+      vocabForge: vocabConfig() ? "configured" : "not_connected",
     },
     contractStatus: "active",
   };

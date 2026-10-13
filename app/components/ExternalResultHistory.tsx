@@ -1,12 +1,15 @@
 "use client";
 import Link from "./PracticeRouteLink";
 import { useEffect, useState } from "react";
+import type { VocabReceipt } from "@/lib/dojo/externalResults/vocabService";
 import type { Receipt, Checkpoint } from "@/lib/dojo/externalResults/model";
+const VOCAB_ORIGIN = "https://vocabforge-production-2baf.up.railway.app";
 const origin = "https://lumen-context-room-production-4a2c.up.railway.app";
 type Cache = {
-  receipts: Receipt[];
+  receipts: (Receipt|VocabReceipt)[];
   cursor: string | null;
   checkpoint: Checkpoint | null;
+  vocabCheckpoint?: Checkpoint | null;
   sources: { contextRoom: string; vocabForge: string };
   contractStatus: string;
 };
@@ -60,7 +63,7 @@ export default function ExternalResultHistory({
       live = false;
     };
   }, []);
-  async function action(action: string, id?: string) {
+  async function action(action: string, id?: string, source?:string) {
     setBusy(true);
     setError("");
     setMessage("");
@@ -68,7 +71,7 @@ export default function ExternalResultHistory({
       const r = await fetch("/api/dojo/external-results", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, ...(id ? { id } : {}) }),
+        body: JSON.stringify({ action, ...(id ? { id } : {}), ...(source ? {source} : {}) }),
       });
       const j = await r.json();
       if (!r.ok) throw Error(j.code ?? "SOURCE_TEMPORARILY_UNAVAILABLE");
@@ -120,7 +123,7 @@ export default function ExternalResultHistory({
   return (
     <section className="external-result-history" aria-label="外部修習來源">
       <h3>外部修習來源</h3>
-      <p>{cache?.contractStatus === "active" ? "來源成果由同一 Session 更新原事件。" : "來源收據待事件契約核准，不列入完成次數。"}VF：尚未接入。</p>
+      <p>{cache?.contractStatus === "active" ? "來源成果由同一 Session 更新原事件。" : "來源收據待事件契約核准，不列入完成次數。"}VF：{cache?.sources.vocabForge === "configured" ? "已配置・需明確同步" : "尚未接入"}。</p>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       {!cache && !error && <p>讀取已保存的來源快取…</p>}
@@ -149,11 +152,29 @@ export default function ExternalResultHistory({
               完整來源對帳
             </button>
           </div>
+          {cache.sources.vocabForge === "configured" && <>
+            <p>VocabForge：{cache.vocabCheckpoint?.connection === "temporarily_unavailable" ? "暫時不可用" : "已配置・需明確同步"}；最後成功查核：{cache.vocabCheckpoint?.lastSuccessAt ?? "尚無查核紀錄"}</p>
+            <div className="external-result-actions"><button disabled={busy} onClick={()=>void action("sync",undefined,"vocabforge")}>{cache.vocabCheckpoint?.cursor ? "繼續 VF 同步" : "刷新 VF 成果"}</button><button disabled={busy} onClick={()=>void action("reconcile",undefined,"vocabforge")}>完整 VF 對帳</button></div>
+          </>}
           <p>已載入來源：{cache.receipts.length} 筆；已接收 {cache.receipts.filter(r => r.acceptance === "accepted").length} 筆（此載入範圍，非全站總數）。</p>
           {!cache.receipts.length && (
             <p>尚無來源快取；這不表示沒有完成過修習。</p>
           )}
           {(recent ? cache.receipts.slice(0, 5) : cache.receipts).map((r) => {
+            if(r.schema === "external-vocab-source-receipt/v1") {
+              const s=r.source;
+              return <article className="card" key={r.id}>
+                <h4>VocabForge・{s.completionKind === "vocabforge-standard-five-word-round" ? "標準五詞回合" : s.completionKind === "vocabforge-short-review-round" ? "短回合" : "其他詞彙修習"}</h4>
+                <p>{r.acceptance === "accepted" ? "已接收" : "待核對"} · 來源確認完成 · {s.quantity} {s.unit}</p>
+                <p>來源當地修習日期：{s.practicedOn} · 完成時間：{s.occurredAt} · 來源時區：{s.timeZone}</p>
+                <p>當時／目前脈絡：來源未提供歷史或專案快照。</p>
+                <p>{s.summary}</p><p>實際 {s.metrics.actualWordCount} 詞 · 標準輪次 {s.metrics.standardRounds} · 每日詞彙{r.projections.lightStep === "applied" ? "已套用" : "待重試"} · 週盤未連結</p>
+                <p>標準輪次依唯一真實回合保存；每日呈現保留既有上限與手動成果。來源全文留在 VF。</p>
+                {s.sourceLocation === `${VOCAB_ORIGIN}/` && <a href={s.sourceLocation} target="_blank" rel="noreferrer">返回 VocabForge（需要登入）</a>}
+                {r.learningRecordId && <Link href={`/practice/records?record=${r.learningRecordId}`}>查看歷程</Link>}
+                <button disabled={busy} onClick={()=>void action("retry",r.id)}>核對已保存來源</button>
+              </article>;
+            }
             const s = r.source;
             const safeLink =
               s.sourceLocation === `${origin}/practice-results/${s.sourceId}`
@@ -193,7 +214,7 @@ export default function ExternalResultHistory({
                     : `修訂內容 ${s.summary.secondDone ? "已完成" : "不足"}`}
                 </p>
                 <p>
-                  尚未連結學科 · 週盤未連結 · 光步未連結 · 正文{r.projections.record === "applied" ? "已保存" : r.projections.record === "needs_retry" ? "待重試" : "待處理"} · Notion{" "}
+                  學科關聯以本地歷程為準 · 週盤未連結 · 光步未連結 · 正文{r.projections.record === "applied" ? "已保存" : r.projections.record === "needs_retry" ? "待重試" : "待處理"} · Notion{" "}
                   {r.aliases.length ? "保留既有確認；不新增 ack" : "不適用"}
                 </p>
                 {r.legacyUnidentified && <p>舊收據缺少穩定來源 ID，需核對後才能計次。</p>}

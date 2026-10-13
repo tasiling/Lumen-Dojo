@@ -29,7 +29,9 @@
     "test:image-routing": "node scripts/test-unified-image-routing.mjs && node scripts/test-unified-image-dispatch.mjs",
     "test:external-results": "node scripts/test-external-results.mjs",
     "test:r2-5c-api": "node scripts/test-r2-5c-api.mjs",
-    "test:r2-5c-ui": "node scripts/test-r2-5c-ui.mjs"
+    "test:r2-5c-ui": "node scripts/test-r2-5c-ui.mjs",
+    "test:vocab-projection": "node scripts/test-vocab-projection.mjs",
+    "test:vocab-results": "node scripts/test-vocab-results.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

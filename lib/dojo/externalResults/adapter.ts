@@ -137,3 +137,4 @@ export function contextAdapter(
     },
   };
 }
+export { vocabAdapter } from "./vocabAdapter";

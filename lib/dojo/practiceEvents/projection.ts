@@ -1,3 +1,4 @@
+import { LearningError } from "../learningFoundation/model";
 import type { BingoCell, DailyRecord, WeeklyBoard } from "../formal";
 import type { CompletionEvent, CompletionLedger, ProjectionState } from "./model";
 export function addOutput(record: DailyRecord, event: CompletionEvent): DailyRecord {
@@ -17,4 +18,14 @@ export function projectWeekly(board: WeeklyBoard | null, event: CompletionEvent)
   const progress = Math.min(cell.completion.target, Math.max(ledger.manualProgress, automatic));
   const next: ProjectedCell = { ...cell, completionSources: nextLedger, completion: { ...cell.completion, progress }, completed: progress >= cell.completion.target, completedAt: progress >= cell.completion.target ? cell.completedAt ?? event.occurredAt : null };
   return { board: { ...board, cells: board.cells.map(c => c === cell ? next : c) }, state: "applied" };
+}
+
+// Called only for an already saved, verified VF event. Source date stays original.
+export function addVocabulary(record: DailyRecord, fact: { id: string; practicedOn: string | null; occurredAt: string | null; standardRound: boolean }): DailyRecord {
+  if (!fact.practicedOn || fact.practicedOn !== record.date) throw new LearningError("來源日期未知或不符，不投影每日詞彙",409);
+  const ledger = record.practiceEventVocabulary ?? { manualRounds: record.englishRhythm.vocabForgeRounds, events: [] };
+  if (ledger.events.some(e => e.id === fact.id)) return record;
+  const next = { ...ledger, events: [...ledger.events, { id: fact.id, standardRound: fact.standardRound }] };
+  const automatic = next.events.filter(e => e.standardRound).length;
+  return { ...record, practiceEventVocabulary: next, englishRhythm: { ...record.englishRhythm, touches: [...new Set([...record.englishRhythm.touches, "vocabulary" as const])], vocabForgeRounds: Math.min(5, Math.max(next.manualRounds, automatic)), updatedAt: fact.occurredAt ?? record.englishRhythm.updatedAt } };
 }

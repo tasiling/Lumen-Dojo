@@ -540,6 +540,28 @@ try {
       .length,
     2,
   );
+  // VF real handlers/storage path: authoritative source dates and daily round receipts.
+  const contextFetch=globalThis.fetch;
+  process.env.VOCABFORGE_RESULTS_ENABLED="1";process.env.VOCABFORGE_RESULTS_OWNER=learningOwner;process.env.VOCABFORGE_RESULTS_SOURCE_OWNER="vf-owner";process.env.LUMEN_VOCABFORGE_SYNC_SECRET="vf-fixture-secret";
+  const vfId="00000000-0000-4000-8000-000000000009";
+  const vfEvent={eventVersion:1,eventType:"practice.completed",sourceSystem:"vocabforge",sourceType:"review-round",sourceId:vfId,sourceEventId:vfId,sourceRevision:"1",updatedAt:"2026-10-13T00:00:00.000001Z",occurredAt:"2026-10-12T23:59:59Z",practicedOn:"2026-10-13",timeZone:"Asia/Taipei",dateSemantics:"source-local-completion",completionStatus:"completed",sourceAvailability:"available",completionKind:"vocabforge-standard-five-word-round",quantity:1,unit:"輪",metrics:{standardRounds:1,actualWordCount:5,understandingTasks:15,spellingTasks:5},summary:"五詞完成",sourceLocation:"/",cards:["PRIVATE VF BODY"]};
+  globalThis.fetch=async(url,init)=>{if(new URL(url).origin!=="https://vocabforge-production-2baf.up.railway.app")return contextFetch(url,init);assert.equal(init.headers.Authorization,"Bearer vf-fixture-secret");return new Response(JSON.stringify({contractVersion:"vocabforge-practice-results/v1",eventVersion:1,sourceSystem:"vocabforge",sourceOwner:"vf-owner",availability:"available",events:[vfEvent],nextCursor:null,windowUpper:"2026-10-13T01:00:00.000001Z"}));};
+  cache.clear();api=load("app/api/dojo/external-results/route.ts");
+  failDaily=true;const vfPending=await payload(await post({action:"sync",source:"vocabforge"}));assert.equal(vfPending.status,503);
+  assert.equal([...rows.values()].filter(r=>r.value.sourceSystem==="vocabforge").length,1,"VF event survives confirmed daily failure");
+  failDaily=false;const vfSaved=await payload(await post({action:"sync",source:"vocabforge"}));assert.equal(vfSaved.status,200);
+  const vfCached=await payload(await api.GET(request("GET","/api/dojo/external-results")));
+  const vfReceipt=vfCached.body.receipts.find(r=>r.source.sourceSystem==="vocabforge");assert.ok(vfReceipt);assert.equal(vfReceipt.acceptance,"accepted");assert.equal(vfReceipt.projections.lightStep,"applied");assert.equal(vfCached.body.sources.vocabForge,"configured");
+  assert.ok(!JSON.stringify(vfCached).includes("PRIVATE VF BODY"));assert.ok(!JSON.stringify(vfCached).includes("vf-fixture-secret"));
+  let vfDaily=[...rows.values()].find(r=>r.title==="行光今日-20261013");assert.equal(vfDaily.value.englishRhythm.vocabForgeRounds,1);assert.deepEqual(vfDaily.value.englishRhythm.touches,["vocabulary"]);assert.equal(vfDaily.value.practiceEventOutput,undefined,"VF does not claim output");
+  const dailyLedger=vfDaily.value.practiceEventVocabulary;assert.equal(dailyLedger.events.length,1);
+  assert.equal((await post({action:"reconcile",source:"vocabforge"})).status,200);vfDaily=[...rows.values()].find(r=>r.title==="行光今日-20261013");assert.equal(vfDaily.value.practiceEventVocabulary.events.length,1);
+  const vfBody=[...rows.values()].find(r=>r.value.id===vfReceipt.learningRecordId);vfBody.value.learningItemIds=["isolated-subject-a","isolated-subject-b"];vfBody.value.myUnderstanding="LOCAL VF EVIDENCE";
+  const filteredEvents=await payload(await load("app/api/dojo/practice-events/route.ts").GET(request("GET","/api/dojo/practice-events?learningItemId=isolated-subject-a")));
+  assert.equal(filteredEvents.body.events.length,1,"external event follows the one local body across subject references");assert.deepEqual(filteredEvents.body.events[0].learningItemIds,["isolated-subject-a","isolated-subject-b"]);
+  await post({action:"reconcile",source:"vocabforge"});assert.equal(vfBody.value.myUnderstanding,"LOCAL VF EVIDENCE");
+  const beforeVFGet=writes;await api.GET(request("GET","/api/dojo/external-results"));assert.equal(writes,beforeVFGet);
+  assert.equal((await post({action:"sync",source:"forged"})).status,400);
   // Unknown committed receipt create retains fsynced intent and shared mutex.
   remoteResults = [raw("00000000-0000-4000-8000-000000000003")];
   lostEventResponse = true;

@@ -232,3 +232,4 @@ export function bridgeService(
     },
   };
 }
+export { vocabService } from "./vocabService";

@@ -1,0 +1,48 @@
+import {readFileSync} from "node:fs";
+import assert from "node:assert/strict";
+import * as transport from "../lib/dojo/externalResults/service";
+import type { Checkpoint } from "../lib/dojo/externalResults/model";
+import * as adapters from "../lib/dojo/externalResults/adapter";
+import { eventService, eventBody } from "../lib/dojo/practiceEvents/service";
+import { emptyDailyRecord } from "../lib/dojo/formal";
+import type { CompletionEvent } from "../lib/dojo/practiceEvents/model";
+type Vocab = Record<string, unknown>;
+const origin="https://vocabforge-production-2baf.up.railway.app",id="00000000-0000-4000-8000-000000000001";
+const raw=(overrides:Vocab={})=>({contractVersion:"vocabforge-practice-results/v1",eventVersion:1,eventType:"practice.completed",sourceSystem:"vocabforge",sourceType:"review-round",sourceId:id,sourceEventId:id,sourceRevision:"1",updatedAt:"2026-10-13T00:00:00.000001Z",occurredAt:"2026-10-12T23:59:59.123Z",practicedOn:"2026-10-13",timeZone:"Asia/Taipei",dateSemantics:"source-local-completion",completionStatus:"completed",sourceAvailability:"available",completionKind:"vocabforge-standard-five-word-round",quantity:1,unit:"輪",metrics:{standardRounds:1,actualWordCount:5,understandingTasks:15,spellingTasks:5},summary:"五詞完成",sourceLocation:"/",cards:["PRIVATE"],...overrides});
+const build=(adapters as unknown as {vocabAdapter?: (config:{origin:string;secret:string;sourceOwner:string;fetch:typeof fetch})=>{page(after:string,cursor:string|null,windowUpper?:string|null):Promise<{results:Vocab[];windowUpper:string;nextCursor:string|null}>}}).vocabAdapter;
+async function main(){
+assert.equal(typeof build,"function","VF results need the real controlled source adapter");
+const body={contractVersion:"vocabforge-practice-results/v1",eventVersion:1,sourceSystem:"vocabforge",sourceOwner:"vf-test-owner",availability:"available",events:[raw()],nextCursor:null,windowUpper:"2026-10-13T01:00:00.000001Z"};
+const adapter=build!({origin,secret:"fixture-secret",sourceOwner:"vf-test-owner",fetch:async(url,options)=>{assert.equal(new URL(String(url)).pathname,"/api/integrations/vocabforge/results");assert.equal((options!.headers as Record<string,string>).Authorization,"Bearer fixture-secret");assert.equal(options!.redirect,"error");return new Response(JSON.stringify(body));}});
+let page=await adapter.page("1970-01-01T00:00:00.000Z",null);
+assert.equal(page.results[0].sourceId,id);assert.ok(!JSON.stringify(page).includes("PRIVATE"));
+body.sourceOwner="wrong-owner";await assert.rejects(adapter.page("1970-01-01T00:00:00.000Z",null),/OWNER/);body.sourceOwner="vf-test-owner";
+for(const overrides of [{sourceEventId:"wrong"},{sourceLocation:"https://evil.invalid?token=secret"},{practicedOn:"2026-02-30"},{timeZone:null},{metrics:{standardRounds:1,actualWordCount:4,understandingTasks:12,spellingTasks:4}},{completionStatus:"draft"}]){body.events=[raw(overrides)];await assert.rejects(adapter.page("1970-01-01T00:00:00.000Z",null));}
+body.events=[raw()];page=await adapter.page("1970-01-01T00:00:00.000Z",null);
+const events=new Map<string,CompletionEvent>(),bodies=new Map();let daily=emptyDailyRecord("2026-10-13"),dailyWrites=0,failBody=true;
+const service=eventService({owner:"dojo-owner",get:async(id)=>events.get(id)??null,create:async(e)=>{events.set(e.id,structuredClone(e));},update:async(e)=>{events.set(e.id,structuredClone(e));},body:async(e)=>{if(failBody)throw Error("confirmed body rejection");if(!bodies.has(e.learningRecordId))bodies.set(e.learningRecordId,eventBody(e));},daily:async()=>daily,saveDaily:async(_date,value)=>{daily=value;dailyWrites++;},weekly:async()=>null,saveWeekly:async()=>{throw Error("unbound weekly must not write");},assertKnownOutcome:()=>{}});
+const accept=(service as unknown as {acceptVocab?:(source:Vocab)=>Promise<CompletionEvent>}).acceptVocab;
+assert.equal(typeof accept,"function","VF completion must share the existing Completion Event repository");
+const source=page.results[0];const first=await accept!(source);assert.equal(events.size,1);assert.equal((await accept!(source)).id,first.id);assert.equal(first.practicedOn,"2026-10-13");
+assert.equal((await service.retry(first.id)).projections.record,"needs_retry");assert.equal(dailyWrites,0,"event and body must be durable before daily projection");
+failBody=false;await service.retry(first.id);assert.equal(bodies.size,1);assert.equal(daily.englishRhythm.vocabForgeRounds,1);assert.deepEqual(daily.englishRhythm.touches,["vocabulary"]);
+await service.retry(first.id);assert.equal(dailyWrites,1);assert.equal(events.size,1);
+const secondSource={...source,sourceId:"00000000-0000-4000-8000-000000000002",sourceEventId:"00000000-0000-4000-8000-000000000002"};await service.retry((await accept!(secondSource)).id);assert.equal(daily.englishRhythm.vocabForgeRounds,2);
+body.events=[raw({completionKind:"vocabforge-short-review-round",unit:"次",metrics:{standardRounds:0,actualWordCount:3,understandingTasks:9,spellingTasks:3}})];
+page=await adapter.page("1970-01-01T00:00:00.000Z",null);assert.equal(page.results[0].unit,"次");
+const syncBuild=(transport as unknown as {vocabService?: (repo:unknown,adapter:unknown)=>{sync(full:boolean):Promise<{counted:number}>}}).vocabService;
+assert.equal(typeof syncBuild,"function","VF uses bounded persistent resumable source reconciliation");
+const receipts=new Map<string,unknown>();let checkpoint:Checkpoint|null=null,failReceipt=true;
+body.events=[raw({sourceId:"00000000-0000-4000-8000-000000000003",sourceEventId:"00000000-0000-4000-8000-000000000003"})];
+const repo={owner:"dojo-owner",read:async(id:string)=>receipts.get(id)??null,save:async(row:{id:string})=>{if(failReceipt)throw Error("confirmed receipt rejection");receipts.set(row.id,structuredClone(row));},checkpoint:async()=>checkpoint,saveCheckpoint:async(c:Checkpoint)=>{checkpoint=structuredClone(c);},acceptSource:async(source:Vocab)=>{const prior=events.size,event=await accept!(source);return {event,created:events.size>prior};},retrySource:(id:string)=>service.retry(id)};
+await assert.rejects(syncBuild!(repo,adapter).sync(true),/receipt rejection/);
+assert.equal(events.size,3,"confirmed event survives failed transport receipt");
+failReceipt=false;await syncBuild!(repo,adapter).sync(false);assert.equal(events.size,3);assert.equal(receipts.size,1);assert.equal(daily.englishRhythm.vocabForgeRounds,3);
+assert.equal((await syncBuild!(repo,adapter).sync(true)).counted,0,"restart/full reconcile retains semantic event identity");
+const actual=JSON.parse(readFileSync("docs/fixtures/r2-5c/vocabforge-review-events.json","utf8"));
+const actualAdapter=build!({origin,secret:"fixture",sourceOwner:actual.sourceOwner,fetch:async()=>new Response(JSON.stringify(actual))});
+const actualPage=await actualAdapter.page("1970-01-01T00:00:00.000Z",null);
+assert.equal(actualPage.results.length,3);assert.deepEqual(actualPage.results.map(r=>(r.metrics as {standardRounds:number}).standardRounds),[1,0,0]);
+console.log("PASS VF source adapter/event-first recovery: fixed authenticated origin, owner, minimal summaries, strict five-word facts, true source date, unique round identity, same-event retry, second real round and short-round separation");
+}
+main().catch(e=>{console.error(e);process.exitCode=1;});

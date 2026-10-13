@@ -7,6 +7,7 @@ const server = await isolatedServer(3025, "r2-5c-ui-isolated"),
   output = process.env.R2_UI_OUTPUT_DIR ?? "/tmp/r2-5c-ui";
 await mkdir(output, { recursive: true });
 let browser;
+let vfConnected=false;
 let mutations = 0,
   connected = false,
   offline = false,
@@ -90,7 +91,7 @@ try {
         const b = req.postDataJSON();
         assert.deepEqual(
           Object.keys(b).sort(),
-          b.action === "retry" ? ["action", "id"] : ["action"],
+          b.action === "retry" ? ["action", "id"] : b.source ? ["action", "source"] : ["action"],
         );
         if (offline) {
           status = 503;
@@ -108,7 +109,7 @@ try {
           contractStatus: active ? "active" : "pending",
           sources: {
             contextRoom: connected ? "configured" : "not_connected",
-            vocabForge: "not_connected",
+            vocabForge: vfConnected ? "configured" : "not_connected",
           },
           checkpoint: receipts.length
             ? {
@@ -233,6 +234,16 @@ try {
     await page.getByText(/已載入有效完成：0 次／1 筆事件/).waitFor();
 
   }
+  vfConnected=true;active=true;completion="completed";offline=false;
+  receipts=[{schema:"external-vocab-source-receipt/v1",id:"c".repeat(64),owner:"fixture-owner",eventId:"d".repeat(64),learningRecordId:"00000000-0000-4000-8000-000000000011",acceptance:"accepted",source:{sourceSystem:"vocabforge",sourceId:id,sourceRevision:"1",completionStatus:"completed",sourceAvailability:"available",practicedOn:"2026-10-13",occurredAt:"2026-10-12T23:59:59Z",timeZone:"Asia/Taipei",dateSemantics:"source-local-completion",summary:"真正完成五詞回合".repeat(15),completionKind:"vocabforge-standard-five-word-round",unit:"輪",quantity:1,metrics:{standardRounds:1,actualWordCount:5,understandingTasks:15,spellingTasks:5},sourceLocation:"https://vocabforge-production-2baf.up.railway.app/"},projections:{record:"applied",lightStep:"applied",weekly:"unlinked",ack:"not_applicable"}}];
+  const vfBefore=mutations;await page.reload();
+  const vfPanel=page.getByRole("region",{name:"外部修習來源"});
+  await vfPanel.getByText(/VocabForge・標準五詞回合/).waitFor();
+  assert.equal(mutations,vfBefore);
+  for(const width of [375,390,430]){await page.setViewportSize({width,height:430});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));}
+  await vfPanel.getByRole("button",{name:"刷新 VF 成果"}).click();await vfPanel.getByRole("status").waitFor();assert.equal(mutations,vfBefore+1);
+  assert.equal(await vfPanel.getByRole("link",{name:"返回 VocabForge（需要登入）"}).getAttribute("href"),"https://vocabforge-production-2baf.up.railway.app/");
+  await vfPanel.getByText(/來源當地修習日期：2026-10-13/).waitFor();await vfPanel.getByText(/每日詞彙已套用/).waitFor();
   assert.deepEqual(errors, []);
   console.log(
     "PASS R2-5C isolated Chromium UI 375/390/430: cache-only load/reload/back, not connected/no fake zero, explicit sync/reconcile/retry, legacy date/context limits, long Chinese/English without overflow, safe-area padding/reduced viewport, offline preserves source/local UI. Mock transport; not live integration/iPhone Safari.",
