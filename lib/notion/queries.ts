@@ -584,7 +584,8 @@ export async function listApprovedKnowledgeEntries() {
     property: "核可狀態",
     select: { equals: "已核可" },
   });
-  return pages.map(mapKnowledge);
+  return pages.map(mapKnowledge)
+    .filter((entry) => !FORMAL_STATE_TITLE_PREFIXES.some((prefix) => entry.標題.startsWith(prefix)));
 }
 
 // P3 生產日工作台第 3 步「知識庫比對」用:不篩核可狀態,依主題標籤交集比對
