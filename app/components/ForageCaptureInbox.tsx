@@ -15,6 +15,7 @@ import {
   type CaptureKnowledgeOrigin,
   type LearningTrackKey,
 } from "@/lib/dojo/formal";
+import type { FoundationSnapshot, LearningEntity } from "@/lib/dojo/learningFoundation/model";
 import { LEARNING_TRACKS } from "@/lib/dojo/learning";
 import { KNOWLEDGE_CLAIM_TYPES, currentClaimVersion, type Claimant, type KnowledgeClaim, type KnowledgeClaimType } from "@/lib/dojo/knowledgeClaims";
 import { buildCaptureExplorationPackage, parseCaptureExplorationResult, type CaptureExplorationDraft } from "@/lib/dojo/captureExploration";
@@ -89,6 +90,8 @@ const CONTENT_TYPE_CLAIM_HINTS: Partial<Record<NonNullable<CaptureEntry["content
 };
 
 export default function ForageCaptureInbox({ initialCaptureId = "" }: { initialCaptureId?: string }) {
+  const [learningItems, setLearningItems] = useState<LearningEntity[]>([]);
+  const [learningError, setLearningError] = useState("");
   const [captures, setCaptures] = useState<CaptureEntry[]>([]);
   const [claims, setClaims] = useState<KnowledgeClaim[]>([]);
   const [claimsLoaded, setClaimsLoaded] = useState(false);
@@ -105,6 +108,10 @@ export default function ForageCaptureInbox({ initialCaptureId = "" }: { initialC
       const response = await fetch("/api/dojo/captures", { cache: "no-store" });
       const result = await responseJson<{ captures: CaptureEntry[] }>(response);
       setCaptures(result.captures ?? []);
+      try {
+        const learning = await responseJson<FoundationSnapshot>(await fetch('/api/dojo/learning/foundation', { cache: 'no-store' }));
+        setLearningItems(learning.entities.filter(e => e.kind === 'item')); setLearningError('');
+      } catch (caught) { setLearningError(`學習項目目前無法讀取：${caught instanceof Error ? caught.message : String(caught)}；既有關聯會保留。`); }
       if (initialCaptureId) {
         const target = result.captures.find((capture) => capture.id === initialCaptureId);
         if (target) {
@@ -164,6 +171,7 @@ export default function ForageCaptureInbox({ initialCaptureId = "" }: { initialC
         ))}
       </div>
 
+      {learningError && <p role="alert" className="form-error">{learningError}</p>}
       {deepLinkMessage && <p className={`english-image-deep-link-note ${initialCaptureId && !captures.some((capture) => capture.id === initialCaptureId) ? "is-error" : ""}`}>{deepLinkMessage}</p>}
 
       {tab === "faded" && <p className="forage-fade-note">待處理超過 30 天的原始材料會暫時淡出；資料仍完整保留，可隨時恢復。</p>}
@@ -176,7 +184,7 @@ export default function ForageCaptureInbox({ initialCaptureId = "" }: { initialC
       <div className="forage-list">
         {visible.map((capture) => (
           <ForageCard key={`${capture.id}-${capture.updatedAt}`} capture={capture} editing={editingId === capture.id} targeted={capture.id === initialCaptureId}
-            claims={claims} claimsLoading={claimsLoading}
+            claims={claims} claimsLoading={claimsLoading} learningItems={learningItems}
             onEdit={() => { setEditingId(capture.id); void loadClaims(); }} onCancel={() => setEditingId(null)}
             onClaimCreated={(claim) => setClaims((current) => [claim, ...current])}
             onCaptureUpdated={replaceCapture}
@@ -261,8 +269,8 @@ function CaptureExploration({ capture, onUpdated }: { capture: CaptureEntry; onU
   );
 }
 
-function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit, onCancel, onSaved, onClaimCreated, onCaptureUpdated }: {
-  capture: CaptureEntry; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; targeted: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
+function ForageCard({ capture, learningItems, claims, claimsLoading, editing, targeted, onEdit, onCancel, onSaved, onClaimCreated, onCaptureUpdated }: {
+  capture: CaptureEntry; learningItems: LearningEntity[]; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; targeted: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
 }) {
   const [draft, setDraft] = useState(capture);
   const [candidateStatement, setCandidateStatement] = useState("");
@@ -287,6 +295,14 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
     setDraft((current) => ({ ...current, learningTracks: current.learningTracks.includes(track)
       ? current.learningTracks.filter((item) => item !== track)
       : [...current.learningTracks, track] }));
+  }
+
+  function toggleItem(item: LearningEntity) {
+    setDraft(current => {
+      const ids = current.learningItemIds ?? [];
+      const linked = ids.includes(item.id) || Boolean(item.legacyKey && current.learningTracks.includes(item.legacyKey));
+      return { ...current, learningItemIds: linked ? ids.filter(id => id !== item.id) : [...ids, item.id], learningTracks: item.legacyKey ? linked ? current.learningTracks.filter(key => key !== item.legacyKey) : [...new Set([...current.learningTracks, item.legacyKey])] : current.learningTracks };
+    });
   }
 
   function selectKnowledgeOrigin(origin: CaptureKnowledgeOrigin) {
@@ -342,7 +358,7 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
   }
 
   async function save(status: "pending" | "adopted" | "faded") {
-    if (status === "adopted" && draft.destinations.includes("practice") && draft.learningTracks.length === 0) {
+    if (status === "adopted" && draft.destinations.includes("practice") && draft.learningTracks.length === 0 && !(draft.learningItemIds?.length)) {
       setError("送往修習所前，請至少選擇一個學習項目。"); return;
     }
     if (status === "adopted" && draft.destinations.includes("weaving") && draft.creativeMaturity !== "C2" && draft.creativeMaturity !== "C3") {
@@ -396,7 +412,7 @@ function ForageCard({ capture, claims, claimsLoading, editing, targeted, onEdit,
           {capture.clip.origin === "line" && <><label>當初為什麼收藏？</label><select className="field" value={draft.clip.purpose} onChange={(event) => setDraft({ ...draft, clip: { ...draft.clip, purpose: event.target.value as CaptureEntry["clip"]["purpose"] } })}>{Object.entries(CAPTURE_CLIP_PURPOSES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></>}
           <label>使用去向（可複選）</label>
           <div className="destination-grid">{DESTINATIONS.map((item) => <button type="button" key={item.key} className={draft.destinations.includes(item.key) ? "on" : ""} onClick={() => toggleDestination(item.key)}><b>{item.label}</b><small>{item.hint}</small></button>)}</div>
-          {draft.destinations.includes("practice") && <><label>連到哪些學習項目？（可複選）</label><div className="learning-chip-row">{Object.entries(LEARNING_TRACKS).map(([key, config]) => <button type="button" key={key} className={draft.learningTracks.includes(key as LearningTrackKey) ? "on" : ""} onClick={() => toggleTrack(key as LearningTrackKey)}>{config.title}</button>)}</div></>}
+          {draft.destinations.includes("practice") && <><label>連到哪些學習項目？（可複選）</label><div className="learning-chip-row">{learningItems.filter(item => item.status !== 'archived' || draft.learningItemIds?.includes(item.id) || item.legacyKey && draft.learningTracks.includes(item.legacyKey)).sort((a,b) => a.order-b.order).map(item => <button type="button" key={item.id} className={draft.learningItemIds?.includes(item.id) || item.legacyKey && draft.learningTracks.includes(item.legacyKey) ? 'on' : ''} onClick={() => toggleItem(item)}>{item.name}{item.status === 'archived' ? '（封存）' : ''}</button>)}{Object.entries(LEARNING_TRACKS).filter(([key]) => !learningItems.some(item => item.legacyKey === key)).map(([key, config]) => <button type="button" key={key} className={draft.learningTracks.includes(key as LearningTrackKey) ? "on" : ""} onClick={() => toggleTrack(key as LearningTrackKey)}>{config.title}</button>)}{(draft.unresolvedLearningRefs ?? []).map(ref => <span key={ref}>舊學習關聯待確認：{ref}</span>)}{(draft.learningItemIds ?? []).filter(id => !learningItems.some(item => item.id === id)).map(id => <span key={id}>歷史關聯待確認：{id}</span>)}</div></>}
           <label className="check forage-pin"><input type="checkbox" checked={draft.pinned} onChange={(event) => setDraft({ ...draft, pinned: event.target.checked })} />釘選這份材料，不讓它自動淡出</label>
 
           <details className="deep-forage" open={draft.processingDepth === "deep"}>

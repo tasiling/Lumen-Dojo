@@ -12,6 +12,7 @@ import {
   type EnglishSkill,
   type LearningTrackRecord,
 } from "@/lib/dojo/learning";
+import LearningFoundationManager from "./LearningFoundationManager";
 import EnglishJournalWorkbench from "./EnglishJournalWorkbench";
 import EnglishTopicStudy from "./EnglishTopicStudy";
 import EnglishContextSeedInbox from "./EnglishContextSeedInbox";
@@ -30,6 +31,8 @@ export default function LearningPaths() {
   const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
   const [materials, setMaterials] = useState<CaptureEntry[]>([]);
   const [selected, setSelected] = useState<LearningTrackKey>("english");
+  const [selectedLearningId, setSelectedLearningId] = useState<string | null>(null);
+  const [showLegacy, setShowLegacy] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<LearningTrackRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,15 +69,15 @@ export default function LearningPaths() {
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
   const active = tracks.find((track) => track.key === selected) ?? null;
   const trackMaterials = materials.filter((material) => material.learningTracks.includes(selected));
-  const recentEntries = useMemo(() => entries.filter((entry) => entry.space === "practice" && entry.kind === `學習／${LEARNING_TRACKS[selected].title}`).slice(0, 3), [entries, selected]);
+  const recentEntries = useMemo(() => entries.filter((entry) => entry.space === "practice" && (entry.learningItemId === selectedLearningId && selectedLearningId !== null || entry.kind === `學習／${LEARNING_TRACKS[selected].title}`)).slice(0, 3), [entries, selected, selectedLearningId]);
   const currentWeek = useMemo(() => mondayOf(taipeiTodayISO()), []);
   const weeklyActivities = active?.activityLog.filter((activity) => activity.weekStart === currentWeek) ?? [];
 
-  function selectTrack(key: LearningTrackKey) { setSelected(key); setEditing(false); setDraft(null); }
+  const selectLegacyTrack = useCallback((key: LearningTrackKey | null, id?: string) => { setSelectedLearningId(id ?? null); setShowLegacy(Boolean(key)); if (key) setSelected(key); setEditing(false); setDraft(null); }, []);
   function beginEdit() { if (active) { setDraft(structuredClone(active)); setEditing(true); } }
   function startLearning() {
     const config = LEARNING_TRACKS[selected];
-    startTimerWith({ space: "practice", title: `${config.title}・${active?.currentFocus || active?.currentStage || "一段修習"}`, kind: `學習／${config.title}` });
+    startTimerWith({ space: "practice", title: `${config.title}・${active?.currentFocus || active?.currentStage || "一段修習"}`, kind: `學習／${config.title}`, learningItemId: selectedLearningId ?? undefined });
     router.push("/timer");
   }
   async function save() {
@@ -96,12 +99,9 @@ export default function LearningPaths() {
       <div><span className="eyebrow">讀前・閱讀中・讀後</span><h3>閱讀筆記</h3><p>從小預習、Readmoo 摘錄，到讀後復盤，保存完整的閱讀脈絡。</p></div>
       <div><Link className="primary" href="/reading">打開閱讀筆記</Link><Link href="/add?mode=reading">快速摘錄</Link></div>
     </div>
-    <div className="learning-track-grid">{(Object.keys(LEARNING_TRACKS) as LearningTrackKey[]).map((key) => {
-      const config = LEARNING_TRACKS[key]; const track = tracks.find((item) => item.key === key); const materialCount = materials.filter((item) => item.learningTracks.includes(key)).length;
-      return <button type="button" key={key} className={selected === key ? "on" : ""} onClick={() => selectTrack(key)} style={{ "--track-color": config.color } as React.CSSProperties}><span>{config.short}</span><b>{config.title}</b><small>{track?.currentStage || config.defaultStage}</small>{materialCount > 0 && <em>{materialCount} 份待學素材</em>}</button>;
-    })}</div>
+    <LearningFoundationManager materials={materials} onLegacySelect={selectLegacyTrack} />
 
-    {active && <article className="learning-detail" style={{ "--track-color": LEARNING_TRACKS[selected].color } as React.CSSProperties}>
+    {showLegacy && active && <article className="learning-detail" style={{ "--track-color": LEARNING_TRACKS[selected].color } as React.CSSProperties}>
       <div className="learning-detail-head"><div><span className="label">目前路徑</span><h3>{LEARNING_TRACKS[selected].title}</h3></div><button className="text-link" onClick={beginEdit}>調整路徑</button></div>
       {!editing ? <>
         <div className="learning-facts"><div><small>長期目標</small><p>{active.goal}</p></div><div><small>目前階段</small><p>{active.currentStage}</p></div><div><small>現在專注</small><p>{active.currentFocus || "還沒指定本次專注內容"}</p></div><div className="next"><small>下一步</small><p>{active.nextAction || "先選一個能立刻開始的小練習"}</p></div></div>
@@ -115,7 +115,7 @@ export default function LearningPaths() {
         {error && <p className="form-error">{error}</p>}<div className="learning-editor-actions"><button onClick={() => { setEditing(false); setDraft(null); }}>取消</button><button className="primary" onClick={() => void save()} disabled={saving}>{saving ? "儲存中…" : "儲存路徑"}</button></div>
       </div>}
 
-      {!editing && <div className="learning-actions"><button className="primary" onClick={startLearning}>◷ 開始這次修習</button><button onClick={() => openQuickAdd({ presetSpace: "practice", presetKind: `學習／${LEARNING_TRACKS[selected].title}` })}>留下修習紀錄</button></div>}
+      {!editing && <div className="learning-actions"><button className="primary" onClick={startLearning}>◷ 開始這次修習</button><button onClick={() => openQuickAdd({ presetSpace: "practice", presetKind: `學習／${LEARNING_TRACKS[selected].title}`, learningItemId: selectedLearningId ?? undefined })}>留下修習紀錄</button></div>}
       {!editing && selected === "english" && <EnglishRhythmWeek />}
       {!editing && selected === "english" && <EnglishContextRoomBridge onCompleted={load} />}
       {!editing && selected === "english" && <EnglishTopicStudy />}

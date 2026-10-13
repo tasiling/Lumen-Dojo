@@ -1,4 +1,4 @@
-import { notion, withNotionRateLimit } from "./client";
+import { notion, notionWithoutRetries, withNotionRateLimit } from "./client";
 import {
   DATA_SOURCES,
   SESSION_STATUS_ORDER,
@@ -304,9 +304,9 @@ export async function updateDetailOutputLink(detailId: string, url: string) {
 
 // DB-14 知識庫的通用建立/更新/歸檔(噗浪・蓋樓台的範本與草稿都存這裡,2026-08-02
 // 擁有者裁決,不新增欄位:來源=原創、狀態=存貨、核可狀態=免審皆既有選項)。
-export async function createKnowledgeEntry(params: { 標題: string; 內容: string }) {
+export async function createKnowledgeEntry(params: { 標題: string; 內容: string }, options: { retryCreate?: boolean } = {}) {
   const page = await withNotionRateLimit(() =>
-    notion().pages.create({
+    (options.retryCreate === false ? notionWithoutRetries() : notion()).pages.create({
       parent: { type: "data_source_id", data_source_id: DATA_SOURCES.DB14_知識庫 },
       properties: {
         標題: titleProp(params.標題),
@@ -315,7 +315,8 @@ export async function createKnowledgeEntry(params: { 標題: string; 內容: str
         狀態: selectProp("存貨"),
         核可狀態: selectProp("免審"),
       },
-    })
+    }),
+    { retry: options.retryCreate }
   );
   return { id: page.id };
 }

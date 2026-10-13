@@ -163,6 +163,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
           entry={modalOptions.editId ? entries.find((entry) => entry.id === modalOptions.editId) : undefined}
           presetSpace={modalOptions.presetSpace}
           presetKind={modalOptions.presetKind}
+          learningItemId={modalOptions.learningItemId}
           presetDate={modalOptions.presetDate}
           initialMode={modalOptions.mode}
           onClose={closeQuickAdd}
@@ -182,6 +183,7 @@ function QuickAddModal({
   entry,
   presetSpace,
   presetKind,
+  learningItemId,
   presetDate,
   initialMode,
   onClose,
@@ -190,6 +192,7 @@ function QuickAddModal({
   entry?: DojoEntry;
   presetSpace?: SpaceKey;
   presetKind?: string;
+  learningItemId?: string;
   presetDate?: string;
   initialMode?: "record" | "calendar";
   onClose: () => void;
@@ -245,6 +248,7 @@ function QuickAddModal({
           date,
           space,
           kind: kind.trim() || "紀錄",
+          learningItemId: entry?.learningItemId ?? learningItemId,
           guangxing,
           guangfa,
           privacy,

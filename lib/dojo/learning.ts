@@ -233,6 +233,6 @@ export function normalizeLearningTrack(value: unknown, expectedKey: LearningTrac
       weeklyMode: englishSource?.weeklyMode === "vocabulary-growth" ? "vocabulary-growth" : "foundation-writing",
     } : null,
     activityLog,
-    updatedAt: new Date().toISOString(),
+    updatedAt: stringValue(source.updatedAt, base.updatedAt),
   };
 }

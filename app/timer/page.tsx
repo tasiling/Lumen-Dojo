@@ -84,6 +84,7 @@ export default function TimerPage() {
         title,
         space,
         kind,
+        learningItemId: timerConfig.learningItemId,
         note: `修行計時 ${spent} 分鐘`,
         privacy: "私人",
         guangxing,
@@ -94,7 +95,7 @@ export default function TimerPage() {
         viewCount: 0,
       });
       setRemainingSeconds(initialSeconds);
-      router.push(`/${space}`);
+      router.push(timerConfig.learningItemId ? `/practice?learningItem=${timerConfig.learningItemId}` : `/${space}`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {

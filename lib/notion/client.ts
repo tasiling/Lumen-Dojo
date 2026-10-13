@@ -1,18 +1,60 @@
-import { Client } from "@notionhq/client";
+import { Client, APIResponseError } from "@notionhq/client";
+import {
+  learningWriteOutcome,
+  trackLearningClient,
+} from "../dojo/learningFoundation/writeOutcome";
 
 // 單例 Notion client。token 由環境變數注入,不寫死在程式碼(委派書二、技術原則)。
 function getToken(): string {
   const token = process.env.NOTION_TOKEN;
   if (!token) {
     throw new Error(
-      "缺少環境變數 NOTION_TOKEN。請於部署平台或 .env.local 設定 Notion Internal Integration Token。"
+      "缺少環境變數 NOTION_TOKEN。請於部署平台或 .env.local 設定 Notion Internal Integration Token。",
     );
   }
   return token;
 }
 
 let client: Client | null = null;
+let noRetryClient: Client | null = null;
+// Explicit provider rejection: require the SDK's parsed HTTP response AND
+// matching protocol fields. Error names, arbitrary .status and 5xx are not proof.
+function confirmedNotionRejection(error: unknown): boolean {
+  if (!(error instanceof APIResponseError)) return false;
+  const codes: Record<number, string[]> = {
+    400: [
+      "invalid_json",
+      "invalid_request_url",
+      "invalid_request",
+      "validation_error",
+    ],
+    401: ["unauthorized"],
+    403: ["restricted_resource"],
+    404: ["object_not_found"],
+    429: ["rate_limited"],
+  };
+  try {
+    const body = JSON.parse(error.body);
+    return Boolean(
+      codes[error.status]?.includes(error.code) &&
+        body.object === "error" &&
+        body.status === error.status &&
+        body.code === error.code &&
+        typeof body.request_id === "string" &&
+        body.request_id === error.request_id,
+    );
+  } catch {
+    return false;
+  }
+}
+export function notionWithoutRetries(): Client {
+  if (!noRetryClient)
+    noRetryClient = new Client({ auth: getToken(), retry: false });
+  return trackLearningClient(noRetryClient, confirmedNotionRejection);
+}
 export function notion(): Client {
+  // The SDK and outer retry loop must not resend an ambiguous create in a lock.
+  if (learningWriteOutcome.getStore()) return notionWithoutRetries();
   if (!client) {
     client = new Client({ auth: getToken() });
   }
@@ -46,7 +88,10 @@ function sleep(ms: number) {
 // (如日上三更批次建立)一次要連續送出數十筆請求,若中途有一兩筆因短暫網路
 // 抖動失敗又沒被重試,會造成「這批只成功一半」的部分寫入,卻只看得到
 // Notion 裡缺了幾筆、看不出原因——擴大重試範圍是為了降低這種情況發生的機率。
-export async function withNotionRateLimit<T>(fn: () => Promise<T>): Promise<T> {
+export async function withNotionRateLimit<T>(
+  fn: () => Promise<T>,
+  options: { retry?: boolean } = {},
+): Promise<T> {
   await throttledSlot();
   const delays = [500, 1500, 4000];
   let lastErr: unknown;
@@ -57,7 +102,13 @@ export async function withNotionRateLimit<T>(fn: () => Promise<T>): Promise<T> {
       lastErr = err;
       const status = (err as { status?: number })?.status;
       const retryable = status === undefined || status === 429 || status >= 500;
-      if (!retryable || attempt === delays.length) break;
+      if (
+        learningWriteOutcome.getStore() ||
+        options.retry === false ||
+        !retryable ||
+        attempt === delays.length
+      )
+        break;
       await sleep(delays[attempt]);
     }
   }
@@ -72,7 +123,7 @@ export type BatchResult<T> = {
 // 批次執行:節流 + 重試,部分成功時回報成功/失敗清單,不靜默吞掉(六之三)。
 export async function runBatch<In, Out>(
   inputs: In[],
-  fn: (input: In) => Promise<Out>
+  fn: (input: In) => Promise<Out>,
 ): Promise<BatchResult<Out>> {
   const succeeded: Out[] = [];
   const failed: { input: unknown; error: string }[] = [];
@@ -81,7 +132,10 @@ export async function runBatch<In, Out>(
       const result = await withNotionRateLimit(() => fn(input));
       succeeded.push(result);
     } catch (err) {
-      failed.push({ input, error: err instanceof Error ? err.message : String(err) });
+      failed.push({
+        input,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
   return { succeeded, failed };

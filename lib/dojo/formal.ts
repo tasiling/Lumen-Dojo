@@ -44,6 +44,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   ENTRY_TITLE_PREFIX,
   CAPTURE_TITLE_PREFIX,
   LEARNING_TITLE_PREFIX,
+  "行光修習底座-",
   WEAVING_PROJECT_TITLE_PREFIX,
   WEAVING_SHUTTLE_TITLE_PREFIX,
   WEAVING_WORK_TITLE_PREFIX,
@@ -402,6 +403,8 @@ export type CaptureEntry = {
   explorationRecords: CaptureExplorationRecord[];
   knowledgeLinks: CaptureKnowledgeLink[];
   learningTracks: LearningTrackKey[];
+  learningItemIds?: string[];
+  unresolvedLearningRefs?: string[];
   destinations: CaptureDestination[];
   pinned: boolean;
   capturedAt: string;
@@ -1111,6 +1114,11 @@ export function normalizeCaptureEntry(
     explorationRecords,
     knowledgeLinks,
     learningTracks,
+    unresolvedLearningRefs: [...new Set([
+      ...(Array.isArray(source.unresolvedLearningRefs) ? source.unresolvedLearningRefs.filter((ref): ref is string => typeof ref === "string" && ref.length <= 160) : []),
+      ...(Array.isArray(source.learningTracks) ? (source.learningTracks as unknown[]).filter((ref): ref is string => typeof ref === "string" && ref.length <= 160 && !["english","massage","yijing","ziwei","qimen"].includes(ref)) : []),
+    ])],
+    learningItemIds: Array.isArray(source.learningItemIds) ? [...new Set(source.learningItemIds.filter((id): id is string => typeof id === "string" && id.length <= 160))] : [],
     destinations,
     pinned: Boolean(source.pinned),
     capturedAt,
@@ -1152,6 +1160,8 @@ export function captureContent(entry: CaptureEntry): FormalCaptureContent {
     explorationRecords: entry.explorationRecords,
     knowledgeLinks: entry.knowledgeLinks,
     learningTracks: entry.learningTracks,
+    learningItemIds: entry.learningItemIds ?? [],
+    unresolvedLearningRefs: entry.unresolvedLearningRefs ?? [],
     destinations: entry.destinations,
     pinned: entry.pinned,
     capturedAt: entry.capturedAt,
@@ -1186,6 +1196,7 @@ export function normalizeFormalEntry(
     title,
     space,
     kind: stringValue(source.kind, "紀錄").slice(0, 100),
+    learningItemId: typeof source.learningItemId === "string" ? source.learningItemId : undefined,
     privacy,
     note: stringValue(source.note).trim().slice(0, 5000) || undefined,
     date: isDate(source.date) ? source.date : createdAt.slice(0, 10),
@@ -1211,6 +1222,7 @@ export function entryContent(entry: DojoEntry): FormalEntryContent {
     title: entry.title,
     space: entry.space,
     kind: entry.kind,
+    learningItemId: entry.learningItemId,
     privacy: entry.privacy,
     note: entry.note,
     date: entry.date,

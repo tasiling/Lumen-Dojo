@@ -6,7 +6,22 @@ import {
 } from "./learning";
 import { readJsonRecord, upsertJsonRecord } from "./notionStore";
 
-export async function syncLearningActivity(params: {
+import { withLearningWriteLock } from './learningFoundation/fileLock';
+async function legacyLearningWrite<T>(task: () => Promise<T>): Promise<T> {
+  if (!process.env.LEARNING_WRITE_LOCK_DIR) return task();
+  // Existing callers use Promise.all. Retry lock acquisition, never the Notion write itself.
+  for (let attempt = 0; ; attempt++) {
+    try { return await withLearningWriteLock(task); }
+    catch (error) {
+      if (!(error instanceof Error) || !error.message.startsWith('另一筆學習') || attempt >= 20) throw error;
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+  }
+}
+export async function syncLearningActivity(params: { weekStart: string; cell: BingoCell }): Promise<void> {
+  return legacyLearningWrite(() => syncLearningActivityUnlocked(params));
+}
+async function syncLearningActivityUnlocked(params: {
   weekStart: string;
   cell: BingoCell;
 }): Promise<void> {
@@ -36,10 +51,13 @@ export async function syncLearningActivity(params: {
     ...track.activityLog.filter((item) => item.id !== id),
     activity,
   ].slice(-160);
-  await upsertJsonRecord(title, { ...track, activityLog, updatedAt: new Date().toISOString() });
+  await upsertJsonRecord(title, { ...(row?.value && typeof row.value === "object" ? row.value : {}), ...track, activityLog, updatedAt: new Date().toISOString() });
 }
 
-export async function removeUnstartedLearningActivities(params: {
+export async function removeUnstartedLearningActivities(params: { weekStart: string; cells: BingoCell[] }): Promise<void> {
+  return legacyLearningWrite(() => removeUnstartedLearningActivitiesUnlocked(params));
+}
+async function removeUnstartedLearningActivitiesUnlocked(params: {
   weekStart: string;
   cells: BingoCell[];
 }): Promise<void> {
@@ -69,6 +87,6 @@ export async function removeUnstartedLearningActivities(params: {
       !activity.evidenceNote.trim()
     ));
     if (activityLog.length === track.activityLog.length) continue;
-    await upsertJsonRecord(title, { ...track, activityLog, updatedAt: new Date().toISOString() });
+    await upsertJsonRecord(title, { ...(row?.value && typeof row.value === "object" ? row.value : {}), ...track, activityLog, updatedAt: new Date().toISOString() });
   }
 }
