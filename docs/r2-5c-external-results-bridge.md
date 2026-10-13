@@ -15,7 +15,7 @@
 
 Context 五種有效模式與快速重說既有門檻不改。originalContext/capturedAt 與 currentContext 分開；legacy 原脈絡未知。sourceRevision 不透明，updatedAt 保留 UTC 微秒排序；旧版不回退，原日期／原脈絡不能改寫。practicedOn/occurredAt/timeZone 未知保留 null，來源保存／匯入時間不冒充真正練習時刻。archived/deleted 保留有效歷史；withdrawn/unverified 排除有效完成；來源 503、空頁或缺席不表示刪除。
 
-VF 新完成日期必須是 occurredAt 在保存 IANA timeZone 下的 source-local practicedOn；未知或不符拒絕，不套今天／道場時區。標準五詞必须 exact5、spelling5、必要 understanding 至少15、standardRounds1；短1～4詞及其他模式 standardRounds0。R2-5B 当前是不可變 completed/available 事件，沒有撤回／删除 mutation；接收端不虛構這些操作。其 original/current context 均未知，不能猜書籍或專案位置。
+VF 新完成日期必須是 occurredAt 在保存 IANA timeZone 下的 source-local practicedOn；未知或不符拒絕，不套今天／道場時區。標準五詞必须 exact5、spelling5、必要 understanding 至少15、standardRounds1；短1～4詞及其他模式 standardRounds0。所有模式保留1～50詞、每詞spelling及3～4個understanding必要／可选taskpool門檻。R2-5B 当前是不可變 completed/available 事件，沒有撤回／删除 mutation；接收端不虛構這些操作。其 original/current context 均未知，不能猜書籍或專案位置。
 
 ## 操作與設定
 
@@ -44,7 +44,7 @@ DB14逐筆存既有 `行光完成事件-`、`行光學習正文-`；transport �
 
 Context正文來源 metadata 更新保留本地 evidence note、正文与學科。VF不可變重播不覆蓋使用者正文。外部正文可关联多學科；event GET唯讀从唯一正文衍生當前學科，用同一事件展示，不重新計次。未知日期正文仍在dated history后，不用recordedOn填造practicedOn。
 
-Context光步／週盤未連結：没有已核准的模式映射或來源原有 binding，不猜對應。VF每个真完成在原 practicedOn 投影 vocabulary set；同日类别一次，只有標準五詞增加標準輪次。DailyRecord `practiceEventVocabulary` 保存 manualRounds 與 unique event IDs/standardRound provenance；`vocabForgeRounds = min(5,max(manual,automatic))`，保留現行上限，完整來源輪次不丟。舊表單／other writer不能覆蓋ledger；有版本檢查的明確daily edit可更新manual baseline。其他英文類別、note与整份daily內容保留。來源只新增词彙，不自動标output。
+Context光步／週盤未連結：没有已核准的模式映射或來源原有 binding，不猜對應。VF每个真完成在原 practicedOn 投影 vocabulary set；同日类别一次，只有標準五詞增加標準輪次。DailyRecord `practiceEventVocabulary` 保存 manualRounds 與 unique event IDs/standardRound provenance；`vocabForgeRounds = min(5,max(manual,automatic))`，保留現行上限，完整來源輪次不丟。舊表單／other writer不能覆蓋ledger；有版本檢查的明確daily edit可更新manual baseline。其他英文類別、note与整份daily內容保留。既有weekly彙總只讀獨立manual baseline，避免後續daily/bingo操作把未綁定來源成果自動完成另一格。來源只新增词彙，不自動标output。
 
 週盤預設、6＋2、已安排格、範本及手動进度都不改；外部事件沒有來源明確binding，因此未連結。沒有自动创建 Assessment、Claim、學成卡或作品。
 
@@ -54,7 +54,7 @@ Context光步／週盤未連結：没有已核准的模式映射或來源原有 
 
 ## 當次隔離驗证
 
-PASS：`test:external-results`、`test:vocab-results`、`test:vocab-projection`、`test:r2-5c-api`、`test:practice-events`、`test:learning-records`、`test:r2-3-api`。新增VF route/storage suite执行真实handler、event/body/provider adapter和fsynced lock/intent；磁碟backed隔離Notion transport，不是真正式Notion。
+PASS：`test:external-results`、`test:vocab-results`、`test:vocab-projection`、`test:vocab-weekly-boundary`、`test:r2-5c-api`、`test:practice-events`、`test:learning-records`、`test:r2-3-api`。新增VF route/storage suite执行真实handler、event/body/provider adapter和fsynced lock/intent；磁碟backed隔離Notion transport，不是真正式Notion。
 
 PASS：learning-foundation/model+API、weekly、english-images、unit-arrangement、capture-exploration、html-entity-overflow、wealth-bank、image-routing回归。初次practice-workspaces没有Playwrightbrowser而失败；安装后375/390/430px实际通过。
 

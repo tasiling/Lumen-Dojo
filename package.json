@@ -31,7 +31,8 @@
     "test:r2-5c-api": "node scripts/test-r2-5c-api.mjs",
     "test:r2-5c-ui": "node scripts/test-r2-5c-ui.mjs",
     "test:vocab-projection": "node scripts/test-vocab-projection.mjs",
-    "test:vocab-results": "node scripts/test-vocab-results.mjs"
+    "test:vocab-results": "node scripts/test-vocab-results.mjs",
+    "test:vocab-weekly-boundary": "node scripts/test-vocab-weekly-boundary.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

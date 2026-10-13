@@ -240,13 +240,13 @@ try {
   const vfPanel=page.getByRole("region",{name:"外部修習來源"});
   await vfPanel.getByText(/VocabForge・標準五詞回合/).waitFor();
   assert.equal(mutations,vfBefore);
-  for(const width of [375,390,430]){await page.setViewportSize({width,height:430});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));}
+  for(const width of [375,390,430]){await page.setViewportSize({width,height:430});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${output}/vocab-${width}.png`,fullPage:true});}
   await vfPanel.getByRole("button",{name:"刷新 VF 成果"}).click();await vfPanel.getByRole("status").waitFor();assert.equal(mutations,vfBefore+1);
   assert.equal(await vfPanel.getByRole("link",{name:"返回 VocabForge（需要登入）"}).getAttribute("href"),"https://vocabforge-production-2baf.up.railway.app/");
   await vfPanel.getByText(/來源當地修習日期：2026-10-13/).waitFor();await vfPanel.getByText(/每日詞彙已套用/).waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    "PASS R2-5C isolated Chromium UI 375/390/430: cache-only load/reload/back, not connected/no fake zero, explicit sync/reconcile/retry, legacy date/context limits, long Chinese/English without overflow, safe-area padding/reduced viewport, offline preserves source/local UI. Mock transport; not live integration/iPhone Safari.",
+    "PASS R2-5C isolated Chromium UI 375/390/430: Context + VF, cache-only load/reload/back, not connected/no fake zero, explicit sync/reconcile/retry, legacy date/context limits, long Chinese/English without overflow, safe-area padding/reduced viewport, offline preserves source/local UI. Mock transport; not live integration/iPhone Safari.",
   );
 } finally {
   await browser?.close();

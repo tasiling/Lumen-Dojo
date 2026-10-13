@@ -576,7 +576,7 @@ try {
   assert.equal((await post({ action: "sync" })).status, 409);
   assert.equal(writes, blocked);
   console.log(
-    "PASS R2-5C actual handler + store + writer/intent using disk-backed isolated Notion transport fixture: owner/origin, no source claims, API/Notion UUID dedup across restart, single accepted event/body, versioned legacy guard/no ack, cache GET no writes/no fetch/private text, new session, opaque newer/older revisions, local notes preserved, undated history placement, archived/deleted/withdrawn vs 503/empty, ambiguous create retains mutex/intent. Real cross-site integration SKIPPED.",
+    "PASS R2-5C actual handler + store + writer/intent using disk-backed isolated Notion transport fixture: VF exact source/daily rejection-recovery/same-round ledger/local body disciplines, owner/origin, no source claims, API/Notion UUID dedup across restart, single accepted event/body, versioned legacy guard/no ack, cache GET no writes/no fetch/private text, new session, opaque newer/older revisions, local notes preserved, undated history placement, archived/deleted/withdrawn vs 503/empty, ambiguous create retains mutex/intent. Real cross-site integration SKIPPED.",
   );
 } finally {
   globalThis.fetch = savedFetch;
