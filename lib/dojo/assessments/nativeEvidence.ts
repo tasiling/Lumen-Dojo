@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { notion, withNotionRateLimit } from "@/lib/notion/client";
 import { DATA_SOURCES } from "@/lib/notion/schema";
 import { LearningError } from "../learningFoundation/model";
+import { isPrivateNativeSource } from "./nativeCatalog";
 type NativeResult = { status: "available" | "archived" | "missing" | "unverified"; snapshot: string; identity?: string; mediaKind?: "audio" | "file" };
 function record(v: unknown): Record<string, unknown> { return v && typeof v === "object" ? v as Record<string, unknown> : {}; }
 function unavailable(e: unknown) { const v = record(e); return v.code === "object_not_found" || v.status === 404; }
@@ -29,6 +30,7 @@ export async function ownedNativeAttachment(pageId: string, blockId: string): Pr
   catch (e) { if (unavailable(e)) return { status: "missing", snapshot }; throw e; }
   if (!sameId(record(page.parent).data_source_id, DATA_SOURCES.DB14_知識庫)) throw new LearningError("附件不屬於本 owner", 403);
   if (page.archived || page.in_trash) return { status: "archived", snapshot };
+  if (isPrivateNativeSource(page)) return { status: "unverified", snapshot };
   try { block = record(await withNotionRateLimit(() => notion().blocks.retrieve({ block_id: blockId }))); }
   catch (e) { if (unavailable(e)) return { status: "missing", snapshot }; throw e; }
   const original = block, visited = new Set<string>();

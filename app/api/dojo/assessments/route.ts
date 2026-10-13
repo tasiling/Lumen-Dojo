@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import { assessments, assessmentRepository } from "@/lib/dojo/assessments/store";
+import { nativeSources, nativeAttachments } from "@/lib/dojo/assessments/nativeCatalog";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };
@@ -10,6 +11,8 @@ function fail(e: unknown) { return respond({ error: e instanceof LearningError ?
 async function body(req: NextRequest) { const s = await req.text(); if (Buffer.byteLength(s, "utf8") > 350000) throw new LearningError("驗收請求超過保存上限", 413); try { const b = JSON.parse(s); if (!b || typeof b !== "object" || Array.isArray(b)) throw Error(); return b; } catch { throw new LearningError("驗收請求格式不正確"); } }
 export async function GET(req: NextRequest) {
   try { requireLearningOwner(req); const q = req.nextUrl.searchParams;
+    if (q.get("native-sources")) return respond(await nativeSources(q.get("cursor") ?? undefined));
+    if (q.get("native-page")) return respond(await nativeAttachments(q.get("native-page")!));
     if (q.get("attempt")) { const id = q.get("attempt")!; return respond({ attempt: await assessments.getAttempt(id), evidenceAvailability: await assessments.evidenceAvailability(id) }); }
     if (q.get("mastery")) { const id = q.get("mastery")!; return respond({ mastery: await assessments.confirmedMastery(id), evidenceAvailability: await assessments.evidenceAvailability(id) }); }
     const definitions = await assessmentRepository.definitions(), attempts = await assessmentRepository.attempts();

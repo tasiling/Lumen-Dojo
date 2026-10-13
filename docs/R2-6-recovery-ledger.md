@@ -94,3 +94,17 @@ An actual-handler regression reproduced a privacy bug: exporting a selected exce
 Final assessment suite, TypeScript, scoped ESLint and production build are rerun for checkpoint. No browser retry, live Notion write/media request, paid AI, merge or deployment. Learning-record/URL selection UI exists; native file/audio selection and teacher/professional proof operations remain unfinished, alongside R2-7 道藏 and final integration/mobile acceptance.
 
 Stage3d checkpoint checks: full assessment suite including actual picker-helper/API export privacy regression PASS; TypeScript/scoped ESLint/standard build/diff check PASS. UI interaction/mobile acceptance remains pending under the known environment restriction. Existing source records were never edited by evidence selection.
+
+## Stage 3e: native file/audio picker checkpoint
+
+Added owner-authenticated read-only native source metadata and attachment-list GET operations. Source pages use the existing physical DB14 ownership boundary, exclude private assessment state/proof namespaces, and return no content bodies or signed URLs. Attachment discovery walks owned nested block ancestry and rejects archive/foreign/incomplete pagination; catalog entries never include availability/native identity/attestation. Explicit selection stages file/audio/proof pointers into the existing draft; save/evaluate/confirm still use the actual signed-range/media verifier. Selecting a proof attachment alone cannot create a teacher/professional attestation.
+
+Missing catalog and native selection helper RED then GREEN; isolated SDK tests cover nested attachments, ownership/archive refusal, no signed URL/status, opaque and repeated cursors. Actual authenticated API tests cover unauthorized zero reads, private/no-store metadata, no state/body/signature exposure, opaque cursor continuation and read-only behavior. Empty-but-continuing block pages are bounded (20 pages/container, 2000 total requests/blocks, depth 15) and fail closed instead of returning a partial catalog.
+
+Independent review reproduced direct private-page browsing bypassing list exclusion. Actual API regression first returned 200 then 403 after prefix enforcement before block reads. The original native verifier also marks private assessment state pages unverified without fetching media, preserving historical snapshots while refusing new proof; this verifier regression first failed with available then passed. No remaining Important review findings are reported.
+
+Ruling: do not traverse child pages/databases or synced blocks during owned-page discovery — their parent/source correspondence is not established by this catalog — cost: attachments held only there must be moved to an ordinary owned source block before selection. Discovery is for existing Notion attachments; new uploading and playback are not claimed.
+
+Final suite/TypeScript/scoped ESLint/build are rerun. No live Notion/media writes, AI calls, browser retry, merge or deployment. Mobile interaction acceptance remains pending. Remaining main functionality: teacher/professional proof review and evaluator workflow, R2-7 道藏/history, and full navigation/integration; overall UI polish remains last as requested.
+
+Stage3e checkpoint checks: full assessment suite including actual authenticated catalog API, private-page refusal/native-verifier regression and empty-page bounds PASS; TypeScript/scoped ESLint/standard production build/diff check PASS. No live Notion/media or mobile interaction acceptance is claimed.

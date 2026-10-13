@@ -19,3 +19,6 @@ export function recordPageState<T extends {id:string}>(previous:{records:T[];rec
  const records=more?[...previous.records,...incoming.filter(item=>!previous.records.some(old=>old.id===item.id))]:incoming;
  return {...previous,records};
 }
+export function nativeEvidenceInput(candidate:{referenceId:string;fileBlockId:string;label:string},kind:'file'|'audio'|'professional-proof'):EvidenceInput{
+ return {id:`native:${candidate.referenceId}:${candidate.fileBlockId}`,kind,label:candidate.label.slice(0,180),referenceId:candidate.referenceId,fileBlockId:candidate.fileBlockId};
+}
