@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {Module} from 'node:module';import ts from 'typescript';
+const m=new Module('configuration');m._compile(ts.transpileModule(readFileSync('lib/dojo/assessments/configuration.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,'configuration');
+const {changeScope,languageDimension,professionalPractice}=m.exports;
+const scope={learningItemId:'item1',stageId:'stage1',topicId:'topic1',level:'topic',languageDimension:'writing'};
+assert.deepEqual(changeScope(scope,{learningItemId:'item2'}),{learningItemId:'item2',level:'topic',languageDimension:'writing'});
+assert.equal(changeScope(scope,{stageId:'stage2'}).topicId,undefined);assert.equal(changeScope(scope,{stageId:undefined}).topicId,undefined);
+assert.deepEqual(changeScope(scope,{level:'path'}),{learningItemId:'item1',level:'path',languageDimension:'writing'});
+assert.equal(changeScope(scope,{level:'stage'}).topicId,undefined);assert.equal(scope.topicId,'topic1');
+const d={scope,cefr:'B1',professionalPractice:false,confirmationMethods:['self']};
+assert.equal(languageDimension(d,'none').cefr,undefined);assert.equal(d.cefr,'B1');
+assert.deepEqual(professionalPractice(d,true).confirmationMethods,['teacher']);assert.deepEqual(d.confirmationMethods,['self']);
+assert.deepEqual(professionalPractice({...d,confirmationMethods:['self','professional']},true).confirmationMethods,['professional']);
+console.log('PASS configuration: parent scope changes clear stale descendants, language none clears CEFR, professional practice excludes self without mutating source');

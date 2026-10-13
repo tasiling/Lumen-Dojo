@@ -27,7 +27,7 @@
     "test:wealth-bank": "node --experimental-strip-types --test scripts/test-wealth-bank-routing.mjs scripts/test-wealth-bank-ocr.mjs scripts/test-wealth-bank-route.mjs scripts/test-wealth-bank-summary.mjs scripts/test-wealth-bank-request.mjs scripts/test-wealth-performance.mjs",
     "check:wealth-bank": "npm run test:wealth-bank && npm run lint && npm run build",
     "test:image-routing": "node scripts/test-unified-image-routing.mjs && node scripts/test-unified-image-dispatch.mjs",
-    "test:assessments": "node scripts/test-assessment-domain.mjs && node scripts/test-assessment-api.mjs && node scripts/test-assessment-native-evidence.mjs && node scripts/test-assessment-progress.mjs && node scripts/test-assessment-editor.mjs",
+    "test:assessments": "node scripts/test-assessment-domain.mjs && node scripts/test-assessment-api.mjs && node scripts/test-assessment-native-evidence.mjs && node scripts/test-assessment-progress.mjs && node scripts/test-assessment-editor.mjs && node scripts/test-assessment-configuration.mjs && node scripts/test-assessment-configuration-view.mjs",
     "test:assessment-ui": "node scripts/test-assessment-ui.mjs && node scripts/test-assessment-attempt-ui.mjs"
   },
   "dependencies": {
