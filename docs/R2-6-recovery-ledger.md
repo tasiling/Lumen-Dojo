@@ -82,3 +82,15 @@ Final tests/TypeScript/scoped ESLint/build are rerun for this checkpoint. SSR is
 Remaining: learning-record/file/audio evidence selection; teacher/professional attestation handling; R2-7 道藏/history; full multi-package navigation/integration and mobile acceptance; overall UI polish after functionality, as requested.
 
 Stage3c checkpoint results: full assessment suite including configuration helpers and actual-form SSR PASS; TypeScript/scoped ESLint/standard production build/diff check PASS. Browser acceptance still pending; no live attachment or teacher-proof test claimed.
+
+## Stage 3d: learning-record/URL evidence selection checkpoint
+
+Added a read-only paginated picker of existing same-item learning records. Users explicitly select a real excerpt, add/update its source pointer in the attempt draft, or remove it without changing the source record. URL evidence can be selected but stays unverified. Draft evidence references are preserved and participate in the leave/reload guard. Pending picker inputs must be selected or explicitly canceled before saving; they are not inferred as proof.
+
+Selection helper missing-module RED then GREEN covers real/nonblank excerpts, archive refusal, no caller proof status, source-reference preservation, same-source dedup/update/removal and collision refusal. Refresh starts a fresh cursor sequence; repeated pagination cursors are refused. Independent review found pagination discarded edited pending excerpts; added missing-helper RED then GREEN and now preserve pending record/excerpt across page loads and require explicit select/cancel before choosing another record.
+
+An actual-handler regression reproduced a privacy bug: exporting a selected excerpt included the entire unselected source through its historical snapshot. Manual export now uses the explicitly selected text as its exported snapshot while stored historical source snapshots remain unchanged. A separate RED/GREEN test removed body-derived labels for untitled records; the picker now uses a generic label. Actual picker helper + actual API/persistence export regression confirms unselected text never appears in the package.
+
+Final assessment suite, TypeScript, scoped ESLint and production build are rerun for checkpoint. No browser retry, live Notion write/media request, paid AI, merge or deployment. Learning-record/URL selection UI exists; native file/audio selection and teacher/professional proof operations remain unfinished, alongside R2-7 道藏 and final integration/mobile acceptance.
+
+Stage3d checkpoint checks: full assessment suite including actual picker-helper/API export privacy regression PASS; TypeScript/scoped ESLint/standard build/diff check PASS. UI interaction/mobile acceptance remains pending under the known environment restriction. Existing source records were never edited by evidence selection.
