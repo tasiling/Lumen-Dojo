@@ -66,7 +66,7 @@ export default function CreativeRoleStudio() {
     finally { setSaving(false); }
   }
 
-  if (!profile) return <div className="card creative-role-loading">正在讀取創現角色…</div>;
+  if (!profile) return <div className="card creative-role-loading">{error || "正在讀取創現角色…"}</div>;
   return <div className="creative-role-studio">
     <section className="creative-principle-card">
       <span className="label">創作者原則</span>
@@ -81,7 +81,7 @@ export default function CreativeRoleStudio() {
       <Link href="/practice?vision=1"><b>Vision</b>前往沉浸練習 →</Link>
     </section>
 
-    <section className="creative-role-card">
+    <section id="creative-role" className="creative-role-card">
       <div className="section-heading"><div><span className="eyebrow">創現角色</span><h3>角色小檔案</h3></div><small>方向改變時再更新</small></div>
       <label htmlFor="creative-role-title">角色稱號</label>
       <input id="creative-role-title" className="field" value={profile.title} onChange={(event) => setProfile({ ...profile, title: event.target.value })} placeholder="例如：輕盈擁房的自由創作者" />
@@ -93,7 +93,7 @@ export default function CreativeRoleStudio() {
       <button type="button" className="primary" disabled={saving || !profile.title.trim() || !traitsText.trim()} onClick={() => void saveProfile()}>{saving ? "儲存中…" : "儲存角色小檔案"}</button>
     </section>
 
-    <section className="creative-milestone-card">
+    <section id="creative-milestone" className="creative-milestone-card">
       <div className="section-heading"><div><span className="eyebrow">主動創造的證據</span><h3>里程碑事件</h3></div></div>
       <label htmlFor="creative-action">我主動採取了什麼行動？</label>
       <textarea id="creative-action" className="field" rows={3} value={action} onChange={(event) => setAction(event.target.value)} placeholder="例如：我安排並完成了一次看房。" />
@@ -105,7 +105,7 @@ export default function CreativeRoleStudio() {
       <textarea id="creative-reflection" className="field" rows={2} value={reflection} onChange={(event) => setReflection(event.target.value)} />
       <button type="button" className="primary" disabled={saving || !action.trim() || !trait.trim()} onClick={() => void saveMilestone()}>{saving ? "保存中…" : "留下里程碑"}</button>
     </section>
-    <AffirmPractice profile={profile} />
+    <section id="creative-affirm"><AffirmPractice profile={profile} /></section>
     {error && <p className="form-error">{error}</p>}{message && <p className="save-notice">{message}</p>}
     {milestones.length > 0 && <details className="creative-milestone-history"><summary>最近的里程碑（{milestones.length}）</summary>{milestones.slice(0, 6).map((item) => <article key={item.id}><small>{item.date} · {item.trait}</small><b>{item.action}</b>{item.response && <p>現實回應：{item.response}</p>}</article>)}</details>}
   </div>;

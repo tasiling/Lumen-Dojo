@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
@@ -13,11 +14,11 @@ import {
   type LearningTrackRecord,
 } from "@/lib/dojo/learning";
 import LearningFoundationManager from "./LearningFoundationManager";
-import EnglishJournalWorkbench from "./EnglishJournalWorkbench";
-import EnglishTopicStudy from "./EnglishTopicStudy";
-import EnglishContextSeedInbox from "./EnglishContextSeedInbox";
-import EnglishContextRoomBridge from "./EnglishContextRoomBridge";
-import EnglishRhythmWeek from "./EnglishRhythmWeek";
+const EnglishJournalWorkbench = dynamic(() => import("./EnglishJournalWorkbench"));
+const EnglishTopicStudy = dynamic(() => import("./EnglishTopicStudy"));
+const EnglishContextSeedInbox = dynamic(() => import("./EnglishContextSeedInbox"));
+const EnglishContextRoomBridge = dynamic(() => import("./EnglishContextRoomBridge"));
+const EnglishRhythmWeek = dynamic(() => import("./EnglishRhythmWeek"));
 
 async function responseJson<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
@@ -25,7 +26,7 @@ async function responseJson<T>(response: Response): Promise<T> {
   return json as T;
 }
 
-export default function LearningPaths() {
+export default function LearningPaths({settingsOnly = false}: {settingsOnly?: boolean}) {
   const router = useRouter();
   const { openQuickAdd, startTimerWith, entries } = useDojo();
   const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
@@ -99,7 +100,7 @@ export default function LearningPaths() {
       <div><span className="eyebrow">讀前・閱讀中・讀後</span><h3>閱讀筆記</h3><p>從小預習、Readmoo 摘錄，到讀後復盤，保存完整的閱讀脈絡。</p></div>
       <div><Link className="primary" href="/reading">打開閱讀筆記</Link><Link href="/add?mode=reading">快速摘錄</Link></div>
     </div>
-    <LearningFoundationManager materials={materials} onLegacySelect={selectLegacyTrack} />
+    {settingsOnly ? <div className="practice-tabs">{Object.entries(LEARNING_TRACKS).map(([key,value])=><button key={key} onClick={()=>selectLegacyTrack(key as LearningTrackKey)}>{value.title}</button>)}</div> : <LearningFoundationManager materials={materials} onLegacySelect={selectLegacyTrack} />}
 
     {showLegacy && active && <article className="learning-detail" style={{ "--track-color": LEARNING_TRACKS[selected].color } as React.CSSProperties}>
       <div className="learning-detail-head"><div><span className="label">目前路徑</span><h3>{LEARNING_TRACKS[selected].title}</h3></div><button className="text-link" onClick={beginEdit}>調整路徑</button></div>
@@ -115,13 +116,13 @@ export default function LearningPaths() {
         {error && <p className="form-error">{error}</p>}<div className="learning-editor-actions"><button onClick={() => { setEditing(false); setDraft(null); }}>取消</button><button className="primary" onClick={() => void save()} disabled={saving}>{saving ? "儲存中…" : "儲存路徑"}</button></div>
       </div>}
 
-      {!editing && <div className="learning-actions"><button className="primary" onClick={startLearning}>◷ 開始這次修習</button><button onClick={() => openQuickAdd({ presetSpace: "practice", presetKind: `學習／${LEARNING_TRACKS[selected].title}`, learningItemId: selectedLearningId ?? undefined })}>留下修習紀錄</button></div>}
-      {!editing && selected === "english" && <EnglishRhythmWeek />}
-      {!editing && selected === "english" && <EnglishContextRoomBridge onCompleted={load} />}
-      {!editing && selected === "english" && <EnglishTopicStudy />}
-      {!editing && selected === "english" && <EnglishJournalWorkbench initialDate={journalDate} onCompleted={load} />}
-      {!editing && selected === "english" && <EnglishContextSeedInbox />}
-      {!editing && selected === "english" && <div className="learning-resources weekly-learning-progress"><div className="subsection-title"><h4>本週英文 6＋2 成果</h4><Link href="/bingo">前往週盤 →</Link></div>{weeklyActivities.length === 0 ? <p className="muted-note">本週尚未安排英文深度成果；可從週盤加入 6＋2 格範本。</p> : weeklyActivities.map((activity) => <div className="learning-material" key={activity.id}><div><b>{activity.path === "system" ? "系統建置" : "英文修習"}・{activity.skill}・{activity.progress}/{activity.target} {activity.unit}</b><small>{activity.evidenceNote || (activity.completedAt ? "已完成" : "進行中")}</small></div><span>{activity.completedAt ? "✓" : ""}</span></div>)}</div>}
+      {!editing && <div className="learning-actions"><button className="primary" onClick={startLearning}>◷ 輔助計時（選用）</button><button onClick={() => openQuickAdd({ presetSpace: "practice", presetKind: `學習／${LEARNING_TRACKS[selected].title}`, learningItemId: selectedLearningId ?? undefined })}>留下修習紀錄</button></div>}
+      {!settingsOnly && !editing && selected === "english" && <EnglishRhythmWeek />}
+      {!settingsOnly && !editing && selected === "english" && <EnglishContextRoomBridge onCompleted={load} />}
+      {!settingsOnly && !editing && selected === "english" && <EnglishTopicStudy />}
+      {!settingsOnly && !editing && selected === "english" && <EnglishJournalWorkbench initialDate={journalDate} onCompleted={load} />}
+      {!settingsOnly && !editing && selected === "english" && <EnglishContextSeedInbox />}
+      {!settingsOnly && !editing && selected === "english" && <div className="learning-resources weekly-learning-progress"><div className="subsection-title"><h4>本週英文 6＋2 成果</h4><Link href="/bingo">前往週盤 →</Link></div>{weeklyActivities.length === 0 ? <p className="muted-note">本週尚未安排英文深度成果；可從週盤加入 6＋2 格範本。</p> : weeklyActivities.map((activity) => <div className="learning-material" key={activity.id}><div><b>{activity.path === "system" ? "系統建置" : "英文修習"}・{activity.skill}・{activity.progress}/{activity.target} {activity.unit}</b><small>{activity.evidenceNote || (activity.completedAt ? "已完成" : "進行中")}</small></div><span>{activity.completedAt ? "✓" : ""}</span></div>)}</div>}
       {!editing && <div className="learning-resources"><div className="subsection-title"><h4>從野採送來的素材</h4><span>{trackMaterials.length}</span></div>{trackMaterials.length === 0 ? <p className="muted-note">目前沒有待學素材；可在野採將材料連到這條路徑。</p> : trackMaterials.map((material) => <div className="learning-material" key={material.id}><div><b>{material.title}</b><small>{material.forageSummary || material.excerpt || "尚未留下摘要"}</small></div>{material.sourceUrl && <a href={material.sourceUrl} target="_blank" rel="noreferrer">來源 ↗</a>}</div>)}</div>}
       {!editing && recentEntries.length > 0 && <div className="learning-resources"><div className="subsection-title"><h4>最近修習</h4></div>{recentEntries.map((entry) => <div className="learning-material" key={entry.id}><div><b>{entry.title}</b><small>{entry.date}{entry.note ? `・${entry.note}` : ""}</small></div></div>)}</div>}
     </article>}

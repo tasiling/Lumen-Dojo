@@ -34,7 +34,9 @@ async function api<T>(method = "GET", body?: unknown): Promise<T> {
 export default function LearningFoundationManager({
   materials,
   onLegacySelect,
+  defaultEnglish = true,
 }: {
+  defaultEnglish?: boolean;
   materials: CaptureEntry[];
   onLegacySelect: (key: LearningTrackKey | null, id?: string) => void;
 }) {
@@ -54,17 +56,15 @@ export default function LearningFoundationManager({
       setSelected(
         (current) =>
           current ??
-          new URLSearchParams(window.location.search).get("learningItem") ??
-          next.entities.find(
-            (e) => e.kind === "item" && e.legacyKey === "english",
-          )?.id ??
+          next.entities.find(e => e.kind === "item" && (e.id === new URLSearchParams(window.location.search).get("learningItem") || e.legacyKey === new URLSearchParams(window.location.search).get("learningItem") && e.legacyKey !== null))?.id ??
+          (defaultEnglish ? next.entities.find(e => e.kind === "item" && e.legacyKey === "english")?.id : null) ??
           null,
       );
       setError("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     }
-  }, []);
+  }, [defaultEnglish]);
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);
@@ -87,7 +87,7 @@ export default function LearningFoundationManager({
     setNotice("");
     const url = new URL(window.location.href);
     url.searchParams.set("learningItem", item.id);
-    window.history.replaceState(window.history.state, "", url);
+    window.history.replaceState(null, "", url);
   }
   async function mutate(
     method: string,
@@ -361,10 +361,11 @@ export default function LearningFoundationManager({
                   kind: `學習／${active.name}`,
                   learningItemId: active.id,
                 });
-                router.push("/timer");
+                window.history.pushState(window.history.state, "", window.location.href);
+                router.replace("/timer");
               }}
             >
-              開始這次修習
+              輔助計時（選用）
             </button>
             <button
               onClick={() =>
