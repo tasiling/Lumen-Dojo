@@ -1,0 +1,22 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:r2-5c-ui
+> node scripts/test-r2-5c-ui.mjs
+
+READY isolated UI server 3025
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('region', { name: '外部修習來源' }).getByText('已接收').first() to be visible[22m
+
+    at /workspace/scratch/3c8ef09c40b7/dojo-routing/scripts/test-r2-5c-ui.mjs:223:56 {
+  log: [
+    "  - waiting for getByRole('region', { name: '外部修習來源' }).getByText('已接收').first() to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

@@ -1,0 +1,5 @@
+
+> liiy2111@0.1.0 test:capture-exploration
+> node scripts/test-capture-exploration.mjs
+
+capture-exploration: model assertions passed

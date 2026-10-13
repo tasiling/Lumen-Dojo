@@ -1,0 +1,151 @@
+
+> liiy2111@0.1.0 build
+> next build
+
+▲ Next.js 16.2.10 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 20.2s
+  Running TypeScript ...
+  Finished TypeScript in 7.3s ...
+  Collecting page data using 8 workers ...
+  Generating static pages using 8 workers (0/34) ...
+  Generating static pages using 8 workers (8/34)
+  Generating static pages using 8 workers (16/34)
+  Generating static pages using 8 workers (25/34)
+✓ Generating static pages using 8 workers (34/34) in 326ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /add
+├ ƒ /api/closing
+├ ƒ /api/closing/[id]/resolve
+├ ƒ /api/closing/continuations
+├ ƒ /api/closing/today
+├ ƒ /api/dashboard
+├ ƒ /api/decks
+├ ƒ /api/details/[id]/date
+├ ƒ /api/details/[id]/draft
+├ ƒ /api/details/[id]/output-link
+├ ƒ /api/details/[id]/status
+├ ƒ /api/details/batch-status
+├ ƒ /api/dojo/bingo
+├ ƒ /api/dojo/bingo/templates
+├ ƒ /api/dojo/calendar
+├ ƒ /api/dojo/captures
+├ ƒ /api/dojo/captures/[id]/images/[blockId]
+├ ƒ /api/dojo/context-room-results
+├ ƒ /api/dojo/continuations
+├ ƒ /api/dojo/daily
+├ ƒ /api/dojo/english-images
+├ ƒ /api/dojo/english-images/context-room
+├ ƒ /api/dojo/english-images/image
+├ ƒ /api/dojo/english-images/vocabforge
+├ ƒ /api/dojo/english-journal
+├ ƒ /api/dojo/english-journal/context-seeds
+├ ƒ /api/dojo/english-journal/vocabforge
+├ ƒ /api/dojo/entries
+├ ƒ /api/dojo/evening
+├ ƒ /api/dojo/external-results
+├ ƒ /api/dojo/flow
+├ ƒ /api/dojo/forage-overview
+├ ƒ /api/dojo/knowledge-claims
+├ ƒ /api/dojo/learning
+├ ƒ /api/dojo/learning/foundation
+├ ƒ /api/dojo/learning/records
+├ ƒ /api/dojo/liaojie-projects
+├ ƒ /api/dojo/manifestation
+├ ƒ /api/dojo/manifestation/practices
+├ ƒ /api/dojo/practice-events
+├ ƒ /api/dojo/reading/books
+├ ƒ /api/dojo/reading/books/[id]
+├ ƒ /api/dojo/reading/books/[id]/notes
+├ ƒ /api/dojo/reading/cards
+├ ƒ /api/dojo/reading/cards/[id]
+├ ƒ /api/dojo/review
+├ ƒ /api/dojo/topic-study
+├ ƒ /api/dojo/topic-study/vocabforge
+├ ƒ /api/dojo/weaving-projects
+├ ƒ /api/dojo/weaving-shuttles
+├ ƒ /api/dojo/weaving-works
+├ ƒ /api/events
+├ ƒ /api/expand/commit
+├ ƒ /api/expand/preview
+├ ƒ /api/feedback
+├ ƒ /api/feedback/tag-counts
+├ ƒ /api/generate/compose
+├ ƒ /api/generate/compose-method
+├ ƒ /api/generate/context
+├ ƒ /api/generate/detail-cards
+├ ƒ /api/generate/methods
+├ ƒ /api/generate/service-divination
+├ ƒ /api/integrations/context-room/images/[entryId]/[attachmentId]
+├ ƒ /api/integrations/line/webhook
+├ ƒ /api/monthly-themes
+├ ƒ /api/plurk/drafts
+├ ƒ /api/plurk/drafts/[id]
+├ ƒ /api/plurk/templates
+├ ƒ /api/plurk/templates/[id]
+├ ƒ /api/production-day/matches
+├ ƒ /api/rules
+├ ƒ /api/sanko/batches
+├ ƒ /api/sanko/batches/[id]
+├ ƒ /api/sanko/batches/[id]/quick-toggle
+├ ƒ /api/sanko/cards
+├ ƒ /api/sanko/compose
+├ ƒ /api/sanko/pending
+├ ƒ /api/sanko/stations
+├ ƒ /api/sessions
+├ ƒ /api/sessions/[id]
+├ ƒ /api/sessions/[id]/details
+├ ƒ /api/sessions/[id]/output-link
+├ ƒ /api/sessions/[id]/shift-dates
+├ ƒ /api/sessions/[id]/status
+├ ƒ /api/sessions/batch
+├ ƒ /api/sessions/draw
+├ ƒ /api/sessions/single
+├ ƒ /api/traces
+├ ƒ /api/traces/[id]/measure
+├ ƒ /api/traces/[id]/view
+├ ƒ /api/traces/home
+├ ƒ /api/unlock
+├ ○ /backstage
+├ ○ /bingo
+├ ○ /calendar
+├ ○ /closing
+├ ○ /dao
+├ ○ /dao/knowledge
+├ ○ /expand
+├ ○ /feedback
+├ ƒ /forage
+├ ƒ /forage/captures
+├ ○ /forage/english
+├ ○ /forage/records
+├ ○ /generate
+├ ○ /liaojie
+├ ƒ /liaojie/workbench
+├ ○ /map
+├ ○ /overview
+├ ○ /plurk
+├ ƒ /practice
+├ ƒ /practice/[workspace]
+├ ○ /production-day
+├ ○ /reading
+├ ƒ /reading/books/[id]
+├ ○ /reading/cards
+├ ○ /reading/visits
+├ ○ /review
+├ ○ /sanko
+├ ○ /sessions
+├ ○ /timer
+├ ○ /unlock
+├ ○ /weaving
+└ ƒ /weaving/[id]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
