@@ -1,7 +1,7 @@
 import {BridgeError,EPOCH,compareTime,type Checkpoint} from "./model";
 import {sourceIdentity} from "../practiceEvents/service";
 import type {CompletionEvent,ProjectionState} from "../practiceEvents/model";
-import type {VocabAdapter} from "./vocabAdapter";
+import {vocabQueryTime,type VocabAdapter} from "./vocabAdapter";
 import type {VocabResult} from "./vocabModel";
 export type VocabReceipt={schema:"external-vocab-source-receipt/v1";id:string;owner:string;source:VocabResult;eventId:string|null;learningRecordId:string|null;acceptance:"accepted"|"needs_review";receivedAt:string;lastVerifiedAt:string;projections:{record:ProjectionState;lightStep:ProjectionState;weekly:"unlinked";ack:"not_applicable"}};
 export type VocabRepository={owner:string;read(id:string):Promise<VocabReceipt|null>;save(row:VocabReceipt):Promise<void>;checkpoint():Promise<Checkpoint|null>;saveCheckpoint(row:Checkpoint):Promise<void>;acceptSource(source:VocabResult):Promise<{event:CompletionEvent;created:boolean}>;retrySource(id:string):Promise<CompletionEvent>};
@@ -22,8 +22,10 @@ export function vocabService(repo:VocabRepository,adapter:VocabAdapter,clock=()=
  return {async sync(full:boolean){
   if(!adapter.configured)throw new BridgeError("SOURCE_NOT_CONNECTED",503);
   const prior=await repo.checkpoint(),now=clock();if(prior && prior.owner!==repo.owner)throw new BridgeError("OWNER_MISMATCH",403);
-  let checkpoint:Checkpoint=prior??{schema:"external-source-checkpoint/v1",owner:repo.owner,after:EPOCH,cursor:null,windowUpper:null,reconciling:true,lastSuccessAt:null,lastReconciledAt:null,connection:"ready",errorCode:null};
-  if(!checkpoint.cursor && (full || !checkpoint.lastReconciledAt || Date.parse(now)-Date.parse(checkpoint.lastReconciledAt)>=7*86400000)){checkpoint={...checkpoint,after:EPOCH,windowUpper:null,reconciling:true};await repo.saveCheckpoint(checkpoint);}
+  let checkpoint:Checkpoint=prior??{schema:"external-source-checkpoint/v1",owner:repo.owner,after:vocabQueryTime(EPOCH),cursor:null,windowUpper:null,reconciling:true,lastSuccessAt:null,lastReconciledAt:null,connection:"ready",errorCode:null};
+  const normalizedAfter=vocabQueryTime(checkpoint.after);
+  if(checkpoint.after!==normalizedAfter){checkpoint={...checkpoint,after:normalizedAfter};await repo.saveCheckpoint(checkpoint);}
+  if(!checkpoint.cursor && (full || !checkpoint.lastReconciledAt || Date.parse(now)-Date.parse(checkpoint.lastReconciledAt)>=7*86400000)){checkpoint={...checkpoint,after:vocabQueryTime(EPOCH),windowUpper:null,reconciling:true};await repo.saveCheckpoint(checkpoint);}
   const page=await adapter.page(checkpoint.after,checkpoint.cursor,checkpoint.windowUpper).catch(async(e)=>{await repo.saveCheckpoint({...checkpoint,connection:"temporarily_unavailable",errorCode:e instanceof BridgeError?e.code:"SOURCE_TEMPORARILY_UNAVAILABLE"});throw e;});
   if(checkpoint.windowUpper && compareTime(checkpoint.windowUpper,page.windowUpper)!==0)throw new BridgeError("SOURCE_WINDOW_CHANGED",409);
   const hash=(r:VocabResult)=>sourceIdentity(repo.owner,"vocabforge","source-page-snapshot",JSON.stringify(r));

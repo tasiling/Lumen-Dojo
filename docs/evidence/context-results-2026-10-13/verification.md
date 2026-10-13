@@ -32,3 +32,7 @@ RED→GREEN behavior evidence is recorded in the resumed execution ledger. Initi
 - Receiver server-owned source namespace must be configured explicitly; no external source login or live bearer retrieval was tested.
 
 SKIPPED: live Context/VF cross-site integration, production Notion, native source PostgreSQL end-to-end and iPhone Safari. Mock/provider fixtures and PGlite are labeled separately. Root owns fresh whole-branch review, source native gates, eventual integration/release and authorized live acceptance. This checkpoint does not claim those gates passed.
+
+## Whole-stack review cursor/query fix verification
+
+`VF_SOURCE_ROOT=/workspace/scratch/f3b6f396e824/vf-r2-5b npm run test:vocab-source-http` first RED3/3, then PASS3/3,0skipped against actual reviewed5B route/store implementation. Real source validates strict six-fraction after and emits/validates its native signed cursor; receiver now pads VF-only bounds textually and accepts the opaque boundedpayload.HMAC format.51events first50/second1, disk-backed restart, full reconciliation, exact cursor/after/windowUpper and original microseconds, unique51 event/body/provenance withcap5 all checked. SQL transport is isolated and explicitly not nativePostgreSQL acceptance. Source/domain/API, daily/weekly boundary and Context regressions rerun after the fix.

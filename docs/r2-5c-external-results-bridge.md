@@ -48,7 +48,7 @@ Context光步／週盤未連結：没有已核准的模式映射或來源原有 
 
 週盤預設、6＋2、已安排格、範本及手動进度都不改；外部事件沒有來源明確binding，因此未連結。沒有自动创建 Assessment、Claim、學成卡或作品。
 
-每次明確sync最多一頁50笔、约40秒row预算；每个confirmed snapshot持久checkpoint後才前進，整页保存后才提交来源cursor。中斷、正文／Daily／receipt／checkpoint失败可续同页；已存event/body不重建。after inclusive重叠；至少每7天下一次明確sync做bounded full reconciliation，沒有背景排程。cursor保持原after/windowUpper，UTC微秒不由JS Date舍入。空页不会删缓存或历史。
+每次明確sync最多一頁50笔、约40秒row预算；每个confirmed snapshot持久checkpoint後才前進，整页保存后才提交来源cursor。中斷、正文／Daily／receipt／checkpoint失败可续同页；已存event/body不重建。Context after inclusive重叠；VF依實際source契約exclusive after，server advisory lock防止已提交來源落到watermark後方。至少每7天下一次明確sync做bounded full reconciliation，沒有背景排程。VF after／windowUpper必須六位UTC小數，接收端只文字補零並持久升級舊checkpoint，保留原微秒；signed cursor為source輸出的payload.HMAC不透明字串（<=2000），保持原after/windowUpper，不解碼／重簽。UTC微秒不由JS Date舍入。空页不会删缓存或历史。
 
 未知mutation沿用fsynced identity intent/writeOutcome，保留mutex，無TTL／restart unlock／自动重送create。只允許按實際provider結果、來源身分、intent证据核对恢复。回退可關闭来源enabled旗標停止新接收；保留event/record/receipts/locks，不清数据。
 
@@ -65,3 +65,7 @@ PASS：Chromium375/390/430px Context/VF來源、長中文／英文、纯cache GE
 PASS：Nexttypegen后tsc（初始裸tsc缺既有RouteContext globals，生成后通过）、lint（只有既有plurk img警告）、build、diff-check。当次完整验收最终HEAD另記ledger/PR。
 
 SKIPPED：正式Context/VF跨站Bearer连线、正式Notion读写、真来源登录授权深连结、nativePostgreSQL端到端与iPhoneSafari实机；没有借用正式凭证。源码交付和fixture兼容不等于已部署／正式接通。来源发布、真实runtime及release由root统一执行。
+
+### 審查後真來源cursor/query相容驗證
+
+`VF_SOURCE_ROOT=<reviewed VF checkout> npm run test:vocab-source-http`：PASS3/3，0skipped。實際5B authenticated HTTP handler＋reviewEventStore讀取51個隔離source sessions，自行生成／驗證HMAC cursor，first50／second1，persistedcheckpoint重啟後只保存51個event/body/round來源。測試先重現 initial .000Z 被source拒絕，以及dot signedcursor被receiver拒絕；修正後保留原after微秒與windowUpper、原signed token續頁／full replay均通過。只有PostgreSQLtransport為隔離fixture，未聲稱nativeDB或正式跨站通過。
