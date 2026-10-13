@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright';
+import {isolatedServer} from './isolated-practice-server.mjs';
+const server=await isolatedServer(3108,'r27-ui-isolated');let browser;
+try{
+ browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{})});
+ for(const width of [375,390,430]){
+  const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true});await context.addCookies([{name:'dsc_access_key',value:'r27-ui-isolated',url:server.base}]);
+  const cardId='20000000-0000-4000-8000-000000000001',itemId='20000000-0000-4000-8000-000000000002',extraId='20000000-0000-4000-8000-000000000003',eventId='20000000-0000-4000-8000-000000000004';
+  const card={id:cardId,name:'長中文與 LongEnglishCapabilityName'.repeat(8),rank:'gold',scope:{level:'topic',learningItemId:itemId},rankDefinitionVersion:1,cefrReference:'C1',itemIds:[itemId],acquiredAt:'2026-09-01',rankAchievedAt:'2026-09-01',lastConfirmedAt:'2026-10-01',revision:1,status:'active',evaluatorType:'self'};let writes=0;
+  const history=[{id:eventId,kind:'grant',rank:'gold',definitionVersion:1,revision:1,name:card.name,createdAt:'2026-10-01',confirmedAt:'2026-09-01'}];
+  await context.route('**/api/**',async route=>{const req=route.request(),url=new URL(req.url());let body={};if(url.pathname==='/api/dojo/learning/foundation')body={entities:[{id:itemId,kind:'item',name:'英文',status:'active'},{id:extraId,kind:'item',name:'塔羅',status:'active'}]};else if(url.pathname==='/api/dojo/mastery'){
+   if(req.method()==='PATCH'){writes++;const input=req.postDataJSON();card.revision++;if(input.kind==='associate')card.itemIds=input.itemIds;else{card.status=input.kind==='withdraw'?'withdrawn':'active';history.unshift({id:crypto.randomUUID(),kind:input.kind,reason:input.reason,revision:card.revision,createdAt:'2026-10-13'})}body={card};}
+   else if(url.searchParams.has('event'))body={event:{kind:'grant',attempt:{id:'attempt',definitionVersion:1,answer:'PRIVATE ORIGINAL WORK',definitionSnapshot:{name:'Original name',objective:'Original goal',tasks:['Independent task'],aids:[],criteria:[{id:'c',description:'Clarity',meetsDescription:'Clear'}]},evaluation:{evaluator:{type:'self',name:'自己'},criteria:[]},evidence:[]}},evidenceAvailability:[],availabilityError:null};
+   else if(url.searchParams.has('card'))body={card,history,cursor:null,attempts:[]};else body={cards:[card],cursor:null};
+  }else if(url.pathname==='/api/dojo/entries')body={entries:[]};await route.fulfill({json:body});});
+  const page=await context.newPage();await page.goto(server.base+'/dao/mastery');await page.getByRole('button',{name:'查看學成歷程'}).waitFor();assert.equal(writes,0);assert.equal(await page.getByText('PRIVATE ORIGINAL WORK',{exact:true}).count(),0);await page.getByRole('button',{name:'查看學成歷程'}).click();assert.equal(writes,0);await page.getByRole('button',{name:'明確開啟這次標準與私人證據'}).click();await page.getByText('PRIVATE ORIGINAL WORK',{exact:true}).waitFor();await page.getByRole('button',{name:'收起私人證據'}).click();assert.equal(await page.getByText('PRIVATE ORIGINAL WORK',{exact:true}).count(),0);
+  await page.getByLabel('塔羅',{exact:true}).check();await page.getByLabel('撤回原因',{exact:true}).fill('Checked correction');assert.equal(await page.getByRole('button',{name:'保存學科關聯'}).isEnabled(),false);assert.equal(await page.getByRole('button',{name:'明確撤回這張卡'}).isEnabled(),false);await page.getByRole('button',{name:'取消未保存的操作'}).click();assert.equal(writes,0);await page.getByLabel('撤回原因',{exact:true}).fill('Mistaken original selection');await page.getByRole('button',{name:'明確撤回這張卡'}).click();await page.getByText('已保存明確操作及歷史。',{exact:true}).waitFor();assert.equal(writes,1);await page.reload();await page.getByRole('button',{name:'查看學成歷程'}).waitFor();await page.getByText(/已撤回/).first().waitFor();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await context.close();
+ }
+ console.log('PASS isolated mobile Chromium 375/390/430: long names, metadata privacy, explicit source detail, no writes on read/cancel, pending-operation guards, withdrawal persistence and no overflow');
+}finally{await browser?.close();server.stop();}

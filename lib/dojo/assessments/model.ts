@@ -1,5 +1,6 @@
 import type { LearningEntity } from "../learningFoundation/model";
-export type Rank = "bronze" | "silver" | "gold" | "platinum" | "diamond";
+// platinum remains readable in old immutable snapshots; new rubrics reject it.
+export type Rank = "stone" | "bronze" | "silver" | "gold" | "diamond" | "platinum";
 export type EvidenceKind = "text" | "learning-record" | "url" | "file" | "audio" | "professional-proof";
 export type EvidenceInput = { id: string; kind: EvidenceKind; label: string; selectedText?: string; url?: string; referenceId?: string; fileBlockId?: string };
 export type EvidenceContext = { attemptId: string; definitionVersion: number; answerDigest: string };

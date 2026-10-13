@@ -48,6 +48,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   "行光能力規準-",
   "行光能力嘗試-",
   "行光能力證明-",
+  "行光學成事件-",
   WEAVING_PROJECT_TITLE_PREFIX,
   WEAVING_SHUTTLE_TITLE_PREFIX,
   WEAVING_WORK_TITLE_PREFIX,

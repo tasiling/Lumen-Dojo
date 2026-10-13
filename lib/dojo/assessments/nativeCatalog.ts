@@ -4,7 +4,7 @@ import {DATA_SOURCES} from '@/lib/notion/schema';
 import {LearningError,uuidPattern} from '../learningFoundation/model';
 export type NativeSource={id:string;label:string};
 export type NativeCandidate={referenceId:string;fileBlockId:string;label:string;blockType:'file'|'audio'|'image'};
-const privatePrefixes=['行光能力規準-','行光能力嘗試-','行光能力證明-'];
+const privatePrefixes=['行光能力規準-','行光能力嘗試-','行光能力證明-','行光學成事件-'];
 const obj=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'?v as Record<string,unknown>:{};
 function same(a:unknown,b:string){return typeof a==='string'&&a.replaceAll('-','').toLowerCase()===b.replaceAll('-','').toLowerCase()}
 function guid(value:string){if(!uuidPattern.test(value))throw new LearningError('附件來源 ID 不正確');return value}

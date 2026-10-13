@@ -28,7 +28,7 @@ function normalizeDefinition(raw: unknown): DefinitionInput {
   if (!confirmationMethods.length || typeof v.professionalPractice !== "boolean") throw new LearningError("確認方式與專業實作設定不正確");
   if (v.professionalPractice && confirmationMethods.includes("self")) throw new LearningError("專業實作不能以自評作正式確認");
   if (v.cefr !== undefined && (s.languageDimension === "none" || !["A1", "A2", "B1", "B2", "C1", "C2"].includes(String(v.cefr)))) throw new LearningError("CEFR 只適用明確的語言維度，不能作自動學科等級");
-  return bounded({ name: text(v.name, 180, "能力名稱"), objective: text(v.objective, 4000, "能力目標"), scope: s, achievedRank: choice(v.achievedRank, ["bronze", "silver", "gold", "platinum", "diamond"], "成果等級"), tasks, aids: list(v.aids, 20).map(x => text(x, 2000, "可用輔助")), criteria, confirmationMethods, professionalPractice: v.professionalPractice, ...(v.cefr ? { cefr: String(v.cefr) } : {}) });
+  return bounded({ name: text(v.name, 180, "能力名稱"), objective: text(v.objective, 4000, "能力目標"), scope: s, achievedRank: choice(v.achievedRank, ["stone", "bronze", "silver", "gold", "diamond"], "成果等級"), tasks, aids: list(v.aids, 20).map(x => text(x, 2000, "可用輔助")), criteria, confirmationMethods, professionalPractice: v.professionalPractice, ...(v.cefr ? { cefr: String(v.cefr) } : {}) });
 }
 function evidenceInputs(raw: unknown): EvidenceInput[] {
   const result = list(raw, 40).map(raw => {
@@ -182,6 +182,13 @@ export function assessmentService(repo: AssessmentRepository) {
     async confirmedMastery(value: string) {
       const a = await getAttempt(value); if (!a.confirmedAt || a.verdict !== "meets" || !a.confirmationMethod) throw new LearningError("尚無已確認達標結果", 409);
       return { owner: a.owner, capabilityId: a.capabilityId, assessmentAttemptId: a.id, definitionVersion: a.definitionVersion, capabilityName: a.definitionSnapshot.name, achievedRank: a.definitionSnapshot.achievedRank, achievedAt: a.confirmedAt, definitionSnapshot: a.definitionSnapshot, evidence: a.evidence, result: { confirmed: true, verdict: a.verdict, confirmationMethod: a.confirmationMethod, evaluator: a.evaluation?.evaluator, evaluatorVerified: Boolean(a.evaluation && professionalProof(a.evidence, a.evaluation, a)) }, professionalQualification: false };
+    },
+    async collectionAttempt(value: string) {
+      const a = await getAttempt(value);
+      if (!a.confirmedAt || a.status !== "assessed" || a.verdict !== "meets" || !a.evaluation || !a.confirmationMethod) throw new LearningError("尚無已確認達標結果", 409);
+      const current = await verify(evidenceInputs(a.evidence), a.evidence, a);
+      if (result(a, current, a.evaluation) !== "meets" || ((a.confirmationMethod !== "self" || a.definitionSnapshot.professionalPractice) && !professionalProof(current, a.evaluation, a))) throw new LearningError("目前證據不足，不能新增學成卡歷程", 409);
+      return a;
     },
     async exportSelected(value: string, raw: unknown) {
       const a = await getAttempt(value), input = object(raw); if (typeof input.includeAnswer !== "boolean") throw new LearningError("需明確選取是否包含作答");
