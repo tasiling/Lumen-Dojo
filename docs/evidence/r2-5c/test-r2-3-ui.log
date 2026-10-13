@@ -1,0 +1,12 @@
+
+> liiy2111@0.1.0 test:r2-3-ui
+> node scripts/test-r2-3-ui.mjs
+
+READY isolated UI server 3023
+UI 375: create + refresh + edit + archive + guard
+list url http://127.0.0.1:3023/practice/records?learningItem=10000000-0000-4000-8000-000000000001
+UI 390: create + refresh + edit + archive + guard
+list url http://127.0.0.1:3023/practice/records?learningItem=10000000-0000-4000-8000-000000000001
+UI 430: create + refresh + edit + archive + guard
+list url http://127.0.0.1:3023/practice/records?learningItem=10000000-0000-4000-8000-000000000001
+PASS R2-3 isolated UI 375/390/430: long bilingual text, one body/multi-item, draft/complete/edit/archive/restore, reload, discipline return/tab, pagination181, unsaved cancel, reduced keyboard viewport, safe-area CSS/no overflow

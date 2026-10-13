@@ -1,4 +1,5 @@
 import { LearningError } from "../learningFoundation/model";
+import type { VocabularyCompletionLedger } from "../formal";
 import type { CompletionLedger } from "./model";
 // Server-owned projection metadata cannot be replaced by old forms/normalizers.
 export function preserveProjection(title: string, incoming: unknown, previous: unknown, projection = false, manualCompletion = false): unknown {
@@ -10,6 +11,16 @@ export function preserveProjection(title: string, incoming: unknown, previous: u
     next.practiceEventOutput = true;
     next.englishRhythm = { ...rhythm, touches: [...new Set([...(rhythm?.touches ?? []), "output"])] };
   } else if (!projection) delete next.practiceEventOutput;
+  if (title.startsWith("行光今日-")) {
+    const ledger = old.practiceEventVocabulary as VocabularyCompletionLedger | undefined;
+    if (ledger && !projection) {
+      const rhythm = next.englishRhythm as { touches?: string[]; vocabForgeRounds?: number };
+      const oldRhythm = old.englishRhythm as { vocabForgeRounds?: number };
+      const manualRounds = manualCompletion && rhythm.vocabForgeRounds !== oldRhythm?.vocabForgeRounds ? Math.max(0, Math.min(5, Number(rhythm.vocabForgeRounds) || 0)) : ledger.manualRounds;
+      next.practiceEventVocabulary = { ...ledger, manualRounds };
+      next.englishRhythm = { ...rhythm, touches: [...new Set([...(rhythm?.touches ?? []), "vocabulary"])], vocabForgeRounds: Math.min(5, Math.max(manualRounds, ledger.events.filter(e => e.standardRound).length)) };
+    } else if (!projection) delete next.practiceEventVocabulary;
+  }
   if (title.startsWith("行光週盤-") && Array.isArray(next.cells)) {
     const oldCells = Array.isArray(old.cells) ? old.cells as Record<string, unknown>[] : [];
     next.cells = (next.cells as Record<string, unknown>[]).map(cell => {

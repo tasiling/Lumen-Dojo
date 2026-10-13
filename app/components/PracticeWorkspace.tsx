@@ -7,6 +7,8 @@ import { useDojo } from "@/lib/dojo/store";
 import { GUANGXING, GUANGFA } from "@/lib/dojo/constants";
 import type { CaptureEntry } from "@/lib/dojo/formal";
 import PracticeLearning from "./PracticeLearning";
+import ReflectionWorkspace from "./ReflectionWorkspace";
+import LightCodex from "./LightCodex";
 const Records = dynamic(() => import("./LearningRecordWorkspace"));
 const Journal = dynamic(() => import("./EnglishJournalWorkbench"));
 const Manager = dynamic(() => import("./LearningFoundationManager"));
@@ -93,7 +95,8 @@ export default function PracticeWorkspace({
       {workspace === "journal" && (
         <Journal initialDate={params.get("journal")} />
       )}
-      {(workspace === "body" || workspace === "emotion") && (
+      {workspace === "emotion" && <ReflectionWorkspace />}
+      {workspace === "body" && (
         <>
           <p>
             {workspace === "body"
@@ -177,6 +180,8 @@ export default function PracticeWorkspace({
       )}
       {workspace === "atlas" && (
         <>
+          <LightCodex />
+          <details><summary>既有光行與光法紀錄入口</summary>
           {[
             ["光行・每日修行的運作方式", GUANGXING],
             ["光法・光行成熟後的應用", GUANGFA],
@@ -205,6 +210,7 @@ export default function PracticeWorkspace({
             </section>
           ))}
           <p>光行與光法可各自選填，不計分、不解鎖。</p>
+          </details>
         </>
       )}
     </section>

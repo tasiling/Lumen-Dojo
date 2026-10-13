@@ -33,8 +33,11 @@ export async function syncVocabForgeWeeklyBingo(dateOrWeekStart: string): Promis
   const dates = Array.from({ length: 7 }, (_, index) => addCalendarDays(weekStart, index));
   const rows = await Promise.all(dates.map((date) => readJsonRecord(dailyRecordTitle(date))));
   const records = rows.flatMap((row, index) => row ? [normalizeDailyRecord(row.value, dates[index])] : []);
-  const active = records.filter((record) => record.englishRhythm.vocabForgeRounds > 0);
-  const rounds = active.reduce((sum, record) => sum + record.englishRhythm.vocabForgeRounds, 0);
+  // External facts have no original weekly binding. This legacy aggregate must
+  // continue to consume manual counters, not silently adopt source projections.
+  const manualRounds = (record: typeof records[number]) => record.practiceEventVocabulary?.manualRounds ?? record.englishRhythm.vocabForgeRounds;
+  const active = records.filter((record) => manualRounds(record) > 0);
+  const rounds = active.reduce((sum, record) => sum + manualRounds(record), 0);
   const completed = active.length >= 3 && rounds >= 5;
   const wasCompleted = cell.completed;
 

@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:external-results
+> node scripts/test-external-results.mjs
+
+PASS R2-5C executable adapter/service: five modes, quick-retell, deny invalid, UUID, date/context restrictions, microseconds, opaque revisions, restart, overlap/reconciliation, rejection/no checkpoint advance, transient unavailable, allowlist/no full text. Fixture transport; not live cross-site integration.

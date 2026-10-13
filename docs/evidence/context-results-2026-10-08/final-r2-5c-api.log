@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:r2-5c-api
+> node scripts/test-r2-5c-api.mjs
+
+PASS R2-5C actual handler + store + writer/intent using disk-backed isolated Notion transport fixture: owner/origin, no source claims, API/Notion UUID dedup across restart, single accepted event/body, versioned legacy guard/no ack, cache GET no writes/no fetch/private text, new session, opaque newer/older revisions, local notes preserved, undated history placement, archived/deleted/withdrawn vs 503/empty, ambiguous create retains mutex/intent. Real cross-site integration SKIPPED.

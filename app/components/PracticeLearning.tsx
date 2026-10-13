@@ -1,4 +1,5 @@
 "use client";
+import PracticeFlowLinks from "./PracticeFlowLinks";
 import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import Link from "./PracticeRouteLink";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -52,6 +53,7 @@ export default function PracticeLearning() {
   const item = requested
     ? items.find((e) => e.id === requested || e.legacyKey === requested)
     : undefined;
+  const contextItem = item?.id ?? requested ?? undefined;
   function href(id: string, t = "overview") {
     const q = new URLSearchParams(params.toString());
     q.set("learningItem", id);
@@ -79,13 +81,13 @@ export default function PracticeLearning() {
           <p>本期專注與全部學科，依自己的步調探索。</p>
         </div>
         <Link
-          href={`/practice/manage${item ? `?learningItem=${item.id}` : ""}`}
+          href={`/practice/manage${contextItem ? `?learningItem=${encodeURIComponent(contextItem)}` : ""}`}
         >
           管理學習項目
         </Link>
-        <Link href="/practice/assessments">能力驗收</Link>
+        <Link href={"/practice/assessments"+(contextItem?"?learningItem="+encodeURIComponent(contextItem):"")}>能力驗收</Link>
       </div>
-      {error ? (
+      <PracticeFlowLinks learningItemId={contextItem}/>{error ? (
         <p role="alert">{error}</p>
       ) : !data ? (
         <p>讀取學科中…</p>
