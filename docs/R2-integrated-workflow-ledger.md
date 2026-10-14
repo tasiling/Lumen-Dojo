@@ -53,3 +53,15 @@ No production data writes/backfill/cleanup/Repair, paid AI, external dispatch, G
 Remaining: native attachment new upload/playback, full phone/real-environment integration acceptance, then overall interface alignment/usability polish. Release integration/merge/deployment remain a separate concrete step. Saved checkpoints and original source branches remain recoverable.
 
 Final inspected results: complete integrated/R2-4/R2-5C/VF/mastery/assessment commands PASS after the fix pass; old foundation/record/event/R2-3 API checks PASS on this stack; final scoped ESLint, standard build/TypeScript and diff check PASS. Browser/live source/storage acceptance remains SKIPPED, no model-capacity/full error occurred.
+
+## 2026-10-14 native media continuation
+
+Continued the exact saved integrated tree, clean workspace and remote head `9836e198fe0ff75f2a2327f0806002adc0bbf605`; original PR85 remains the destination. No redesign, production mutation or deployment.
+
+Private native media is now implemented: authenticated GET uses server-owned page/block ancestry and private-source exclusion, a bounded native signature probe, stable object identity and an If-Match-protected range response. Signed source URLs never leave the server. Full responses, byte ranges and suffix seeking are checked for exact ETag/MIME/range/body length, redirects and unexpected sizes fail closed. Maximum source remains 25 MB. Viewing is readonly and does not grant assessment/proof/mastery status.
+
+Saved evidence uses its original native identity and refuses changed content; catalog preview uses current owner-verified content without claiming saved verification. Audio controls preload none and do not autoplay; PDF/image/file links open separately so the unsaved workspace is retained. Unavailable saved sources show historical snapshots instead of playable content.
+
+New native upload is still not implemented. This checkpoint completes delivery of existing attachments; it does not claim upload or iPhone Safari playback acceptance. Remaining build work: new upload/recovery/unsaved-file handling, then the deferred overall UI/usability pass. Remaining acceptance/release work: mobile interaction, live Notion/media/source credentials/persistent volume checks, resolve the combined PR base and merge/deploy.
+
+Final fresh review found no Critical/Important issues; its Minor audio alert persistence was fixed by clearing the error after successful metadata load. One final review and one fix pass, no rereview loop. Fresh media suites, complete assessment suite and integrated handler/navigation suite PASS; scoped ESLint, standard production build/TypeScript and diff check PASS. Browser/live media/mobile acceptance remains unexecuted. No model-capacity/full error occurred.

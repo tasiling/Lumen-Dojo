@@ -42,7 +42,8 @@
     "test:vocab-projection": "node scripts/test-vocab-projection.mjs",
     "test:vocab-results": "node scripts/test-vocab-results.mjs",
     "test:vocab-weekly-boundary": "node scripts/test-vocab-weekly-boundary.mjs",
-    "test:vocab-source-http": "node scripts/test-vocab-source-http.mjs"
+    "test:vocab-source-http": "node scripts/test-vocab-source-http.mjs",
+    "test:assessment-media": "node scripts/test-assessment-native-media.mjs && node scripts/test-assessment-native-media-view.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",
