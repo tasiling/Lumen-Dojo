@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {Module,createRequire} from 'node:module';
+import {resolve,dirname} from 'node:path';
+import ts from 'typescript';
+const require=createRequire(import.meta.url),cache=new Map();let owner=true,archived=false,wrongParent=false,external=false,kind='audio',mode='audio',etag='v1',signature='one',redirect=false,missing=false,calls=0,privateSource=false;
+const pageId=crypto.randomUUID(),blockId=crypto.randomUUID(),root=process.cwd();
+const client={pages:{retrieve:async()=>({id:pageId,object:'page',parent:{type:'data_source_id',data_source_id:owner?load('lib/notion/schema.ts').DATA_SOURCES.DB14_知識庫:'another-owner'},archived,in_trash:false,properties:{標題:{title:[{plain_text:privateSource?'行光能力證明-private':'Owned source'}]}}})},blocks:{retrieve:async()=>({id:blockId,object:'block',type:kind,parent:{type:'page_id',page_id:wrongParent?crypto.randomUUID():pageId},archived:false,[kind]:{type:external?'external':'file',...(external?{external:{url:'https://example.com/fake'}}:{file:{url:'https://prod-files-secure.s3.us-west-2.amazonaws.com/owned/object?signature='+signature}})}})}};
+function load(file){file=resolve(file);if(cache.has(file))return cache.get(file).exports;const m=new Module(file);cache.set(file,m);m.filename=file;m.require=s=>s==='server-only'?{}:(s==='@/lib/notion/client'||(s.startsWith('.')&&resolve(dirname(file),s)===resolve('lib/notion/client')))?{notion:()=>client,withNotionRateLimit:fn=>fn()}:s.startsWith('@/')?load(resolve(root,s.slice(2))+'.ts'):s.startsWith('.')?load(resolve(dirname(file),s)+'.ts'):require(s);m._compile(ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,file);return m.exports;}
+const original=globalThis.fetch;let deliveryMode='ok',deliveryCalls=0;
+const all=Buffer.alloc(1234);all.write('ID3');
+globalThis.fetch=async(url,options)=>{calls++;assert.equal(new URL(url).hostname,'prod-files-secure.s3.us-west-2.amazonaws.com');assert.equal(options.redirect,'manual');if(options.headers.Range==='bytes=0-63'){return new Response(all.subarray(0,64),{status:206,headers:{'content-type':'audio/mpeg','content-range':'bytes 0-63/1234',etag:'"'+etag+'"'}})}deliveryCalls++;assert.equal(options.headers['If-Match'],'"'+etag+'"');if(deliveryMode==='redirect')return new Response(null,{status:302,headers:{location:'http://127.0.0.1'}});if(deliveryMode==='changed')return new Response(null,{status:412});const m=options.headers.Range.match(/^bytes-(never)$/)??options.headers.Range.match(/^bytes=(\d+)-(\d+)$/);assert.ok(m);const start=Number(m[1]),end=Number(m[2]);return new Response(deliveryMode==='oversize'?all:all.subarray(start,end+1),{status:206,headers:{'content-type':'audio/mpeg','content-range':`bytes ${start}-${end}/1234`,etag:'"'+etag+'"'}})};
+try{
+ assert.ok((await import('node:fs')).existsSync('app/api/dojo/assessments/media/route.ts'),'native media requires an authenticated private route');
+ const {NextRequest}=require('next/server'),api=load('app/api/dojo/assessments/media/route.ts');process.env.ACCESS_KEY='isolated-media';
+ const req=(query='',range,auth=true)=>new NextRequest('http://localhost/api/dojo/assessments/media?page='+pageId+'&block='+blockId+query,{headers:{...(auth?{cookie:'dsc_access_key=isolated-media'}:{}),...(range?{range}:{})}});
+ const before=calls;assert.equal((await api.GET(req('',null,false))).status,401);assert.equal(calls,before);
+ const native=await load('lib/dojo/assessments/nativeEvidence.ts').ownedNativeAttachment(pageId,blockId);assert.ok(native.identity);assert.ok(!JSON.stringify(native).includes('signature'));
+ const full=await api.GET(req('&identity='+native.identity));assert.equal(full.status,200);assert.equal((await full.arrayBuffer()).byteLength,1234);assert.equal(full.headers.get('cache-control'),'private, no-store');assert.equal(full.headers.get('content-type'),'audio/mpeg');assert.equal(full.headers.get('accept-ranges'),'bytes');assert.ok(![...full.headers].some(x=>x.join('').includes('signature')));
+ const part=await api.GET(req('', 'bytes=5-14'));assert.equal(part.status,206);assert.equal(part.headers.get('content-range'),'bytes 5-14/1234');assert.deepEqual(Buffer.from(await part.arrayBuffer()),all.subarray(5,15));
+ const suffix=await api.GET(req('', 'bytes=-10'));assert.equal(suffix.status,206);assert.equal((await suffix.arrayBuffer()).byteLength,10);
+ for(const range of ['bytes=9000-','bytes=0-2,5-7','bytes=foo','bytes=-0']){const n=deliveryCalls;assert.equal((await api.GET(req('',range))).status,416);assert.equal(deliveryCalls,n)}
+ etag='changed';const count=deliveryCalls;assert.equal((await api.GET(req('&identity='+native.identity))).status,409);assert.equal(deliveryCalls,count);etag='v1';
+ owner=false;const prior=calls;assert.equal((await api.GET(req())).status,403);assert.equal(calls,prior);owner=true;privateSource=true;assert.equal((await api.GET(req())).status,409);assert.equal(calls,prior);privateSource=false;
+ for(const value of ['redirect','changed','oversize']){deliveryMode=value;assert.ok((await api.GET(req('', 'bytes=5-14'))).status>=400)}deliveryMode='ok';
+ console.log('PASS private native media: owner auth, verified signature, full and byte-range audio, suffix seek, stale object/foreign/private refusal, bounded body, no signed URLs');
+}finally{globalThis.fetch=original}

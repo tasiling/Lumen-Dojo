@@ -44,3 +44,7 @@ const foreign=assessmentService({...repo,owner:'owner-b'});await assert.rejects(
 let race=await make();const outcomes=await Promise.allSettled([svc.saveDraft(race.id,race.revision,{answer:'one'}),svc.saveDraft(race.id,race.revision,{answer:'two'})]);assert.equal(outcomes.filter(r=>r.status==='fulfilled').length,1);
 const readOnly=writes;await svc.getAttempt(good.id);await svc.confirmedMastery(good.id);assert.equal(writes,readOnly);
 console.log('PASS assessment domain: immutable rubric versions and scope, independent attempts, idempotency, blank refusal, stale/concurrent revisions, mandatory evidence, oral/professional limits, preview/export selection, confirmed mastery and retained historical results');
+
+const stone=await svc.define({requestId:crypto.randomUUID(),definition:{...definition,achievedRank:'stone'}});assert.equal(stone.achievedRank,'stone');
+await assert.rejects(()=>svc.define({requestId:crypto.randomUUID(),definition:{...definition,achievedRank:'platinum'}}),/等級/);
+const archivedCollection=assessmentService({...repo,verifyEvidence:async inputs=>inputs.map(e=>({...e,status:'archived',snapshot:e.label}))});await assert.rejects(()=>archivedCollection.collectionAttempt(good.id),/證據/);assert.equal((await svc.collectionAttempt(good.id)).id,good.id);

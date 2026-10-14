@@ -11,3 +11,5 @@ const professional=render(professionalPractice(draft,true));assert.match(profess
 assert.ok(render({...draft,scope:{...draft.scope,languageDimension:'pronunciation'}}).includes('逐字稿不能代替音訊'));
 entities[2].status='paused';assert.ok(!render(draft,false).includes('Own topic'),'new scopes must not offer paused current topics');assert.ok(render(draft,true).includes('Own topic'),'versioning retains its readonly historical scope');entities[2].status='active';
 console.log('PASS actual rubric form SSR: same-item/stage topics only, immutable version scope, language-specific CEFR, professional self excluded, oral native-evidence note');
+
+assert.ok(render().includes('<option value="stone"'),'rubric must offer stone tier');assert.ok(!render().includes('<option value="platinum"'),'new rubric must not offer platinum');

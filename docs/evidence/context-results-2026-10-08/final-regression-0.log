@@ -1,0 +1,17 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:learning-foundation
+> node scripts/test-learning-foundation.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+PASS GET/snapshot performs no writes
+PASS partial initialization retry preserves five legacy mappings, vision and blank outcomes
+PASS idempotency after rename/archive, restore and independent multiple focus
+PASS persistence, empty paths, stages/topics, stable IDs, within-item move and stale/foreign rejection
+PASS capture serialization/new disciplines, old form safe merge, unresolved history preservation and foreign relation rejection
+PASS legacy normalization version preservation and weekly merge preserves extensions
+PASS missing configuration fail-closed, concurrent process blocked, lock released after completion
+PASS ambiguous name collision explicitly reported; other confirmed items still delivered
+PASS seed intent cleaned only with transport evidence of no dispatch; confirmed create retains intent
+PASS uncertain writes retain cross-process lock; durable seed intent prevents retries; unknown legacy links retained
+PASS inconsistent stored data reported, not masked by defaults

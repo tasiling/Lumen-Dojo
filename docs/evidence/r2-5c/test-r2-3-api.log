@@ -1,0 +1,5 @@
+
+> liiy2111@0.1.0 test:r2-3-api
+> node scripts/test-r2-3-api.mjs
+
+PASS actual journal/records/events handlers + actual persistence adapter: auth, read-failure release, event-first order, stale refusal, projection-only retry, GET no writes, create request dedup, unknown committed response retains lock/intent

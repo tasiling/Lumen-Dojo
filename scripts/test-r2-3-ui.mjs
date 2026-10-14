@@ -7,7 +7,7 @@ const server=await isolatedServer(3023,"r2-3-ui-isolated"),output=process.env.R2
 const items=[{id:"10000000-0000-4000-8000-000000000001",kind:"item",name:"心理學探索・長中文標題".repeat(4),status:"active"},{id:"10000000-0000-4000-8000-000000000002",kind:"item",name:"English for tarot interpretation and sustained interdisciplinary practice",status:"active"}];
 let writes=0;let projected=false;const records=[];let browser;let diagnosticPage;
 try{
- browser=await chromium.launch({headless:true,args:["--no-sandbox"]});const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await context.addCookies([{name:"dsc_access_key",value:"r2-3-ui-isolated",url:server.base}]);
+ browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}),args:["--no-sandbox"]});const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await context.addCookies([{name:"dsc_access_key",value:"r2-3-ui-isolated",url:server.base}]);
  await context.route("**/*",async route=>{const req=route.request(),u=new URL(req.url());if(u.origin!==server.base)return route.abort();if(u.pathname==="/__r2-font"&&process.env.UI_CJK_FONT)return route.fulfill({contentType:"font/otf",body:readFileSync(process.env.UI_CJK_FONT)});if(!u.pathname.startsWith("/api/"))return route.continue();let body={},status=200;
  if(u.pathname==="/api/dojo/learning/foundation")body={entities:items,missing:[]};
  else if(u.pathname==="/api/dojo/practice-events"){
@@ -36,6 +36,15 @@ try{
   await page.setViewportSize({width,height:844});await page.getByRole("button",{name:"封存",exact:true}).click();await page.getByRole("button",{name:"恢復",exact:true}).waitFor();assert.equal(records.find(r=>r.id===id).status,"archived");await page.getByRole("button",{name:"恢復",exact:true}).click();await page.getByRole("button",{name:"封存",exact:true}).waitFor();
   await page.evaluate(()=>window.__r2FontReady);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${output}/record-${width}.png`,fullPage:true});
   await page.getByRole("link",{name:/返回學科工作空間/}).click();await page.getByRole("heading",{name:"心・知",exact:true}).waitFor();await page.getByRole("link",{name:"學習紀錄",exact:true}).click();await page.getByRole("link",{name:/完整歷程/}).click();await page.getByRole("heading",{name:"學習歷程",exact:true}).waitFor();console.log("list url",page.url());await page.getByLabel("狀態",{exact:true}).waitFor();await page.reload();await page.getByLabel("狀態",{exact:true}).selectOption("draft");await page.getByRole("link",{name:/本次真正學習內容/}).first().waitFor();if(!projected){const count=records.length;await page.getByRole("button",{name:"只重試投影",exact:true}).click();await page.getByText("光步：已套用 · 週盤：未連結",{exact:true}).waitFor();assert.equal(records.length,count);}
+  const external={...records.find(r=>r.id===id),id:crypto.randomUUID(),originEventId:"b".repeat(64),practicedOn:null,learningItemIds:[],primaryLearningItemId:null,status:"draft",sourceRefs:[{type:"context",id:"source-session",label:"語境來源",url:"https://example.test/source-session",status:"available"}]};records.push(external);
+  await page.goto(`${server.base}/practice/records?record=${external.id}`);
+  await page.getByText(/來源日期未知/).waitFor();assert.equal(await page.locator('input[type="date"]').count(),0);
+  await page.getByLabel("我目前怎麼理解？").fill(`語境筆記 ${width}`);await page.getByRole("button",{name:"儲存草稿",exact:true}).click();await page.getByRole("status").filter({hasText:"已保存"}).waitFor();
+  await page.waitForFunction(()=>!history.state?.__practiceDraftGuard);
+  await page.reload();await page.getByText(/來源日期未知/).waitFor();assert.equal(await page.getByLabel("我目前怎麼理解？").inputValue(),`語境筆記 ${width}`);
+  assert.equal(records.find(r=>r.id===external.id).practicedOn,null);assert.equal(records.find(r=>r.id===external.id).learningItemIds.length,0);
+  await page.goto(`${server.base}/practice/records`);await page.getByLabel("狀態",{exact:true}).waitFor();
+
  }
  const template=records[0];for(let i=0;i<181;i++)records.push({...template,id:crypto.randomUUID(),title:`早期歷程 ${i}`,whatIDid:`大量隔離紀錄 ${i}`,status:"completed"});
  await page.getByLabel("狀態",{exact:true}).selectOption("completed");await page.getByRole("link",{name:"早期歷程 0",exact:true}).waitFor();for(let i=0;i<9;i++){await page.getByRole("button",{name:"下一頁",exact:true}).click();await page.waitForFunction(n=>document.querySelectorAll(".learning-records article").length>=n,Math.min((i+2)*20,181));}await page.getByRole("link",{name:"早期歷程 180",exact:true}).waitFor();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${output}/history-430.png`,fullPage:false});

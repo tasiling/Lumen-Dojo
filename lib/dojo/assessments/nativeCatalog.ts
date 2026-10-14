@@ -4,7 +4,7 @@ import {DATA_SOURCES} from '@/lib/notion/schema';
 import {LearningError,uuidPattern} from '../learningFoundation/model';
 export type NativeSource={id:string;label:string};
 export type NativeCandidate={referenceId:string;fileBlockId:string;label:string;blockType:'file'|'audio'|'image'};
-const privatePrefixes=['行光能力規準-','行光能力嘗試-','行光能力證明-'];
+const privatePrefixes=['行光能力規準-','行光能力嘗試-','行光能力證明-','行光學成事件-','行光外部來源收據-','行光外部來源游標-'];
 const obj=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'?v as Record<string,unknown>:{};
 function same(a:unknown,b:string){return typeof a==='string'&&a.replaceAll('-','').toLowerCase()===b.replaceAll('-','').toLowerCase()}
 function guid(value:string){if(!uuidPattern.test(value))throw new LearningError('附件來源 ID 不正確');return value}
@@ -20,7 +20,7 @@ export async function nativeSources(cursor?:string){
  return {sources,cursor:page.has_more?page.next_cursor:null};
 }
 export async function nativeAttachments(pageId:string){
- guid(pageId);const page=obj(await withNotionRateLimit(()=>notion().pages.retrieve({page_id:pageId})));owner(page);if(isPrivateNativeSource(page))throw new LearningError('私有驗收狀態頁不可作附件來源',403);
+ await requireNativeSource(pageId);
  const attachments:NativeCandidate[]=[],visited=new Set<string>();let count=0,requests=0;
  async function walk(container:string,depth:number){
   if(depth>15||visited.has(container))throw new LearningError('附件來源階層無法完整核對',503);visited.add(container);
@@ -35,4 +35,9 @@ export async function nativeAttachments(pageId:string){
   }while(cursor);
  }
  await walk(pageId,0);return {attachments};
+}
+
+export async function requireNativeSource(pageId:string) {
+ guid(pageId);const page=obj(await withNotionRateLimit(()=>notion().pages.retrieve({page_id:pageId})));owner(page);
+ if(isPrivateNativeSource(page))throw new LearningError('私有驗收狀態頁不可作附件來源',403);
 }

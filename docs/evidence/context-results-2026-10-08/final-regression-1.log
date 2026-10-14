@@ -1,0 +1,35 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:learning-foundation-api
+> node scripts/test-learning-foundation-api.mjs
+
+{"reproduction":"pre-write read failure","first":503,"writesBeforeRetry":0,"lockAfterReadFailure":false,"retry":201,"writes":1,"lockPresent":false}
+PASS real foundation handlers reject missing auth/cross-origin writes; GET writes nothing
+PASS real initialize/create/edit API persists nine/custom items and ignores caller ownership/revision
+PASS actual weekly writer keeps extensions/foundation records; stale legacy API rejected, current edit preserves log
+PASS actual capture route/store roundtrip, old UI safe merge, stale version and unauthorized relations rejected
+PASS new practice records use stable ID metadata; old entry form preserves it
+PASS actual Notion parent-data-source guard rejects foreign/archived pages
+PASS foundation create: safe read failure releases shared lock and next writer succeeds
+PASS foundation edit: safe read failure releases shared lock and next writer succeeds
+PASS legacy editor: safe read failure releases shared lock and next writer succeeds
+PASS capture updater: safe read failure releases shared lock and next writer succeeds
+PASS activity writer: safe read failure releases shared lock and next writer succeeds
+PASS entry POST: safe read failure releases shared lock and next writer succeeds
+PASS entry PATCH: safe read failure releases shared lock and next writer succeeds
+PASS invalid input/stale revision preserves data; actual JSON adapter preflight read is not a write
+PASS partial acknowledged initialization + subsequent read failure retries without duplicate creates
+PASS partial unknown initialization keeps mutex/intent, invisible row cannot trigger recreate; reconciled row reused
+PASS capture: ambiguous write stays blocked, including caught trace errors
+PASS activity: ambiguous write stays blocked, including caught trace errors
+PASS entry PATCH: ambiguous write stays blocked, including caught trace errors
+PASS entry POST swallowed trace: ambiguous write stays blocked, including caught trace errors
+@notionhq/client warn: request fail {
+  code: 'validation_error',
+  message: 'isolated invalid input',
+  attempt: 0,
+  requestId: 'isolated-request'
+}
+PASS explicit Notion HTTP rejection with matching response evidence releases mutex without retry
+PASS actual Notion client SDK transport: confirmed request releases; lost response is sent once, swallowed error retains mutex
+PASS missing write-lock configuration fails closed

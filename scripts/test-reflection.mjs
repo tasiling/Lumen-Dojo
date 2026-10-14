@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { mkdtemp, rm, readdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve, dirname } from 'node:path';
+import { Module, createRequire } from 'node:module';
+import ts from 'typescript';
+const require=createRequire(import.meta.url),cache=new Map();
+function load(file){file=resolve(file);if(cache.has(file))return cache.get(file).exports;const m=new Module(file);cache.set(file,m);m.filename=file;m.require=s=>s==='server-only'?{}:s.startsWith('@/')?load(resolve(s.slice(2))+'.ts'):s.startsWith('.')?load(resolve(dirname(file),s)+'.ts'):require(s);m._compile(ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,file);return m.exports;}
+const directory=await mkdtemp(join(tmpdir(),'r2-4-test-'));process.env.LEARNING_WRITE_LOCK_DIR=directory;
+try {
+ const {REFLECTION_TOOLS}=load('lib/dojo/reflection/templates.ts');
+ assert.equal(REFLECTION_TOOLS.length,6);
+ const maps=[[[1,2,5],[1,2,3,4,5],6],[[1,2,5],[1,2,3,5,7],7],[[1,4,5],[1,2,3,4,5],6],[[1,6,8],[1,2,4,6,8],8],[[1,5,7],[1,2,3,5,7],7],[[1,4,6],[1,3,4,5,6],7]];
+ REFLECTION_TOOLS.forEach((t,i)=>{assert.equal(t.questions.length,maps[i][2]);for(const [j,mode] of ['light','moderate'].entries())assert.deepEqual(t.modes[mode],maps[i][j].map(n=>t.questions[n-1].id));assert.deepEqual(t.modes.deep,t.questions.map(q=>q.id));});
+ const {LIGHT_CODEX,normalizeLightTags}=load('lib/dojo/lightCodex.ts');assert.equal(LIGHT_CODEX.length,10);assert.deepEqual(normalizeLightTags({guangxing:'ning',guangfa:'ju'}),['ning','ju']);assert.deepEqual(normalizeLightTags({lightTags:['ning','ju','ning']}),['ning','ju']);
+ const {fileReflectionRepository}=load('lib/dojo/reflection/store.ts'),{reflectionService}=load('lib/dojo/reflection/service.ts');
+ const source={id:'daily-fixture',date:'2026-10-13',field:'highlight',revision:'source-v1',excerpt:'謝謝朋友陪我散步'};
+ const repo=fileReflectionRepository();const service=reflectionService({owner:'owner-a',repository:repo,source:async s=>{assert.deepEqual(s,source);return {...s};},role:async()=>({id:'existing-role',title:'耐心的創作者',traits:['理解'],updatedAt:'v1'})});
+ const request={createRequestId:crypto.randomUUID(),toolId:REFLECTION_TOOLS[0].id,date:'2026-10-13',depth:'deep'};
+ const a=await service.create(request);assert.equal(a.status,'draft');assert.equal((await service.create(request)).id,a.id);
+ await assert.rejects(()=>service.create({...request,toolId:REFLECTION_TOOLS[1].id}),/重用/);
+ await assert.rejects(()=>service.update(a.id,a.revision,{status:'completed'}),/空白/);
+ const ids=REFLECTION_TOOLS[0].questions.map(q=>q.id);let b=await service.update(a.id,a.revision,{answers:{[ids[2]]:'身體緊繃',[ids[5]]:'仍然難過'},depth:'light'});
+ assert.equal(b.answers[ids[2]],'身體緊繃');b=await service.update(b.id,b.revision,{depth:'deep',status:'completed'});assert.equal(b.answers[ids[5]],'仍然難過');assert.equal(b.status,'completed');
+ await assert.rejects(()=>service.update(a.id,a.revision,{title:'stale'}),/版本/);
+ await assert.rejects(()=>service.update(a.id,b.revision,{answers:{'unknown-question':'wrong'}}),/題目/);
+ const other=reflectionService({owner:'owner-b',repository:repo});await assert.rejects(()=>other.get(a.id),/owner/);
+ const metadata=await service.list();assert.ok(!JSON.stringify(metadata).includes('身體緊繃'));assert.ok(!('answers' in metadata[0]));
+ const restart=reflectionService({owner:'owner-a',repository:fileReflectionRepository()});assert.equal((await restart.get(a.id)).answers[ids[5]],'仍然難過');
+ const handoff={...request,createRequestId:crypto.randomUUID(),source,status:'pending'};const h=await service.create(handoff);assert.equal(h.status,'pending');assert.equal(h.answers[ids[0]],source.excerpt);assert.equal((await service.create(handoff)).id,h.id);
+ const second=await service.create({...handoff,createRequestId:crypto.randomUUID(),toolId:REFLECTION_TOOLS[2].id,roleId:'existing-role'});assert.equal(Object.keys(second.answers).length,0);assert.equal(second.roleSnapshot.title,'耐心的創作者');
+ const files=await readdir(join(directory,'private-reflections'));assert.equal(files.filter(x=>x.endsWith('.json')).length,3);assert.ok(!(await readdir(directory)).includes('learning-writer.lock'));
+ const race=await Promise.allSettled([service.update(b.id,b.revision,{title:'writer 1'}),service.update(b.id,b.revision,{title:'writer 2'})]);assert.equal(race.filter(x=>x.status==='fulfilled').length,1);
+ const old=await service.get(a.id);old.questions[0].text='舊版問句';await repo.write(old);const edited=await service.update(old.id,old.revision,{title:'保留快照'});assert.equal(edited.questions[0].text,'舊版問句');
+ const {withLearningWriteLock}=load('lib/dojo/learningFoundation/fileLock.ts'),{trackLearningWrite}=load('lib/dojo/learningFoundation/writeOutcome.ts');
+ await assert.rejects(()=>withLearningWriteLock(()=>trackLearningWrite(async()=>{throw Error('unknown commit');})),/結果未確認/);assert.ok((await readdir(directory)).includes('learning-writer.lock'));await assert.rejects(()=>service.create({...request,createRequestId:crypto.randomUUID()}),/寫入進行中/);
+ assert.equal((await service.get(edited.id)).title,'保留快照');
+ console.log('PASS R2-4 real filesystem: templates/modes, immutable IDs, blank completion, hidden answers, draft/complete, restart, owner, stale and concurrent writers, handoff dedup/semantics, role snapshot, private metadata, codex/legacy tags, unknown-outcome lock with read-only recovery');
+} finally {await rm(directory,{recursive:true,force:true});delete process.env.LEARNING_WRITE_LOCK_DIR;}

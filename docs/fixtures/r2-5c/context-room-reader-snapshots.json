@@ -1,0 +1,671 @@
+{
+  "initial": {
+    "contractVersion": "context-room-practice-results/v1",
+    "results": [
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000001",
+        "sourceEventId": "00000000-0000-4000-8000-000000000001",
+        "sourceRevision": "1",
+        "completionStatus": "completed",
+        "sourceStatus": "available",
+        "sourceAvailability": "available",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.85+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.851+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "topic_speaking",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "topic_speaking",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000001",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.851000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000002",
+        "sourceEventId": "00000000-0000-4000-8000-000000000002",
+        "sourceRevision": "1",
+        "completionStatus": "completed",
+        "sourceStatus": "available",
+        "sourceAvailability": "available",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.852+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.853+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "dialogue",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "dialogue",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000002",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.853000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000003",
+        "sourceEventId": "00000000-0000-4000-8000-000000000003",
+        "sourceRevision": "1",
+        "completionStatus": "completed",
+        "sourceStatus": "available",
+        "sourceAvailability": "available",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.853+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.854+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "writing_review",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "writing_review",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000003",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.854000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000004",
+        "sourceEventId": "00000000-0000-4000-8000-000000000004",
+        "sourceRevision": "1",
+        "completionStatus": "completed",
+        "sourceStatus": "available",
+        "sourceAvailability": "available",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.854+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.855+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "micro_practice",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "micro_practice",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000004",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.855000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000005",
+        "sourceEventId": "00000000-0000-4000-8000-000000000005",
+        "sourceRevision": "1",
+        "completionStatus": "completed",
+        "sourceStatus": "available",
+        "sourceAvailability": "available",
+        "practicedOn": "2026-10-02",
+        "occurredAt": "2026-10-13T10:55:44.856+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.857+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "quick_retell",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "quick_retell",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": false
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000005",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.857000Z"
+      }
+    ],
+    "nextCursor": null,
+    "windowUpper": "2026-10-13T02:55:44.858000Z",
+    "incrementalSemantics": "bounded-live-window; inclusive overlapping refresh required"
+  },
+  "archived": {
+    "contractVersion": "context-room-practice-results/v1",
+    "results": [
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000001",
+        "sourceEventId": "00000000-0000-4000-8000-000000000001",
+        "sourceRevision": "2",
+        "completionStatus": "completed",
+        "sourceStatus": "archived",
+        "sourceAvailability": "archived",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.85+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.851+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "topic_speaking",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "topic_speaking",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000001",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.867000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000004",
+        "sourceEventId": "00000000-0000-4000-8000-000000000004",
+        "sourceRevision": "2",
+        "completionStatus": "completed",
+        "sourceStatus": "archived",
+        "sourceAvailability": "archived",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.854+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.855+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "micro_practice",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "micro_practice",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000004",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.868000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000005",
+        "sourceEventId": "00000000-0000-4000-8000-000000000005",
+        "sourceRevision": "4",
+        "completionStatus": "completed",
+        "sourceStatus": "archived",
+        "sourceAvailability": "archived",
+        "practicedOn": "2026-10-02",
+        "occurredAt": "2026-10-13T10:55:44.856+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.857+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "quick_retell",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "quick_retell",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": false
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000005",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.870000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000002",
+        "sourceEventId": "00000000-0000-4000-8000-000000000002",
+        "sourceRevision": "3",
+        "completionStatus": "withdrawn",
+        "sourceStatus": "archived",
+        "sourceAvailability": "archived",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.852+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.853+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "dialogue",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "dialogue",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000002",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.871000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000003",
+        "sourceEventId": "00000000-0000-4000-8000-000000000003",
+        "sourceRevision": "3",
+        "completionStatus": "unverified",
+        "sourceStatus": "archived",
+        "sourceAvailability": "archived",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.853+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.854+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "writing_review",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "writing_review",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": "/practice-results/00000000-0000-4000-8000-000000000003",
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.872000Z"
+      }
+    ],
+    "nextCursor": null,
+    "windowUpper": "2026-10-13T02:55:44.873000Z",
+    "incrementalSemantics": "bounded-live-window; inclusive overlapping refresh required"
+  },
+  "deleted": {
+    "contractVersion": "context-room-practice-results/v1",
+    "results": [
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000001",
+        "sourceEventId": "00000000-0000-4000-8000-000000000001",
+        "sourceRevision": "5",
+        "completionStatus": "completed",
+        "sourceStatus": "missing",
+        "sourceAvailability": "deleted",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.85+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.851+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "topic_speaking",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "topic_speaking",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": null,
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.885000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000004",
+        "sourceEventId": "00000000-0000-4000-8000-000000000004",
+        "sourceRevision": "5",
+        "completionStatus": "completed",
+        "sourceStatus": "missing",
+        "sourceAvailability": "deleted",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.854+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.855+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "micro_practice",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "micro_practice",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": null,
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.886000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000005",
+        "sourceEventId": "00000000-0000-4000-8000-000000000005",
+        "sourceRevision": "7",
+        "completionStatus": "completed",
+        "sourceStatus": "missing",
+        "sourceAvailability": "deleted",
+        "practicedOn": "2026-10-02",
+        "occurredAt": "2026-10-13T10:55:44.856+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.857+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "quick_retell",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "quick_retell",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": false
+        },
+        "sourceLocation": null,
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.887000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000002",
+        "sourceEventId": "00000000-0000-4000-8000-000000000002",
+        "sourceRevision": "6",
+        "completionStatus": "withdrawn",
+        "sourceStatus": "missing",
+        "sourceAvailability": "deleted",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.852+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.853+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "dialogue",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "dialogue",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": null,
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.888000Z"
+      },
+      {
+        "contractVersion": "context-room-practice-results/v1",
+        "eventVersion": 1,
+        "eventType": "practice.completed",
+        "sourceSystem": "context-room",
+        "sourceType": "practice-session",
+        "sourceId": "00000000-0000-4000-8000-000000000003",
+        "sourceEventId": "00000000-0000-4000-8000-000000000003",
+        "sourceRevision": "6",
+        "completionStatus": "unverified",
+        "sourceStatus": "missing",
+        "sourceAvailability": "deleted",
+        "practicedOn": "2026-10-01",
+        "occurredAt": "2026-10-13T10:55:44.853+08:00",
+        "timeZone": null,
+        "dateSemantics": "stored-practicedOn; completion/import time, not independently verified practice time",
+        "originalContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源",
+          "unitId": "contract-unit",
+          "unitName": "契約單元",
+          "capturedAt": "2026-10-13T10:55:44.854+08:00"
+        },
+        "currentContext": {
+          "projectId": "contract-project",
+          "projectName": "契約來源（封存）",
+          "unitId": "contract-unit",
+          "unitName": "契約單元"
+        },
+        "activityMode": "writing_review",
+        "completionKind": "context-room-session",
+        "quantity": 1,
+        "unit": "次",
+        "summary": {
+          "mode": "writing_review",
+          "firstDone": true,
+          "feedbackReceived": true,
+          "secondDone": true
+        },
+        "sourceLocation": null,
+        "contextEvidence": "captured-at-completion-write; practice-time-context-unproven",
+        "updatedAt": "2026-10-13T02:55:44.888000Z"
+      }
+    ],
+    "nextCursor": null,
+    "windowUpper": "2026-10-13T02:55:44.891000Z",
+    "incrementalSemantics": "bounded-live-window; inclusive overlapping refresh required"
+  }
+}
