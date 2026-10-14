@@ -15,7 +15,7 @@ function allowedSignedUrl(value: unknown): URL | null {
   if (url.hostname === "prod-files-secure.s3.us-west-2.amazonaws.com" || (url.hostname === "s3.us-west-2.amazonaws.com" && url.pathname.startsWith("/secure.notion-static.com/"))) return url;
   return null;
 }
-function media(bytes: Uint8Array, mime: string): "audio" | "file" | null {
+export function nativeMediaKind(bytes: Uint8Array, mime: string): "audio" | "file" | null {
   const ascii = Buffer.from(bytes).toString("latin1"), type = mime.split(";")[0].toLowerCase();
   if (type === "application/pdf" && ascii.startsWith("%PDF-")) return "file";
   if (type === "image/png" && bytes[0] === 0x89 && ascii.slice(1, 4) === "PNG") return "file";
@@ -60,7 +60,7 @@ async function inspectNativeAttachment(pageId: string, blockId: string): Promise
     let bytes = new Uint8Array(0);
     for (;;) { const part = await reader.read(); if (part.done) break; if (bytes.length + part.value.length > 64) return { status: "unverified", snapshot }; const joined = new Uint8Array(bytes.length + part.value.length); joined.set(bytes); joined.set(part.value, bytes.length); bytes = joined; }
     if (bytes.length !== Number(range[1]) + 1) return { status: "unverified", snapshot };
-    const mediaKind = media(bytes, response.headers.get("content-type") ?? "");
+    const mediaKind = nativeMediaKind(bytes, response.headers.get("content-type") ?? "");
     if (!mediaKind || (original.type === "audio" && mediaKind !== "audio")) return { status: "unverified", snapshot };
     const identity = createHash("sha256").update(JSON.stringify([url.origin, url.pathname, etag, Number(range[2])])).digest("hex");
     return { status: "available", snapshot, identity, mediaKind, delivery: { url: url.href, etag, size: Number(range[2]), mime: (response.headers.get("content-type") ?? "").split(";")[0].toLowerCase() } };

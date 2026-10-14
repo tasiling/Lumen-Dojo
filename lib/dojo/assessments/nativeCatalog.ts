@@ -20,7 +20,7 @@ export async function nativeSources(cursor?:string){
  return {sources,cursor:page.has_more?page.next_cursor:null};
 }
 export async function nativeAttachments(pageId:string){
- guid(pageId);const page=obj(await withNotionRateLimit(()=>notion().pages.retrieve({page_id:pageId})));owner(page);if(isPrivateNativeSource(page))throw new LearningError('私有驗收狀態頁不可作附件來源',403);
+ await requireNativeSource(pageId);
  const attachments:NativeCandidate[]=[],visited=new Set<string>();let count=0,requests=0;
  async function walk(container:string,depth:number){
   if(depth>15||visited.has(container))throw new LearningError('附件來源階層無法完整核對',503);visited.add(container);
@@ -35,4 +35,9 @@ export async function nativeAttachments(pageId:string){
   }while(cursor);
  }
  await walk(pageId,0);return {attachments};
+}
+
+export async function requireNativeSource(pageId:string) {
+ guid(pageId);const page=obj(await withNotionRateLimit(()=>notion().pages.retrieve({page_id:pageId})));owner(page);
+ if(isPrivateNativeSource(page))throw new LearningError('私有驗收狀態頁不可作附件來源',403);
 }

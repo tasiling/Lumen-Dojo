@@ -54,6 +54,8 @@ export function trackLearningClient<T extends object>(
               "blocks.update",
               "blocks.delete",
               "blocks.children.append",
+              "fileUploads.create",
+              "fileUploads.send",
             ].includes(name)
           )
             return (...args: unknown[]) =>
@@ -66,7 +68,7 @@ export function trackLearningClient<T extends object>(
         if (
           member &&
           typeof member === "object" &&
-          ["pages", "blocks", "blocks.children"].includes(name)
+          ["pages", "blocks", "blocks.children", "fileUploads"].includes(name)
         )
           return wrap(member, name);
         return member;
