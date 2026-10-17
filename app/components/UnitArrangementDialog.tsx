@@ -1,5 +1,6 @@
 "use client";
 
+import {arrangementStage} from "@/lib/dojo/forageUi";
 import { useEffect, useMemo, useState } from "react";
 import { englishImageRouteLabel, type EnglishImageEntry } from "@/lib/dojo/englishImage";
 
@@ -112,9 +113,10 @@ export default function UnitArrangementDialog({ entries, selectedIds, onClose, o
   const expectedProjectTypes = new Set(selected.map((entry) => entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom"));
   const crossType = Boolean(project && [...expectedProjectTypes].some((type) => type !== project.type));
 
-  return <div className="unit-arrangement-backdrop" role="dialog" aria-modal="true" aria-label="請 GPT 協助安排學習單元">
+  return <div className="unit-arrangement-page" aria-label="請 GPT 協助安排學習單元">
     <section className="unit-arrangement-dialog">
-      <header><div><small>GPT-ASSISTED ARRANGEMENT</small><h3>請 GPT 協助安排學習單元</h3></div><button className="text-link" onClick={onClose}>關閉</button></header>
+      <header><div><small>安排學習單元</small><h3>請 GPT 協助安排學習單元</h3></div><button className="text-link" onClick={onClose}>關閉</button></header>
+      <ol className="forage-steps" aria-label="編排進度">{["選擇素材","貼回成果","核對分組","接收結果"].map((label,index)=><li key={label} aria-current={arrangementStage(arrangement?.status||null)===index?"step":undefined}>{label}</li>)}</ol>
       {error && <p className="form-error">{error}</p>}{notice && <p className="form-success">{notice}</p>}
       {!arrangement && <div className="unit-arrangement-step">
         <p>已選取 {selected.length} 份素材。GPT 只提出分組；確認前不建立 Unit，也不派送資料。</p>

@@ -10,7 +10,7 @@ export default function ForageEnglishPage() {
           <h1>英文影像匣</h1>
           <p>從精簡清單選擇一組素材，再進入詳情理解、挑選與派送。</p>
         </div>
-        <Link href="/forage">回到野採概覽</Link>
+        <Link href="/forage">回到野採</Link>
       </div>
       <EnglishImageInbox />
     </section>

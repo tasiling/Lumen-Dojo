@@ -1,0 +1,5 @@
+export const ENGLISH_DETAIL_TABS = [{key:"images",label:"原始圖片",short:"圖片"},{key:"content",label:"英文與中文理解",short:"理解"},{key:"phrases",label:"詞句與候選",short:"詞句"},{key:"dispatch",label:"整理與派送",short:"派送"},{key:"history",label:"處理歷程",short:"歷程"}] as const;
+export const CAPTURE_DETAIL_TABS = [{key:"content",label:"原始內容",short:"內容"},{key:"organize",label:"素材整理",short:"整理"},{key:"explore",label:"素材探索",short:"探索"},{key:"claims",label:"知識主張",short:"主張"}] as const;
+export function forageLaunch(search:string){const p=new URLSearchParams(search),target=p.get("dispatch");return {id:p.get("englishImageId")?.trim()||"",target:target==="vocab"||target==="context"?target:"both" as const,stage:["classification","analysis","dispatch","error"].includes(p.get("stage")||"")?p.get("stage")!:"all"};}
+export function arrangementStage(status:string|null){return status===null?0:status==="packed"?1:status==="previewed"||status==="approved"?2:3;}
+export function wordSlots(exportedKeys:string[]){return Math.max(0,5-new Set(exportedKeys).size);}
