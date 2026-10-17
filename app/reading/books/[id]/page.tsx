@@ -150,6 +150,7 @@ export default function ReadingBookPage() {
           <span>{book.status}</span>
         </div>
         <h1>{book.title}</h1>
+        <a href={`/weaving?book=${encodeURIComponent(bookId)}`}>將已保存筆記選摘到織光堂 →</a>
         {book.author && <p>{book.author}</p>}
       </div>
 

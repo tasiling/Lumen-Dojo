@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { loader } from './weaving-test-harness.mjs';
+const {createDraft,editDraft,beginSave,acceptSave,discardDraft,dirtyDraft}=loader()('lib/dojo/weavingWorkflow/draft.ts');
+let a=createDraft({id:'A',revision:0,text:'old'});a=editDraft(a,{...a.value,text:'first'});const t=beginSave(a);a=editDraft(a,{...a.value,text:'newer'});a=acceptSave(a,t,{id:'A',revision:1,text:'first'});assert.equal(a.value.text,'newer');assert.equal(a.value.revision,1);assert.ok(dirtyDraft(a));
+const b=createDraft({id:'B',revision:0,text:'B'});assert.deepEqual(acceptSave(b,t,{id:'A',revision:1,text:'first'}),b);
+assert.equal(discardDraft(a).value.text,'first');assert.equal(dirtyDraft(discardDraft(a)),false);
+const clean=acceptSave(editDraft(b,{...b.value,text:'B1'}),beginSave(editDraft(b,{...b.value,text:'B1'})),{id:'B',revision:1,text:'B1'});assert.equal(dirtyDraft(clean),false);
+console.log('PASS draft coordination: delayed edit preserved, A response cannot replace B, discard baseline, saved value clean');
+let nested=createDraft({id:'C',revision:1,textWorkflow:{blocks:[{id:'block',text:'old'}],sourceSelections:[]},selectionRequests:['selected-A'],selectedPreviews:['A']});const nestedTicket=beginSave(nested);nested=editDraft(nested,{...nested.value,textWorkflow:{...nested.value.textWorkflow,blocks:[{id:'block',text:'newer'}]},selectionRequests:['selected-A','selected-B'],selectedPreviews:['A','B']});nested=acceptSave(nested,nestedTicket,{id:'C',revision:2,textWorkflow:{blocks:[{id:'block',text:'old'}],sourceSelections:[{digest:'accepted-A',selectedText:'A'}]},selectionRequests:[],selectedPreviews:[]});assert.equal(nested.value.textWorkflow.blocks[0].text,'newer');assert.equal(nested.value.textWorkflow.sourceSelections[0]?.digest,'accepted-A','confirmed source snapshot survives concurrent block edit');assert.deepEqual(nested.value.selectionRequests,['selected-B']);assert.deepEqual(nested.value.selectedPreviews,['B']);assert.ok(dirtyDraft(nested));
+console.log('PASS nested draft three-way merge: confirmed selections + newer blocks + only unsubmitted requests remain');
