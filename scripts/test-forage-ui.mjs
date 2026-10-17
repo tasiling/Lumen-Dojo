@@ -19,7 +19,7 @@ const html=renderToStaticMarkup(React.createElement(Home));
 assert(html.includes('/forage/new'));assert(html.includes('/forage/english?stage=error')||readFileSync('app/components/ForageHome.tsx','utf8').includes('/forage/english?stage=error'));
 assert(!html.includes('>Aa<'));assert(html.includes('<svg'));
 const Layout=load('app/forage/layout.tsx').default;
-const layout=renderToStaticMarkup(React.createElement(Layout,{children:'test'}));assert(layout.includes('forage-ui'));assert(layout.includes('data-realm="orange"'));
+const layout=renderToStaticMarkup(React.createElement(Layout,null,'test'));assert(layout.includes('forage-ui'));assert(layout.includes('data-realm="orange"'));
 assert.equal(createHash('sha256').update(readFileSync('app/forage/forage-tokens.css')).digest('hex'),'ec973f72e6ce86a0449a395487be05e9bd33bc749fc8c06043f1e52d17541433');
 if(!process.argv.includes('--shell')){for(const f of ['EnglishImageInbox.tsx','ForageCaptureInbox.tsx']){const s=readFileSync('app/components/'+f,'utf8');assert(s.includes('ForageTabs'));assert(!s.includes('wild-preview'));}
 assert(readFileSync('app/components/UnitArrangementDialog.tsx','utf8').includes('unit-arrangement-page'));
