@@ -17,7 +17,7 @@ export default async function ForageCapturesPage({
           <h1>一般採集匣</h1>
           <p>整理 LINE 剪藏與手動擷取，補上分類、用途、成熟度及知識關聯。</p>
         </div>
-        <Link href="/forage">回到野採概覽</Link>
+        <Link href="/forage">回到野採</Link>
       </div>
       <ForageCaptureInbox initialCaptureId={captureId} />
     </section>
