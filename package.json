@@ -56,7 +56,8 @@
     "test:forage-ui": "node scripts/test-forage-ui.mjs && node scripts/test-forage-review-regressions.mjs",
     "test:forage-mobile": "node scripts/test-forage-mobile.mjs",
     "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow",
-    "test:weaving-media": "node scripts/test-weaving-media.mjs"
+    "test:weaving-media": "node scripts/test-weaving-media.mjs",
+    "test:evening-concurrency": "node scripts/test-evening-concurrency.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",
