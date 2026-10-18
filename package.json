@@ -51,11 +51,12 @@
     "test:weaving-completion": "node scripts/test-weaving-completion.mjs",
     "test:weaving-draft": "node scripts/test-weaving-draft.mjs",
     "test:weaving-ui": "node scripts/test-weaving-ui.mjs && node scripts/test-weaving-review-ui.mjs race && node scripts/test-weaving-review-ui.mjs conflict && node scripts/test-weaving-review-ui.mjs template",
-    "test:weaving": "npm run test:weaving-domain && npm run test:weaving-api && node scripts/test-weaving-lock.mjs && npm run test:weaving-sources && npm run test:weaving-draft && npm run test:weaving-completion && node scripts/test-weaving-edgecases.mjs && npm run test:weaving-review",
+    "test:weaving": "npm run test:weaving-domain && npm run test:weaving-api && node scripts/test-weaving-lock.mjs && npm run test:weaving-sources && npm run test:weaving-draft && npm run test:weaving-completion && node scripts/test-weaving-edgecases.mjs && npm run test:weaving-review && npm run test:weaving-media",
     "test:weaving-review": "node scripts/test-weaving-review.mjs",
     "test:forage-ui": "node scripts/test-forage-ui.mjs && node scripts/test-forage-review-regressions.mjs",
     "test:forage-mobile": "node scripts/test-forage-mobile.mjs",
-    "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow"
+    "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow",
+    "test:weaving-media": "node scripts/test-weaving-media.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

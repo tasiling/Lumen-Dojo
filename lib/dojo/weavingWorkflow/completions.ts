@@ -1,3 +1,4 @@
+import type { MediaManifest } from './media';
 import 'server-only';
 import { listJsonRecords } from '../notionStore';
 import { getKnowledgeEntry } from '@/lib/notion/queries';
@@ -14,7 +15,8 @@ export type CompletionVersion = {
     operationId: string;
     coreVersionId: string;
     sourceSelections: WorkflowSelection[];
-    outputKind: OutputKind;
+    outputKind: OutputKind | "comic" | "video" | "carousel" | "story";
+    mediaManifest?: MediaManifest;
     text: string;
     outputUrl: string;
     title: string;
@@ -22,7 +24,7 @@ export type CompletionVersion = {
     state: 'confirmed';
     supersededBy: string | null;
 };
-export function completionPayload(work: WeavingWork) { return { workId: work.id, revision: work.revision, title: work.title, coreVersionId: work.coreVersionId, sourceSelections: work.textWorkflow?.sourceSelections ?? [], outputKind: work.textWorkflow?.outputKind ?? 'article', text: work.draftText, outputUrl: work.outputUrl }; }
+export function completionPayload(work: WeavingWork) { return { workId: work.id, revision: work.revision, title: work.title, coreVersionId: work.coreVersionId, sourceSelections: work.textWorkflow?.sourceSelections ?? [], outputKind: work.mediaManifest?.kind === 'comic' ? 'comic' : work.format === 'video' ? 'video' : work.mediaManifest?.kind ?? work.textWorkflow?.outputKind ?? 'article', ...(work.mediaManifest ? { mediaManifest: work.mediaManifest } : {}), text: work.draftText, outputUrl: work.outputUrl }; }
 export function completionDigest(work: WeavingWork) { return operationDigest(completionPayload(work)); }
 export function normalizeCompletion(v: unknown, id: string): CompletionVersion | null { if (!v || typeof v !== 'object')
     return null; const r = v as CompletionVersion; if (r.schemaVersion !== 1 || r.owner !== 'dojo-private-owner' || r.state !== 'confirmed' || !r.workId || typeof r.text !== 'string')

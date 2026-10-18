@@ -207,13 +207,17 @@ export async function completeWork(body: Body) {
             expectRevision(work, body.expectedRevision);
             if (work.status === 'archived')
                 throw new WeavingError('作品已封存', 409);
-            if (!work.draftText.trim() && !work.outputUrl.trim())
+            if ((work.format !== 'text' || work.mediaManifest) && !work.mediaManifest?.assets.length)
+                throw new WeavingError('確認媒體成品前請加入實際媒體資產');
+            if (!work.draftText.trim() && !work.outputUrl.trim() && !work.mediaManifest?.assets.length)
                 throw new WeavingError('成品內容為空');
             stringValue(work.draftText, 80000, '成品文字');
             if (completionDigest(work) !== body.previewDigest)
                 throw new WeavingError('預覽已失效，請重新預覽目前保存版本', 409);
-            await checkSelectionAvailability(work.textWorkflow?.sourceSelections ?? []);
-            return { ...completionPayload(work), schemaVersion: 1, owner: WEAVING_OWNER, operationId: op, createdAt: receipt.createdAt, state: 'confirmed', supersededBy: null };
+            const shuttle = await readShuttle(work.shuttleId);
+            const sourceSelections = work.textWorkflow?.sourceSelections ?? shuttle.sourceSelections;
+            await checkSelectionAvailability(sourceSelections);
+            return { ...completionPayload(work), sourceSelections, schemaVersion: 1, owner: WEAVING_OWNER, operationId: op, createdAt: receipt.createdAt, state: 'confirmed', supersededBy: null };
         }), updateStep(id, WEAVING_WORK_TITLE_PREFIX, 'work', async (row, receipt) => { const work = normalizeWeavingWork(parseJson(row.內容), { id })!; expectRevision(work, body.expectedRevision); const c = await readCompletion(receipt.result.completion.id); return { ...work, revision: work.revision + 1, status: 'completed', finalSnapshot: c.text, completedAt: receipt.createdAt, completionVersionRefs: [...new Set([...work.completionVersionRefs, c.id])], currentCompletionVersionId: c.id, nextAction: '回看創作，或手動送往聊解室' }; })]);
     return { work: await readWork(id), completion: await readCompletion(r.result.completion.id) };
 }
@@ -255,9 +259,9 @@ export async function handoffWork(body: Body) {
                 const core = shuttle.coreVersions.find(v => v.id === (c?.coreVersionId ?? work.coreVersionId));
                 if (!core)
                     throw new WeavingError('核心版本無法核對', 409);
-                const p = normalizeLiaojieProject({ weavingProjectId: '', weavingShuttleId: shuttle.id, weavingWorkId: work.id, sourceCoreVersionId: core.id, sourceCompletionVersionId: c?.id ?? null, handoffOperationId: op, sourceTitle: c?.title ?? work.title, sourceCoreStatement: core.statement, sourceOutputUrl: c?.outputUrl ?? work.outputUrl, sourceDraftSnapshot: c?.text ?? (work.finalSnapshot || work.draftText), brandAngle: core.statement, audience: shuttle.audience, title: c?.title ?? work.title, status: 'received', revision: 1, createdAt: receipt.createdAt }, { id: 'pending' })!;
+                const p = normalizeLiaojieProject({ weavingProjectId: '', weavingShuttleId: shuttle.id, weavingWorkId: work.id, sourceCoreVersionId: core.id, sourceCompletionVersionId: c?.id ?? null, handoffOperationId: op, sourceTitle: c?.title ?? work.title, sourceCoreStatement: core.statement, sourceOutputUrl: c?.outputUrl ?? work.outputUrl, sourceDraftSnapshot: c?.text ?? (work.finalSnapshot || work.draftText), sourceMediaManifest: c?.mediaManifest ?? null, brandAngle: core.statement, audience: shuttle.audience, title: c?.title ?? work.title, status: 'received', revision: 1, createdAt: receipt.createdAt }, { id: 'pending' })!;
                 return createStep(LIAOJIE_PROJECT_TITLE_PREFIX, 'publication', () => p).execute(receipt);
-            } }, updateStep(workId, WEAVING_WORK_TITLE_PREFIX, 'work', async (row) => { const w = normalizeWeavingWork(parseJson(row.內容), { id: workId })!; const c=typeof body.completionVersionId==='string'?await readCompletion(body.completionVersionId):null;const current=!c||c.id===w.currentCompletionVersionId&&c.text===w.draftText&&c.outputUrl===w.outputUrl&&c.title===w.title;return { ...w, revision: w.revision + 1, status: current?'sent_to_liaojie':w.status, sentToLiaojieAt: new Date().toISOString(), nextAction: '在聊解室完成首發版本' }; })]);
+            } }, updateStep(workId, WEAVING_WORK_TITLE_PREFIX, 'work', async (row) => { const w = normalizeWeavingWork(parseJson(row.內容), { id: workId })!; const c=typeof body.completionVersionId==='string'?await readCompletion(body.completionVersionId):null;const current=!c||c.id===w.currentCompletionVersionId&&c.text===w.draftText&&c.outputUrl===w.outputUrl&&c.title===w.title&&JSON.stringify(c.mediaManifest??null)===JSON.stringify(w.mediaManifest??null);return { ...w, revision: w.revision + 1, status: current?'sent_to_liaojie':w.status, sentToLiaojieAt: new Date().toISOString(), nextAction: '在聊解室完成首發版本' }; })]);
     return publication(r.result.publication.id);
 }
 export async function reflectWork(body: Body) {

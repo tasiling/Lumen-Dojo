@@ -1,4 +1,5 @@
-import { normalizeWorkflow, type WorkflowSelection, type TextWorkflow } from "./weavingWorkflow/model";
+import { normalizeMediaManifest, assertMediaFormat, type MediaManifest } from './weavingWorkflow/media';
+import { normalizeWorkflow, WeavingError, type WorkflowSelection, type TextWorkflow } from "./weavingWorkflow/model";
 import { serializeWorkflow } from "./weavingWorkflow/serialize";
 import { WEAVING_SHUTTLE_TITLE_PREFIX, WEAVING_WORK_TITLE_PREFIX } from "./formal";
 import type { WeavingFormat, WeavingProject, WeavingSourceRef } from "./weavingProjects";
@@ -51,6 +52,7 @@ export type WeavingWork = {
   recordType: "weaving-work";
   revision: number;
   textWorkflow?: TextWorkflow;
+  mediaManifest?: MediaManifest;
   legacyProjectId: string | null;
   completionVersionRefs: string[];
   currentCompletionVersionId: string | null;
@@ -176,9 +178,13 @@ export function normalizeWeavingWork(value: unknown, options: { id: string; touc
   const now = new Date().toISOString();
   const createdAt = iso(source.createdAt) || now;
   const workflow = normalizeWorkflow(source.textWorkflow);
+  if (workflow && format !== 'text') throw new WeavingError('文字流程與作品形式不符');
+  const mediaManifest = normalizeMediaManifest(source.mediaManifest);
+  if (mediaManifest) assertMediaFormat(mediaManifest, format);
   return {
     revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
     ...(workflow ? { textWorkflow: workflow } : {}),
+    ...(mediaManifest ? { mediaManifest } : {}),
     legacyProjectId: nullableText(source.legacyProjectId,300),
     completionVersionRefs: Array.isArray(source.completionVersionRefs) ? [...new Set(source.completionVersionRefs.filter((id): id is string => typeof id === "string"))] : [],
     currentCompletionVersionId: nullableText(source.currentCompletionVersionId, 300),

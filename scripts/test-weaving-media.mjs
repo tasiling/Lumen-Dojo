@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import { fixture } from './weaving-fixture.mjs';
+const f = await fixture();
+try {
+ const store = f.load('lib/dojo/weavingWorkflow/store.ts');
+ const versions = f.load('lib/dojo/weavingWorkflow/completions.ts');
+ let work = (await store.createPair({operationId:'media-create-comic',sourceType:'manual',sourceSnapshot:'原始練習素材',coreStatement:'逐格表達觀點',format:'comic'})).works[0];
+ work = await store.patchWork({id:work.id,operationId:'media-script-only',expectedRevision:work.revision,work:{draftText:'這只是漫畫腳本',outputUrl:'https://example.com/editor'}});
+ await assert.rejects(()=>store.completeWork({operationId:'media-not-an-image',workId:work.id,expectedRevision:work.revision,previewDigest:versions.completionDigest(work)}),/媒體|資產/);
+ const media=f.load('lib/dojo/weavingWorkflow/media.ts');
+ const image={id:'panel-1',version:'v1',url:'https://example.com/panel-1.png',mimeType:'image/png',width:1080,height:1350};
+ const manifest={schemaVersion:1,kind:'comic',assets:[image]};
+ await assert.rejects(()=>store.patchWork({id:work.id,operationId:'media-forged-text-workflow',expectedRevision:work.revision,work:{textWorkflow:{schemaVersion:1,templateKey:'article',currentStep:'production',outputKind:'article',blocks:[],sourceSelections:[],audience:'',outline:''}}}),/文字|形式/);
+ for(const bad of [{...image,url:'javascript:alert(1)'},{...image,width:0},{...image,mimeType:'text/plain'},{...image,version:''}]) assert.throws(()=>media.normalizeMediaManifest({...manifest,assets:[bad]}));
+ assert.throws(()=>media.normalizeMediaManifest({...manifest,assets:[image,image]}),/重複/);
+ assert.throws(()=>media.normalizeMediaManifest({...manifest,kind:'story',assets:[image]}),/9:16/);
+ assert.throws(()=>media.normalizeMediaManifest({...manifest,kind:'carousel',assets:[{...image,width:1350}]}),/4:5/);
+ assert.throws(()=>media.normalizeMediaManifest({...manifest,kind:'short_video',assets:[image]}));
+ work=await store.patchWork({id:work.id,operationId:'media-persist-a',expectedRevision:work.revision,work:{mediaManifest:manifest}});
+ assert.deepEqual((await store.readWork(work.id)).mediaManifest,manifest);
+ const digest=versions.completionDigest(work);
+ work=await store.patchWork({id:work.id,operationId:'media-replace-asset',expectedRevision:work.revision,work:{mediaManifest:{...manifest,assets:[{...image,version:'v2',url:'https://example.com/panel-2.png'}]}}});
+ await assert.rejects(()=>store.completeWork({operationId:'media-stale-preview',workId:work.id,expectedRevision:work.revision,previewDigest:digest}),e=>e.status===409);
+ const a=await store.completeWork({operationId:'media-freeze-a',workId:work.id,expectedRevision:work.revision,previewDigest:versions.completionDigest(work)});
+ assert.equal(a.completion.outputKind,'comic');assert.equal(a.completion.mediaManifest.assets[0].version,'v2');
+ assert.equal(a.completion.sourceSelections[0].selectedText,'原始練習素材');
+ const p=await store.handoffWork({operationId:'media-handoff-a',weavingWorkId:work.id,completionVersionId:a.completion.id});
+ assert.deepEqual(p.sourceMediaManifest,a.completion.mediaManifest);
+ work=await store.patchWork({id:work.id,operationId:'media-replace-after-handoff',expectedRevision:(await store.readWork(work.id)).revision,work:{mediaManifest:manifest,status:'producing'}});
+ assert.equal((await versions.readCompletion(a.completion.id)).mediaManifest.assets[0].version,'v2');
+ assert.equal((await store.handoffWork({operationId:'media-handoff-replay',weavingWorkId:work.id,completionVersionId:a.completion.id})).sourceMediaManifest.assets[0].version,'v2');
+ assert.equal((await store.readWork(work.id)).status,'producing');
+ await assert.rejects(()=>store.patchPublication({id:p.id,operationId:'media-forge-handoff',expectedRevision:p.revision,project:{sourceMediaManifest:manifest}}));
+ const video=media.normalizeMediaManifest({schemaVersion:1,kind:'short_video',assets:[{id:'clip-1',version:'v1',url:'https://example.com/clip.mp4',mimeType:'video/mp4',width:1080,height:1920,durationSeconds:12}]});assert.equal(video.assets[0].durationSeconds,12);
+ assert.throws(()=>media.normalizeMediaManifest({...video,assets:[{...video.assets[0],durationSeconds:0}]}));
+ console.log('PASS media: script-only rejected, bounded metadata, aspect ratios, persistence, stale preview, immutable version and handoff');
+} finally {await f.close();}
