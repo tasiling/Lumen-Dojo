@@ -12,6 +12,7 @@ import { convertWorkflow,TEXT_TEMPLATES,createTextWorkflow } from './templates';
 import { productionSources, resolveSelections, checkSelectionAvailability, type SelectionRequest } from './sources';
 import { operationDigest } from './operations';
 import { completionDigest, completionPayload, readCompletion } from './completions';
+import { richTextProp } from '@/lib/notion/properties';
 export const WEAVING_OWNER = 'dojo-private-owner';
 export type Body = Record<string, unknown>;
 export type JsonRow = {
@@ -36,15 +37,22 @@ function marker(r: OperationReceipt, key: string) { return { operationId: r.oper
 function isMarked(v: unknown, r: OperationReceipt, key: string) { const m = (v as {
     _weavingMutation?: ReturnType<typeof marker>;
 })?._weavingMutation; return m?.operationId === r.operationId && m.key === key && m.inputDigest === r.inputDigest && m.owner === r.owner; }
+function recordText(value: unknown): string {
+    const content = JSON.stringify(value);
+    // Keep room below Notion's 100 rich-text elements and 500KB request limit.
+    if (content.length > 180000 || Buffer.byteLength(JSON.stringify({properties:{內容:richTextProp(content)}}), 'utf8') > 450000)
+        throw new WeavingError('作品整份紀錄超過保存大小，請減少內容或拆成不同作品；原資料未截斷', 413);
+    return content;
+}
 export function createStep(prefix: string, key: string, value: (r: OperationReceipt) => Promise<unknown> | unknown): OperationStep {
     const title = (r: OperationReceipt) => `${prefix}${operationKey(r.owner, r.operationId)}:${key}`;
     return { key, async findConfirmed(r) { const rows = (await listJsonRecords(title(r))).filter(row => row.title === title(r)); if (rows.length > 1)
             throw new WeavingError('相同操作有重複紀錄，請核對', 409); if (!rows.length)
             return null; if (!isMarked(rows[0].value, r, key))
-            throw new WeavingError('操作紀錄內容不符', 409); return { id: rows[0].id, revision: revisionOf(rows[0].value) }; }, async execute(r) { const content = await value(r); const row = await createKnowledgeEntry({ 標題: title(r), 內容: JSON.stringify({ ...content as object, _weavingMutation: marker(r, key) }) }, { retryCreate: false }); return { id: row.id, revision: revisionOf(content) }; } };
+            throw new WeavingError('操作紀錄內容不符', 409); return { id: rows[0].id, revision: revisionOf(rows[0].value) }; }, async execute(r) { const content = await value(r); const row = await createKnowledgeEntry({ 標題: title(r), 內容: recordText({ ...content as object, _weavingMutation: marker(r, key) }) }, { retryCreate: false }); return { id: row.id, revision: revisionOf(content) }; } };
 }
 export function updateStep(id: string, prefix: string, key: string, next: (row: JsonRow, r: OperationReceipt) => Promise<unknown> | unknown): OperationStep {
-    return { key, async findConfirmed(r) { const row = await readRecord(id, prefix); const v = parseJson(row.內容); return isMarked(v, r, key) ? { id, revision: revisionOf(v) } : null; }, async execute(r) { const row = await readRecord(id, prefix); const value = await next(row, r); await updateKnowledgeEntry(id, { 內容: JSON.stringify({ ...value as object, _weavingMutation: marker(r, key) }) }); return { id, revision: revisionOf(value) }; } };
+    return { key, async findConfirmed(r) { const row = await readRecord(id, prefix); const v = parseJson(row.內容); return isMarked(v, r, key) ? { id, revision: revisionOf(v) } : null; }, async execute(r) { const row = await readRecord(id, prefix); const value = await next(row, r); await updateKnowledgeEntry(id, { 內容: recordText({ ...value as object, _weavingMutation: marker(r, key) }) }); return { id, revision: revisionOf(value) }; } };
 }
 function manualSelections(value: unknown, r: OperationReceipt): WorkflowSelection[] {
     if (!Array.isArray(value) || value.length > 30)
@@ -217,6 +225,7 @@ export async function completeWork(body: Body) {
             const shuttle = await readShuttle(work.shuttleId);
             const sourceSelections = work.textWorkflow?.sourceSelections ?? shuttle.sourceSelections;
             await checkSelectionAvailability(sourceSelections);
+            recordText({ ...work, revision: work.revision + 1, finalSnapshot: work.draftText, completionVersionRefs: [...work.completionVersionRefs, 'x'.repeat(300)], currentCompletionVersionId: 'x'.repeat(300), completedAt: receipt.createdAt, nextAction: '回看創作，或手動送往聊解室', _weavingMutation: marker(receipt, 'work') });
             return { ...completionPayload(work), sourceSelections, schemaVersion: 1, owner: WEAVING_OWNER, operationId: op, createdAt: receipt.createdAt, state: 'confirmed', supersededBy: null };
         }), updateStep(id, WEAVING_WORK_TITLE_PREFIX, 'work', async (row, receipt) => { const work = normalizeWeavingWork(parseJson(row.內容), { id })!; expectRevision(work, body.expectedRevision); const c = await readCompletion(receipt.result.completion.id); return { ...work, revision: work.revision + 1, status: 'completed', finalSnapshot: c.text, completedAt: receipt.createdAt, completionVersionRefs: [...new Set([...work.completionVersionRefs, c.id])], currentCompletionVersionId: c.id, nextAction: '回看創作，或手動送往聊解室' }; })]);
     return { work: await readWork(id), completion: await readCompletion(r.result.completion.id) };

@@ -242,7 +242,7 @@ try {
     .waitFor();
   assert.ok(page.url().includes(custom.id));
   console.log(
-    "PASS UI tenth custom item, long bilingual name, blank path and refresh selection persistence",
+    "PASS UI additional custom item, long bilingual name, blank path and refresh selection persistence",
   );
   await manager
     .getByRole("button", { name: "＋ 新增階段", exact: true })

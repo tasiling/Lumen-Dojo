@@ -10,6 +10,9 @@ try {
  const media=f.load('lib/dojo/weavingWorkflow/media.ts');
  const image={id:'panel-1',version:'v1',url:'https://example.com/panel-1.png',mimeType:'image/png',width:1080,height:1350};
  const manifest={schemaVersion:1,kind:'comic',assets:[image]};
+ const beforeOversize=f.writes();
+ await assert.rejects(()=>store.patchWork({id:work.id,operationId:'media-oversize-save',expectedRevision:work.revision,work:{mediaManifest:{...manifest,assets:Array.from({length:100},(_,i)=>({...image,id:`panel-${i}`,url:'https://example.com/'+ 'a'.repeat(1940)}))}}}),e=>e.status===413);
+ assert.equal(f.writes(),beforeOversize,'oversize whole record is rejected before Notion dispatch');
  await assert.rejects(()=>store.patchWork({id:work.id,operationId:'media-forged-text-workflow',expectedRevision:work.revision,work:{textWorkflow:{schemaVersion:1,templateKey:'article',currentStep:'production',outputKind:'article',blocks:[],sourceSelections:[],audience:'',outline:''}}}),/文字|形式/);
  for(const bad of [{...image,url:'javascript:alert(1)'},{...image,width:0},{...image,mimeType:'text/plain'},{...image,version:''}]) assert.throws(()=>media.normalizeMediaManifest({...manifest,assets:[bad]}));
  assert.throws(()=>media.normalizeMediaManifest({...manifest,assets:[image,image]}),/重複/);
@@ -33,5 +36,10 @@ try {
  await assert.rejects(()=>store.patchPublication({id:p.id,operationId:'media-forge-handoff',expectedRevision:p.revision,project:{sourceMediaManifest:manifest}}));
  const video=media.normalizeMediaManifest({schemaVersion:1,kind:'short_video',assets:[{id:'clip-1',version:'v1',url:'https://example.com/clip.mp4',mimeType:'video/mp4',width:1080,height:1920,durationSeconds:12}]});assert.equal(video.assets[0].durationSeconds,12);
  assert.throws(()=>media.normalizeMediaManifest({...video,assets:[{...video.assets[0],durationSeconds:0}]}));
+ let large=(await store.createPair({operationId:'media-large-work',sourceType:'manual',sourceSnapshot:'來源',coreStatement:'觀點',format:'comic'})).works[0];
+ large=await store.patchWork({id:large.id,operationId:'media-large-draft',expectedRevision:large.revision,work:{draftText:'字'.repeat(80000),mediaManifest:manifest}});
+ const beforeComplete=f.writes();
+ await assert.rejects(()=>store.completeWork({operationId:'media-large-complete',workId:large.id,expectedRevision:large.revision,previewDigest:versions.completionDigest(large)}),e=>e.status===413);
+ assert.equal(f.writes(),beforeComplete,'preflight both completion and final work before creating a partial completion');
  console.log('PASS media: script-only rejected, bounded metadata, aspect ratios, persistence, stale preview, immutable version and handoff');
 } finally {await f.close();}
