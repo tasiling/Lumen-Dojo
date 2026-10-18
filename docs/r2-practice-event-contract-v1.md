@@ -51,7 +51,7 @@ binding 是 `{ weekStart, taskInstanceId }`，由使用者選擇現存本週任�
 source update：既有 event identity／occurredAt／practicedOn 不變，不因更新 revision 再計數。Learning Record 可另外帶 revision 編輯。
 source archived：明確日記 DELETE 成功後標記對應事件 sourceStatus archived，保留事件與正文，不撤回過去 output。
 source withdrawn：契約預留 withdrawn，代表完成宣告撤回；不得刪事件、重建事件或自動減去手動成果。投影停止，需有明確 owner 核對／補償操作。R2-3 不公開通用撤回 API；外站無法用本地 retry API 改 source status。
-projection retry：`POST /api/dojo/practice-events { action: retry, id }`，只接受既存本地事件。
+projection retry：`POST /api/dojo/practice-events { action: retry, id }`，只接受既存且 owner 核對的事件；外部來源狀態只能由受控來源同步更新。
 
 ## 分頁與長期保存
 
@@ -60,3 +60,24 @@ Learning Record title 含 practicedOn 與 stable ID，以 Notion title descendin
 GET filters 在單一原生頁後套用；篩選頁可能為空，但 cursor 仍可繼續，不能把空頁當歷程結束。不是固定 snapshot pagination；同時編輯日期／建立新列可能改排序，重新整理列表可取得最新狀態。
 GET 不建立事件／seed、不修補投影、不更新週盤。舊 activityLog 僅相容摘要，不自動 migration。
 SourceRefs 儲存 stable pointer、標籤及必要摘要；來源 available/archived/missing/unverified 不會抹去正文。新內部素材／閱讀 refs 由 server 驗證固定資料源，外部網址保留 unverified。
+
+
+## 2026-10-08：已核准語境來源分支（程式完成不代表已發布）
+
+來源固定 `context-room / practice-session / Session UUID`，沿用上述 server owner 去重。
+事件 quantity=1、unit=次、completionKind=context-room-session；另一 Session UUID 才是另一事件。
+受控 API adapter 驗證契約、有效完成旗標與固定 origin 後，才可 acceptContext/updateContext；client body 不能宣告完成。
+原 practicedOn/occurredAt/timeZone 可為 null，來源原日期可能是匯入日；createdAt/recordedOn 只描述道場保存。
+來源 sourceUpdatedAt 以微秒 UTC 排序、sourceRevision 不透明；舊版不覆蓋新版，同時間異內容拒絕。
+
+completed 納入有效完成，withdrawn/unverified 排除；恢復 completed 更新同事件。
+archived/deleted 保留有效歷史，deleted 移除來源 URL；所有狀態保留唯一事件與正文，不自動改光步／週盤。
+外部事件 record 可投影，output/weekly 維持 unlinked。來源更新只更新既有正文的來源 metadata，保留使用者笔記和學科。
+外部正文 originEventId 綁定唯一事件；未連結學科容許空陣列與 null primary，未知日期 title 使用 `0-undated` 非日期標記，排在有日期紀錄後；practicedOn 仍為 null。
+只允許已存外部正文沿用這些未知值編輯；手動／日記建立仍要求有效日期與真正學科，不接受客戶偽造 originEventId。
+
+來源 receipt 與事件／正文不是 transaction。receipt→event→body→receipt→checkpoint 各步確認保存後才標記快照完成。
+legacy 查核需當前版本的完整證據；舊 receipt/checkpoint 先重跑有界查核，不沿用舊快照完成標记。
+legacy 查核每次最多100筆，逐 Session 保存 cursor，完整查核前不能開始計次；有舊活動關聯／缺來源 ID 保留待核對，不猜配。
+來源查詢 503／空頁不撤回已接收事件。GET 純快取讀取；sync/reconcile/retry 為明確 mutation。
+歷程統計只描述已載入事件範圍，並非全站總數或能力評分。

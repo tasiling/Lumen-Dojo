@@ -3,6 +3,7 @@ import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
 import { learningOwner } from "@/lib/dojo/learningFoundation/store";
+import { learningRecords } from "@/lib/dojo/learningRecords/store";
 import { practiceEvents } from "@/lib/dojo/practiceEvents/store";
 import { readJsonRecord } from "@/lib/dojo/notionStore";
 import { EVENT_PREFIX } from "@/lib/dojo/learningRecords/model";
@@ -18,6 +19,12 @@ export async function GET(req: NextRequest) { try {
   if(q.get("id")) { const row = await readJsonRecord(`${EVENT_PREFIX}${q.get("id")}`); if(!row) throw new LearningError("事件不存在",404); events = [row.value as CompletionEvent]; }
   else { const page = await withNotionRateLimit(() => notion().dataSources.query({ data_source_id: DATA_SOURCES.DB14_知識庫, filter: { property: "標題", title: { starts_with: EVENT_PREFIX } }, sorts: [{ timestamp: "created_time", direction: "descending" }], page_size: 20, ...(q.get("cursor") ? { start_cursor: q.get("cursor")! } : {}) })); events = page.results.map(p => parseJson(mapKnowledge(p).內容) as CompletionEvent); cursor = page.has_more ? page.next_cursor : null; }
   if(events.some(e => !e || e.owner !== learningOwner)) throw new LearningError("事件無權存取",403);
+  events = await Promise.all(events.map(async event => {
+    if(event.sourceSystem === "dojo" || event.projections.record !== "applied") return event;
+    const body = await learningRecords.read(event.learningRecordId);
+    if(body.originEventId !== event.id) throw new LearningError("來源正文與事件身分不符",409);
+    return {...event, learningItemIds:body.learningItemIds};
+  }));
   const weeks = new Map<string, Awaited<ReturnType<typeof readJsonRecord>>>();
   for (const event of events) if(event.binding && !weeks.has(event.binding.weekStart)) weeks.set(event.binding.weekStart, await readJsonRecord(bingoRecordTitle(event.binding.weekStart)));
   events = events.map(event => {

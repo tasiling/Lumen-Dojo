@@ -1,0 +1,5 @@
+
+> liiy2111@0.1.0 test:html-entity-overflow
+> node scripts/test-html-entity-mobile-overflow.mjs
+
+html-entity-mobile-overflow: decoder and persistence assertions passed

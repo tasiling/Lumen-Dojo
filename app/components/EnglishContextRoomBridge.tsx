@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "./PracticeRouteLink";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CONTEXT_PRACTICE_MODE_LABELS,
   CONTEXT_ROOM_STATUSES,
   CONTEXT_TOPIC_LABELS,
-  contextResultCanCompleteActivity,
   missingContextResultFields,
   parseContextRoomSummary,
   type ContextActivityCandidate,
@@ -94,7 +94,6 @@ export default function EnglishContextRoomBridge({ onCompleted }: { onCompleted?
   }, [load]);
 
   const missing = useMemo(() => draft ? missingContextResultFields(draft) : [], [draft]);
-  const canLink = useMemo(() => draft ? contextResultCanCompleteActivity(draft) : false, [draft]);
 
   function beginPaste() {
     setOpen(true);
@@ -112,7 +111,7 @@ export default function EnglishContextRoomBridge({ onCompleted }: { onCompleted?
     setNotionPageId(item.notionPageId);
     setLinkedActivityId("");
     setError(null);
-    setNotice("已載入 Notion 同步成果。確認內容與要關聯的活動後再保存。");
+    setNotice("已載入 Notion 成果預覽。請先在修習歷程刷新來源；待核對期間不計次或確認接收。");
   }
 
   function parseSummary() {
@@ -158,10 +157,10 @@ export default function EnglishContextRoomBridge({ onCompleted }: { onCompleted?
         acknowledgementWarning: string | null;
       }>(response);
       const successMessage = result.duplicate
-        ? "這筆語境修習已經記錄，沒有重複增加完成次數。"
+        ? "這筆手動摘要已保存，未新增完成計數。"
         : result.activityLabel
           ? `成果已保存至英文修習紀錄，並只完成「${result.activityLabel}」這一格。`
-          : "成果已保存至英文修習紀錄；這次是自由修習，沒有變更週盤或今日三件事。";
+          : "手動摘要已保存；不列入自動完成計數。";
       setNotice(result.acknowledgementWarning
         ? `${successMessage} Notion 的接收標記暫時未更新：${result.acknowledgementWarning}`
         : successMessage
@@ -197,6 +196,7 @@ export default function EnglishContextRoomBridge({ onCompleted }: { onCompleted?
     <div className="context-room-bridge-actions">
       <a className="primary" href={CONTEXT_ROOM_URL} target="_blank" rel="noreferrer">開啟語境修習室</a>
       <button type="button" onClick={beginPaste}>手動貼回成果</button>
+      <Link href="/practice/records">前往修習歷程核對來源</Link>
     </div>
 
     <div className="context-room-inbox">
@@ -259,11 +259,11 @@ export default function EnglishContextRoomBridge({ onCompleted }: { onCompleted?
 
         <div className="context-room-link-activity">
           <label htmlFor="context-room-activity">對應的行光道場活動</label>
-          <select id="context-room-activity" value={linkedActivityId} disabled={!canLink} onChange={(event) => setLinkedActivityId(event.target.value)}>
-            <option value="">不關聯活動，保存為自由修習</option>
+          <select id="context-room-activity" value={linkedActivityId} disabled={true} onChange={(event) => setLinkedActivityId(event.target.value)}>
+            <option value="">保存手動摘要（不計完成次數）</option>
             {activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.shortLabel}{activity.assignedDate ? `・已排入 ${activity.assignedDate}` : ""}</option>)}
           </select>
-          <small>{canLink ? "只會完成你在這裡選擇的一項活動。" : "目前狀態尚未達完成門檻，仍可保存為自由修習。"}</small>
+          <small>來源事件規則待核對，暫不以摘要自動完成活動。</small>
         </div>
         {missing.length > 0 && <p className="context-room-missing">還需要確認：{missing.join("、")}</p>}
         <div className="context-room-preview-actions"><button type="button" onClick={() => { setDraft(null); setNotionPageId(null); setLinkedActivityId(""); }}>{notionPageId ? "改用手動貼回" : "返回修改原文"}</button><button type="button" className="primary" disabled={saving || missing.length > 0} onClick={() => void save()}>{saving ? "保存中…" : "確認保存"}</button></div>

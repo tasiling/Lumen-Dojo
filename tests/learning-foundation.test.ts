@@ -60,7 +60,11 @@ async function main() {
       key === "english" ? "既有英文目標，保留來源" : null,
   };
   const service = foundationService(repository);
-  assert.equal((await service.snapshot()).missing.length, 9);
+  const preview = await service.snapshot();
+  assert.ok(
+    preview.missing.some((seed) => seed.key === "drawing" && seed.name === "繪圖"),
+  );
+  assert.equal(preview.missing.length, 10);
   assert.equal(writes, 0);
   console.log("PASS GET/snapshot performs no writes");
   failAfter = 3;
@@ -69,7 +73,64 @@ async function main() {
   failAfter = null;
   await service.initialize();
   const initial = await service.snapshot();
-  assert.equal(initial.entities.length, 9);
+  assert.equal(initial.entities.length, 10);
+  const drawing = initial.entities.find((e) => e.seedKey === "drawing")!;
+  assert.equal(drawing.name, "繪圖");
+  assert.equal(drawing.legacyKey, null);
+  assert.equal(drawing.focused, false);
+  assert.equal(drawing.goal, "");
+  assert.equal(drawing.expectedOutcome, "");
+  const upgradeRows: RecordRow[] = initial.entities
+    .filter((e) => e.seedKey !== "drawing")
+    .map((entity) => ({
+      id: entity.id,
+      title: `${FOUNDATION_PREFIX}${entity.id}`,
+      value: entity,
+    }));
+  const beforeUpgrade = structuredClone(upgradeRows);
+  const upgrade = foundationService({
+    ...repository,
+    list: async () => structuredClone(upgradeRows),
+    create: async (title, entity) => {
+      upgradeRows.push({ id: entity.id, title, value: entity });
+    },
+    update: async (id, title, entity) => {
+      upgradeRows[upgradeRows.findIndex((row) => row.id === id)] = {
+        id,
+        title,
+        value: entity,
+      };
+    },
+    legacyVision: async () => {
+      throw new Error("drawing must not use a legacy track");
+    },
+  });
+  assert.deepEqual(
+    (await upgrade.snapshot()).missing.map((seed) => seed.key),
+    ["drawing"],
+  );
+  assert.deepEqual(upgradeRows, beforeUpgrade);
+  const upgraded = await upgrade.initialize();
+  assert.equal(upgraded.created.length, 1);
+  assert.equal(upgraded.missing.length, 0);
+  assert.deepEqual(upgradeRows.slice(0, 9), beforeUpgrade);
+  const upgradedDrawing = upgraded.entities.find(
+    (e) => e.seedKey === "drawing",
+  )!;
+  await upgrade.edit(upgradedDrawing.id, upgradedDrawing.revision, {
+    name: "我的繪圖修習",
+    status: "archived",
+  });
+  const retry = await upgrade.initialize();
+  assert.deepEqual(retry.created, []);
+  assert.equal(retry.entities.length, 10);
+  assert.equal(
+    retry.entities.find((e) => e.id === upgradedDrawing.id)?.status,
+    "archived",
+  );
+  console.log(
+    "PASS nine-item upgrade previews only drawing, preserves existing rows and does not reseed renamed/archived drawing",
+  );
   assert.equal(
     initial.entities.find((e) => e.legacyKey === "english")?.vision,
     "既有英文目標，保留來源",
@@ -90,7 +151,7 @@ async function main() {
     status: "archived",
   });
   await service.initialize();
-  assert.equal((await service.snapshot()).entities.length, 9);
+  assert.equal((await service.snapshot()).entities.length, 10);
   psychology = await service.edit(psychology.id, psychology.revision, {
     status: "active",
     focused: true,
@@ -104,9 +165,9 @@ async function main() {
   console.log(
     "PASS idempotency after rename/archive, restore and independent multiple focus",
   );
-  const custom = await service.create("item", { name: "第十項自訂學科" }, null);
+  const custom = await service.create("item", { name: "第十一項自訂學科" }, null);
   const fresh = foundationService(repository);
-  assert.equal((await fresh.snapshot()).entities.length, 10);
+  assert.equal((await fresh.snapshot()).entities.length, 11);
   assert.equal(
     (await fresh.snapshot()).entities.filter((e) => e.itemId === custom.id)
       .length,
@@ -290,7 +351,7 @@ async function main() {
   });
   const collisionResult = await collisionService.initialize();
   assert.equal(collisionResult.conflicts.length, 1);
-  assert.equal(collisionResult.entities.length, 9);
+  assert.equal(collisionResult.entities.length, 10);
   assert.equal(collisionResult.missing[0].key, "psychology");
   console.log(
     "PASS ambiguous name collision explicitly reported; other confirmed items still delivered",

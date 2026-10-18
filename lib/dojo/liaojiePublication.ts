@@ -1,3 +1,4 @@
+import { normalizeMediaManifest, type MediaManifest } from './weavingWorkflow/media';
 import { LIAOJIE_PROJECT_TITLE_PREFIX } from "./formal";
 
 export const LIAOJIE_PLATFORMS = { plurk: "噗浪", instagram_post: "Instagram 貼文", instagram_story: "Instagram 限時動態", podcast: "Podcast", video: "影片", other: "其他" } as const;
@@ -7,6 +8,7 @@ export type LiaojiePublicationProject = {
   revision: number; sourceCompletionVersionId: string | null; handoffOperationId: string | null;
   version: 2; recordType: "liaojie-publication-project"; id: string;
   weavingProjectId: string; weavingShuttleId: string; weavingWorkId: string; sourceCoreVersionId: string;
+  sourceMediaManifest: MediaManifest | null;
   sourceTitle: string; sourceCoreStatement: string; sourceOutputUrl: string; sourceDraftSnapshot: string;
   brandAngle: string; audience: string; platform: LiaojiePlatform; title: string; coverCopy: string;
   summary: string; callToAction: string; themeGroup: string; scheduledOn: string | null; status: LiaojieStatus;
@@ -28,6 +30,7 @@ export function normalizeLiaojieProject(value: unknown, options: { id: string; t
     sourceCompletionVersionId: text(source.sourceCompletionVersionId, 300) || null, handoffOperationId: text(source.handoffOperationId, 120) || null,
     version: 2, recordType: "liaojie-publication-project", id: options.id,
     weavingProjectId, weavingShuttleId, weavingWorkId, sourceCoreVersionId: text(source.sourceCoreVersionId, 100),
+    sourceMediaManifest: normalizeMediaManifest(source.sourceMediaManifest),
     sourceTitle: text(source.sourceTitle, 200), sourceCoreStatement: text(source.sourceCoreStatement, 3000),
     sourceOutputUrl: text(source.sourceOutputUrl, 2000), sourceDraftSnapshot: text(source.sourceDraftSnapshot, 80000),
     brandAngle: text(source.brandAngle, 3000), audience: text(source.audience, 1000), platform,

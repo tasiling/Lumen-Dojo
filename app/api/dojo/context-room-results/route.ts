@@ -4,15 +4,19 @@ import {
   listRecentContextResults,
   saveContextRoomResult,
 } from "@/lib/dojo/contextRoomResultStore";
-import {
-  acknowledgeContextRoomNotionResult,
-  listContextRoomNotionInbox,
-} from "@/lib/dojo/contextRoomNotionInbox";
+import { listContextRoomNotionInbox } from "@/lib/dojo/contextRoomNotionInbox";
+
+import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
+import { LearningError } from "@/lib/dojo/learningFoundation/model";
+import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
+import { externalResults } from "@/lib/dojo/externalResults/store";
+import { BridgeError, uuid } from "@/lib/dojo/externalResults/model";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    requireLearningOwner(req);
     const [activities, recent, inbox] = await Promise.all([
       listContextActivityCandidates(),
       listRecentContextResults(3),
@@ -20,38 +24,64 @@ export async function GET() {
     ]);
     return NextResponse.json({ activities, recent, inbox });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return legacyFailure(error);
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    requireLearningOwner(req);
     const body = await req.json();
-    const saved = await saveContextRoomResult({
-      draft: body.draft,
-      linkedActivityId: body.linkedActivityId,
-    });
-    let notionAcknowledged = false;
-    let acknowledgementWarning: string | null = null;
-    const notionPageId = typeof body.notionPageId === "string" ? body.notionPageId.trim() : "";
-    if (notionPageId && saved.result.sourceEventId) {
-      try {
-        await acknowledgeContextRoomNotionResult({
-          notionPageId,
-          sourceEventId: saved.result.sourceEventId,
-        });
-        notionAcknowledged = true;
-      } catch (error) {
-        acknowledgementWarning = error instanceof Error ? error.message : String(error);
-      }
+    const notionPageId =
+      typeof body.notionPageId === "string" ? body.notionPageId : "";
+    if (notionPageId) {
+      if (!uuid(notionPageId))
+        throw new BridgeError("NOTION_PAGE_INVALID", 400);
+      const receipt = await withLearningWriteLock(() =>
+        externalResults.verifyNotion(notionPageId),
+      );
+      return NextResponse.json(
+        {
+          code: "R2_3_EXTERNAL_CONTRACT_PENDING",
+          error: "來源已核對，事件契約待確認；未新增計數或確認 Notion",
+          receipt,
+          notionAcknowledged: false,
+        },
+        { status: 409 },
+      );
     }
+    if (body.draft?.sourceEventId)
+      throw new BridgeError("AUTHORITATIVE_SOURCE_REQUIRED", 409);
+    if (body.linkedActivityId)
+      throw new BridgeError("MANUAL_SOURCE_BINDING_REQUIRES_REVIEW", 409);
+    const saved = await withLearningWriteLock(() =>
+      saveContextRoomResult({ draft: body.draft }),
+    );
     return NextResponse.json(
-      { ok: true, ...saved, notionAcknowledged, acknowledgementWarning },
-      { status: saved.duplicate ? 200 : 201 }
+      {
+        ok: true,
+        ...saved,
+        notionAcknowledged: false,
+        acknowledgementWarning: null,
+      },
+      { status: saved.duplicate ? 200 : 201 },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const status = /還缺少|不正確|尚未達到|請重新選擇/.test(message) ? 400 : /找不到|已封存/.test(message) ? 409 : 500;
-    return NextResponse.json({ error: message }, { status });
+    return legacyFailure(error);
   }
+}
+function legacyFailure(error: unknown) {
+  const status =
+    error instanceof LearningError || error instanceof BridgeError
+      ? error.status
+      : 503;
+  const code =
+    error instanceof BridgeError
+      ? error.code
+      : status === 401
+        ? "UNAUTHORIZED"
+        : status === 403
+          ? "ORIGIN_OR_OWNER_MISMATCH"
+          : "LEGACY_SAVE_REQUIRES_REVIEW";
+  return NextResponse.json({ code, error: code }, { status });
 }

@@ -46,6 +46,12 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   CAPTURE_TITLE_PREFIX,
   LEARNING_TITLE_PREFIX,
   "行光修習底座-",
+  "行光能力規準-",
+  "行光能力嘗試-",
+  "行光能力證明-",
+  "行光學成事件-",
+  "行光外部來源收據-",
+  "行光外部來源游標-",
   WEAVING_PROJECT_TITLE_PREFIX,
   WEAVING_SHUTTLE_TITLE_PREFIX,
   WEAVING_WORK_TITLE_PREFIX,
@@ -113,7 +119,9 @@ export const ENGLISH_TOUCH_TYPES: Record<
   transfer: { label: "轉用", examples: "工作、課堂、生活" },
 };
 
+export type VocabularyCompletionLedger = { manualRounds: number; events: { id: string; standardRound: boolean }[] };
 export type DailyRecord = {
+  practiceEventVocabulary?: VocabularyCompletionLedger;
   version: 2;
   date: string;
   morning: {
@@ -667,6 +675,7 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
       hobby: normalizeTask(tasks.hobby, "hobby"),
       health: normalizeTask(tasks.health, "health"),
     },
+    ...(source.practiceEventVocabulary ? { practiceEventVocabulary: source.practiceEventVocabulary } : {}),
     englishRhythm: {
       touches: englishTouches.slice(0, 4),
       vocabForgeRounds,

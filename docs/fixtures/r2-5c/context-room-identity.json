@@ -1,0 +1,13 @@
+{
+  "contractVersion": "context-room-practice-results/v1",
+  "owner": "fixture-owner",
+  "deliveries": [
+    {"channel":"api","sourceSystem":"context-room","sourceType":"practice-session","sourceId":"00000000-0000-4000-8000-000000000001","sourceEventId":"00000000-0000-4000-8000-000000000001","sourceRevision":"1","unitId":"unit-a","pathReferences":["path-a","path-b"]},
+    {"channel":"notion","sourceSystem":"context-room","sourceType":"practice-session","sourceEventId":"00000000-0000-4000-8000-000000000001","syncVersion":1,"unitId":"unit-a"},
+    {"channel":"api-retry","sourceSystem":"context-room","sourceType":"practice-session","sourceId":"00000000-0000-4000-8000-000000000001","sourceEventId":"00000000-0000-4000-8000-000000000001","sourceRevision":"1","unitId":"unit-a"},
+    {"channel":"api-update","sourceSystem":"context-room","sourceType":"practice-session","sourceId":"00000000-0000-4000-8000-000000000001","sourceEventId":"00000000-0000-4000-8000-000000000001","sourceRevision":"2","unitId":"unit-a","subjectReferences":["english","communication"]},
+    {"channel":"api","sourceSystem":"context-room","sourceType":"practice-session","sourceId":"00000000-0000-4000-8000-000000000002","sourceEventId":"00000000-0000-4000-8000-000000000002","sourceRevision":"1","unitId":"unit-a"}
+  ],
+  "expectedUniquePracticeCount": 2,
+  "notionAdapter": {"sourceIdProperty":"sourceEventId","sourceSystem":"context-room","sourceType":"practice-session","syncVersionMeaning":"Notion schema version, not session sourceRevision"}
+}

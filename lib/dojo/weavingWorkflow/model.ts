@@ -1,3 +1,4 @@
+import { normalizeMediaManifest } from './media';
 import { LearningError } from "../learningFoundation/model";
 export const WORKFLOW_STEPS = ['sources', 'concept', 'production', 'review', 'handoff'] as const;
 export type WorkflowStep = typeof WORKFLOW_STEPS[number];
@@ -87,7 +88,7 @@ export function workflowFromLegacy(work: {
 export function validateWorkPatch(value: unknown): Record<string, unknown> {
     if (!value || typeof value !== 'object' || Array.isArray(value))
         throw new WeavingError('作品更新格式不正確');
-    const p = value as Record<string, unknown>, allowed = ['title', 'formatSubtype', 'nextAction', 'draftText', 'outputUrl', 'toolKey', 'textWorkflow', 'status'];
+    const p = value as Record<string, unknown>, allowed = ['title', 'formatSubtype', 'nextAction', 'draftText', 'outputUrl', 'toolKey', 'textWorkflow', 'mediaManifest', 'status'];
     for (const key of Object.keys(p))
         if (!allowed.includes(key))
             throw new WeavingError(`受保護或未知欄位：${key}`);
@@ -101,5 +102,6 @@ export function validateWorkPatch(value: unknown): Record<string, unknown> {
         throw new WeavingError('成品連結必須使用 HTTP 或 HTTPS');
     if (p.textWorkflow !== undefined)
         normalizeWorkflow(p.textWorkflow);
+    if (p.mediaManifest !== undefined) normalizeMediaManifest(p.mediaManifest);
     return p;
 }

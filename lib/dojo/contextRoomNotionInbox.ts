@@ -1,5 +1,6 @@
 import "server-only";
 
+import { BridgeError, originalTimestamp, uuid } from "./externalResults/model";
 import { Client } from "@notionhq/client";
 import { withNotionRateLimit } from "@/lib/notion/client";
 import {
@@ -55,7 +56,10 @@ function plainText(property: NotionProperty | undefined): string {
   return values
     .map((item) => {
       if (!item || typeof item !== "object") return "";
-      const value = item as { plain_text?: unknown; text?: { content?: unknown } };
+      const value = item as {
+        plain_text?: unknown;
+        text?: { content?: unknown };
+      };
       return typeof value.plain_text === "string"
         ? value.plain_text
         : typeof value.text?.content === "string"
@@ -74,7 +78,8 @@ function selectName(property: NotionProperty | undefined): string {
 }
 
 function numberValue(property: NotionProperty | undefined): number | null {
-  return typeof property?.number === "number" && Number.isFinite(property.number)
+  return typeof property?.number === "number" &&
+    Number.isFinite(property.number)
     ? property.number
     : null;
 }
@@ -100,7 +105,7 @@ function normalizeMode(value: string): ContextPracticeMode | null {
   };
   const mapped = map[value] ?? value;
   return CONTEXT_PRACTICE_MODES.includes(mapped as ContextPracticeMode)
-    ? mapped as ContextPracticeMode
+    ? (mapped as ContextPracticeMode)
     : null;
 }
 
@@ -124,7 +129,9 @@ function summaryText(draft: ContextRoomResultDraft): string {
     `狀態：${draft.contextRoomStatus ?? ""}`,
     draft.focus ? `本次卡點：${draft.focus}` : "",
     `日期：${draft.practicedOn}`,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function mapPage(page: NotionPage): ContextRoomInboxItem | null {
@@ -136,15 +143,17 @@ function mapPage(page: NotionPage): ContextRoomInboxItem | null {
     materialTitle: plainText(properties["素材名稱"]),
     batchLabel: plainText(properties["內容批次／章節"]),
     topicLabel: CONTEXT_TOPIC_LABELS.includes(topic as ContextTopicLabel)
-      ? topic as ContextTopicLabel
+      ? (topic as ContextTopicLabel)
       : null,
     topicPosition: numberValue(properties["話題位置"]),
     practiceMode: normalizeMode(selectName(properties["練習模式"])),
     firstCompleted: checkboxValue(properties["First完成"]),
     secondTakeCompleted: checkboxValue(properties["Second Take完成"]),
     expressionCount: numberValue(properties["留下表達數"]) ?? 0,
-    contextRoomStatus: CONTEXT_ROOM_STATUSES.includes(status as ContextRoomStatus)
-      ? status as ContextRoomStatus
+    contextRoomStatus: CONTEXT_ROOM_STATUSES.includes(
+      status as ContextRoomStatus,
+    )
+      ? (status as ContextRoomStatus)
       : null,
     focus: plainText(properties["本次卡點"]),
     practicedOn: dateStart(properties["修習日期"]),
@@ -173,35 +182,40 @@ export async function listContextRoomNotionInbox(): Promise<ContextRoomInboxStat
 
   try {
     const client = new Client({ auth: current.token });
-    const response = await withNotionRateLimit(() => client.dataSources.query({
-      data_source_id: current.dataSourceId,
-      page_size: 30,
-      filter: {
-        and: [
-          { property: "syncVersion", number: { equals: 1 } },
-          { property: "行光道場已接收", checkbox: { equals: false } },
-        ],
-      },
-      sorts: [{ property: "修習日期", direction: "descending" }],
-    }));
-    const pages = response.results.filter((item): item is typeof item & NotionPage =>
-      item.object === "page" && "properties" in item
+    const response = await withNotionRateLimit(() =>
+      client.dataSources.query({
+        data_source_id: current.dataSourceId,
+        page_size: 30,
+        filter: {
+          and: [
+            { property: "syncVersion", number: { equals: 1 } },
+            { property: "行光道場已接收", checkbox: { equals: false } },
+          ],
+        },
+        sorts: [{ property: "修習日期", direction: "descending" }],
+      }),
+    );
+    const pages = response.results.filter(
+      (item): item is typeof item & NotionPage =>
+        item.object === "page" && "properties" in item,
     );
     const mapped = pages.map(mapPage);
     return {
       ready: true,
       usingDedicatedToken: current.usingDedicatedToken,
-      items: mapped.filter((item): item is ContextRoomInboxItem => Boolean(item)),
+      items: mapped.filter((item): item is ContextRoomInboxItem =>
+        Boolean(item),
+      ),
       invalidCount: mapped.filter((item) => !item).length,
       error: null,
     };
-  } catch (error) {
+  } catch {
     return {
       ready: false,
       usingDedicatedToken: current.usingDedicatedToken,
       items: [],
       invalidCount: 0,
-      error: error instanceof Error ? error.message : String(error),
+      error: "NOTION_TEMPORARILY_UNAVAILABLE",
     };
   }
 }
@@ -213,17 +227,72 @@ export async function acknowledgeContextRoomNotionResult(params: {
   const current = config();
   if (!current.token) throw new Error("缺少語境修習室的 Notion 讀取權限");
   const client = new Client({ auth: current.token });
-  const page = await withNotionRateLimit(() => client.pages.retrieve({ page_id: params.notionPageId }));
+  const page = await withNotionRateLimit(() =>
+    client.pages.retrieve({ page_id: params.notionPageId }),
+  );
+  assertInboxParent(page, current.dataSourceId);
   if (!("properties" in page)) throw new Error("找不到語境修習成果頁面");
-  const actualEventId = plainText((page.properties as Record<string, NotionProperty>).sourceEventId);
+  const actualEventId = plainText(
+    (page.properties as Record<string, NotionProperty>).sourceEventId,
+  );
   if (!actualEventId || actualEventId !== params.sourceEventId) {
     throw new Error("語境修習成果識別碼不符，未更新 Notion 接收狀態");
   }
-  await withNotionRateLimit(() => client.pages.update({
-    page_id: params.notionPageId,
-    properties: {
-      "行光道場已接收": { checkbox: true },
-      "行光道場接收日期": { date: { start: new Date().toISOString() } },
-    },
-  }));
+  await withNotionRateLimit(() =>
+    client.pages.update({
+      page_id: params.notionPageId,
+      properties: {
+        行光道場已接收: { checkbox: true },
+        行光道場接收日期: { date: { start: new Date().toISOString() } },
+      },
+    }),
+  );
+}
+
+// R2-5C: verify a caller-selected page against the fixed server data source.
+// Only identity/schema/ack metadata is returned, never completion-card content.
+function assertInboxParent(page: unknown, expected: string): void {
+  const parent = (
+    page as { parent?: { type?: string; data_source_id?: string } }
+  ).parent;
+  if (
+    parent?.type !== "data_source_id" ||
+    parent.data_source_id?.replaceAll("-", "") !== expected.replaceAll("-", "")
+  )
+    throw new BridgeError("NOTION_SOURCE_OWNER_MISMATCH", 403);
+}
+export async function readContextRoomNotionIdentity(pageId: string) {
+  if (!uuid(pageId)) throw new BridgeError("NOTION_PAGE_INVALID", 400);
+  const current = config();
+  if (!current.token) throw new BridgeError("NOTION_NOT_CONNECTED", 503);
+  const client = new Client({ auth: current.token, retry: false });
+  let page;
+  try {
+    page = await withNotionRateLimit(() =>
+      client.pages.retrieve({ page_id: pageId }),
+    );
+  } catch {
+    throw new BridgeError("NOTION_TEMPORARILY_UNAVAILABLE", 503);
+  }
+  assertInboxParent(page, current.dataSourceId);
+  if (!("properties" in page) || page.archived || page.in_trash)
+    throw new BridgeError("NOTION_SOURCE_UNVERIFIED", 409);
+  const props = page.properties as Record<string, NotionProperty>;
+  const sourceEventId = plainText(props.sourceEventId);
+  if (!uuid(sourceEventId) || numberValue(props.syncVersion) !== 1)
+    throw new BridgeError("NOTION_SOURCE_UNVERIFIED", 409);
+  return {
+    notionPageId: page.id,
+    sourceEventId,
+    syncVersion: 1 as const,
+    acknowledged: checkboxValue(props["行光道場已接收"]),
+    acknowledgedAt: originalAckDate(props["行光道場接收日期"]),
+  };
+}
+
+function originalAckDate(property: NotionProperty | undefined): string | null {
+  const value = (property?.date as { start?: unknown } | undefined)?.start;
+  if (typeof value !== "string" || !value) return null;
+  if (/^\d{4}-\d\d-\d\d$/.test(value)) return value;
+  return originalTimestamp(value);
 }

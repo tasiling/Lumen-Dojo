@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-export function usePracticeLeaveGuard(dirty: boolean) {
+export function usePracticeLeaveGuard(dirty: boolean, message = "尚有未儲存的自譯內容。離開會放棄這些修改，確定離開？") {
   const dirtyRef = useRef(dirty);
   const barrier = useRef(false);
   const removing = useRef<string | null>(null);
@@ -21,7 +21,7 @@ export function usePracticeLeaveGuard(dirty: boolean) {
   useEffect(() => {
     function approve() {
       if (!dirtyRef.current) return true;
-      if (!confirm("尚有未儲存的自譯內容。離開會放棄這些修改，確定離開？"))
+      if (!confirm(message))
         return false;
       dirtyRef.current = false;
       return true;
@@ -80,5 +80,5 @@ export function usePracticeLeaveGuard(dirty: boolean) {
       window.removeEventListener("practice-before-leave", leave);
       window.removeEventListener("popstate", pop, true);
     };
-  }, []);
+  }, [message]);
 }
