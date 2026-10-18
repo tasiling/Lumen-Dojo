@@ -194,6 +194,7 @@ async function noOverflow(width) {
 try {
   await openLearning();
   await manager.getByRole("button", { name: /預覽缺項初始化/ }).click();
+  assert.match(await manager.locator(".foundation-init ul").innerText(), /繪圖/);
   assert.equal(mutationCount, 0);
   await manager
     .getByRole("button", { name: "確認初始化缺項", exact: true })
@@ -204,16 +205,16 @@ try {
     .waitFor();
   assert.equal(
     (await service.snapshot()).entities.filter((e) => e.kind === "item").length,
-    9,
+    10,
   );
   console.log(
-    "PASS UI initialization preview is read-only; explicit confirmation creates nine items",
+    "PASS UI initialization preview includes drawing and is read-only; explicit confirmation creates ten items",
   );
   await manager
     .getByRole("button", { name: "＋ 新增項目", exact: true })
     .click();
   const longName =
-    "第十項・跨學科探索與英文闡述 " +
+    "第十一項・跨學科探索與英文闡述 " +
     "LongEnglishReadingAndExpression".repeat(4);
   await manager
     .locator("form")

@@ -79,6 +79,14 @@ export const SEEDS: Seed[] = [
     vision: "約 2030 年按摩課程畢業後，考慮返回台灣就讀學士後中醫。",
     legacyKey: null,
   },
+  {
+    key: "drawing",
+    name: "繪圖",
+    description:
+      "依使用者指定的抖抖村負基礎綱要，先練繪型、抓型，再練各類景物速寫；2027 年 K 大課程保留為後續學習意向。",
+    vision: "從負基礎練習繪型、抓型，逐步進入各類景物速寫。",
+    legacyKey: null,
+  },
 ];
 export class LearningError extends Error {
   constructor(

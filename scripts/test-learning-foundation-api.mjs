@@ -264,7 +264,11 @@ try {
   );
   assert.equal(init.status, 200);
   const snapshot = await init.json();
-  assert.equal(snapshot.entities.length, 9);
+  assert.equal(snapshot.entities.length, 10);
+  assert.equal(
+    snapshot.entities.find((e) => e.seedKey === "drawing")?.legacyKey,
+    null,
+  );
   const writeCount = writes;
   assert.equal(
     (
@@ -324,7 +328,7 @@ try {
     403,
   );
   console.log(
-    "PASS real initialize/create/edit API persists nine/custom items and ignores caller ownership/revision",
+    "PASS real initialize/create/edit API persists ten/custom items and ignores caller ownership/revision",
   );
   const legacy = learningDomain.defaultLearningTrack("english");
   legacy.updatedAt = "2026-09-01T00:00:00.000Z";
@@ -670,8 +674,8 @@ try {
     request("/api/dojo/learning/foundation", "POST", { action: "initialize" }),
   );
   assert.equal(result.status, 200);
-  assert.equal(rows.size, 9);
-  assert.equal(writeAttempts, 9);
+  assert.equal(rows.size, 10);
+  assert.equal(writeAttempts, 10);
   console.log(
     "PASS partial acknowledged initialization + subsequent read failure retries without duplicate creates",
   );
@@ -703,8 +707,8 @@ try {
     request("/api/dojo/learning/foundation", "POST", { action: "initialize" }),
   );
   assert.equal(result.status, 200);
-  assert.equal(rows.size, 9);
-  assert.equal(writeAttempts, 9);
+  assert.equal(rows.size, 10);
+  assert.equal(writeAttempts, 10);
   console.log(
     "PASS partial unknown initialization keeps mutex/intent, invisible row cannot trigger recreate; reconciled row reused",
   );
