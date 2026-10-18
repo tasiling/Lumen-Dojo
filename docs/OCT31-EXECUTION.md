@@ -25,7 +25,11 @@ ESLint：0 errors、10 warnings（既有 Plurk 圖片及原R2測試中的未使�
 
 一次獨立新上下文、唯讀整合審查：未發現 Critical／Important／Minor。核對50指令聯集、命名空間排除、來源adapter、導覽與revision、非重疊檔來源一致性、fixture修正範圍；審查者沒有冒稱執行測試。這是整合差異審查，非重新宣稱所有既有功能已完成正式驗收。
 
-瀏覽器：待本輪操作測試結果更新。iPhone Safari實機、真Notion附件／媒體、正式來源Bearer、native PostgreSQL與正式資料寫入未驗收。
+瀏覽器：本輪首次真正跑能力驗收 Chromium 375/390/430px，重現原始表單的欄位標籤混入 textarea 初始值／select 選項文字，精確欄位名稱找不到。將規準四個 textarea 與評核判定／回饋改為獨立 label + htmlFor/id，保留表單值、保存與評核規則。先見證 locator 失敗，再驗證編輯草稿零寫入、保存規準、新規準保留舊歷史而不自動掌握、無水平溢出；完整作答／明確證據／保存後提交／未存評核離開保護／逐項自評／獨立確認也在375/390/430通過。
+
+原測試另把 press('A') 的結果期待成小寫a；在瀏覽器確實輸出大寫A後，僅修正測試按鍵為'a'以符合原本小寫期望，沒有在產品自動轉小寫。此本輪修正與上方日期fixture修正皆保留RED→GREEN證據。
+
+這是隔離API傳輸搭配真實React頁面的Chromium操作，非正式Notion、非iPhone Safari。其他場域瀏覽器全套、iPhone Safari實機、真Notion附件／媒體、正式來源Bearer、native PostgreSQL與正式資料寫入仍未驗收。
 
 ### 正式環境唯讀核對
 
@@ -33,7 +37,15 @@ ESLint：0 errors、10 warnings（既有 Plurk 圖片及原R2測試中的未使�
 
 ### 尚待完成
 
-1. 本輪隔離瀏覽器操作。
-2. 原PR85分支更新與base改為master，繼續保留Draft直到正式環境驗收。
+1. 補齊其他場域與來源的隔離瀏覽器操作；能力規準／作答流程已完成上述寬度驗證。
+2. 原PR85已以非force、expected SHA保護更新到6609e93789b66d1de4eaa2a6185494ae84de7614，tree與本機0e9b2fb完全相同：15e8b927ccb97fe07450297aa93c1600fbe9b4dc；base已改master，仍保持Draft。瀏覽器發現的標籤修正另行checkpoint。
 3. 按排程開發新媒體共用契約、工具銜接及各媒體工作臺。
 4. 不把本輪checkpoint、舊版部署SUCCESS、排程建立當成整個道場完成。
+
+## 持續建置安排
+
+已建立並啟用本對話持續建置任務：Australia/Melbourne，自10/19起每天08:00／15:00／20:00附近執行，共39次，到10/31晚間結束。任務要求實際程式、測試、checkpoint與push，按本排程與執行紀錄續作；同阻礙無進展不重複提醒。此排程不代表背景持續運行、不保證每次無外部限制，也不代表已完成交付。
+
+## 本輪表單標籤修正的最終驗證
+
+能力規準編輯、新版／舊版成果區分，以及完整作答、選證據、保存、提交、評核、離開取消、確認流程，均通過 Chromium 375/390/430px 操作驗證。修正後再次執行完整 `test:assessments`、修改檔ESLint、標準 `npm run build` 與diff check，全數通過。iPhone Safari與真實來源驗收狀態仍如上，不因瀏覽器成功而改寫。
