@@ -1,0 +1,12 @@
+'use client';
+import {useState,type ReactNode} from 'react';
+import type {DraftEntity} from '@/lib/dojo/weavingWorkflow/draft';
+import {get} from './client';
+type Recoverable<T>={value:T;state:{error:string|null;errorOperationId?:string};reapply:(value:T)=>void;reset:(value:T)=>void};
+export default function ConflictRecovery<T extends DraftEntity>({draft,loadLatest,render}:{draft:Recoverable<T>;loadLatest:()=>Promise<T>;render:(v:T)=>ReactNode}){
+ const[latest,setLatest]=useState<T|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[observation,setObservation]=useState<{receipt:{state:string}|null;observations:Record<string,{state:string;refs:{id:string}[]}>}|null>(null);
+ if(!draft.state.error)return null;
+ async function compare(){setBusy(true);setError('');try{setLatest(await loadLatest());}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}
+ async function inspect(){setBusy(true);setError('');try{setObservation(await get(`/api/dojo/weaving-works?operationId=${encodeURIComponent(draft.state.errorOperationId??'')}`));}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}
+ return <section className="wf-recovery"><p>輸入仍保留。先核對目前保存版本，再選擇如何接續。</p><div className="wf-actions"><button disabled={busy} onClick={()=>void compare()}>查看保存版本並比較</button>{draft.state.errorOperationId&&<button disabled={busy} onClick={()=>void inspect()}>唯讀核對這次操作結果</button>}</div>{error&&<p role="alert">{error}</p>}{latest&&<div className="wf-comparison"><section><h3>本機未存內容</h3>{render(draft.value)}</section><section><h3>目前保存版本</h3>{render(latest)}<p>保存版本 r{latest.revision}</p></section><div className="wf-actions"><button onClick={()=>{draft.reapply(latest);setLatest(null);}}>保留我的修改，套用到已核對版本</button><button onClick={()=>{if(window.confirm('放棄本機未保存的修改，讀入目前保存版本？')){draft.reset(latest);setLatest(null);}}}>放棄本機修改，讀入保存版本</button></div></div>}{observation&&<div role="status"><p>本次操作：{observation.receipt?.state==='confirmed'?'先前已確認':observation.receipt?.state==='unresolved'?'結果尚待核對':observation.receipt?.state==='rejected'?'這次尚未完成':'尚未找到操作收據'}</p>{Object.entries(observation.observations).map(([key,o])=><p key={key}>{key==='shuttle'?'織光杼':key==='work'?'作品':key==='completion'?'成品':key==='publication'?'聊解企劃':key==='archive'?'原案封存':'接續步驟'}：{o.state==='confirmed'?'已找到相符資料':o.state==='collision'?'出現重複或不相符資料，請先核對':'尚無法確認資料'}{o.refs.length>0&&`（${o.refs.length} 筆）`}</p>)}<p>這是唯讀核對；結果不明的寫入須待管理者確認後恢復。</p></div>}</section>;
+}

@@ -5,7 +5,8 @@ import {
   listVocabForgeBooks,
   recommendedFocusDecks,
 } from "@/lib/dojo/englishImageDispatch";
-import { getEnglishImageEntry } from "@/lib/dojo/englishImageStore";
+import {manualLearningUsagePatch} from "@/lib/dojo/manualEnglishUsage";
+import { getEnglishImageEntry,updateEnglishImageEntry } from "@/lib/dojo/englishImageStore";
 import { rewriteEnglishImageLearningUsages } from "@/lib/dojo/englishImageAnalysis";
 import { learningUsageIssues } from "@/lib/dojo/englishImageLearningUsage";
 
@@ -42,6 +43,10 @@ export async function POST(req: NextRequest) {
       ? body.candidateKeys.filter((value: unknown): value is string => typeof value === "string")
       : [];
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
+    if(body.action==="saveUsage"){
+      const entry=await updateEnglishImageEntry(id,current=>manualLearningUsagePatch(current,englishImageVocabCandidates(current),typeof body.key==="string"?body.key:"",typeof body.usage==="string"?body.usage:"",typeof body.translation==="string"?body.translation:""));
+      return NextResponse.json({entry,candidates:candidatePreviews(entry)});
+    }
     if (body.action === "rewriteUsages") {
       const entry = await rewriteEnglishImageLearningUsages(id, candidateKeys);
       return NextResponse.json({ entry, candidates: candidatePreviews(entry) });
@@ -53,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const status = /請先|請至少|最多|候選/.test(message) ? 400 : /串接尚未完成/.test(message) ? 503 : 500;
+    const status = /請先|請至少|最多|候選|例句|翻譯|已同步/.test(message) ? 400 : /串接尚未完成/.test(message) ? 503 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

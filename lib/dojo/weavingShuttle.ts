@@ -1,3 +1,5 @@
+import { normalizeWorkflow, type WorkflowSelection, type TextWorkflow } from "./weavingWorkflow/model";
+import { serializeWorkflow } from "./weavingWorkflow/serialize";
 import { WEAVING_SHUTTLE_TITLE_PREFIX, WEAVING_WORK_TITLE_PREFIX } from "./formal";
 import type { WeavingFormat, WeavingProject, WeavingSourceRef } from "./weavingProjects";
 
@@ -25,12 +27,14 @@ export type WeavingReflection = {
 export type WeavingShuttle = {
   version: 3;
   recordType: "weaving-shuttle";
+  revision: number;
   id: string;
   title: string;
   sourceType: string;
   sourceId: string | null;
   sourceRefs: WeavingSourceRef[];
   sourceSnapshot: string;
+  sourceSelections: WorkflowSelection[];
   audience: string;
   direction: string;
   status: ShuttleStatus;
@@ -45,6 +49,11 @@ export type WeavingShuttle = {
 export type WeavingWork = {
   version: 1;
   recordType: "weaving-work";
+  revision: number;
+  textWorkflow?: TextWorkflow;
+  legacyProjectId: string | null;
+  completionVersionRefs: string[];
+  currentCompletionVersionId: string | null;
   id: string;
   shuttleId: string;
   title: string;
@@ -106,7 +115,7 @@ function normalizeVersions(value: unknown): CoreIdeaVersion[] {
       derivedFromWorkId: nullableText(source.derivedFromWorkId, 300),
       createdAt: iso(source.createdAt) || new Date().toISOString(),
     }];
-  }).slice(0, 60);
+  });
 }
 
 export function currentCore(shuttle: WeavingShuttle): CoreIdeaVersion {
@@ -129,7 +138,9 @@ export function normalizeWeavingShuttle(value: unknown, options: { id: string; t
   if (sourceId && !refs.some((ref) => ref.sourceType === sourceType && ref.sourceId === sourceId)) refs.unshift({ sourceType, sourceId });
   const requestedCurrent = text(source.currentCoreVersionId, 100);
   return {
+    revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
     version: 3, recordType: "weaving-shuttle", id: options.id, title,
+    sourceSelections: normalizeWorkflow({ schemaVersion: 1, templateKey: 'legacy', currentStep: 'sources', outputKind: 'article', blocks: [], sourceSelections: source.sourceSelections ?? [], audience: '', outline: '' })!.sourceSelections,
     sourceType, sourceId, sourceRefs: refs, sourceSnapshot: text(source.sourceSnapshot, 30000),
     audience: text(source.audience, 1000), direction: text(source.direction, 3000),
     status: SHUTTLE_STATUSES.includes(source.status as ShuttleStatus) ? source.status as ShuttleStatus : "active",
@@ -164,12 +175,18 @@ export function normalizeWeavingWork(value: unknown, options: { id: string; touc
   if (!shuttleId || !title || !coreVersionId || !format) return null;
   const now = new Date().toISOString();
   const createdAt = iso(source.createdAt) || now;
+  const workflow = normalizeWorkflow(source.textWorkflow);
   return {
+    revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
+    ...(workflow ? { textWorkflow: workflow } : {}),
+    legacyProjectId: nullableText(source.legacyProjectId,300),
+    completionVersionRefs: Array.isArray(source.completionVersionRefs) ? [...new Set(source.completionVersionRefs.filter((id): id is string => typeof id === "string"))] : [],
+    currentCompletionVersionId: nullableText(source.currentCompletionVersionId, 300),
     version: 1, recordType: "weaving-work", id: options.id, shuttleId, title, coreVersionId, format,
     formatSubtype: text(source.formatSubtype, 100) || (format === "text" ? "unselected" : "planned"),
     status: WORK_STATUSES.includes(source.status as WorkStatus) ? source.status as WorkStatus : "selecting",
     nextAction: text(source.nextAction, 1000) || (format === "text" ? "選擇本次文字形式" : "整理本次作品方向"),
-    draftText: text(source.draftText, 80000), finalSnapshot: text(source.finalSnapshot, 80000),
+    draftText: workflow ? serializeWorkflow(workflow) : text(source.draftText, 80000), finalSnapshot: text(source.finalSnapshot, 80000),
     outputUrl: text(source.outputUrl, 2000), toolKey: nullableText(source.toolKey, 100),
     derivedFromWorkId: nullableText(source.derivedFromWorkId, 300), reflection: normalizeReflection(source.reflection),
     completedAt: nullableText(source.completedAt, 50), sentToLiaojieAt: nullableText(source.sentToLiaojieAt, 50),

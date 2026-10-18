@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { fixture } from './weaving-fixture.mjs';
+const f=await fixture();
+try {
+ const versions=f.load('lib/dojo/weavingWorkflow/completions.ts');
+ const store=f.load('lib/dojo/weavingWorkflow/store.ts');
+ const {bundle}= {bundle:await store.createPair({operationId:'version-create-001',sourceType:'manual',sourceSnapshot:'明確題材',coreStatement:'自己的理解',format:'text'})};let work=bundle.works[0];
+ await assert.rejects(()=>store.completeWork({operationId:'complete-empty-01',workId:work.id,expectedRevision:work.revision,previewDigest:versions.completionDigest(work)}),/空|內容/);
+ work=await store.patchWork({id:work.id,operationId:'version-draft-001',expectedRevision:work.revision,work:{draftText:'成品 A'}});
+ await assert.rejects(()=>store.completeWork({operationId:'complete-stale-01',workId:work.id,expectedRevision:work.revision,previewDigest:'stale'}),e=>e.status===409);
+ const complete={operationId:'complete-version-a',workId:work.id,expectedRevision:work.revision,previewDigest:versions.completionDigest(work)};
+ const a=await store.completeWork(complete),count=f.writes();assert.equal(a.completion.text,'成品 A');assert.equal(a.work.currentCompletionVersionId,a.completion.id);
+ assert.equal((await store.completeWork(complete)).completion.id,a.completion.id);assert.equal(f.writes(),count);
+ work=await store.patchWork({id:work.id,operationId:'version-draft-002',expectedRevision:a.work.revision,work:{draftText:'成品 B',status:'drafting'}});
+ const b=await store.completeWork({operationId:'complete-version-b',workId:work.id,expectedRevision:work.revision,previewDigest:versions.completionDigest(work)});
+ assert.equal((await versions.readCompletion(a.completion.id)).text,'成品 A');assert.notEqual(a.completion.id,b.completion.id);
+ const before=f.writes();assert.equal((await versions.listCompletions(work.id)).length,2);assert.equal(f.writes(),before);
+ const liaojie=f.load('app/api/dojo/liaojie-projects/route.ts');assert.equal((await liaojie.GET(f.req('GET','/api/dojo/liaojie-projects',null,false))).status,401);
+ const handoff={operationId:'handoff-version-a',weavingWorkId:work.id,completionVersionId:a.completion.id};const p=await store.handoffWork(handoff);assert.equal(p.sourceDraftSnapshot,'成品 A');
+ assert.equal((await store.handoffWork({...handoff,operationId:'handoff-repeat-aa'})).id,p.id);
+ await assert.rejects(()=>store.handoffWork({operationId:'handoff-version-b',weavingWorkId:work.id,completionVersionId:b.completion.id}),e=>e.status===409);
+ const p2=await store.handoffWork({operationId:'handoff-confirm-b',weavingWorkId:work.id,completionVersionId:b.completion.id,createNewVersion:true});assert.equal(p2.sourceDraftSnapshot,'成品 B');assert.equal((await versions.readCompletion(a.completion.id)).text,'成品 A');
+ await assert.rejects(()=>store.patchPublication({id:p.id,operationId:'publication-forged',expectedRevision:p.revision,project:{sourceDraftSnapshot:'forged'}}));
+ await assert.rejects(()=>store.patchPublication({id:p.id,operationId:'published-no-link',expectedRevision:p.revision,project:{status:'published'}}));
+ const scheduled=await store.patchPublication({id:p.id,operationId:'schedule-version-a',expectedRevision:p.revision,project:{status:'scheduled',scheduledOn:'2026-10-20'}});assert.equal(scheduled.status,'scheduled');
+ const current=await store.readWork(work.id),shuttle=await store.readShuttle(current.shuttleId);
+ const reflect=await store.reflectWork({operationId:'reflect-version-b',workId:work.id,expectedRevision:current.revision,expectedShuttleRevision:shuttle.revision,insight:'更完整的理解',coreImpact:'changed',nextMove:'update_core',nextCoreStatement:'新觀點',nextTitle:'作品 C',nextFormat:'text'});
+ assert.equal(reflect.shuttle.coreVersions.length,2);assert.equal(reflect.nextWork.coreVersionId,reflect.shuttle.currentCoreVersionId);assert.equal((await store.readWork(work.id)).coreVersionId,shuttle.currentCoreVersionId);
+ console.log('PASS immutable completion + handoff + reflection: empty/stale/replay/A→B/read-only/duplicate/new-version/protected source/schedule/core lineage');
+}finally{await f.close();}

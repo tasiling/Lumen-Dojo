@@ -1,5 +1,6 @@
 "use client";
 
+import ForageIcon from "./ForageIcon";
 import { canLeavePractice } from "@/lib/dojo/practiceNavigation";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -45,7 +46,7 @@ function BackButton({ pathname }: { pathname: string }) {
 
   return (
     <button className="backbtn" onClick={handleClick} aria-label={`返回${label}`}>
-      ‹ {label}
+      {pathname.startsWith("/forage") ? <ForageIcon name="i-back" /> : "‹"} {label}
     </button>
   );
 }
@@ -136,13 +137,13 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="dojo">
+    <div className={`dojo${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
       <main className="app">
         <header className="top">
           {pathname === "/" ? <div className="brand"><b>行光道場</b><small>Lumen Dojo</small></div> : <BackButton pathname={pathname} />}
           <div className="top-actions">
-            <button onClick={openTimerFromHere}>◷ 計時</button>
-            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }}>⌘ 場域</button>
+            <button onClick={openTimerFromHere}>{pathname.startsWith("/forage") ? <ForageIcon name="i-clock" /> : "◷"} 計時</button>
+            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }}>{pathname.startsWith("/forage") ? <ForageIcon name="i-grid" /> : "⌘"} 場域</button>
           </div>
         </header>
         <div id="view">{children}</div>

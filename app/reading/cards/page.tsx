@@ -1,4 +1,5 @@
 "use client";
+import {mutate} from "@/app/components/weaving/client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -86,12 +87,7 @@ export default function ReadingCardsPage() {
     setCreatingProject(true);
     setError(null);
     try {
-      const response = await fetch("/api/dojo/weaving-shuttles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coreStatement: projectTitle, format: outputType, sourceType: "reading_insights", insightCardIds: selectedForWeaving }),
-      });
-      const json = await readJson<{ bundle: WeavingShuttleBundle }>(response);
+      const json=await mutate<{bundle:WeavingShuttleBundle}>("/api/dojo/weaving-shuttles","POST",{coreStatement:projectTitle,format:outputType,sourceType:"reading_insights",insightCardIds:selectedForWeaving});
       setWeavingProjects((current) => [json.bundle, ...current]);
       setSelectedForWeaving([]);
       setProjectTitle("");

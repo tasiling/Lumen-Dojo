@@ -1,4 +1,5 @@
 "use client";
+import {mutate} from "./weaving/client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -47,8 +48,7 @@ function CaptureProjectStarter({ capture, open, onOpen, onClose }: { capture: Ca
     if (!coreStatement.trim()) { setError("請先寫下這次最想說的一句話。"); return; }
     setSaving(true); setError(null);
     try {
-      const response = await fetch("/api/dojo/weaving-shuttles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourceType: "forage_capture", sourceId: capture.id, coreStatement, format }) });
-      const result = await json<{ bundle: WeavingShuttleBundle }>(response);
+      const result=await mutate<{bundle:WeavingShuttleBundle}>("/api/dojo/weaving-shuttles","POST",{sourceType:"forage_capture",sourceId:capture.id,coreStatement,format});
       const work = result.bundle.works[0];
       window.location.href = `/weaving/${result.bundle.shuttle.id}${work ? `?work=${encodeURIComponent(work.id)}` : ""}`;
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); setSaving(false); }

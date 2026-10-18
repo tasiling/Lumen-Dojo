@@ -4,6 +4,7 @@ export const LIAOJIE_PLATFORMS = { plurk: "噗浪", instagram_post: "Instagram �
 export type LiaojiePlatform = keyof typeof LIAOJIE_PLATFORMS;
 export type LiaojieStatus = "received" | "packaging" | "ready" | "scheduled" | "published" | "archived";
 export type LiaojiePublicationProject = {
+  revision: number; sourceCompletionVersionId: string | null; handoffOperationId: string | null;
   version: 2; recordType: "liaojie-publication-project"; id: string;
   weavingProjectId: string; weavingShuttleId: string; weavingWorkId: string; sourceCoreVersionId: string;
   sourceTitle: string; sourceCoreStatement: string; sourceOutputUrl: string; sourceDraftSnapshot: string;
@@ -23,6 +24,8 @@ export function normalizeLiaojieProject(value: unknown, options: { id: string; t
   const now = new Date().toISOString(); const createdAt = text(source.createdAt, 50) || now;
   const platform = typeof source.platform === "string" && source.platform in LIAOJIE_PLATFORMS ? source.platform as LiaojiePlatform : "instagram_post";
   return {
+    revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
+    sourceCompletionVersionId: text(source.sourceCompletionVersionId, 300) || null, handoffOperationId: text(source.handoffOperationId, 120) || null,
     version: 2, recordType: "liaojie-publication-project", id: options.id,
     weavingProjectId, weavingShuttleId, weavingWorkId, sourceCoreVersionId: text(source.sourceCoreVersionId, 100),
     sourceTitle: text(source.sourceTitle, 200), sourceCoreStatement: text(source.sourceCoreStatement, 3000),
