@@ -41,6 +41,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   DAILY_TITLE_PREFIX,
   BINGO_TITLE_PREFIX,
   WEEKLY_TEMPLATE_LIBRARY_TITLE,
+  "行光續排-",
   CALENDAR_TITLE_PREFIX,
   ENTRY_TITLE_PREFIX,
   CAPTURE_TITLE_PREFIX,
@@ -166,6 +167,9 @@ export type DailyRecord = {
 };
 
 export type BingoCell = {
+  checklist?: { id: string; text: string; done: boolean }[];
+  disposition?: "paused" | "cancelled";
+  carriedFrom?: string;
   completionSources?: import("./practiceEvents/model").CompletionLedger;
   index: number;
   taskInstanceId: string | null;
@@ -183,7 +187,7 @@ export type BingoCell = {
     practiceType?: string;
   } | null;
   completion: {
-    mode: "single" | "count" | "specified" | "free";
+    mode: "single" | "count" | "specified" | "free" | "checklist";
     target: number;
     progress: number;
     unit: string;
@@ -764,15 +768,19 @@ export function normalizeWeeklyBoard(value: unknown, expectedWeekStart: string):
       : null;
     const completionSource = cell.completion && typeof cell.completion === "object" ? cell.completion : null;
     const mode: BingoCell["completion"]["mode"] =
-      completionSource?.mode === "count" || completionSource?.mode === "specified" || completionSource?.mode === "free"
+      completionSource?.mode === "checklist" || completionSource?.mode === "count" || completionSource?.mode === "specified" || completionSource?.mode === "free"
         ? completionSource.mode
         : "single";
-    const target = Math.max(1, Math.min(99, Math.round(Number(completionSource?.target) || 1)));
+    const checklist = Array.isArray(cell.checklist) ? cell.checklist.filter(item=>item&&typeof item.text==="string"&&item.text.trim()).slice(0,24).map((item,i)=>({id:String(item.id||`item-${i}`).slice(0,100),text:item.text.trim().slice(0,300),done:Boolean(item.done)})) : [];
+    const target = mode==="checklist" ? Math.max(1,checklist.length) : Math.max(1, Math.min(99, Math.round(Number(completionSource?.target) || 1)));
     const legacyProgress = cell.completed ? target : 0;
-    const progress = Math.max(0, Math.min(target, Math.round(Number(completionSource?.progress) || legacyProgress)));
+    const progress = mode==="checklist" ? checklist.filter(item=>item.done).length : Math.max(0, Math.min(target, Math.round(Number(completionSource?.progress) || legacyProgress)));
     return {
       index: fallback.index,
       completionSources: cell.completionSources,
+      checklist,
+      disposition: cell.disposition==="paused"||cell.disposition==="cancelled"?cell.disposition:undefined,
+      carriedFrom: nullableString(cell.carriedFrom)||undefined,
       taskInstanceId: nullableString(cell.taskInstanceId) ?? (stringValue(cell.text).trim() ? `legacy:${expectedWeekStart}:${fallback.index}` : null),
       templateId: nullableString(cell.templateId),
       text: stringValue(cell.text).slice(0, 300),

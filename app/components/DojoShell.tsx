@@ -137,7 +137,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={`dojo${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
+    <div className={`dojo${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
       <main className="app">
         <header className="top">
           {pathname === "/" ? <div className="brand"><b>行光道場</b><small>Lumen Dojo</small></div> : <BackButton pathname={pathname} />}

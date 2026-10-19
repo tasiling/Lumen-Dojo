@@ -31,7 +31,18 @@ export async function upsertJsonRecord(title: string, value: unknown, options?: 
   const guarded = ["行光今日-", "行光週盤-", "行光英文自譯-"].some(prefix => title.startsWith(prefix));
   async function save() {
     const existing = await findKnowledgeEntryByTitle(title);
-    const merged = guarded ? preserveProjection(title, value, existing ? parseJson(existing.內容) : null, options?.projection, options?.manualCompletion) : value;
+    let merged = guarded ? preserveProjection(title, value, existing ? parseJson(existing.內容) : null, options?.projection, options?.manualCompletion) : value;
+    if(title.startsWith('行光週盤-')&&existing&&!options?.manualCompletion){
+      const before=parseJson(existing.內容) as {weekStart?:string;archivedAt?:string;cells?:{index:number;taskInstanceId?:string;disposition?:string}[]};
+      if(before.archivedAt)merged=before;
+      else if(before.weekStart&&Array.isArray(before.cells)&&merged&&typeof merged==='object'){
+        const links=await listKnowledgeEntriesByPrefix(`行光續排-${before.weekStart}-`);
+        const blocked=new Set(links.map(row=>(parseJson(row.內容) as {taskInstanceId?:string})?.taskInstanceId));
+        const protectedCells=before.cells.filter(cell=>cell.taskInstanceId&&(blocked.has(cell.taskInstanceId)||cell.disposition));
+        const next=merged as {cells:NonNullable<typeof before.cells>};
+        for(const cell of protectedCells){next.cells=next.cells.map(value=>value.index===cell.index?cell:value)}
+      }
+    }
     const content = JSON.stringify(merged);
     if (existing) {
       await updateKnowledgeEntry(existing.id, { 內容: content });
