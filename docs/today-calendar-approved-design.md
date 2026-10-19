@@ -43,3 +43,9 @@
 - 正式 API、資料模型、store、舊版 app/dojo.css、修習所／野採／週盤頁面與相依套件均未變更。
 
 仍待驗證：實際瀏覽器排版、原生 dialog 互動及 iPhone Safari。本分支沒有將向量預覽圖當作瀏覽器驗證。
+
+## 正式發布接合：2026-10-19
+
+接合最新 master `0eefd9ade6a1e31b682085c03e5a562f8c827031`（週盤 PR #93）。共用 DojoShell 同時保留週盤 WeeklyIcon 頁首／工具／新增圖示，以及今日與行事曆的專屬主題；兩組檢查指令均保留。
+
+接合後 `npm run test:today-calendar`、`npm run test:weekly-personalized`、production build／TypeScript、差異格式檢查通過；獨立審查確認最新週盤、來源與領域檔案保持 master 內容。發布完成以 Railway 正式環境的 deployment SUCCESS 及對應 commit 為準，不能以 PR 或本機建置代替。

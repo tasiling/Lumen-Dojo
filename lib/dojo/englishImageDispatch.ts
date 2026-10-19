@@ -1,4 +1,5 @@
 import "server-only";
+import { englishImageCandidateKey } from "./englishImage";
 import { containsLearningWord, learningUsageIssues } from "./englishImageLearningUsage";
 
 import type { EnglishImageContextExport, EnglishImageContextLink, EnglishImageEntry, EnglishImageVocabExport, EnglishImageVocabSyncState } from "./englishImage";
@@ -111,7 +112,7 @@ export type EnglishImageContextCatalog = {
 };
 
 export function candidateKey(expression: string): string {
-  return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/^[\s\'"“”「」]+|[\s\'"“”「」]+$/g, "").replace(/\s+/g, "_").slice(0, 180);
+  return englishImageCandidateKey(expression);
 }
 
 function sourceSentenceFor(entry: EnglishImageEntry, expression: string): string {
@@ -545,7 +546,7 @@ export async function exportEnglishImageVocabs(
   const allCandidates = englishImageVocabCandidates(entry);
   const selected = requested.flatMap((key) => allCandidates.find((item) => item.key === key) ?? []);
   if (selected.length !== requested.length) throw new Error("候選單字已變更，請重新整理後再選擇");
-  const existingByKey = new Map(entry.vocabForgeExports.map((item) => [item.key, item]));
+  const existingByKey = new Map(entry.vocabForgeExports.map((item) => [candidateKey(item.key), item]));
   const pending = selected.filter((candidate) => !existingByKey.has(candidate.key));
   if (entry.vocabForgeExports.length + pending.length > 5) throw new Error("每筆素材最多送出五個單字，避免詞庫一次增加太多");
 
@@ -612,7 +613,8 @@ export async function exportEnglishImageVocabs(
   const importedByKey = new Map((result.items ?? []).map((item) => [item.key, item]));
   const newExports = pending.flatMap((candidate): EnglishImageVocabExport[] => {
     const imported = importedByKey.get(candidate.key);
-    if (!imported || imported.result === "failed") {
+    if (!imported || (imported.result !== "created" && imported.result !== "existing")
+      || candidateKey(imported.expression ?? "") !== candidate.key) {
       previousStates.set(candidate.key, { ...previousStates.get(candidate.key)!, status: "failed", lastError: imported?.error || "VocabForge 未回傳此單字的結果", updatedAt: now });
       return [];
     }
@@ -629,7 +631,7 @@ export async function exportEnglishImageVocabs(
     }];
   });
   const updated = await saveEnglishImageEntry({ ...workingEntry, vocabForgeExports: [...workingEntry.vocabForgeExports, ...newExports], vocabForgeSyncStates: [...previousStates.values()] });
-  const updatedByKey = new Map(updated.vocabForgeExports.map((item) => [item.key, item]));
+  const updatedByKey = new Map(updated.vocabForgeExports.map((item) => [candidateKey(item.key), item]));
   return {
     entry: updated,
     exports: selected.flatMap((candidate) => updatedByKey.get(candidate.key) ?? []),

@@ -38,6 +38,7 @@ for(const path of ['/','/calendar','/forage','/practice','/bingo']){
   assert.equal(tree.props.className.includes('tc-shell'),path==='/'||path==='/calendar');
   assert.equal(tree.props.className.includes('tc-today-theme'),path==='/');
   assert.equal(nodes(tree).filter(n=>n.props?.['data-nav']).length,5);
+  assert.equal(nodes(tree).some(n=>n.props?.className==='weekly-brand'),path==='/bingo','Latest weekly header survives integration');
 }
 
 // Render all approved daily depth modes against the existing real record shape.
