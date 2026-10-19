@@ -16,6 +16,7 @@ board.colorsConfirmedAt=new Date().toISOString();boards.set(week,board);
 const archived=structuredClone(board);archived.weekStart=previous;archived.title='封存測試週盤';archived.archivedAt=new Date().toISOString();boards.set(previous,archived);
 links.set(previous,[{weekStart:previous,targetWeek:week,taskInstanceId:'fixture-16',status:'complete'}]);
 const calls=[],errors=[],output=resolve('artifacts/weekly-ui');mkdirSync(output,{recursive:true});
+let rejectNextBoardWrite=false;
 const server=await isolatedServer(3029,'weekly-ui-isolated',{fontResponses:process.env.NEXT_FONT_GOOGLE_MOCKED_RESPONSES}),browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
@@ -29,7 +30,7 @@ try{
    else result={links:links.get(u.searchParams.get('week'))||[]};
   }
   else if(u.pathname.endsWith('/bingo')){
-   if(req.method()==='PUT'){boards.set(body.weekStart,{...body.board,updatedAt:new Date().toISOString()});result={board:boards.get(body.weekStart)};}
+   if(req.method()==='PUT'){if(rejectNextBoardWrite){rejectNextBoardWrite=false;return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'暫時無法儲存，請重試。'})});}boards.set(body.weekStart,{...body.board,updatedAt:new Date().toISOString()});result={board:boards.get(body.weekStart)};}
    else result=u.searchParams.has('archive')?{boards:[archived]}:{board:boards.get(u.searchParams.get('week'))||f.emptyWeeklyBoard(u.searchParams.get('week'))};
   }else if(u.pathname.endsWith('/flow')){
    const current=structuredClone(boards.get(body.weekStart)),cell=current.cells[body.cellIndex];
@@ -68,6 +69,19 @@ try{
  assert(await page.locator('.template-pick-list').evaluate(el=>el.scrollHeight<=el.clientHeight+1),'task list must use the page scroll, without clipping candidates');
  const picked=page.locator('.template-pick-list article').filter({has:page.getByText('確認野採單字能送入VF',{exact:true})});
  await picked.locator('.template-pick-main').click();await page.getByLabel('確認野採單字能送入VF本週名稱').fill('本週野採驗收');
+ const reason=picked.getByRole('group',{name:'這週為什麼做？',exact:true});await reason.waitFor();
+ assert.equal(await reason.getByRole('button').count(),3);
+ for(const width of [320,375,390,430]){
+  await page.setViewportSize({width,height:844});
+  const rects=await reason.getByRole('button').evaluateAll(buttons=>buttons.map(b=>{const r=b.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height,sw:b.scrollWidth,cw:b.clientWidth}}));
+  assert(rects.every(r=>r.h>=44&&r.sw<=r.cw+1),'compact reason buttons must remain readable and tappable');
+  assert(rects.every(r=>Math.abs(r.y-rects[0].y)<1),'all three reasons must share one horizontal row');
+  assert(rects[1].x>=rects[0].x+rects[0].w+7&&rects[2].x>=rects[1].x+rects[1].w+7);
+ }
+ await page.setViewportSize({width:390,height:844});
+ await reason.getByRole('button',{name:'照顧自己',exact:true}).click();assert.equal(await reason.getByRole('button',{pressed:true}).count(),1);
+ await reason.evaluate(el=>el.scrollIntoView({block:'center'}));await page.screenshot({path:output+'/reason-buttons-390.png'});
+ await reason.getByRole('button',{name:'照顧自己',exact:true}).click();assert.equal(await reason.getByRole('button',{pressed:true}).count(),0,'reselecting a reason can leave it undecided');
  await page.getByRole('button',{name:'閱讀洞察',exact:true}).click();assert.equal(await page.locator('.template-selection-bar').count(),0,'reading must not offer actions for hidden template selections');await page.getByRole('button',{name:'階段專案',exact:true}).click();assert.equal(await page.getByLabel('確認野採單字能送入VF本週名稱').inputValue(),'本週野採驗收');
  await nav.getByRole('button',{name:'本週',exact:true}).click();await page.goBack();await page.getByRole('button',{name:'階段專案',exact:true}).waitFor();assert.equal(await page.getByLabel('確認野採單字能送入VF本週名稱').inputValue(),'本週野採驗收');
  assert.equal(await page.locator('.template-selection-bar').isVisible(),true);
@@ -86,6 +100,15 @@ try{
  await page.getByRole('button',{name:'選擇週盤日期',exact:true}).click();await page.getByLabel('這一週的任一天').fill('2026-12-31');await page.getByRole('button',{name:'查看這一週',exact:true}).click();await page.getByRole('button',{name:'選擇週盤日期',exact:true}).filter({hasText:'2026 年 · 第 53 週'}).waitFor();
  await page.getByRole('button',{name:'查看下一週',exact:true}).click();await page.getByRole('button',{name:'選擇週盤日期',exact:true}).filter({hasText:'2027 年 · 第 1 週'}).waitFor();
  await page.getByRole('button',{name:'選擇週盤日期',exact:true}).click();await page.getByRole('button',{name:'回到本週',exact:true}).click();await page.locator('.weekly-summary').filter({hasText:'已安排 19 格'}).waitFor();
+ await nav.getByRole('button',{name:'組盤',exact:true}).click();await page.getByRole('button',{name:'階段專案',exact:true}).click();await picked.locator('.template-pick-main').click();await page.getByLabel('確認野採單字能送入VF本週名稱').fill('本週野採驗收');await reason.getByRole('button',{name:'照顧自己',exact:true}).click();
+ rejectNextBoardWrite=true;await page.getByRole('button',{name:'加入空白格',exact:true}).click();
+ const inlineError=page.locator('.weekly-template-body > .form-error');await inlineError.waitFor();
+ const gap=await inlineError.evaluate(el=>el.getBoundingClientRect().top-el.parentElement.querySelector('.template-manage-toggle').getBoundingClientRect().bottom);assert(gap>=15,'management control and error must have a visible section gap');
+ assert.equal(await page.getByLabel('確認野採單字能送入VF本週名稱').inputValue(),'本週野採驗收','a rejected save must retain the edited task');
+ await inlineError.scrollIntoViewIfNeeded();await page.screenshot({path:output+'/task-error-spacing-390.png'});
+ await page.getByRole('button',{name:'加入空白格',exact:true}).click();await page.getByRole('status').filter({hasText:'已加入 1 個本週任務'}).waitFor();await inlineError.waitFor({state:'hidden'});await nav.getByRole('button',{name:'本週',exact:true}).click();
+ assert.equal(boards.get(week).cells.filter(c=>c.text==='本週野採驗收').length,1);assert.equal(boards.get(week).cells.find(c=>c.text==='本週野採驗收').category,'health');
+ await page.reload();await page.locator('.weekly-summary').filter({hasText:'已安排 20 格'}).waitFor();
  await nav.getByRole('button',{name:'封存',exact:true}).click();await page.getByRole('button',{name:/封存測試週盤/}).click();await page.locator('.weekly-summary').filter({hasText:'已封存'}).waitFor();assert.equal(await page.getByRole('button',{name:'編輯格子',exact:true}).count(),0);
  await page.locator('[data-cell-index="13"]').click();assert.equal(await page.getByRole('button',{name:'保留進度續排',exact:true}).count(),0,'archive must not offer continuation writes');await page.getByRole('button',{name:'關閉',exact:true}).click();
  await page.locator('[data-cell-index="16"]').click();assert.equal(await page.getByRole('button',{name:/已續排至.*前往週盤/}).count(),1,'archived carried tasks must retain their readonly target navigation');assert.equal(await page.getByRole('button',{name:'保留進度續排',exact:true}).count(),0);await page.getByRole('button',{name:'關閉',exact:true}).click();

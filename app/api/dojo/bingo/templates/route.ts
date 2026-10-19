@@ -1,4 +1,5 @@
 import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
+import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import { NextRequest, NextResponse } from "next/server";
 import { BINGO_TITLE_PREFIX, normalizeWeeklyBoard, WEEKLY_TEMPLATE_LIBRARY_TITLE } from "@/lib/dojo/formal";
 import { listJsonRecords, readJsonRecord, upsertJsonRecord } from "@/lib/dojo/notionStore";
@@ -26,6 +27,6 @@ export async function PUT(req: NextRequest) {
     const saved = await upsertJsonRecord(WEEKLY_TEMPLATE_LIBRARY_TITLE, library);
     return NextResponse.json({ ok: true, id: saved.id, library });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 500 });
   }
 }
