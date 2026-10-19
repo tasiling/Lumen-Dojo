@@ -40,7 +40,8 @@
     "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow",
     "test:weekly-personalized": "node scripts/test-weekly-personalized.mjs",
     "test:today-calendar": "node scripts/test-today-calendar-ui.mjs && node scripts/test-today-calendar-components.mjs",
-    "test:weekly-ui": "node scripts/test-weekly-mobile.mjs"
+    "test:weekly-ui": "node scripts/test-weekly-mobile.mjs",
+    "test:owner-origin": "node scripts/test-learning-owner-origin.mjs --http"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

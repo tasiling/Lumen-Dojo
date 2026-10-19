@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { type DailyTaskCategory, type WeeklyBoard } from "@/lib/dojo/formal";
+import { type WeeklyBoard } from "@/lib/dojo/formal";
+import WeeklyReasonPicker from "./WeeklyReasonPicker";
 import {
   normalizeWeeklyTemplateLibrary,
   templateToCell,
@@ -94,6 +95,7 @@ export default function WeeklyTaskLibrary({ board, disabled, onApply, inline = f
 
   async function addSelected() {
     if (!library) return;
+    setError(null);
     const choices = [...selected].map((id) => drafts[id] ?? library.templates.find((item) => item.id === id)).filter((item): item is WeeklyTaskTemplate => Boolean(item));
     if(choices.some(t=>!t.name.trim()||(t.completionMode==='checklist'&&!t.checklist?.length))){setError('請填名稱；子項目清單至少要有一項。');return;}
     const empty = board.cells.filter((cell) => cell.index !== 12 && !cell.text.trim());
@@ -193,7 +195,7 @@ export default function WeeklyTaskLibrary({ board, disabled, onApply, inline = f
           {checked && <div className="template-preview-edit">
             <input className="field" value={draft.name} onChange={(event) => setDrafts((current) => ({ ...current, [template.id]: { ...draft, name: event.target.value } }))} aria-label={`${template.name}本週名稱`} />
             <input className="field" value={draft.criteria} onChange={(event) => setDrafts((current) => ({ ...current, [template.id]: { ...draft, criteria: event.target.value } }))} aria-label={`${template.name}完成條件`} />
-            <label>這週為什麼做？<select className="field" value={draft.category||''} onChange={e=>setDrafts(current=>({...current,[template.id]:{...draft,category:e.target.value as DailyTaskCategory||null}}))}><option value="">稍後選擇</option><option value="important">重要</option><option value="hobby">喜歡</option><option value="health">照顧自己</option></select></label>
+            <WeeklyReasonPicker value={draft.category} disabled={disabled} onChange={category=>setDrafts(current=>({...current,[template.id]:{...draft,category}}))}/>
             <label>這格的份量<select className="field" value={draft.completionMode} onChange={e=>setDrafts(current=>({...current,[template.id]:{...draft,completionMode:e.target.value as WeeklyTaskTemplate['completionMode']}}))}><option value="single">完成一次</option><option value="count">累積次數</option><option value="specified">指定成果</option><option value="free">自由成果</option><option value="checklist">子項目清單</option></select></label>
             {draft.completionMode==='count'&&<div className="two"><label>累積目標<input className="field" type="number" min="1" max="99" value={draft.target} onChange={e=>setDrafts(c=>({...c,[template.id]:{...draft,target:Number(e.target.value)||1}}))}/></label><label>單位<input className="field" value={draft.unit} onChange={e=>setDrafts(c=>({...c,[template.id]:{...draft,unit:e.target.value}}))}/></label></div>}
             {draft.completionMode==='checklist'&&<label>子項目（每行一項）<textarea className="field" defaultValue={draft.checklist?.map(i=>i.text).join('\n')} onBlur={e=>setDrafts(c=>({...c,[template.id]:{...draft,checklist:items(e.target.value,draft.checklist)}}))}/></label>}
@@ -206,8 +208,8 @@ export default function WeeklyTaskLibrary({ board, disabled, onApply, inline = f
         <label>任務名稱<input className="field" value={custom.name} onChange={(event) => setCustom({ ...custom, name: event.target.value })} /></label>
         <label>任務來源<select className="field" value={custom.source} onChange={(event) => setCustom({ ...custom, source: event.target.value as WeeklyTaskTemplate["source"] })}><option value="custom">自由建立</option><option value="routine">常駐任務</option><option value="project">本週專案</option></select></label>
         {custom.source === "project" && <label>所屬專案<select className="field" value={custom.projectId ?? ""} onChange={(event) => setCustom({ ...custom, projectId: event.target.value || null })}><option value="">請選擇</option>{library?.projects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
-        <div className="two"><label>三色<select className="field" value={custom.category||""} onChange={(event) => setCustom({ ...custom, category: event.target.value as DailyTaskCategory||null })}><option value="">稍後選擇</option><option value="important">重要</option><option value="hobby">喜歡</option><option value="health">照顧自己</option></select></label>
-        <label>完成規則<select className="field" value={custom.completionMode} onChange={(event) => setCustom({ ...custom, completionMode: event.target.value as WeeklyTaskTemplate["completionMode"] })}><option value="single">完成一次</option><option value="count">累積次數</option><option value="specified">指定成果</option><option value="free">自由成果</option><option value="checklist">子項目清單</option></select></label></div>
+        <WeeklyReasonPicker value={custom.category} disabled={disabled} onChange={category=>setCustom({...custom,category})}/>
+        <label>完成規則<select className="field" value={custom.completionMode} onChange={(event) => setCustom({ ...custom, completionMode: event.target.value as WeeklyTaskTemplate["completionMode"] })}><option value="single">完成一次</option><option value="count">累積次數</option><option value="specified">指定成果</option><option value="free">自由成果</option><option value="checklist">子項目清單</option></select></label>
         {custom.completionMode === "count" && <div className="two"><label>目標次數<input className="field" type="number" min="1" max="99" value={custom.target} onChange={(event) => setCustom({ ...custom, target: Number(event.target.value) || 1 })} /></label><label>單位<input className="field" value={custom.unit} onChange={(event) => setCustom({ ...custom, unit: event.target.value })} /></label></div>}
         <label>完成條件<textarea className="field" rows={2} value={custom.criteria} onChange={(event) => setCustom({ ...custom, criteria: event.target.value })} /></label>
         {custom.completionMode==='checklist'&&<label>子項目（每行一項）<textarea key={custom.id} className="field" defaultValue={custom.checklist?.map(i=>i.text).join('\n')} onBlur={e=>setCustom({...custom,checklist:items(e.target.value,custom.checklist)})}/></label>}
@@ -221,7 +223,7 @@ export default function WeeklyTaskLibrary({ board, disabled, onApply, inline = f
         {library?.projects.map((item) => <div key={item.id}><span>{item.name}</span><button onClick={()=>{const name=window.prompt('專案名稱',item.name)?.trim();if(!name||!library)return;const goal=window.prompt('這個階段想完成的具體成果',item.goal||'');if(goal===null)return;void persist({...library,projects:library.projects.map(p=>p.id===item.id?{...p,name,goal}:p)}).catch(()=>{})}}>編輯目標</button><select value={item.status} onChange={(event) => library && void persist({ ...library, projects: library.projects.map((project) => project.id === item.id ? { ...project, status: event.target.value as typeof item.status, statusLabel: event.target.options[event.target.selectedIndex].text } : project), updatedAt: new Date().toISOString() })}><option value="priority">優先進行</option><option value="active">進行中</option><option value="next">下一階段</option><option value="paused">暫停</option><option value="done">已完成</option><option value="cancelled">已取消</option></select></div>)}
         {library?.templates.map((item) => <div key={item.id}><span>{item.name}</span><span><button onClick={() => void editTemplate(item)}>編輯</button> <button onClick={() => void setTemplateStatus(item, item.status === "active" ? "archived" : "active")}>{item.status === "active" ? "封存" : "重新啟用"}</button></span></div>)}
       </div>}
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
     </div>}
   </section>;
 }

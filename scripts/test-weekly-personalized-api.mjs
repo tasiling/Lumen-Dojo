@@ -22,6 +22,24 @@ const request=(method,path,body,auth=true)=>new NextRequest(`http://localhost${p
 const payload=async response=>({status:response.status,body:await response.json()});
 try{
  const formal=load('lib/dojo/formal.ts');const flow=load('app/api/dojo/flow/route.ts'),carry=load('app/api/dojo/bingo/continue/route.ts'),bingo=load('app/api/dojo/bingo/route.ts');
+ // The browser uses the public HTTPS address; standalone Next sees an internal
+ // listen address. Exercise the real guard, board writer, normalization and readback.
+ const publicOrigin='https://lumen-dojo.up.railway.app';
+ const proxyRequest=(path,body,origin=publicOrigin)=>new NextRequest(`http://127.0.0.1:8080${path}`,{method:'PUT',headers:{host:'lumen-dojo.up.railway.app',origin,'x-forwarded-proto':'https',cookie:`dsc_access_key=${key}`,'content-type':'application/json'},body:JSON.stringify(body)});
+ const proxyBoard=formal.emptyWeeklyBoard('2026-11-02');
+ for(let i=0;i<4;i++)Object.assign(proxyBoard.cells[i],{text:`代理儲存任務${i+1}`,taskInstanceId:`proxy-${i}`,category:i===3?'health':'important'});
+ let proxyResult=await payload(await bingo.PUT(proxyRequest('/api/dojo/bingo',{weekStart:'2026-11-02',board:proxyBoard})));
+ assert.equal(proxyResult.status,200,'same-public-origin board save must pass behind TLS termination');
+ proxyResult=await payload(await bingo.GET(request('GET','/api/dojo/bingo?week=2026-11-02')));
+ assert.deepEqual(proxyResult.body.board.cells.filter(c=>c.index!==12&&c.text).map(c=>c.text),['代理儲存任務1','代理儲存任務2','代理儲存任務3','代理儲存任務4']);assert.equal(proxyResult.body.board.cells[3].category,'health');
+ const templates=load('app/api/dojo/bingo/templates/route.ts');
+ const proxyLibrary=load('lib/dojo/weeklyTemplates.ts').normalizeWeeklyTemplateLibrary(null);
+ assert.equal((await templates.PUT(proxyRequest('/api/dojo/bingo/templates',{library:proxyLibrary}))).status,200,'template writes must share the corrected owner guard');
+ const writesBeforeForeign=writes;
+ assert.equal((await bingo.PUT(proxyRequest('/api/dojo/bingo',{weekStart:'2026-11-02',board:proxyBoard},'https://evil.example'))).status,403);
+ assert.equal((await templates.PUT(proxyRequest('/api/dojo/bingo/templates',{library:proxyLibrary},'https://evil.example'))).status,403);
+ assert.equal(writes,writesBeforeForeign,'rejected foreign-origin requests must not reach persistence');
+ console.log('Public HTTPS proxy: four weekly tasks and categories saved/read back; template writes pass; foreign origins perform zero writes');
  const board=formal.emptyWeeklyBoard('2026-10-19');Object.assign(board.cells[0],{taskInstanceId:'room',text:'整理房間',category:'health',completion:{mode:'checklist',target:2,progress:0,unit:'項',requiresEvidence:false},checklist:[{id:'a',text:'物品歸位',done:false},{id:'b',text:'地面清潔',done:false}]});
  rows.set('source',{id:'source',title:formal.bingoRecordTitle(board.weekStart),value:board});
  const post=body=>flow.POST(request('POST','/api/dojo/flow',{weekStart:board.weekStart,cellIndex:0,...body}));
