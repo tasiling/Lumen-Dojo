@@ -163,7 +163,8 @@ const homeOverview = buildForageOverview([
   entry({ id: "completed", status: "organized", route: "reading", analysisStatus: "completed", capturedAt: "2026-09-22T00:00:00.000Z" }),
   entry({ id: "merged", mergedIntoId: "dispatch", capturedAt: "2026-09-23T00:00:00.000Z" }),
 ], [
-  capture({ id: "pending-capture", status: "pending" }),
+  // This assertion tests overview counting, independently of the 30-day expiry.
+  capture({ id: "pending-capture", status: "pending", pinned: true }),
   capture({ id: "adopted-capture", status: "adopted", capturedAt: "2026-09-17T00:00:00.000Z" }),
   capture({ id: "faded-capture", status: "faded", capturedAt: "2026-09-16T00:00:00.000Z" }),
 ]);

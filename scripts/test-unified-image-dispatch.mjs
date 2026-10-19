@@ -9,6 +9,7 @@ const temp = await mkdtemp(join(tmpdir(), 'dojo-routing-'));
 let entry = { id:'source-1', route:'game', title:'A reef encounter', sourceLabel:'Dave the Diver', englishRecord:'A reef appeared.', ocrText:'A reef appeared while the diver explored the deep ocean and watched many different fish swimming slowly around the ancient rocks beneath the surface.', chineseExplanation:'出現珊瑚礁', contextNote:'', analysisReviewReason:'', capturedAt:'2026-10-08T00:00:00Z', lineImageSetId:'group-1', attachments:[{id:'img-1',blockId:'block-1',sourceMessageId:'line-1',mimeType:'image/jpeg',batchIndex:1}], contextRoomSourceRevision:0, contextRoomContentFingerprint:'', contextRoomLinks:[], vocabularyCandidates:[{expression:'reef',meaning:'珊瑚礁',usage:'A reef appeared.',usageTranslation:'出現了一座珊瑚礁。',partOfSpeech:'noun',usageProvenance:'generated',cefrLevel:'B1',suggestedFocusDecks:['JRPG／冒險遊戲'],origin:'source',recommendationReason:'source'}], vocabForgeDraft:{sourceName:'Dave the Diver',focusDecks:['JRPG／冒險遊戲','故事閱讀'],selectedKeys:['reef']}, inputTokens:0,outputTokens:0,estimatedCostUsd:0,vocabForgeExports:[],vocabForgeSyncStates:[],learningPhrases:'',vocabularyWords:'' };
 const actions=[];
 let loseContextResponse=false;
+let vocabResponse=null;
 globalThis.__routingStore={ get:async()=>({entry:structuredClone(entry)}), save:async value=>(entry=structuredClone(value)), update:async(id,fn)=>(entry={...entry,...fn(structuredClone(entry))}) };
 const server=createServer(async(req,res)=>{
  let raw='';for await(const chunk of req)raw+=chunk;
@@ -16,7 +17,7 @@ const server=createServer(async(req,res)=>{
  res.setHeader('Content-Type','application/json');
  if(body.contractVersion && loseContextResponse){loseContextResponse=false;req.socket.destroy();return;}
  if(body.contractVersion)res.end(JSON.stringify({projectId:'project-1',unitId:'unit-1',sourceItemId:'item-1',sourceItemUnitId:'link-1'}));
- else res.end(JSON.stringify({items:body.items.map(item=>({key:item.key,expression:item.expression,result:'created',vocabBook:'JRPG／冒險遊戲'}))}));
+ else res.end(JSON.stringify(vocabResponse ?? {items:body.items.map(item=>({key:item.key,expression:item.expression,result:'created',vocabBook:'JRPG／冒險遊戲'}))}));
 });
 const originalFetch=globalThis.fetch;
 const previousOpenAI=process.env.OPENAI_API_KEY;
@@ -123,6 +124,25 @@ try {
  const retry=await dispatch({id:'source-1',sourceName:'Corrected life context',context:restored});assert.equal(retry.body.results.context.status,'received');assert.equal(actions.at(-1).body.dispatchId,firstAttempt.dispatchId,'response-loss retry after durable reload must reuse request identity');
  const oldContract=await dispatch({id:'source-1',sourceName:'Corrected life context',context:{...restored,contractMode:'v1'}});assert.equal(oldContract.status,400);
  const missingSource=await dispatch({id:'source-1',sourceName:'',context:params});assert.equal(missingSource.status,400);
+ const legacyApostrophe=normalizeEnglishImageEntry({...entry,
+  vocabForgeDraft:{sourceName:'Legacy',focusDecks:['日常啟動'],selectedKeys:['can’t']},
+  vocabForgeExports:[{key:'can’t',expression:'can’t',result:'created',syncedAt:'2026-10-19T00:00:00Z'}],
+  vocabForgeSyncStates:[{key:'can’t',expression:'can’t',status:'synced',updatedAt:'2026-10-19T00:00:00Z'}],
+ },{id:entry.id,capturedAt:entry.capturedAt});
+ assert.deepEqual(legacyApostrophe.vocabForgeDraft.selectedKeys,["can't"]);
+ assert.equal(legacyApostrophe.vocabForgeExports[0].key,"can't");
+ assert.equal(legacyApostrophe.vocabForgeSyncStates[0].key,"can't");
+ for (const receipt of [
+  {key:'reef',expression:'reef',result:'pending'},
+  {key:'reef',expression:'different',result:'created'},
+  {key:'reef',expression:'reef'},
+ ]) {
+  entry.vocabForgeExports=[];entry.vocabForgeSyncStates=[];
+  vocabResponse={items:[receipt]};
+  const malformed=await exportEnglishImageVocabs('source-1',['reef'],'JRPG／冒險遊戲');
+  assert.equal(malformed.exports.length,0,'invalid VF receipt must not mark a word received');
+  assert.equal(malformed.failures.length,1,'unconfirmed word must remain retryable');
+ }
  console.log('Unified POST route: preflight validation, persisted settings, both receipts PASS');
  console.log('Real sender / local HTTP receiver: exact context replay, two decks, source and word dedupe PASS');
 } finally {
