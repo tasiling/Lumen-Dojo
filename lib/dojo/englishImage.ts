@@ -332,7 +332,7 @@ export function normalizeEnglishImageEntry(
       if (!item || typeof item !== "object") return [];
       const value = item as Partial<EnglishImageVocabExport>;
       const expression = text(value.expression, 240);
-      const key = text(value.key, 180);
+      const key = englishImageCandidateKey(text(value.key, 180));
       const syncedAt = text(value.syncedAt, 80);
       if (!expression || !key || !syncedAt) return [];
       return [{
@@ -349,7 +349,7 @@ export function normalizeEnglishImageEntry(
     vocabForgeSyncStates: Array.isArray(source.vocabForgeSyncStates) ? source.vocabForgeSyncStates.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const value = item as Partial<EnglishImageVocabSyncState>;
-      const key = text(value.key, 180);
+      const key = englishImageCandidateKey(text(value.key, 180));
       const expression = text(value.expression, 240);
       const updatedAt = text(value.updatedAt, 80);
       const status = value.status === "pending_sync" || value.status === "synced" || value.status === "already_exists" || value.status === "failed"
@@ -372,7 +372,7 @@ export function normalizeEnglishImageEntry(
       return {
         sourceName: text(value.sourceName, 300),
         focusDecks: Array.isArray(value.focusDecks) ? value.focusDecks.map((name) => text(name, 200)).filter(Boolean).slice(0, 2) : [],
-        selectedKeys: Array.isArray(value.selectedKeys) ? value.selectedKeys.map((key) => text(key, 180)).filter(Boolean).slice(0, 5) : [],
+        selectedKeys: Array.isArray(value.selectedKeys) ? value.selectedKeys.map((key) => englishImageCandidateKey(text(key, 180))).filter(Boolean).slice(0, 5) : [],
       };
     })(),
     analysisStatus,
@@ -392,6 +392,10 @@ export function normalizeEnglishImageEntry(
     capturedAt,
     updatedAt: params.touch ? now : iso(source.updatedAt, capturedAt),
   };
+}
+
+export function englishImageCandidateKey(expression: string): string {
+  return expression.normalize("NFKC").toLocaleLowerCase("en").trim().replace(/^[\s\'"“”「」]+|[\s\'"“”「」]+$/g, "").replace(/[’]/g, "'").replace(/\s+/g, "_").slice(0, 180);
 }
 
 export function englishImageContent(entry: EnglishImageEntry): Omit<EnglishImageEntry, "id"> {
