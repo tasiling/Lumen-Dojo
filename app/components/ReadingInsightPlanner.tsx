@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   DAILY_TASK_CATEGORIES,
   type DailyTaskCategory,
@@ -18,10 +19,12 @@ export default function ReadingInsightPlanner({
   board,
   disabled,
   onApply,
+  showEmpty = false,
 }: {
   board: WeeklyBoard;
   disabled: boolean;
   onApply: (board: WeeklyBoard) => Promise<void>;
+  showEmpty?: boolean;
 }) {
   const [cards, setCards] = useState<InsightCardWithBook[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -82,7 +85,7 @@ export default function ReadingInsightPlanner({
 
   if (loading) return <section className="ritual-card reading-weekly-planner"><p className="muted-note">正在讀取執行型洞察…</p></section>;
   if (error) return <section className="ritual-card reading-weekly-planner"><p className="form-error">{error}</p></section>;
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) return showEmpty ? <section className="weekly-empty-state"><h3>還沒有待行動的執行型洞察</h3><p>在閱讀萃取留下想實踐的行動，就能回到這裡挑選，放進本週的空白格。</p><Link className="button-link" href="/reading/cards">前往閱讀萃取</Link></section> : null;
 
   return <section className="ritual-card reading-weekly-planner">
     <div className="section-heading">

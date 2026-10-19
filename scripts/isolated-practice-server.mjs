@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, createWriteStream } from "node:fs";
 import { spawn } from "node:child_process";
-export async function isolatedServer(port, key) {
+export async function isolatedServer(port, key, {fontResponses} = {}) {
   for (const file of [
     ".env",
     ".env.local",
@@ -32,6 +32,7 @@ export async function isolatedServer(port, key) {
         PATH: process.env.PATH,
         ACCESS_KEY: key,
         NEXT_TELEMETRY_DISABLED: "1",
+        ...(fontResponses ? {NEXT_FONT_GOOGLE_MOCKED_RESPONSES: fontResponses} : {}),
       },
       stdio: ["ignore", "pipe", "pipe"],
     },
