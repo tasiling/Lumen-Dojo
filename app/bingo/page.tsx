@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useRef } from "react";
 import ReadingInsightPlanner from "@/app/components/ReadingInsightPlanner";
-import WeeklyTaskLibrary from "@/app/components/WeeklyTaskLibrary";
+import WeeklyTaskLibrary, {type WeeklySourceTab} from "@/app/components/WeeklyTaskLibrary";
+import WeeklyIcon, { WeeklyMotif } from "@/app/components/WeeklyIcon";
 import {
   BINGO_LINES,
   DAILY_TASK_CATEGORIES,
@@ -21,6 +22,19 @@ import {
 import type { WeeklyCarryLink } from "@/lib/dojo/weeklyTasks";
 import "./weekly.css";
 import { useBackableState } from "@/lib/dojo/backstack";
+
+type WeeklyTab = "board" | "library" | "reflection" | "archive";
+const WEEKLY_TABS: {key: WeeklyTab; label: string; icon: string}[] = [
+  {key: "board", label: "本週", icon: "grid"}, {key: "library", label: "組盤", icon: "layers"},
+  {key: "reflection", label: "回望", icon: "write"}, {key: "archive", label: "封存", icon: "history"},
+];
+function weekDescription(weekStart: string) {
+  const thursday = new Date(`${weekStart}T00:00:00Z`);
+  thursday.setUTCDate(thursday.getUTCDate() + 3);
+  const year = thursday.getUTCFullYear();
+  const number = Math.ceil(((thursday.getTime() - Date.UTC(year, 0, 1)) / 86400000 + 1) / 7);
+  return `${year} 年 · 第 ${number} 週`;
+}
 
 const CATEGORIES: DailyTaskCategory[] = ["important", "hobby", "health"];
 const ENGLISH_CELL_SHORT_LABELS: Record<string, string> = {
@@ -63,12 +77,6 @@ function fmtWeek(weekStart: string) {
   return `${compact(weekStart)} — ${compact(end)}`;
 }
 
-const BINGO_LINE_POINTS = [
-  ["10,10", "90,10"], ["10,30", "90,30"], ["10,50", "90,50"], ["10,70", "90,70"], ["10,90", "90,90"],
-  ["10,10", "10,90"], ["30,10", "30,90"], ["50,10", "50,90"], ["70,10", "70,90"], ["90,10", "90,90"],
-  ["10,10", "90,90"], ["90,10", "10,90"],
-] as const;
-
 function shuffledBoard(board: WeeklyBoard): WeeklyBoard {
   const movable = board.cells.filter((cell) => cell.index !== 12);
   const shuffled = [...movable];
@@ -107,7 +115,12 @@ export default function BingoPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [showArchive, setShowArchive] = useState(false);
+  const [activeTab, setActiveTab] = useState<WeeklyTab>("board");
+  const [libraryTab, setLibraryTab] = useState<WeeklySourceTab>("routine");
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
+  const [weekDateDraft, setWeekDateDraft] = useState(weekStart);
+  const [categoryFilter, setCategoryFilter] = useState<DailyTaskCategory | "all">("all");
   const [archiveBoards, setArchiveBoards] = useState<WeeklyBoard[]>([]);
   const [evidenceNote, setEvidenceNote] = useState("");
   const [shortLabelDraft, setShortLabelDraft] = useState("");
@@ -131,17 +144,18 @@ export default function BingoPage() {
   const [boardTitleDraft, setBoardTitleDraft] = useState("本週行光盤");
   const detailOpen = selected !== null && !editing;
 
+  useBackableState(weekPickerOpen, () => setWeekPickerOpen(false));
   useBackableState(detailOpen, () => setSelected(null));
   useBackableState(boardSettingsOpen, () => setBoardSettingsOpen(false));
 
   useEffect(() => {
-    if (!detailOpen && !boardSettingsOpen) return;
+    if (!detailOpen && !boardSettingsOpen && !weekPickerOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [detailOpen, boardSettingsOpen]);
+  }, [detailOpen, boardSettingsOpen, weekPickerOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -173,6 +187,40 @@ export default function BingoPage() {
       cancelled = true;
     };
   }, [weekStart]);
+
+  useEffect(() => {
+    function syncTab() {
+      const key = window.location.hash.slice(1);
+      if (WEEKLY_TABS.some(tab => tab.key === key)) setActiveTab(key as WeeklyTab);
+      else setActiveTab("board");
+    }
+    syncTab();
+    window.addEventListener("popstate", syncTab);
+    window.addEventListener("hashchange", syncTab);
+    return () => { window.removeEventListener("popstate", syncTab); window.removeEventListener("hashchange", syncTab); };
+  }, []);
+
+  function navigateTab(tab: WeeklyTab) {
+    setActiveTab(tab);
+    if (window.location.hash !== `#${tab}`) window.history.pushState(null, "", `#${tab}`);
+  }
+
+  useEffect(() => {
+    if (activeTab !== "archive") return;
+    let cancelled = false;
+    async function load() {
+      setArchiveLoading(true);
+      try {
+        const response = await fetch("/api/dojo/bingo?archive=true", {cache: "no-store"});
+        const json = await readResponse<{boards: WeeklyBoard[]}>(response);
+        if (!cancelled) setArchiveBoards(json.boards);
+      } catch (caught) {
+        if (!cancelled) setError(caught instanceof Error ? caught.message : String(caught));
+      } finally { if (!cancelled) setArchiveLoading(false); }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, [activeTab, board.archivedAt]);
 
   function openCell(index: number) {
     const cell = board.cells[index];
@@ -455,24 +503,11 @@ export default function BingoPage() {
     }
   }
 
-  async function loadArchive() {
-    const next = !showArchive;
-    setShowArchive(next);
-    if (!next || archiveBoards.length) return;
-    try {
-      const response = await fetch("/api/dojo/bingo?archive=true", { cache: "no-store" });
-      const json = await readResponse<{ boards: WeeklyBoard[] }>(response);
-      setArchiveBoards(json.boards);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    }
-  }
-
   useEffect(()=>{
-    const grid=gridRef.current;if(!grid||view!=='board')return;
+    const grid=gridRef.current;if(!grid||view!=='board'||activeTab!=='board')return;
     function measure(){if(!grid)return;const box=grid.getBoundingClientRect();const nodes=grid.querySelectorAll<HTMLElement>('[data-cell-index]');const points=Array.from({length:25},()=>({x:0,y:0}));nodes.forEach(node=>{const rect=node.getBoundingClientRect();points[Number(node.dataset.cellIndex)]={x:rect.left-box.left+rect.width/2,y:rect.top-box.top+rect.height/2}});setLineGeometry({width:box.width,height:box.height,points});}
     measure();const observer=new ResizeObserver(measure);observer.observe(grid);return()=>observer.disconnect();
-  },[board,editing,loading,view]);
+  },[board,editing,loading,view,activeTab]);
   async function setDisposition(disposition?:'paused'|'cancelled'){
     if(selected===null)return;
     try{await save({...board,cells:board.cells.map(c=>c.index===selected?{...c,disposition}:c)},disposition==='paused'?'任務已暫停，進度保留。':disposition==='cancelled'?'任務已取消，紀錄保留。':'任務已恢復。');}catch{}
@@ -501,45 +536,31 @@ export default function BingoPage() {
 
   return (
     <section className="screen bingo-screen">
-      <div className="section-heading page-heading">
-        <div>
-          <span className="eyebrow">週 Bingo</span>
-          <h1>本週行光盤</h1>
-          <p className="lead">把想推進的事放進一週，完成會同步回今天。</p>
-        </div>
-        <div className="page-heading-actions">
-          {!board.archivedAt && <button disabled={loading} onClick={() => { setBoardTitleDraft(board.title); setBoardSettingsOpen(true); }}>週盤設定</button>}
-          <button onClick={() => void loadArchive()}>{showArchive ? "收起封存" : "封存紀錄"}</button>
-        </div>
+      <div className="weekly-heading">
+        <div><h1>週盤</h1><p>把想推進的事，放進一週的生活。</p></div>
+        <button className="weekly-icon-button" disabled={loading} aria-label="週盤設定" onClick={() => {setBoardTitleDraft(board.title); setBoardSettingsOpen(true);}}><WeeklyIcon name="settings"/></button>
       </div>
-
-      <div className="week-switcher">
-        <button onClick={() => setWeekStart(addCalendarDays(weekStart, -7))}>← 上週</button>
-        <button className="week-label" onClick={() => setWeekStart(mondayOf(today))}>{fmtWeek(weekStart)}</button>
-        <button onClick={() => setWeekStart(addCalendarDays(weekStart, 7))}>下週 →</button>
+      <div className="weekly-week-picker" aria-label="切換週盤">
+        <button aria-label="查看上一週" onClick={() => setWeekStart(addCalendarDays(weekStart, -7))}><WeeklyIcon name="back"/></button>
+        <button className="weekly-date-select" aria-label="選擇週盤日期" onClick={() => {setWeekDateDraft(weekStart); setWeekPickerOpen(true);}}><b>{fmtWeek(weekStart)}</b><span>{weekDescription(weekStart)}</span></button>
+        <button aria-label="查看下一週" onClick={() => setWeekStart(addCalendarDays(weekStart, 7))}><WeeklyIcon name="arrow"/></button>
       </div>
+      <nav className="weekly-page-tabs" aria-label="週盤功能">
+        {WEEKLY_TABS.map(tab => <button key={tab.key} aria-current={activeTab === tab.key ? "page" : undefined} onClick={() => navigateTab(tab.key)}><WeeklyIcon name={tab.icon}/>{tab.label}</button>)}
+      </nav>
 
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <p className="save-notice" role="status">{notice}</p>}
       {loading && <div className="empty">正在讀取週盤…</div>}
 
-      {showArchive && (
-        <section className="ritual-card archive-list">
-          <h2>週盤封存</h2>
-          {archiveBoards.filter((item) => item.archivedAt).length === 0 ? (
-            <div className="empty">還沒有封存的週盤。</div>
-          ) : (
-            archiveBoards.filter((item) => item.archivedAt).map((item) => (
-              <button key={item.weekStart} onClick={() => { setWeekStart(item.weekStart); setShowArchive(false); }}>
-                <b>{item.title}</b>
-                <small>{fmtWeek(item.weekStart)} · {item.cells.filter((cell) => cell.index !== 12 && cell.completed).length}/24 · {completedBingoLines(item)} 連線</small>
-              </button>
-            ))
-          )}
-        </section>
-      )}
+      {activeTab === "archive" && <section className="weekly-archive-view" aria-label="週盤封存紀錄">
+        <div className="weekly-section-intro"><h2>收好走過的一週</h2><p>保留當時的任務、完成進度與每週回望。</p></div>
+        {archiveLoading ? <p className="empty" role="status">正在讀取封存週盤…</p> : archiveBoards.filter(item => item.archivedAt).length === 0 ? <div className="weekly-empty-state"><WeeklyIcon name="history"/><h3>還沒有封存的週盤</h3><p>完成每週回望後，可以把這一週收在這裡。</p><button onClick={() => navigateTab("reflection")}>前往每週回望</button></div> : <div className="weekly-archive-list">{archiveBoards.filter(item => item.archivedAt).map(item => <button key={item.weekStart} onClick={() => {setWeekStart(item.weekStart); navigateTab("board");}}><span className="weekly-archive-date"><b>{item.weekStart.slice(5).replace("-", "/")}</b><small>{item.weekStart.slice(0,4)}</small></span><span><b>{item.title}</b><small>{item.cells.filter(cell => cell.index !== 12 && cell.completed).length}/24 完成 · {completedBingoLines(item)} 條連線</small></span><WeeklyIcon name="arrow"/></button>)}</div>}
+      </section>}
 
-      {boardSettingsOpen && !board.archivedAt && (
+      {weekPickerOpen && <div className="modal bingo-detail-modal" onClick={event => event.target === event.currentTarget && setWeekPickerOpen(false)}><section className="sheet board-settings-sheet" role="dialog" aria-modal="true" aria-labelledby="week-picker-title"><div className="toolbar bingo-detail-heading"><h2 id="week-picker-title">選擇週盤日期</h2><button onClick={() => setWeekPickerOpen(false)}>關閉</button></div><label htmlFor="weekly-date-input">這一週的任一天</label><input id="weekly-date-input" className="field" type="date" value={weekDateDraft} onChange={event => setWeekDateDraft(event.target.value)}/><div className="weekly-action-row"><button className="primary" disabled={!/^\d{4}-\d{2}-\d{2}$/.test(weekDateDraft)} onClick={() => {setWeekStart(mondayOf(weekDateDraft)); setWeekPickerOpen(false);}}>查看這一週</button><button onClick={() => {setWeekStart(mondayOf(today)); setWeekPickerOpen(false);}}>回到本週</button></div></section></div>}
+
+      {boardSettingsOpen && (
         <div className="modal bingo-detail-modal" onClick={(event) => event.target === event.currentTarget && setBoardSettingsOpen(false)}>
           <section className="sheet board-settings-sheet" role="dialog" aria-modal="true" aria-labelledby="board-settings-title">
             <div className="bingo-detail-handle" aria-hidden="true" />
@@ -547,13 +568,14 @@ export default function BingoPage() {
               <div><span className="eyebrow">{fmtWeek(weekStart)}</span><h2 id="board-settings-title">週盤設定</h2></div>
               <button onClick={() => setBoardSettingsOpen(false)}>關閉</button>
             </div>
+            {board.archivedAt && <p className="muted-note">這一週已封存，設定與內容均保留供回看。</p>}
             <label htmlFor="board-settings-name">週盤名稱</label>
-            <input id="board-settings-name" className="field" maxLength={200} value={boardTitleDraft} onChange={(event) => setBoardTitleDraft(event.target.value)} />
-            <button type="button" className="primary" disabled={saving || !boardTitleDraft.trim() || boardTitleDraft.trim() === board.title} onClick={() => void saveBoardTitle()}>{saving ? "儲存中…" : "儲存名稱"}</button>
+            <input id="board-settings-name" className="field" maxLength={200} disabled={Boolean(board.archivedAt)} value={boardTitleDraft} onChange={(event) => setBoardTitleDraft(event.target.value)} />
+            <button type="button" className="primary" disabled={saving || Boolean(board.archivedAt) || !boardTitleDraft.trim() || boardTitleDraft.trim() === board.title} onClick={() => void saveBoardTitle()}>{saving ? "儲存中…" : "儲存名稱"}</button>
             <div className="board-delete-zone">
               <b>刪除整張週盤</b>
               <p>週盤會移至 Notion 垃圾桶。已排入今天的任務與完成紀錄會保留，但不再連回這張週盤。</p>
-              <button type="button" className="danger-button" disabled={saving} onClick={() => void deleteBoard()}>刪除 {fmtWeek(weekStart)} 週盤</button>
+              <button type="button" className="danger-button" disabled={saving || Boolean(board.archivedAt)} onClick={() => void deleteBoard()}>刪除 {fmtWeek(weekStart)} 週盤</button>
             </div>
           </section>
         </div>
@@ -561,8 +583,14 @@ export default function BingoPage() {
 
       {!loading && (
         <>
+          <section className="weekly-tab-panel weekly-library-view" hidden={activeTab !== "library"} aria-label="組盤任務來源">
+            <div className="weekly-section-intro"><h2>把想做的事，放進這一週</h2><p>本週還有 {board.cells.filter(cell => cell.index !== 12 && !cell.text.trim()).length} 個空白格。先選任務，再確認本週名稱與完成條件。</p></div>
           {!board.archivedAt && (
             <WeeklyTaskLibrary
+              inline
+              sourceTab={libraryTab}
+              onSourceChange={setLibraryTab}
+              reading={<ReadingInsightPlanner board={board} disabled={saving} showEmpty onApply={async next => {await save(next, "閱讀洞察已選入本週盤面；原始卡片仍留在閱讀萃取。");}}/>}
               key={weekStart}
               board={board}
               disabled={saving}
@@ -570,64 +598,29 @@ export default function BingoPage() {
             />
           )}
 
-          {!board.archivedAt && (
-            <ReadingInsightPlanner
-              board={board}
-              disabled={saving}
-              onApply={async (next) => { await save(next, "閱讀洞察已選入本週盤面；原始卡片仍留在閱讀萃取。"); }}
-            />
-          )}
-
-          <section className="ritual-card weekly-color-plan">
-            <div className="section-heading">
-              <div><span className="eyebrow">週日定色</span><h2>先決定這週為什麼做</h2></div>
-              <span className={`saved-mark ${board.colorsConfirmedAt ? "confirmed" : ""}`}>{board.colorsConfirmedAt ? "已確認" : `${uncoloredCount} 格待定`}</span>
-            </div>
-            <p className="lead">每格在週盤決定「重要／喜歡／照顧自己」，排入今天時直接沿用。橫、直、斜五格完成即可連線，單色也成立。</p>
-            <div className="weekly-color-counts">
-              {colorCounts.map(({ category, count }) => <span key={category} className={category}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")} <b>{count}</b></span>)}
-            </div>
-            {!board.archivedAt && <button className="primary" disabled={saving || uncoloredCount > 0} onClick={() => void confirmColors()}>{board.colorsConfirmedAt ? "重新確認本週三色" : "確認本週三色"}</button>}
+            {board.archivedAt && <div className="weekly-empty-state"><h3>這一週已經封存</h3><p>切換到未封存的週盤，再加入新任務。</p><button onClick={() => navigateTab("board")}>回到盤面</button></div>}
           </section>
-
+          <div className="weekly-tab-panel" hidden={activeTab !== "board"} aria-label="本週週盤">
+            <section className="weekly-summary" aria-label="本週摘要"><WeeklyMotif/><h2>{board.title}</h2><p>{board.archivedAt ? "把走過的一週，好好收在這裡。" : "讓重要、喜歡與照顧自己，都有位置。"}</p><div className="weekly-summary-meta"><span><b>{completed}</b> / 24 完成</span><span><b>{activeLineIds.length}</b> 條連線</span><span className="weekly-summary-state">{board.archivedAt ? "已封存" : `已安排 ${board.cells.filter(cell => cell.index !== 12 && cell.text.trim()).length} 格`}</span></div></section>
+            <div className="weekly-board-layout"><div className="weekly-board-main">
           <section className="ritual-card board-card">
-            <div className="section-heading">
-              <div>
-                <input
-                  className="board-title"
-                  value={board.title}
-                  disabled={!editing || Boolean(board.archivedAt)}
-                  onChange={(event) => setBoard({ ...board, title: event.target.value })}
-                  aria-label="週盤名稱"
-                />
-                <p>{completed}/24 完成 · {completedBingoLines(board)} 條連線</p>
-              </div>
-              {board.archivedAt ? (
-                <span className="saved-mark">已封存</span>
-              ) : (
-                <div className="board-heading-actions">
-                  <button
-                    disabled={saving || editing || hasAssignedCells || !hasBoardContent}
-                    title={hasAssignedCells ? "已有格子排入今天，為避免完成狀態失去對應，本週不再換位" : "中央自在格不移動"}
-                    onClick={() => void shuffleCells()}
-                  >隨機換位</button>
-                  <button onClick={() => { setSelected(null); setEditing((value) => !value); }}>{editing ? "完成編輯" : "編輯格子"}</button>
-                </div>
-              )}
+            <div className="weekly-board-top">
+              <div className="weekly-view-tabs" aria-label="盤面顯示方式"><button aria-pressed={view === "board"} onClick={() => setView("board")}>盤面</button><button aria-pressed={view === "list"} onClick={() => {setView("list"); setEditing(false);}}>清單</button></div>
+              {board.archivedAt ? <span className="saved-mark">唯讀</span> : <button className="weekly-edit-button" onClick={() => {setSelected(null); setEditing(value => !value);}}><WeeklyIcon name="write"/>{editing ? "完成編輯" : "編輯格子"}</button>}
             </div>
-
-            <div className="weekly-view-tabs"><button aria-pressed={view==='board'} onClick={()=>setView('board')}>盤面</button><button aria-pressed={view==='list'} onClick={()=>{setView('list');setEditing(false)}}>清單</button></div>
-            {view==='list'?<div className="weekly-task-list">{board.cells.filter(c=>c.index!==12&&c.text).map(cell=><button key={cell.index} onClick={()=>openCell(cell.index)}><span>{String(cell.index+1).padStart(2,'0')} · {cell.completed?'✓ 完成':`${cell.completion.progress}/${cell.completion.target}`}</span><b>{cell.text}</b><small>{cell.completion.criteria}</small></button>)}</div>:<div ref={gridRef} className={`bingo-grid ${editing?'editing':''}`}>
+            {editing && <label className="weekly-title-editor">週盤名稱<input className="field" value={board.title} onChange={event => setBoard({...board, title: event.target.value})}/></label>}
+            {view === "list" && <div className="weekly-list-filters" aria-label="篩選任務"><button aria-pressed={categoryFilter === "all"} onClick={() => setCategoryFilter("all")}>全部</button>{colorCounts.map(({category}) => <button key={category} aria-pressed={categoryFilter === category} onClick={() => setCategoryFilter(category)}>{category === "important" ? "重要" : category === "hobby" ? "喜歡" : "照顧自己"}</button>)}</div>}
+            {view==='list'?<div className="weekly-task-list">{board.cells.filter(c=>c.index!==12&&c.text&&(categoryFilter==='all'||c.category===categoryFilter)).map(cell=><button key={cell.index} onClick={()=>openCell(cell.index)}><span>{String(cell.index+1).padStart(2,'0')} · {cell.completed?'✓ 完成':`${cell.completion.progress}/${cell.completion.target}`}</span><b>{cell.text}</b><small>{cell.completion.criteria}</small></button>)}</div>:<div ref={gridRef} className={`bingo-grid ${editing?'editing':''}`}>
               {!editing&&lineGeometry&&<svg className="bingo-lines" viewBox={`0 0 ${lineGeometry.width} ${lineGeometry.height}`} aria-hidden="true">{activeLineIds.map(id=>{const indices=BINGO_LINES[Number(id.replace('line-',''))];if(!indices)return null;const a=lineGeometry.points[indices[0]],b=lineGeometry.points[indices[4]];return <g key={id}><line className="line-underlay" x1={a.x} y1={a.y} x2={b.x} y2={b.y}/><line className="line-thread" x1={a.x} y1={a.y} x2={b.x} y2={b.y}/></g>})}</svg>}
               {board.cells.map(cell=>editing&&cell.index!==12?<textarea data-cell-index={cell.index} key={cell.index} value={cell.text} maxLength={300} disabled={Boolean(cell.assignedDate)||carryLinks.some(l=>l.taskInstanceId===cell.taskInstanceId)} onChange={e=>setBoard({...board,cells:board.cells.map(c=>c.index===cell.index?{...c,text:e.target.value}:c)})} placeholder={`${cell.index+1}`} aria-label={`第 ${cell.index+1} 格`}/>:<button data-cell-index={cell.index} key={cell.index} className={`bingo-cell ${cell.category||'uncolored'} ${cell.completed?'done':cell.completion.progress?'partial':cell.text?'assigned':'empty-cell'} ${cell.index===12?'free':''} ${connectedIndices.has(cell.index)?'in-line':''}`} onClick={()=>{if(cell.index!==12)openCell(cell.index)}} aria-label={cell.index===12?'自在格，已完成':`${cell.text||'加入任務'}，${cell.completed?'已完成':`${cell.completion.progress}/${cell.completion.target}`}`}>
-                {cell.index===12?<><span className="weekly-free-icon" aria-hidden="true">✧</span><span className="bingo-cell-title">自在格</span></>:cell.text?<><span className="weekly-cell-meta"><span>{String(cell.index+1).padStart(2,'0')}</span><span>{cell.completed?'✓':cell.disposition?'暫停':cell.completion.target>1?`${cell.completion.progress}/${cell.completion.target}`:cell.category==='health'?'♧':cell.category==='hobby'?'♡':'◎'}</span></span><span className="bingo-cell-title">{Array.from(bingoCellShortLabel(cell)).slice(0,4).reduce((rows,c,i)=>rows+c+(i===1?'\n':''),'')}</span></>:<><span className="weekly-empty-plus">＋</span><span className="weekly-empty-number">{cell.index+1}</span></>}
+                {cell.index === 12 ? <><WeeklyIcon name="spark" className="weekly-free-icon"/><span className="bingo-cell-title">自在格</span></> : cell.text ? <><span className="weekly-cell-meta"><span>{String(cell.index + 1).padStart(2, "0")}</span><span>{cell.disposition ? (cell.disposition === "paused" ? "暫停" : "取消") : cell.completed ? <WeeklyIcon name="check"/> : cell.completion.target > 1 ? `${cell.completion.progress}/${cell.completion.target}` : <WeeklyIcon name={cell.category === "health" ? "leaf" : cell.category === "hobby" ? "heart" : cell.category === "important" ? "target" : "compass"}/>}</span></span><span className="bingo-cell-title">{Array.from(bingoCellShortLabel(cell)).slice(0, 4).reduce((rows, c, i) => rows + c + (i === 1 ? "\n" : ""), "")}</span></> : <><WeeklyIcon name="plus" className="weekly-empty-plus"/><span className="weekly-empty-number">{String(cell.index + 1).padStart(2, "0")}</span></>}
+
               </button>)}
             </div>}
-            {activeLineIds.length>0&&<aside className="weekly-connection-summary" role="status"><b>✓ 已完成 {activeLineIds.length} 條連線</b><span>{activeLineIds.map(id=>{const i=Number(id.replace('line-',''));return i<5?`第 ${i+1} 橫列`:i<10?`第 ${i-4} 直行`:i===10?'左上至右下':'右上至左下'}).join('、')}</span></aside>}
+            {activeLineIds.length>0&&<aside className="weekly-connection-summary" role="status"><b><WeeklyIcon name="check"/> 已完成 {activeLineIds.length} 條連線</b><span>{activeLineIds.map(id=>{const i=Number(id.replace('line-',''));return i<5?`第 ${i+1} 橫列`:i<10?`第 ${i-4} 直行`:i===10?'左上至右下':'右上至左下'}).join('、')}</span></aside>}
+            <div className="weekly-category-key">{colorCounts.map(({category, count}) => <button key={category} onClick={() => {setCategoryFilter(category); setView("list"); setEditing(false);}}><span className={`weekly-dot ${category}`}/>{category === "important" ? "重要" : category === "hobby" ? "喜歡" : "照顧自己"} <b>{count}</b></button>)}</div>
             <p className="weekly-board-hint">方格以兩行顯示四字簡稱，編號與進度置中排列；點開可看完整任務。中央自在格已完成，不計入24格。</p>
-            <button onClick={()=>setShowRollover(v=>!v)}>整理未完成任務／續排下週</button>
-            {showRollover&&<div className="weekly-task-list"><p>由你逐項決定，保留進度續排；也可點開任務調整範圍、暫停或取消。</p>{unfinished.map(c=><div key={c.taskInstanceId||c.index}><button onClick={()=>openCell(c.index)}>{c.text} · {c.completion.progress}/{c.completion.target}</button><button disabled={saving} onClick={()=>void continueTask(c.index,addCalendarDays(weekStart,7))}>續排下週</button></div>)}{!unfinished.length&&<p>目前沒有待整理的未完成任務。</p>}</div>}
-
+            {!board.archivedAt && <div className="weekly-action-row"><button onClick={() => navigateTab("library")}><WeeklyIcon name="plus"/>加入任務</button><button disabled={saving || editing || hasAssignedCells || !hasBoardContent} title={hasAssignedCells ? "已有任務排入今天，本週不再換位" : "中央自在格不移動"} onClick={() => void shuffleCells()}><WeeklyIcon name="shuffle"/>隨機換位</button></div>}
             {editing && (
               <>
                 {clearedManagedCells > 0 && <p className="form-error">有 {clearedManagedCells} 格原有任務被清空，請先重新輸入名稱。若要移除，請保留名稱、完成編輯後再使用「從本週刪除」。</p>}
@@ -637,6 +630,29 @@ export default function BingoPage() {
               </>
             )}
           </section>
+
+            </div><div className="weekly-board-secondary">
+          <section className="ritual-card weekly-color-plan">
+            <div className="section-heading">
+              <div><span className="eyebrow">週日定色</span><h2>本週三色</h2></div>
+              <span className={`saved-mark ${board.colorsConfirmedAt ? "confirmed" : ""}`}>{board.colorsConfirmedAt ? "已確認" : `${uncoloredCount} 格待定`}</span>
+            </div>
+            <p className="lead">這週為什麼做，由你決定。排入今天時，會沿用每格的分類。</p>
+            <div className="weekly-color-counts">
+              {colorCounts.map(({ category, count }) => <span key={category} className={category}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")} <b>{count}</b></span>)}
+            </div>
+            {!board.archivedAt && <button className="primary" disabled={saving || uncoloredCount > 0} onClick={() => void confirmColors()}>{board.colorsConfirmedAt ? "重新確認本週三色" : "確認本週三色"}</button>}
+          </section>
+
+            {!board.archivedAt && <section className="weekly-rollover">
+            <button onClick={()=>setShowRollover(v=>!v)}>整理未完成任務／續排下週</button>
+            {showRollover&&<div className="weekly-task-list"><p>由你逐項決定，保留進度續排；也可點開任務調整範圍、暫停或取消。</p>{unfinished.map(c=><div key={c.taskInstanceId||c.index}><button onClick={()=>openCell(c.index)}>{c.text} · {c.completion.progress}/{c.completion.target}</button><button disabled={saving} onClick={()=>void continueTask(c.index,addCalendarDays(weekStart,7))}>續排下週</button></div>)}{!unfinished.length&&<p>目前沒有待整理的未完成任務。</p>}</div>}
+
+            </section>}
+            <div className="weekly-shortcuts"><button onClick={() => navigateTab("library")}><WeeklyIcon name="layers"/><span><b>任務與範本</b><small>常用範本、階段專案、當週任務</small></span><WeeklyIcon name="arrow"/></button><button onClick={() => {setLibraryTab("reading"); navigateTab("library");}}><WeeklyIcon name="book"/><span><b>閱讀洞察候選</b><small>從一個想法，走向一次實踐</small></span><WeeklyIcon name="arrow"/></button><button onClick={() => navigateTab("reflection")}><WeeklyIcon name="write"/><span><b>為這一週留下脈絡</b><small>本週記錄、調整與下週方向</small></span><WeeklyIcon name="arrow"/></button></div>
+            <aside className="weekly-prompt"><b>一週不必填滿。</b><p>可以先安排 16～20 格，也可以更少。留白的格子，週中隨時能再補入。</p></aside>
+            </div></div>
+          </div>
 
           {selectedCell && !editing && (
             <div className="modal bingo-detail-modal" onClick={(event) => event.target === event.currentTarget && setSelected(null)}>
@@ -711,14 +727,14 @@ export default function BingoPage() {
                 ) : (
                   <div className="cell-progress"><span>封存進度 <b>{selectedCell.completion.progress}/{selectedCell.completion.target}</b> {selectedCell.completion.unit}</span></div>
                 )}
-                {selectedCell.text&&!selectedCell.completed&&!selectedCell.disposition&&<div className="weekly-continuation">{selectedLink?.status==='complete'?<button onClick={()=>{setSelected(null);setWeekStart(selectedLink.targetWeek)}}>已續排至 {selectedLink.targetWeek} · 前往週盤</button>:<><label>續排到哪一週（選週一）<input className="field" type="date" min={addCalendarDays(weekStart,7)} value={carryTarget} disabled={Boolean(selectedLink)} onChange={e=>setCarryTarget(e.target.value)}/></label><button disabled={saving||!carryTarget} onClick={()=>void continueTask(selectedCell.index,carryTarget)}>{selectedLink?'重試完成續排':'保留進度續排'}</button></>}</div>}
+                {selectedCell.text&&!selectedCell.completed&&!selectedCell.disposition&&(selectedLink?.status==='complete'||!board.archivedAt)&&<div className="weekly-continuation">{selectedLink?.status==='complete'?<button onClick={()=>{setSelected(null);setWeekStart(selectedLink.targetWeek)}}>已續排至 {selectedLink.targetWeek} · 前往週盤</button>:<><label>續排到哪一週（選週一）<input className="field" type="date" min={addCalendarDays(weekStart,7)} value={carryTarget} disabled={Boolean(selectedLink)} onChange={e=>setCarryTarget(e.target.value)}/></label><button disabled={saving||!carryTarget} onClick={()=>void continueTask(selectedCell.index,carryTarget)}>{selectedLink?'重試完成續排':'保留進度續排'}</button></>}</div>}
                 {error&&<p className="form-error" role="alert">{error}</p>}
                 {notice&&<p className="save-notice" role="status">{notice}</p>}
               </section>
             </div>
           )}
 
-          <section className="ritual-card">
+          <section className="ritual-card weekly-tab-panel weekly-reflection" hidden={activeTab !== "reflection"} aria-label="每週回望">
             <span className="eyebrow">每週回望</span>
             <h2>為這一週留下脈絡</h2>
             <label htmlFor="week-bright">這週值得記下的一件事</label>

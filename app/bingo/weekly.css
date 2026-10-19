@@ -48,3 +48,170 @@
 @media(max-width:360px){.dojo.weekly-shell .board-card{padding:12px}.dojo.weekly-shell .bingo-grid{gap:5px}.dojo.weekly-shell .bingo-cell-title{font-size:12px}.dojo.weekly-shell .weekly-cell-meta{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.dojo.weekly-shell .bingo-lines line{animation:none}}
 @media(max-width:360px){.dojo.weekly-shell .bingo-cell{padding:2px 1px}.dojo.weekly-shell .bingo-cell-title{line-height:1.15}.dojo.weekly-shell .weekly-cell-meta{min-height:11px;line-height:1.1}}
+
+/* Complete approved weekly layout. Every override stays inside this page shell. */
+.dojo.weekly-shell{--muted:#71685A;--line:#E4D9C0;--weekly-soft:#F1EADB;--weekly-accent:#765C32;--weekly-selected:#EEE1C8;--field-border:#A7B1A2;font:16px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;overflow-x:clip}
+.dojo.weekly-shell .app{max-width:1080px;padding-bottom:0;background:var(--bg)}
+.dojo.weekly-shell .top{position:static;min-height:69px;padding:15px 22px 10px;background:transparent;border:0;backdrop-filter:none;gap:12px}
+.dojo.weekly-shell .weekly-brand{display:flex;align-items:center;gap:10px;min-height:44px;padding:0;border:0;background:transparent;font:17px/1.5 "Songti TC","PMingLiU",serif;letter-spacing:.12em;text-align:left;white-space:nowrap}
+.dojo.weekly-shell .weekly-brand .weekly-icon{width:26px;height:26px;color:var(--weekly-accent)}
+.dojo.weekly-shell .top-actions{display:flex;gap:4px}
+.dojo.weekly-shell .top-actions button{display:flex;align-items:center;justify-content:center;min-height:44px;width:44px;padding:10px;border:0;background:transparent;color:var(--muted)}
+.dojo.weekly-shell .top-actions button span{display:none}
+.dojo.weekly-shell .weekly-icon{width:24px;height:24px;display:inline-block;flex:none;vertical-align:middle}
+.dojo.weekly-shell .bingo-screen{max-width:1080px;padding:10px 22px calc(116px + env(safe-area-inset-bottom));min-width:0}
+.dojo.weekly-shell button{min-height:44px;line-height:1.5;border-color:var(--field-border);border-radius:10px;font:inherit}
+.dojo.weekly-shell button:disabled{cursor:default;opacity:.5}
+.dojo.weekly-shell button:focus-visible,.dojo.weekly-shell a:focus-visible,.dojo.weekly-shell input:focus-visible,.dojo.weekly-shell select:focus-visible,.dojo.weekly-shell textarea:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.dojo.weekly-shell button:active:not(:disabled){filter:brightness(.95)}
+.dojo.weekly-shell .weekly-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.dojo.weekly-shell .weekly-heading h1{font:600 34px/1.4 "Songti TC","PMingLiU",serif;letter-spacing:.035em;margin:0}
+.dojo.weekly-shell .weekly-heading p{font-size:14px;color:var(--muted);line-height:1.65;margin:6px 0 0;max-width:45ch}
+.dojo.weekly-shell .weekly-icon-button{width:46px;min-height:46px;display:flex;align-items:center;justify-content:center;padding:10px;flex:none}
+.dojo.weekly-shell .weekly-icon-button .weekly-icon{width:18px;height:18px}
+.dojo.weekly-shell .weekly-week-picker{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:stretch;gap:8px;margin-bottom:18px}
+.dojo.weekly-shell .weekly-week-picker button{padding:8px;border:0;background:transparent;min-height:62px;display:flex;align-items:center;justify-content:center}
+.dojo.weekly-shell .weekly-week-picker .weekly-icon{width:18px;height:18px}
+.dojo.weekly-shell .weekly-week-picker .weekly-date-select{border:1px solid var(--line);background:var(--surface);border-radius:9px;display:flex;flex-direction:column;line-height:1.4;gap:5px}
+.dojo.weekly-shell .weekly-date-select b{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.dojo.weekly-shell .weekly-date-select span{font-size:12px;color:var(--muted)}
+.dojo.weekly-shell .weekly-page-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:5px;border:1px solid var(--line);border-radius:13px;background:var(--weekly-soft);margin-bottom:24px}
+.dojo.weekly-shell .weekly-page-tabs button{min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 3px;border:0;background:transparent;border-radius:9px;font-size:13px;white-space:nowrap}
+.dojo.weekly-shell .weekly-page-tabs .weekly-icon{width:16px;height:16px}
+.dojo.weekly-shell .weekly-page-tabs [aria-current=page]{background:var(--weekly-selected);font-weight:600}
+.dojo.weekly-shell .weekly-tab-panel[hidden]{display:none!important}
+.dojo.weekly-shell .weekly-summary{position:relative;isolation:isolate;padding:22px 20px 20px;border:1px solid var(--line);border-radius:18px;background:var(--weekly-soft);margin-bottom:24px;overflow:hidden}
+.dojo.weekly-shell .weekly-summary>*:not(.weekly-motif){position:relative;z-index:1}
+.dojo.weekly-shell .weekly-summary h2{font:500 25px/1.5 "Songti TC","PMingLiU",serif;letter-spacing:.025em;margin:0;overflow-wrap:anywhere}
+.dojo.weekly-shell .weekly-summary p{font-size:13px;line-height:1.65;margin:5px 0 0;color:var(--muted);max-width:30ch}
+.dojo.weekly-shell .weekly-motif{position:absolute;right:14px;top:16px;width:125px;height:105px;color:var(--gold);opacity:.3;stroke-width:1;pointer-events:none}
+.dojo.weekly-shell .weekly-summary-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;font-size:13px}
+.dojo.weekly-shell .weekly-summary-meta>span{display:flex;align-items:baseline;gap:5px}
+.dojo.weekly-shell .weekly-summary-meta b{font-size:19px;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
+.dojo.weekly-shell .weekly-summary-meta .weekly-summary-state{font-size:12px;color:var(--muted);margin-left:auto}
+.dojo.weekly-shell .weekly-board-layout,.dojo.weekly-shell .weekly-board-secondary{display:grid;gap:24px;min-width:0;align-content:start}
+.dojo.weekly-shell .weekly-board-main{min-width:0}
+.dojo.weekly-shell .ritual-card{padding:20px;border-radius:15px;margin:0;box-shadow:none}
+.dojo.weekly-shell .board-card{padding:16px}
+.dojo.weekly-shell .weekly-board-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.dojo.weekly-shell .weekly-view-tabs{display:flex;gap:3px;width:auto;padding:3px;border:1px solid var(--line);border-radius:9px;background:var(--bg);flex:none}
+.dojo.weekly-shell .weekly-view-tabs button{min-height:44px;padding:6px 12px;border:0;border-radius:6px;font-size:13px}
+.dojo.weekly-shell .weekly-edit-button{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:8px 10px;font-size:13px}
+.dojo.weekly-shell .weekly-edit-button .weekly-icon{width:18px;height:18px}
+.dojo.weekly-shell .bingo-grid{width:100%;aspect-ratio:1;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));gap:5px;margin:0;isolation:isolate}
+.dojo.weekly-shell .bingo-cell{justify-content:center;gap:2px;padding:4px;box-shadow:none;border-radius:9px;min-height:0;font-size:13px}
+.dojo.weekly-shell .bingo-cell-title{margin:0;flex:none;line-height:1.1;letter-spacing:.02em;font-size:13px;font-weight:600;white-space:pre-line}
+.dojo.weekly-shell .weekly-cell-meta{line-height:11px;min-height:11px;font-size:11px;gap:4px;flex:none}
+.dojo.weekly-shell .weekly-cell-meta .weekly-icon{width:11px;height:11px}
+.dojo.weekly-shell .weekly-cell-meta>span{display:inline-flex;align-items:center;justify-content:center}
+.dojo.weekly-shell .bingo-cell.free{gap:4px;color:var(--surface)}
+.dojo.weekly-shell .bingo-cell.free .bingo-cell-title{font-weight:500;letter-spacing:0}
+.dojo.weekly-shell .bingo-cell .weekly-free-icon{width:16px;height:16px}
+.dojo.weekly-shell .bingo-cell.empty-cell{background:transparent;border-style:dashed;gap:4px;color:var(--muted)}
+.dojo.weekly-shell .bingo-cell.empty-cell .weekly-empty-plus{width:17px;height:17px;margin:0;position:static;transform:none}
+.dojo.weekly-shell .bingo-cell.empty-cell .weekly-empty-number{font-size:11px;line-height:11px;margin:0}
+.dojo.weekly-shell .bingo-cell.done:not(.in-line){box-shadow:inset 0 0 0 1px #4D6557}
+.dojo.weekly-shell .bingo-cell.in-line{background:#D9B568;border-color:#99702E;color:var(--ink);box-shadow:0 0 0 2px #99702E}
+.dojo.weekly-shell .bingo-lines{position:absolute;inset:0;width:100%;height:100%;z-index:4;overflow:visible}
+.dojo.weekly-shell .weekly-connection-summary{padding:12px 14px;margin:18px 0 0;border-radius:10px;font-size:14px}
+.dojo.weekly-shell .weekly-connection-summary b{display:flex;align-items:center;gap:8px;font-weight:600}
+.dojo.weekly-shell .weekly-connection-summary b .weekly-icon{width:18px;height:18px}
+.dojo.weekly-shell .weekly-category-key{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:18px}
+.dojo.weekly-shell .weekly-category-key button{display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;padding:8px 3px;min-width:0;white-space:nowrap}
+.dojo.weekly-shell .weekly-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.dojo.weekly-shell .weekly-dot.important{background:var(--task-important)}
+.dojo.weekly-shell .weekly-dot.hobby{background:var(--task-hobby)}
+.dojo.weekly-shell .weekly-dot.health{background:var(--task-health)}
+.dojo.weekly-shell .weekly-board-hint{font-size:12px;line-height:1.7;color:var(--muted);margin:14px 0 0}
+.dojo.weekly-shell .weekly-action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.dojo.weekly-shell .weekly-action-row>button{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:4px;font-size:14px}
+.dojo.weekly-shell .weekly-action-row>button:first-child{background:var(--weekly-soft)}
+.dojo.weekly-shell .weekly-action-row>button.primary{background:#4D6557;color:var(--surface);border-color:#4D6557}
+.dojo.weekly-shell .weekly-action-row .weekly-icon{width:18px;height:18px}
+.dojo.weekly-shell .weekly-color-plan .eyebrow{display:none}
+.dojo.weekly-shell .weekly-color-plan h2{font-size:19px;line-height:1.5;margin:0}
+.dojo.weekly-shell .weekly-color-plan .lead{font-size:14px;line-height:1.65;margin:14px 0}
+.dojo.weekly-shell .weekly-color-plan .saved-mark{font-size:12px;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:3px 8px;white-space:nowrap;color:var(--muted)}
+.dojo.weekly-shell .weekly-color-counts{gap:8px;margin:14px 0}
+.dojo.weekly-shell .weekly-color-counts span{font-size:11px;padding:8px 3px}
+.dojo.weekly-shell .weekly-color-counts b{font-size:17px}
+.dojo.weekly-shell .weekly-color-plan>.primary{min-height:46px;font-size:14px}
+.dojo.weekly-shell .weekly-rollover>button{width:100%;font-size:14px}
+.dojo.weekly-shell .weekly-shortcuts{border:1px solid var(--line);border-radius:15px;background:var(--surface);overflow:hidden}
+.dojo.weekly-shell .weekly-shortcuts>button{border:0;border-radius:0;width:100%;display:flex;align-items:center;gap:12px;text-align:left;padding:16px;min-height:76px;background:transparent}
+.dojo.weekly-shell .weekly-shortcuts>button+button{border-top:1px solid var(--line)}
+.dojo.weekly-shell .weekly-shortcuts>button>.weekly-icon:first-child{width:24px;height:24px;color:var(--weekly-accent)}
+.dojo.weekly-shell .weekly-shortcuts>button>.weekly-icon:last-child{width:16px;height:16px;color:var(--muted)}
+.dojo.weekly-shell .weekly-shortcuts>button>span{flex:1;min-width:0}
+.dojo.weekly-shell .weekly-shortcuts b{display:block;font-size:15px;font-weight:600}
+.dojo.weekly-shell .weekly-shortcuts small{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.dojo.weekly-shell .weekly-prompt{padding:18px;background:var(--weekly-soft);border-radius:13px;font-size:13px;color:var(--muted);line-height:1.7}
+.dojo.weekly-shell .weekly-prompt b{color:var(--ink);font-weight:600}
+.dojo.weekly-shell .weekly-prompt p{margin:6px 0 0}
+.dojo.weekly-shell .weekly-section-intro{margin-bottom:20px}
+.dojo.weekly-shell .weekly-section-intro h2{font-size:19px;line-height:1.5;margin:0}
+.dojo.weekly-shell .weekly-section-intro p{font-size:14px;color:var(--muted);margin:8px 0 0;line-height:1.65}
+.dojo.weekly-shell .weekly-template-library{padding:0;margin-bottom:24px}
+.dojo.weekly-shell .weekly-template-body{padding:16px}
+.dojo.weekly-shell .weekly-template-body>p{font-size:14px;line-height:1.65;margin:0 0 16px}
+.dojo.weekly-shell .weekly-template-tabs{gap:6px;margin-bottom:18px}
+.dojo.weekly-shell .weekly-template-tabs.with-reading{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dojo.weekly-shell .weekly-template-tabs button{font-size:13px;padding:8px 5px}
+.dojo.weekly-shell .template-filter-row{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.dojo.weekly-shell .template-filter-row button,.dojo.weekly-shell .bundle-button{font-size:13px;min-height:44px}
+.dojo.weekly-shell .template-pick-list{margin-top:18px;max-height:none;overflow:visible}
+.dojo.weekly-shell .template-pick-list article{border-color:var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.dojo.weekly-shell .template-pick-main{display:flex;align-items:flex-start;gap:10px;padding:16px;min-height:66px;border:0;background:transparent;text-align:left;min-width:0;width:100%}
+.dojo.weekly-shell .template-pick-main>b{font-size:15px;flex:1;min-width:0;overflow-wrap:anywhere}
+.dojo.weekly-shell .template-pick-main>small{font-size:12px;white-space:normal}
+.dojo.weekly-shell .template-criteria{font-size:14px;line-height:1.65;margin:0 16px 16px}
+.dojo.weekly-shell .template-preview-edit{padding:0 16px 16px}
+.dojo.weekly-shell .template-selection-bar{position:fixed;left:0;right:0;bottom:calc(78px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:10px max(22px,calc((100vw - 1008px)/2));margin:0;border-radius:0;border-top:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;z-index:15}
+.dojo.weekly-shell .template-selection-bar button{font-size:13px;padding:8px 10px}
+.dojo.weekly-shell .template-preview-edit label,.dojo.weekly-shell .custom-template-editor label{font-size:14px}
+.dojo.weekly-shell .weekly-project-overview{padding:16px;background:var(--weekly-soft);border-radius:12px;margin-top:16px}
+.dojo.weekly-shell .weekly-project-overview h3{font-size:16px;margin:0}
+.dojo.weekly-shell .weekly-project-overview p{font-size:14px;line-height:1.65;margin:8px 0 0}
+.dojo.weekly-shell .weekly-project-group{font-size:15px;margin:16px;line-height:1.6}
+.dojo.weekly-shell .weekly-list-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.dojo.weekly-shell .weekly-list-filters button{font-size:12px;padding:8px 10px}
+.dojo.weekly-shell .weekly-list-filters [aria-pressed=true]{background:var(--weekly-selected);font-weight:600}
+.dojo.weekly-shell .weekly-title-editor{display:grid;gap:8px;margin:0 0 16px;font-size:14px}
+.dojo.weekly-shell .weekly-task-list{gap:10px;margin:14px 0}
+.dojo.weekly-shell .weekly-task-list>button{font-size:14px;padding:16px}
+.dojo.weekly-shell .weekly-reflection label{display:block;font-size:14px;margin:18px 0 7px}
+.dojo.weekly-shell .weekly-reflection h2{font-size:20px;margin:0 0 16px}
+.dojo.weekly-shell .weekly-reflection textarea{width:100%;min-height:112px}
+.dojo.weekly-shell .weekly-reflection .two{margin-top:20px}
+.dojo.weekly-shell .weekly-reflection .two button{font-size:14px}
+.dojo.weekly-shell .weekly-empty-state{border:1px dashed var(--field-border);padding:30px 20px;border-radius:15px;text-align:center;background:var(--surface)}
+.dojo.weekly-shell .weekly-empty-state h3{font-size:18px;margin:12px 0 8px}
+.dojo.weekly-shell .weekly-empty-state p{font-size:14px;color:var(--muted);line-height:1.65;margin:8px 0 18px}
+.dojo.weekly-shell .weekly-archive-list{display:grid;gap:14px}
+.dojo.weekly-shell .weekly-archive-list>button{display:flex;align-items:center;gap:14px;padding:18px;border-color:var(--line);border-radius:15px;text-align:left;width:100%}
+.dojo.weekly-shell .weekly-archive-list>button>span:nth-child(2){flex:1;min-width:0}
+.dojo.weekly-shell .weekly-archive-list b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.dojo.weekly-shell .weekly-archive-list small{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.dojo.weekly-shell .weekly-archive-date{border-right:1px solid var(--line);padding-right:16px;text-align:center;flex:none;color:var(--weekly-accent)}
+.dojo.weekly-shell .weekly-archive-date b{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.dojo.weekly-shell .weekly-archive-list .weekly-icon{width:16px;height:16px;color:var(--muted)}
+.dojo.weekly-shell .bingo-detail-modal .sheet{max-width:680px;width:100%;max-height:90dvh;overflow-y:auto;padding:24px 20px;font-size:14px}
+.dojo.weekly-shell .modal{z-index:50}
+.dojo.weekly-shell .bingo-detail-heading h2{font-size:20px;line-height:1.5}
+.dojo.weekly-shell .bingo-detail-heading button{font-size:14px}
+.dojo.weekly-shell .sheet label{font-size:14px;margin:16px 0 7px}
+.dojo.weekly-shell .sheet .field{font-size:16px;min-height:48px}
+.dojo.weekly-shell .sheet button{font-size:14px}
+.dojo.weekly-shell .cell-detail-facts{font-size:14px}
+.dojo.weekly-shell .cell-detail-facts small{font-size:12px}
+.dojo.weekly-shell .cell-detail-facts b{font-size:14px}
+.dojo.weekly-shell .cell-color-picker .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dojo.weekly-shell .cell-color-picker .row button{font-size:12px;padding:8px 3px;min-width:0}
+.dojo.weekly-shell .save-notice,.dojo.weekly-shell .form-error{font-size:14px;line-height:1.65;margin:0 0 18px}
+.dojo.weekly-shell .nav{left:0;right:0;bottom:0;transform:none;width:100%;max-width:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:9px max(22px,calc((100vw - 680px)/2)) calc(9px + env(safe-area-inset-bottom));border:0;border-top:1px solid var(--line);border-radius:0;background:var(--surface);box-shadow:none;z-index:20}
+.dojo.weekly-shell .nav button{min-height:59px;min-width:0;padding:0;border:0;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:transparent;color:var(--muted);font-size:11px;line-height:1.5}
+.dojo.weekly-shell .nav button.on{background:var(--weekly-selected);color:var(--ink);font-weight:600}
+.dojo.weekly-shell .nav .nav-icon{display:flex;align-items:center;justify-content:center;width:25px;height:25px;margin:0}
+.dojo.weekly-shell .nav .nav-icon svg{width:23px;height:23px}
+@media(max-width:359px){.dojo.weekly-shell .top{padding-inline:16px}.dojo.weekly-shell .bingo-screen{padding-inline:16px}.dojo.weekly-shell .board-card{padding:12px}.dojo.weekly-shell .bingo-grid{gap:4px}.dojo.weekly-shell .bingo-cell{padding:2px;gap:1px}.dojo.weekly-shell .bingo-cell-title{font-size:12px;line-height:1.1}.dojo.weekly-shell .weekly-category-key{gap:5px}.dojo.weekly-shell .weekly-category-key button{font-size:11px}.dojo.weekly-shell .weekly-summary-meta{gap:10px}}
+@media(min-width:760px){.dojo.weekly-shell .top,.dojo.weekly-shell .bingo-screen{padding-inline:36px}.dojo.weekly-shell .weekly-board-layout{grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);align-items:start}.dojo.weekly-shell .weekly-page-tabs{max-width:620px}.dojo.weekly-shell .weekly-week-picker{max-width:620px}.dojo.weekly-shell .weekly-summary-meta{justify-content:flex-start}.dojo.weekly-shell .weekly-summary-state{margin-left:24px}.dojo.weekly-shell .bingo-cell-title{font-size:16px}.dojo.weekly-shell .weekly-cell-meta{font-size:12px;line-height:14px;min-height:14px}.dojo.weekly-shell .weekly-cell-meta .weekly-icon{width:13px;height:13px}}

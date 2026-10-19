@@ -1,6 +1,7 @@
 "use client";
 
 import ForageIcon from "./ForageIcon";
+import WeeklyIcon from "./WeeklyIcon";
 import { canLeavePractice } from "@/lib/dojo/practiceNavigation";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -140,10 +141,10 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
     <div className={`dojo${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
       <main className="app">
         <header className="top">
-          {pathname === "/" ? <div className="brand"><b>行光道場</b><small>Lumen Dojo</small></div> : <BackButton pathname={pathname} />}
+          {pathname === "/bingo" ? <button className="weekly-brand" onClick={() => router.push("/")} aria-label="行光道場，返回今天"><WeeklyIcon name="compass"/><span>行光道場</span></button> : pathname === "/" ? <div className="brand"><b>行光道場</b><small>Lumen Dojo</small></div> : <BackButton pathname={pathname} />}
           <div className="top-actions">
-            <button onClick={openTimerFromHere}>{pathname.startsWith("/forage") ? <ForageIcon name="i-clock" /> : "◷"} 計時</button>
-            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }}>{pathname.startsWith("/forage") ? <ForageIcon name="i-grid" /> : "⌘"} 場域</button>
+            <button onClick={openTimerFromHere} aria-label="計時">{pathname === "/bingo" ? <WeeklyIcon name="clock"/> : pathname.startsWith("/forage") ? <ForageIcon name="i-clock" /> : "◷"}<span> 計時</span></button>
+            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }} aria-label="場域">{pathname === "/bingo" ? <WeeklyIcon name="grid"/> : pathname.startsWith("/forage") ? <ForageIcon name="i-grid" /> : "⌘"}<span> 場域</span></button>
           </div>
         </header>
         <div id="view">{children}</div>
@@ -156,7 +157,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
             className={isActive(item.href) ? "on" : ""}
             onClick={() => { if(canLeavePractice()) router.push(item.href); }}
           >
-            <span className="nav-icon"><NavIcon name={item.icon} /></span>
+            <span className="nav-icon">{pathname === "/bingo" && item.icon === "add" ? <WeeklyIcon name="add"/> : <NavIcon name={item.icon} />}</span>
             {item.label}
           </button>
         ))}

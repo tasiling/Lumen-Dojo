@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { type DailyTaskCategory, type WeeklyBoard } from "@/lib/dojo/formal";
 import {
   normalizeWeeklyTemplateLibrary,
@@ -11,7 +11,7 @@ import {
 
 const ROOM: WeeklyTaskTemplate = {id:'oneoff-room',name:'將房間整理完畢',shortLabel:'房間整理',category:'health',source:'custom',completionMode:'checklist',target:3,unit:'項',criteria:'物品都有固定位置並歸位，桌面與地面乾淨、沒有散落雜物，整體整潔，日常使用順手。',note:'依這次要整理的範圍調整子項目。',templateCategory:'當週任務',projectId:null,subproject:'',status:'active',builtIn:false,checklist:[{id:'home',text:'物品都有固定位置並歸位',done:false},{id:'desk',text:'桌面乾淨整潔，日常使用順手',done:false},{id:'floor',text:'地面乾淨、沒有散落雜物',done:false}]};
 function items(text:string,old:NonNullable<WeeklyTaskTemplate['checklist']>=[]){return text.split(/\r?\n/).map(t=>t.trim()).filter(Boolean).slice(0,24).map((text,i)=>({id:old.find(x=>x.text===text)?.id||`item-${i}`,text:text.slice(0,300),done:false}))}
-type SourceTab = "routine" | "project" | "custom";
+export type WeeklySourceTab = "routine" | "project" | "custom" | "reading";
 
 async function json<T>(response: Response): Promise<T> {
   const value = await response.json().catch(() => ({}));
@@ -27,14 +27,20 @@ function newCustomTemplate(): WeeklyTaskTemplate {
   };
 }
 
-export default function WeeklyTaskLibrary({ board, disabled, onApply }: {
+export default function WeeklyTaskLibrary({ board, disabled, onApply, inline = false, reading, sourceTab, onSourceChange }: {
   board: WeeklyBoard;
   disabled: boolean;
   onApply: (board: WeeklyBoard, message: string) => Promise<void>;
+  inline?: boolean;
+  reading?: ReactNode;
+  sourceTab?: WeeklySourceTab;
+  onSourceChange?: (tab: WeeklySourceTab) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(inline);
   const [library, setLibrary] = useState<WeeklyTemplateLibrary | null>(null);
-  const [tab, setTab] = useState<SourceTab>("routine");
+  const [localTab, setLocalTab] = useState<WeeklySourceTab>("routine");
+  const tab = sourceTab ?? localTab;
+  function setTab(next: WeeklySourceTab) { setLocalTab(next); onSourceChange?.(next); }
   const [category, setCategory] = useState("全部");
   const [projectId, setProjectId] = useState("");
   const [subproject, setSubproject] = useState("全部");
@@ -155,14 +161,15 @@ export default function WeeklyTaskLibrary({ board, disabled, onApply }: {
   }
 
   return <section className="ritual-card weekly-template-library">
-    <button type="button" className="weekly-setup-head" onClick={() => setOpen((value) => !value)}>
+    {!inline && <button type="button" className="weekly-setup-head" onClick={() => setOpen((value) => !value)}>
       <span><small>彈性組盤</small><b>加入週盤任務</b></span><em>常用・專案・當週任務</em>
-    </button>
+    </button>}
     {open && <div className="weekly-template-body">
       <p>先選範本，再一次加入多格。依本週的時間與心力挑選，不必填滿。</p>
-      <div className="weekly-template-tabs">
-        {(["routine", "project", "custom"] as SourceTab[]).map((key) => <button key={key} className={tab === key ? "on" : ""} onClick={() => setTab(key)}>{key === "routine" ? "常用範本" : key === "project" ? "階段專案" : "當週任務"}</button>)}
+      <div className={`weekly-template-tabs ${reading ? "with-reading" : ""}`} aria-label="任務來源">
+        {(["routine", "project", "custom", ...(reading ? ["reading"] : [])] as WeeklySourceTab[]).map((key) => <button key={key} aria-label={key === "routine" ? "常用範本" : key === "project" ? "階段專案" : key === "reading" ? "閱讀洞察" : "當週任務"} aria-pressed={tab === key} className={tab === key ? "on" : ""} onClick={() => setTab(key)}>{key === "routine" ? "常用" : key === "project" ? "專案" : key === "reading" ? "洞察" : "當週"}</button>)}
       </div>
+      {tab === "reading" && reading}
       {tab === "routine" && <>
         <div className="template-filter-row">{categories.map((item) => <button key={item} className={category === item ? "on" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
         {library?.bundles.filter((item) => item.status === "active").map((bundle) => <button key={bundle.id} className="bundle-button" onClick={() => void applyBundle(bundle.id)}>整組預覽・{bundle.name}</button>)}
@@ -177,7 +184,7 @@ export default function WeeklyTaskLibrary({ board, disabled, onApply }: {
         {currentProject?.recommendationAfter && <small className="template-project-note">目前暫緩；{currentProject.recommendationAfter} 前不主動推薦，但仍可自行選擇。</small>}
         {projectId && <div className="template-filter-row">{subprojects.map((item) => <button key={item} className={subproject === item ? "on" : ""} onClick={() => setSubproject(item)}>{item}</button>)}</div>}
       </>}
-      {tab !== "custom" && <div className="template-pick-list">{shown.map((template,position) => {
+      {tab !== "custom" && tab !== "reading" && <div className="template-pick-list">{shown.map((template,position) => {
         const checked = selected.has(template.id); const draft = drafts[template.id] ?? template;
         return <article key={template.id} className={checked ? "selected" : ""}>
           {tab==='project'&&(position===0||shown[position-1].projectId!==template.projectId||shown[position-1].subproject!==template.subproject)&&<h3 className="weekly-project-group">{library?.projects.find(p=>p.id===template.projectId)?.name} · {template.subproject||'專案任務'}</h3>}
@@ -208,9 +215,9 @@ export default function WeeklyTaskLibrary({ board, disabled, onApply }: {
         <label>補充說明<textarea className="field" rows={2} value={custom.note} onChange={(event) => setCustom({ ...custom, note: event.target.value })} /></label>
         <div className="two"><button disabled={saving || disabled} onClick={() => void saveCustom(false)}>儲存為我的範本</button><button className="primary" disabled={saving || disabled} onClick={() => void saveCustom(true)}>{saveReusable?"儲存並加入本週":"加入當週任務"}</button></div>
       </div>}
-      {selected.size > 0 && <div className="template-selection-bar"><span>已選 {selected.size} 項</span><button onClick={() => void saveSelectionAsBundle()}>存成組合</button><button className="primary" disabled={disabled} onClick={() => void addSelected()}>加入空白格</button></div>}
-      <button className="template-manage-toggle" onClick={() => setManaging((value) => !value)}>{managing ? "收起範本管理" : "管理／封存範本"}</button>
-      {managing && <div className="template-manage-list">
+      {tab !== "reading" && selected.size > 0 && <div className="template-selection-bar"><span>已選 {selected.size} 項</span><button onClick={() => void saveSelectionAsBundle()}>存成組合</button><button className="primary" disabled={disabled} onClick={() => void addSelected()}>加入空白格</button></div>}
+      {tab !== "reading" && <button className="template-manage-toggle" onClick={() => setManaging((value) => !value)}>{managing ? "收起範本管理" : "管理／封存範本"}</button>}
+      {tab !== "reading" && managing && <div className="template-manage-list">
         {library?.projects.map((item) => <div key={item.id}><span>{item.name}</span><button onClick={()=>{const name=window.prompt('專案名稱',item.name)?.trim();if(!name||!library)return;const goal=window.prompt('這個階段想完成的具體成果',item.goal||'');if(goal===null)return;void persist({...library,projects:library.projects.map(p=>p.id===item.id?{...p,name,goal}:p)}).catch(()=>{})}}>編輯目標</button><select value={item.status} onChange={(event) => library && void persist({ ...library, projects: library.projects.map((project) => project.id === item.id ? { ...project, status: event.target.value as typeof item.status, statusLabel: event.target.options[event.target.selectedIndex].text } : project), updatedAt: new Date().toISOString() })}><option value="priority">優先進行</option><option value="active">進行中</option><option value="next">下一階段</option><option value="paused">暫停</option><option value="done">已完成</option><option value="cancelled">已取消</option></select></div>)}
         {library?.templates.map((item) => <div key={item.id}><span>{item.name}</span><span><button onClick={() => void editTemplate(item)}>編輯</button> <button onClick={() => void setTemplateStatus(item, item.status === "active" ? "archived" : "active")}>{item.status === "active" ? "封存" : "重新啟用"}</button></span></div>)}
       </div>}
