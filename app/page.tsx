@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { TodayCalendarIcon, TodayGlassMotif } from "@/app/components/TodayCalendarArt";
+import { TODAY_REALM_PALETTE } from "@/lib/dojo/todayCalendarUi";
 import EntryMeasurePanel from "@/app/components/EntryMeasurePanel";
 import ManifestationMilestoneCapture from "@/app/components/ManifestationMilestoneCapture";
 import { carryDateOptions, fmtDateWD } from "@/lib/closing/notionFormat";
@@ -529,14 +531,22 @@ export default function TodayPage() {
   return (
     <section className="screen today-screen">
       <div className="hero today-hero">
-        <div className="eyebrow">今天 · {formatToday(date)}</div>
-        <h1>把光放回今天</h1>
-        <p>晨間定向、白天留下動靜，晚上再把一天收回來。</p>
-        <div className="today-summary">
-          <span>三件事 {taskDone}/3</span>
-          <Link href="/bingo">週盤 {boardDone}/24 · {board ? completedBingoLines(board) : 0} 連線</Link>
+        <TodayGlassMotif />
+        <div className="tc-hero-content">
+          <div className="eyebrow">今天 · {formatToday(date)}</div>
+          <h1>把光放回今天</h1>
+          <p>晨間定向、白天留下動靜，晚上再把一天收回來。</p>
+          <div className="today-summary">
+            <a href="#today-tasks"><TodayCalendarIcon name="i-checklist" />三件事 {taskDone}/3</a>
+            <Link href="/bingo"><TodayCalendarIcon name="i-grid" />週盤 {boardDone}/24 · {board ? completedBingoLines(board) : 0} 連線</Link>
+          </div>
         </div>
       </div>
+      <nav className="tc-jumps" aria-label="今天的快速定位">
+        <a href="#today-morning"><TodayCalendarIcon name="i-sun" />晨間啟動</a>
+        <a href="#today-daytime"><TodayCalendarIcon name="i-write" />白天追蹤</a>
+        <a href="#today-closing"><TodayCalendarIcon name="i-moon" />晚間收光</a>
+      </nav>
 
       {continuations.length > 0 && (
         <section className="continuation-section" aria-labelledby="continuation-title">
@@ -567,9 +577,9 @@ export default function TodayPage() {
 
       {readingVisitCount > 0 && (
         <Link className="reading-today-reminder" href="/reading/visits">
-          <span>閱讀回訪</span>
+          <TodayCalendarIcon name="i-book" />
           <div><b>今天有 {readingVisitCount} 張洞察卡到期</b><small>回來看看：做了嗎，結果如何？</small></div>
-          <i>→</i>
+          <TodayCalendarIcon name="i-arrow" />
         </Link>
       )}
 
@@ -579,10 +589,10 @@ export default function TodayPage() {
 
       {!loading && (
         <>
-          <section className="ritual-card morning-card">
+          <section className="ritual-card morning-card" id="today-morning">
             <div className="section-heading">
               <div>
-                <span className="eyebrow">晨間啟動</span>
+                <span className="eyebrow"><TodayCalendarIcon name="i-sun" />晨間啟動</span>
                 <h2>先看見此刻</h2>
               </div>
               {record.morning.startedAt && <span className="saved-mark">{
@@ -796,7 +806,7 @@ export default function TodayPage() {
             </button>
           </section>
 
-          <section className="ritual-card">
+          <section className="ritual-card" id="today-tasks">
             <div className="section-heading">
               <div>
                 <span className="eyebrow">晨間啟動 · 今日安排</span>
@@ -920,8 +930,8 @@ export default function TodayPage() {
             </div>
           </details>
 
-          <section className="ritual-card daytime-card">
-            <span className="eyebrow">白天追蹤</span>
+          <section className="ritual-card daytime-card" id="today-daytime">
+            <span className="eyebrow"><TodayCalendarIcon name="i-write" />白天追蹤</span>
             <h2>留下正在發生的事</h2>
             <div className="quick-log">
               <input
@@ -966,7 +976,7 @@ export default function TodayPage() {
           <section className="ritual-card evening-card" id="today-closing">
             <div className="section-heading">
               <div>
-                <span className="eyebrow">晚間收光</span>
+                <span className="eyebrow"><TodayCalendarIcon name="i-moon" />晚間收光</span>
                 <h2>今天過得怎麼樣？</h2>
               </div>
               {record.evening.closedAt && <span className="saved-mark">已收光</span>}
@@ -1177,8 +1187,8 @@ export default function TodayPage() {
             </div>
             <div className="grid">
               {(Object.entries(SPACES) as [SpaceKey, (typeof SPACES)[SpaceKey]][]).map(([key, value]) => (
-                <Link key={key} href={`/${key}`} className={`space-link ${value[1]}`}>
-                  <span className="dot" />
+                <Link key={key} href={`/${key}`} className={`space-link ${value[1]}`} style={{ "--realm-surface": TODAY_REALM_PALETTE[key].surface, "--realm-ink": TODAY_REALM_PALETTE[key].ink } as CSSProperties}>
+                  <TodayCalendarIcon name={TODAY_REALM_PALETTE[key].icon} />
                   <b>{value[0]}</b>
                   <small>{value[2]}</small>
                 </Link>

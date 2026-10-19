@@ -1,5 +1,6 @@
 "use client";
 
+import { TodayCalendarIcon } from "./TodayCalendarArt";
 import ForageIcon from "./ForageIcon";
 import { canLeavePractice } from "@/lib/dojo/practiceNavigation";
 import { usePathname, useRouter } from "next/navigation";
@@ -46,7 +47,7 @@ function BackButton({ pathname }: { pathname: string }) {
 
   return (
     <button className="backbtn" onClick={handleClick} aria-label={`返回${label}`}>
-      {pathname.startsWith("/forage") ? <ForageIcon name="i-back" /> : "‹"} {label}
+      {pathname === "/calendar" ? <TodayCalendarIcon name="i-back" /> : pathname.startsWith("/forage") ? <ForageIcon name="i-back" /> : "‹"} {label}
     </button>
   );
 }
@@ -113,6 +114,7 @@ const PRIVACY_OPTIONS: Privacy[] = ["私人", "限閱", "公開"];
 export default function DojoShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const todayCalendarRoute = pathname === "/" || pathname === "/calendar";
   const {
     entries,
     addEntry,
@@ -137,13 +139,13 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={`dojo${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
+    <div className={`dojo${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : todayCalendarRoute ? ` tc-shell${pathname === "/" ? " tc-today-theme" : " tc-calendar-theme"}` : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
       <main className="app">
         <header className="top">
-          {pathname === "/" ? <div className="brand"><b>行光道場</b><small>Lumen Dojo</small></div> : <BackButton pathname={pathname} />}
+          {pathname === "/" ? <div className="brand"><TodayCalendarIcon name="i-sun" /><div><b>行光道場</b><small>Lumen Dojo</small></div></div> : <BackButton pathname={pathname} />}
           <div className="top-actions">
-            <button onClick={openTimerFromHere}>{pathname.startsWith("/forage") ? <ForageIcon name="i-clock" /> : "◷"} 計時</button>
-            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }}>{pathname.startsWith("/forage") ? <ForageIcon name="i-grid" /> : "⌘"} 場域</button>
+            <button onClick={openTimerFromHere}>{todayCalendarRoute ? <TodayCalendarIcon name="i-clock" /> : pathname.startsWith("/forage") ? <ForageIcon name="i-clock" /> : "◷"} 計時</button>
+            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }}>{todayCalendarRoute ? <TodayCalendarIcon name="i-grid" /> : pathname.startsWith("/forage") ? <ForageIcon name="i-grid" /> : "⌘"} 場域</button>
           </div>
         </header>
         <div id="view">{children}</div>
@@ -154,9 +156,11 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
           <button
             key={item.key}
             className={isActive(item.href) ? "on" : ""}
+            aria-current={isActive(item.href) ? "page" : undefined}
+            data-nav={item.key}
             onClick={() => { if(canLeavePractice()) router.push(item.href); }}
           >
-            <span className="nav-icon"><NavIcon name={item.icon} /></span>
+            <span className="nav-icon">{todayCalendarRoute ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : <NavIcon name={item.icon} />}</span>
             {item.label}
           </button>
         ))}
