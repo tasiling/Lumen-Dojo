@@ -1,4 +1,6 @@
 "use client";
+import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
+import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
 import {mutate} from "@/app/components/weaving/client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,7 +24,7 @@ async function readJson<T>(response: Response): Promise<T> {
   return json as T;
 }
 
-type View = "due" | "program" | "topics" | "stuck";
+type View = "due" | "program" | "topics" | "stuck" | "located";
 type InsightSource = { sourceNoteId: string; sourceText: string };
 
 export default function ReadingCardsPage() {
@@ -34,6 +36,7 @@ export default function ReadingCardsPage() {
   const [outputType, setOutputType] = useState<WeavingFormat | null>(null);
   const [creatingProject, setCreatingProject] = useState(false);
   const [todayISO, setTodayISO] = useState("");
+  const [locatedId,setLocatedId]=useState('');
   const [view, setView] = useState<View>("due");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +57,7 @@ export default function ReadingCardsPage() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
+      const wanted=new URLSearchParams(location.search).get('card');if(wanted){setLocatedId(wanted);setView('located');}
       setLoading(false);
     }
   }, []);
@@ -107,6 +111,7 @@ export default function ReadingCardsPage() {
         <p>看見現在需要回訪、可成為內容線索，以及已經卡住的洞察。</p>
       </div>
 
+      {!loading&&view==='located'&&<section><h2>指定的洞察</h2>{cards.some(c=>c.id===locatedId)?cards.filter(c=>c.id===locatedId).map(card=><LocatedContent parameter="card" id={card.id} key={card.id}><LibraryCard card={card} onUpdated={updateCard} /></LocatedContent>):<p role="status">指定的洞察已不可用；可以切換下方分區查看其他內容。</p>}</section>}
       <div className="reading-library-tabs" role="tablist">
         <button className={view === "due" ? "on" : ""} onClick={() => setView("due")}><span>{dueCards.length}</span>今日待回訪</button>
         <button className={view === "program" ? "on" : ""} onClick={() => setView("program")}><span>{programCards.length}</span>可做節目</button>
@@ -302,6 +307,7 @@ function LibraryCard({
       {card.programApplication !== "未定" && <span>{card.programApplication}</span>}
       {card.postponementCount > 0 && <span>順延 {card.postponementCount} 次</span>}
     </div>
+    <RelationsPanel target={{kind:'reading_insight',recordId:card.id}} />
     <div className="reading-library-actions">
       {selectable && <button className={selected ? "reading-select-card on" : "reading-select-card"} onClick={() => onSelect?.(card.id)}>{selected ? "已選入企劃" : "選入內容企劃"}</button>}
       <button disabled={sourceLoading} onClick={() => void toggleSource()}>{sourceLoading ? "讀取來源…" : sourceOpen ? "收起來源" : "查看來源"}</button>

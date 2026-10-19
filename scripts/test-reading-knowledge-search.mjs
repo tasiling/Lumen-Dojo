@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
+import {loader} from './weaving-test-harness.mjs';
+assert.ok(existsSync('lib/dojo/readingKnowledge/search.ts'),'federated search must exist');
+process.env.ACCESS_KEY='rk-test-secret';
+const load=loader(),{createSearchService}=load('lib/dojo/readingKnowledge/search.ts');
+const make=(n,kind='reading_note')=>({ref:{kind,recordId:`11111111-1111-4111-8111-${String(n).padStart(12,'0')}`,parentBookId:kind==='reading_note'?'22222222-2222-4222-8222-222222222222':undefined},title:'按摩',text:'肩膀',bookId:'22222222-2222-4222-8222-222222222222',originalTopics:['身體'],href:'/reading',status:'thought',sourceVersion:null,locator:'p3'});
+let fail=true;
+const adapters={reading_note:{readBatch:async c=>!c?{items:[],next:'notes',complete:false,readAt:'now'}:{items:Array.from({length:25},(_,n)=>make(n)),next:null,complete:true,readAt:'now'}},reading_insight:{readBatch:async()=>{if(fail)throw Error('provider down');return {items:[make(40,'reading_insight')],next:null,complete:true,readAt:'now'};}},knowledge_claim:{readBatch:async()=>({items:[],next:null,complete:true,readAt:'now'})}};
+const search=createSearchService(adapters);
+let p=await search({q:'肩膀'},null,'owner');assert.equal(p.complete,false);assert.equal(p.items.length,0);assert.equal(p.sourceStates.reading_insight,'failed');
+await assert.rejects(()=>search({q:'別的'},p.cursor,'owner'));
+await assert.rejects(()=>search({q:'肩膀'},p.cursor,'other'));
+fail=false;const token=p.cursor;p=await search({q:'肩膀'},token,'owner');assert.equal(p.items.length,20);assert.equal(p.complete,false);
+const same=await search({q:'肩膀'},token,'owner');assert.deepEqual(same.items,p.items,'retry same cursor must not skip content');
+const last=await search({q:'肩膀'},p.cursor,'owner');assert.equal(last.items.length,6);assert.equal(last.complete,true);assert.equal(last.cursor,null);
+const filtered=await search({q:'肩膀',topic:'其他'},null,'owner');assert.equal(filtered.items.length,0);
+console.log('PASS search: partial empty, provider retry, query/owner-bound cursor, 20 per page, replay stable, filters');
