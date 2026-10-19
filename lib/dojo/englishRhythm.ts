@@ -1,3 +1,6 @@
+import {withLearningWriteLock} from './learningFoundation/fileLock';
+import {learningWriteOutcome} from './learningFoundation/writeOutcome';
+import {carryRecordTitle} from './weeklyTasks';
 import "server-only";
 
 import {
@@ -18,7 +21,7 @@ export type VocabForgeWeekSummary = {
   completed: boolean;
 };
 
-export async function syncVocabForgeWeeklyBingo(dateOrWeekStart: string): Promise<{
+async function syncVocabForgeWeeklyBingoUnlocked(dateOrWeekStart: string): Promise<{
   summary: VocabForgeWeekSummary;
   board: WeeklyBoard | null;
 }> {
@@ -27,8 +30,9 @@ export async function syncVocabForgeWeeklyBingo(dateOrWeekStart: string): Promis
   if (!boardRow) return { summary: { days: 0, rounds: 0, completed: false }, board: null };
 
   const board = normalizeWeeklyBoard(boardRow.value, weekStart);
+  board.updatedAt=(boardRow.value as WeeklyBoard).updatedAt;
   const cell = board.cells.find((item) => item.learning?.templateKey === "vocabforge-scientific-week");
-  if (!cell || board.archivedAt) return { summary: { days: 0, rounds: 0, completed: false }, board };
+  if (!cell || board.archivedAt || cell.disposition || (cell.taskInstanceId&&await readJsonRecord(carryRecordTitle(weekStart,cell.taskInstanceId)))) return { summary: { days: 0, rounds: 0, completed: false }, board };
 
   const dates = Array.from({ length: 7 }, (_, index) => addCalendarDays(weekStart, index));
   const rows = await Promise.all(dates.map((date) => readJsonRecord(dailyRecordTitle(date))));
@@ -44,7 +48,10 @@ export async function syncVocabForgeWeeklyBingo(dateOrWeekStart: string): Promis
   cell.completedAt = completed ? (wasCompleted ? cell.completedAt : new Date().toISOString()) : null;
 
   const normalized = normalizeWeeklyBoard(board, weekStart);
-  await upsertJsonRecord(bingoRecordTitle(weekStart), normalized);
+  const saved=await upsertJsonRecord(bingoRecordTitle(weekStart), normalized);
+  Object.assign(normalized,saved.value);
   await syncLearningActivity({ weekStart, cell: normalized.cells[cell.index] });
   return { summary: { days: active.length, rounds, completed }, board: normalized };
 }
+
+export async function syncVocabForgeWeeklyBingo(dateOrWeekStart:string){return learningWriteOutcome.getStore()?syncVocabForgeWeeklyBingoUnlocked(dateOrWeekStart):withLearningWriteLock(()=>syncVocabForgeWeeklyBingoUnlocked(dateOrWeekStart));}

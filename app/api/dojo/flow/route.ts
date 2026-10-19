@@ -1,3 +1,4 @@
+import {assertTaskActive,carryRecordTitle} from "@/lib/dojo/weeklyTasks";
 import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
@@ -47,6 +48,7 @@ async function assignBingo(body: Record<string, unknown>) {
   if (!cell || cellIndex === 12 || !cell.text.trim()) {
     return NextResponse.json({ error: "這一格沒有可排入的內容" }, { status: 400 });
   }
+  assertTaskActive(cell,cell.taskInstanceId&&await readJsonRecord(carryRecordTitle(weekStart,cell.taskInstanceId))?'後續週盤':undefined);
   const category = cell.category ?? requestedCategory;
   if (!CATEGORIES.includes(category)) {
     return NextResponse.json({ error: "請先在週盤完成這一格的週日定色" }, { status: 409 });
@@ -94,11 +96,14 @@ async function completeTask(body: Record<string, unknown>) {
       : emptyWeeklyBoard(task.origin.weekStart);
     const cell = board.cells[task.origin.cellIndex];
     if (cell && task.origin.cellIndex !== 12) {
+      if(board.archivedAt)throw new LearningError('原週盤已封存，不能修改完成狀態',409);
+      assertTaskActive(cell,cell.taskInstanceId&&await readJsonRecord(carryRecordTitle(board.weekStart,cell.taskInstanceId))?'後續週盤':undefined);
+      if(cell.completion.mode==='checklist')cell.checklist=cell.checklist?.map(item=>({...item,done:completed}));
       if (completed && cell.completion.requiresEvidence && !task.result.trim()) {
         return NextResponse.json({ error: "請先留下這次實際完成的成果" }, { status: 409 });
       }
       const delta = completed === wasCompleted ? 0 : completed ? 1 : -1;
-      cell.completion.progress = Math.max(0, Math.min(cell.completion.target, cell.completion.progress + delta));
+      cell.completion.progress = cell.completion.mode==="checklist"?(cell.checklist||[]).filter(item=>item.done).length:Math.max(0, Math.min(cell.completion.target, cell.completion.progress + delta));
       cell.completed = cell.completion.progress >= cell.completion.target;
       cell.completedAt = cell.completed ? (cell.completedAt ?? task.completedAt) : null;
       cell.assignedDate = date;
@@ -127,8 +132,10 @@ async function progressBingo(body: Record<string, unknown>) {
   const cell = board.cells[cellIndex];
   if (!cell?.text.trim()) return NextResponse.json({ error: "這一格沒有內容" }, { status: 400 });
 
+  assertTaskActive(cell,cell.taskInstanceId&&await readJsonRecord(carryRecordTitle(weekStart,cell.taskInstanceId))?'後續週盤':undefined);
+  if(cell.completion.mode==='checklist'){const item=cell.checklist?.find(x=>x.id===body.checklistId);if(!item)throw new LearningError('請選擇要勾選的子項目',400);item.done=!item.done;}
   const evidence = typeof body.evidenceNote === "string" ? body.evidenceNote.trim().slice(0, 2000) : cell.evidenceNote;
-  const nextProgress = Math.max(0, Math.min(cell.completion.target, cell.completion.progress + direction));
+  const nextProgress = cell.completion.mode==="checklist"?(cell.checklist||[]).filter(item=>item.done).length:Math.max(0, Math.min(cell.completion.target, cell.completion.progress + direction));
   if (direction > 0 && nextProgress >= cell.completion.target && cell.completion.requiresEvidence && !evidence) {
     return NextResponse.json({ error: "完成這一格前，請先留下實際成果" }, { status: 409 });
   }
@@ -139,7 +146,7 @@ async function progressBingo(body: Record<string, unknown>) {
   const normalized = normalizeWeeklyBoard(board, weekStart);
   const savedBoard = await upsertJsonRecord(bingoRecordTitle(weekStart), normalized, { manualCompletion: true });
   Object.assign(normalized, savedBoard.value);
-  if (cell.completion.target === 1 && cell.assignedDate && cell.assignedCategory) {
+  if ((cell.completion.target === 1 || cell.completion.mode==="checklist") && cell.assignedDate && cell.assignedCategory) {
     const dailyRow = await readJsonRecord(dailyRecordTitle(cell.assignedDate));
     const daily = dailyRow ? normalizeDailyRecord(dailyRow.value, cell.assignedDate) : emptyDailyRecord(cell.assignedDate);
     const task = daily.tasks[cell.assignedCategory];

@@ -37,7 +37,8 @@
     "test:weaving-review": "node scripts/test-weaving-review.mjs",
     "test:forage-ui": "node scripts/test-forage-ui.mjs && node scripts/test-forage-review-regressions.mjs",
     "test:forage-mobile": "node scripts/test-forage-mobile.mjs",
-    "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow"
+    "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow",
+    "test:weekly-personalized": "node scripts/test-weekly-personalized.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

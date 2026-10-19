@@ -9,6 +9,7 @@ export type EventRepository = {
   owner: string; get(id: string): Promise<CompletionEvent | null>; create(e: CompletionEvent): Promise<void>; update(e: CompletionEvent): Promise<void>;
   body(e: CompletionEvent): Promise<void>; daily(date: string): Promise<DailyRecord>; saveDaily(date: string, value: DailyRecord): Promise<void>;
   weekly(week: string): Promise<WeeklyBoard | null>; saveWeekly(week: string, value: WeeklyBoard): Promise<void>;
+  canProjectWeekly?(week:string,taskInstanceId:string):Promise<boolean>;
   assertKnownOutcome(): void;
 };
 export function eventService(repo: EventRepository) {
@@ -37,7 +38,8 @@ export function eventService(repo: EventRepository) {
           if (step === "record") await repo.body(event);
           if (step === "output") await repo.saveDaily(event.practicedOn, addOutput(await repo.daily(event.practicedOn), event));
           if (step === "weekly") {
-            const result = projectWeekly(event.binding ? await repo.weekly(event.binding.weekStart) : null, event);
+            const allowed=!event.binding||!repo.canProjectWeekly||await repo.canProjectWeekly(event.binding.weekStart,event.binding.taskInstanceId);
+            const result = projectWeekly(allowed&&event.binding ? await repo.weekly(event.binding.weekStart) : null, event);
             state = result.state;
             if (state === "applied" && result.board) await repo.saveWeekly(event.binding!.weekStart, result.board);
           }

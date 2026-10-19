@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import ReadingInsightPlanner from "@/app/components/ReadingInsightPlanner";
 import WeeklyTaskLibrary from "@/app/components/WeeklyTaskLibrary";
 import {
+  BINGO_LINES,
   DAILY_TASK_CATEGORIES,
   addCalendarDays,
   completedBingoLines,
@@ -17,6 +18,8 @@ import {
   type BingoCell,
   type WeeklyBoard,
 } from "@/lib/dojo/formal";
+import type { WeeklyCarryLink } from "@/lib/dojo/weeklyTasks";
+import "./weekly.css";
 import { useBackableState } from "@/lib/dojo/backstack";
 
 const CATEGORIES: DailyTaskCategory[] = ["important", "hobby", "health"];
@@ -115,6 +118,13 @@ export default function BingoPage() {
   const [unitDraft, setUnitDraft] = useState("次");
   const [modeDraft, setModeDraft] = useState<BingoCell["completion"]["mode"]>("single");
   const [noteDraft, setNoteDraft] = useState("");
+  const [checklistDraft,setChecklistDraft]=useState("");
+  const [view,setView]=useState<"board"|"list">("board");
+  const [carryLinks,setCarryLinks]=useState<WeeklyCarryLink[]>([]);
+  const [carryTarget,setCarryTarget]=useState("");
+  const [showRollover,setShowRollover]=useState(false);
+  const gridRef=useRef<HTMLDivElement>(null);
+  const [lineGeometry,setLineGeometry]=useState<{width:number;height:number;points:{x:number;y:number}[]}|null>(null);
   const [moveTarget, setMoveTarget] = useState("");
   const [sourceTypeDraft, setSourceTypeDraft] = useState<BingoCell["sourceType"]>("manual");
   const [boardSettingsOpen, setBoardSettingsOpen] = useState(false);
@@ -145,7 +155,10 @@ export default function BingoPage() {
       try {
         const boardResponse = await fetch(`/api/dojo/bingo?week=${weekStart}`, { cache: "no-store" });
         const json = await readResponse<{ board: WeeklyBoard }>(boardResponse);
+        const linksResponse=await fetch(`/api/dojo/bingo/continue?week=${weekStart}`,{cache:'no-store'});
+        const linksJson=await readResponse<{links:WeeklyCarryLink[]}>(linksResponse);
         if (!cancelled) {
+          setCarryLinks(linksJson.links);setShowRollover(false);
           setBoard(json.board);
           setBoardTitleDraft(json.board.title);
         }
@@ -172,6 +185,8 @@ export default function BingoPage() {
     setUnitDraft(cell.completion.unit);
     setModeDraft(cell.completion.mode);
     setNoteDraft(cell.note);
+    setChecklistDraft(cell.checklist?.map(item=>item.text).join("\n")||"");
+    setCarryTarget(carryLinks.find(l=>l.taskInstanceId===cell.taskInstanceId)?.targetWeek||addCalendarDays(weekStart,7));
     setSourceTypeDraft(cell.sourceType);
     setCellEditOpen(false);
     setMoveTarget("");
@@ -226,7 +241,11 @@ export default function BingoPage() {
   async function saveCellEdit() {
     if (selected === null || board.archivedAt) return;
     const text = cellTextDraft.trim();
-    const target = modeDraft === "count" ? Math.max(1, Math.min(99, Math.round(Number(targetDraft) || 1))) : 1;
+    const oldItems=board.cells[selected].checklist||[];
+    const used=new Set<string>();
+    const checklist=checklistDraft.split(/\r?\n/).map(t=>t.trim()).filter(Boolean).slice(0,24).map((text,i)=>{const prior=oldItems.find(item=>item.text===text&&!used.has(item.id));if(prior)used.add(prior.id);return {id:prior?.id||`item-${Date.now()}-${i}`,text:text.slice(0,300),done:prior?.done||false}});
+    if(modeDraft==='checklist'&&!checklist.length){setError('子項目清單至少需要一項。');return;}
+    const target = modeDraft==='checklist'?checklist.length:modeDraft === "count" ? Math.max(1, Math.min(99, Math.round(Number(targetDraft) || 1))) : 1;
     const unit = unitDraft.trim().slice(0, 20) || "次";
     if (!text) {
       setError("任務名稱不能留空；若不需要這格，請使用「從本週刪除」。");
@@ -237,10 +256,11 @@ export default function BingoPage() {
       colorsConfirmedAt: null,
       cells: board.cells.map((cell) => {
         if (cell.index !== selected) return cell;
-        const progress = Math.min(target, cell.completion.progress);
+        const progress = modeDraft==="checklist"?checklist.filter(item=>item.done).length:Math.min(target, cell.completion.progress);
         const completed = progress >= target;
         return {
           ...cell,
+          checklist,
           text: text.slice(0, 300),
           sourceType: sourceTypeDraft,
           shortLabel: shortLabelDraft.trim().slice(0, 12),
@@ -347,19 +367,19 @@ export default function BingoPage() {
     }
   }
 
-  async function changeProgress(direction: -1 | 1) {
+  async function changeProgress(direction: -1 | 1, checklistId?:string) {
     if (selected === null || selected === 12 || board.archivedAt) return;
     setSaving(true); setError(null); setNotice(null);
     try {
       const response = await fetch("/api/dojo/flow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "progress-bingo", weekStart, cellIndex: selected, direction, evidenceNote }),
+        body: JSON.stringify({ action: "progress-bingo", weekStart, cellIndex: selected, direction, evidenceNote, checklistId }),
       });
       const json = await readResponse<{ board: WeeklyBoard }>(response);
       setBoard(json.board);
       const cell = json.board.cells[selected];
-      setNotice(cell.completed ? "這一格已完成，進度也已回寫修習所。" : `已記下 ${cell.completion.progress}/${cell.completion.target} ${cell.completion.unit}。`);
+      setNotice(cell.completed ? (cell.learning?"這一格已完成，進度已回寫修習所。":"這一格已完成，紀錄已儲存。") : `已記下 ${cell.completion.progress}/${cell.completion.target} ${cell.completion.unit}。`);
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setSaving(false); }
   }
@@ -448,9 +468,26 @@ export default function BingoPage() {
     }
   }
 
+  useEffect(()=>{
+    const grid=gridRef.current;if(!grid||view!=='board')return;
+    function measure(){if(!grid)return;const box=grid.getBoundingClientRect();const nodes=grid.querySelectorAll<HTMLElement>('[data-cell-index]');const points=Array.from({length:25},()=>({x:0,y:0}));nodes.forEach(node=>{const rect=node.getBoundingClientRect();points[Number(node.dataset.cellIndex)]={x:rect.left-box.left+rect.width/2,y:rect.top-box.top+rect.height/2}});setLineGeometry({width:box.width,height:box.height,points});}
+    measure();const observer=new ResizeObserver(measure);observer.observe(grid);return()=>observer.disconnect();
+  },[board,editing,loading,view]);
+  async function setDisposition(disposition?:'paused'|'cancelled'){
+    if(selected===null)return;
+    try{await save({...board,cells:board.cells.map(c=>c.index===selected?{...c,disposition}:c)},disposition==='paused'?'任務已暫停，進度保留。':disposition==='cancelled'?'任務已取消，紀錄保留。':'任務已恢復。');}catch{}
+  }
+  async function continueTask(index:number,targetWeek:string){
+    const cell=board.cells[index];setSaving(true);setError(null);
+    try{const result=await readResponse<{link:WeeklyCarryLink}>(await fetch('/api/dojo/bingo/continue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({weekStart,targetWeek,taskInstanceId:cell.taskInstanceId})}));setCarryLinks(current=>[...current.filter(l=>l.taskInstanceId!==cell.taskInstanceId),result.link]);setNotice(`已續排至 ${targetWeek}，原週紀錄保留。`);}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setSaving(false)}
+  }
   const completed = board.cells.filter((cell) => cell.index !== 12 && cell.completed).length;
   const activeLineIds = board.archivedAt && board.completedLineIds.length ? board.completedLineIds : completedBingoLineIds(board);
+  const connectedIndices=new Set<number>(activeLineIds.flatMap(id=>[...(BINGO_LINES[Number(id.replace('line-',''))]||[])]));
   const selectedCell = selected === null ? null : board.cells[selected];
+  const selectedLink=carryLinks.find(l=>l.taskInstanceId===selectedCell?.taskInstanceId);
+  const selectedBlocked=Boolean(selectedCell?.disposition||selectedLink);
+  const unfinished=board.cells.filter(c=>c.index!==12&&c.text&&!c.completed&&!c.disposition&&!carryLinks.some(l=>l.taskInstanceId===c.taskInstanceId));
   const colorCounts = CATEGORIES.map((category) => ({
     category,
     count: board.cells.filter((cell) => cell.index !== 12 && cell.text.trim() && cell.category === category).length,
@@ -546,7 +583,7 @@ export default function BingoPage() {
               <div><span className="eyebrow">週日定色</span><h2>先決定這週為什麼做</h2></div>
               <span className={`saved-mark ${board.colorsConfirmedAt ? "confirmed" : ""}`}>{board.colorsConfirmedAt ? "已確認" : `${uncoloredCount} 格待定`}</span>
             </div>
-            <p className="lead">每格在週盤決定「重要／喜歡／照顧自己」，排入今天時直接沿用。有效連線需至少包含兩種顏色。</p>
+            <p className="lead">每格在週盤決定「重要／喜歡／照顧自己」，排入今天時直接沿用。橫、直、斜五格完成即可連線，單色也成立。</p>
             <div className="weekly-color-counts">
               {colorCounts.map(({ category, count }) => <span key={category} className={category}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")} <b>{count}</b></span>)}
             </div>
@@ -579,49 +616,17 @@ export default function BingoPage() {
               )}
             </div>
 
-            <div className={`bingo-grid ${editing ? "editing" : ""}`}>
-              {!editing && activeLineIds.length > 0 && <svg className="bingo-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                {activeLineIds.map((id) => {
-                  const index = Number(id.replace("line-", ""));
-                  const points = BINGO_LINE_POINTS[index];
-                  return points ? <line key={id} x1={points[0].split(",")[0]} y1={points[0].split(",")[1]} x2={points[1].split(",")[0]} y2={points[1].split(",")[1]} /> : null;
-                })}
-              </svg>}
-              {board.cells.map((cell) =>
-                editing && cell.index !== 12 ? (
-                  <textarea
-                    key={cell.index}
-                    value={cell.text}
-                    maxLength={80}
-                    disabled={Boolean(cell.assignedDate)}
-                    title={cell.assignedDate ? "已排入今天的格子請先在今天完成或改回" : undefined}
-                    onChange={(event) => setBoard({
-                      ...board,
-                      cells: board.cells.map((item) => item.index === cell.index
-                        ? { ...item, text: event.target.value, completed: event.target.value.trim() ? item.completed : false, completion: event.target.value.trim() ? item.completion : { ...item.completion, progress: 0 }, category: event.target.value.trim() ? item.category : null }
-                        : item),
-                    })}
-                    placeholder={`${cell.index + 1}`}
-                    aria-label={`第 ${cell.index + 1} 格`}
-                  />
-                ) : (
-                  <button
-                    key={cell.index}
-                    className={`bingo-cell ${cell.category ?? "uncolored"} ${cell.completed ? "done" : cell.completion.progress > 0 ? "partial" : cell.text ? "assigned" : "empty-cell"} ${selected === cell.index ? "selected" : ""} ${cell.index === 12 ? "free" : ""}`}
-                    onClick={() => { if (cell.index !== 12) openCell(cell.index); }}
-                    aria-label={cell.index === 12
-                      ? "自在格，已完成"
-                      : `${cell.text || "空格"}${cell.category ? `，${DAILY_TASK_CATEGORIES[cell.category].label}` : "，尚未定色"}${cell.completed ? "，已完成" : ""}`}
-                  >
-                    <span className="bingo-cell-title">{bingoCellShortLabel(cell) || "+"}</span>
-                    {cell.completed && <i>✓</i>}
-                    {cell.index !== 12 && cell.text && !cell.category && <em>待定色</em>}
-                    {cell.completion.target > 1 && <small>{cell.completion.progress}/{cell.completion.target}</small>}
-                    {cell.assignedDate && <small className="bingo-cell-date">已排 {cell.assignedDate.slice(5)}</small>}
-                  </button>
-                )
-              )}
-            </div>
+            <div className="weekly-view-tabs"><button aria-pressed={view==='board'} onClick={()=>setView('board')}>盤面</button><button aria-pressed={view==='list'} onClick={()=>{setView('list');setEditing(false)}}>清單</button></div>
+            {view==='list'?<div className="weekly-task-list">{board.cells.filter(c=>c.index!==12&&c.text).map(cell=><button key={cell.index} onClick={()=>openCell(cell.index)}><span>{String(cell.index+1).padStart(2,'0')} · {cell.completed?'✓ 完成':`${cell.completion.progress}/${cell.completion.target}`}</span><b>{cell.text}</b><small>{cell.completion.criteria}</small></button>)}</div>:<div ref={gridRef} className={`bingo-grid ${editing?'editing':''}`}>
+              {!editing&&lineGeometry&&<svg className="bingo-lines" viewBox={`0 0 ${lineGeometry.width} ${lineGeometry.height}`} aria-hidden="true">{activeLineIds.map(id=>{const indices=BINGO_LINES[Number(id.replace('line-',''))];if(!indices)return null;const a=lineGeometry.points[indices[0]],b=lineGeometry.points[indices[4]];return <g key={id}><line className="line-underlay" x1={a.x} y1={a.y} x2={b.x} y2={b.y}/><line className="line-thread" x1={a.x} y1={a.y} x2={b.x} y2={b.y}/></g>})}</svg>}
+              {board.cells.map(cell=>editing&&cell.index!==12?<textarea data-cell-index={cell.index} key={cell.index} value={cell.text} maxLength={300} disabled={Boolean(cell.assignedDate)||carryLinks.some(l=>l.taskInstanceId===cell.taskInstanceId)} onChange={e=>setBoard({...board,cells:board.cells.map(c=>c.index===cell.index?{...c,text:e.target.value}:c)})} placeholder={`${cell.index+1}`} aria-label={`第 ${cell.index+1} 格`}/>:<button data-cell-index={cell.index} key={cell.index} className={`bingo-cell ${cell.category||'uncolored'} ${cell.completed?'done':cell.completion.progress?'partial':cell.text?'assigned':'empty-cell'} ${cell.index===12?'free':''} ${connectedIndices.has(cell.index)?'in-line':''}`} onClick={()=>{if(cell.index!==12)openCell(cell.index)}} aria-label={cell.index===12?'自在格，已完成':`${cell.text||'加入任務'}，${cell.completed?'已完成':`${cell.completion.progress}/${cell.completion.target}`}`}>
+                {cell.index===12?<><span className="weekly-free-icon" aria-hidden="true">✧</span><span className="bingo-cell-title">自在格</span></>:cell.text?<><span className="weekly-cell-meta"><span>{String(cell.index+1).padStart(2,'0')}</span><span>{cell.completed?'✓':cell.disposition?'暫停':cell.completion.target>1?`${cell.completion.progress}/${cell.completion.target}`:cell.category==='health'?'♧':cell.category==='hobby'?'♡':'◎'}</span></span><span className="bingo-cell-title">{Array.from(bingoCellShortLabel(cell)).slice(0,4).reduce((rows,c,i)=>rows+c+(i===1?'\n':''),'')}</span></>:<><span className="weekly-empty-plus">＋</span><span className="weekly-empty-number">{cell.index+1}</span></>}
+              </button>)}
+            </div>}
+            {activeLineIds.length>0&&<aside className="weekly-connection-summary" role="status"><b>✓ 已完成 {activeLineIds.length} 條連線</b><span>{activeLineIds.map(id=>{const i=Number(id.replace('line-',''));return i<5?`第 ${i+1} 橫列`:i<10?`第 ${i-4} 直行`:i===10?'左上至右下':'右上至左下'}).join('、')}</span></aside>}
+            <p className="weekly-board-hint">方格以兩行顯示四字簡稱，編號與進度置中排列；點開可看完整任務。中央自在格已完成，不計入24格。</p>
+            <button onClick={()=>setShowRollover(v=>!v)}>整理未完成任務／續排下週</button>
+            {showRollover&&<div className="weekly-task-list"><p>由你逐項決定，保留進度續排；也可點開任務調整範圍、暫停或取消。</p>{unfinished.map(c=><div key={c.taskInstanceId||c.index}><button onClick={()=>openCell(c.index)}>{c.text} · {c.completion.progress}/{c.completion.target}</button><button disabled={saving} onClick={()=>void continueTask(c.index,addCalendarDays(weekStart,7))}>續排下週</button></div>)}{!unfinished.length&&<p>目前沒有待整理的未完成任務。</p>}</div>}
 
             {editing && (
               <>
@@ -654,7 +659,7 @@ export default function BingoPage() {
                   <span><small>本週分類</small><b>{selectedCell.category ? DAILY_TASK_CATEGORIES[selectedCell.category].label.replace(/^一件/, "") : "尚未定色"}</b></span>
                 </div>
 
-                {!board.archivedAt ? (
+                {!board.archivedAt && !selectedLink ? (
                   <>
                     <div className="cell-management-actions">
                       <button type="button" onClick={() => setCellEditOpen((value) => !value)}>{cellEditOpen ? "收起編輯" : selectedCell.text ? "編輯任務" : "自由建立"}</button>
@@ -667,19 +672,20 @@ export default function BingoPage() {
                         <label htmlFor="bingo-task-name">任務名稱</label>
                         <textarea id="bingo-task-name" className="field" rows={3} maxLength={300} value={cellTextDraft} onChange={(event) => setCellTextDraft(event.target.value)} />
                         <label htmlFor="bingo-short-label">盤面短名稱</label>
-                        <input id="bingo-short-label" className="field" maxLength={12} value={shortLabelDraft} onChange={(event) => setShortLabelDraft(event.target.value)} placeholder="最多 12 個字" />
+                        <input id="bingo-short-label" className="field" maxLength={12} value={shortLabelDraft} onChange={(event) => setShortLabelDraft(event.target.value)} placeholder="盤面顯示前四字；完整名稱保留" />
                         <label htmlFor="bingo-source-type">任務來源</label>
                         <select id="bingo-source-type" className="field" value={sourceTypeDraft} onChange={(event) => setSourceTypeDraft(event.target.value as BingoCell["sourceType"])}><option value="routine">常駐任務</option><option value="project">本週專案</option><option value="manual">自由建立</option><option value="learning">修習所</option><option value="reading">閱讀萃取</option><option value="flexible">其他系統</option></select>
                         <label htmlFor="bingo-completion-criteria">做到什麼才算完成？</label>
                         <textarea id="bingo-completion-criteria" className="field" rows={3} maxLength={1000} value={criteriaDraft} onChange={(event) => setCriteriaDraft(event.target.value)} placeholder="例如：完成一章閱讀並留下三句重述" />
                         <label htmlFor="bingo-completion-mode">完成規則</label>
                         <select id="bingo-completion-mode" className="field" value={modeDraft} onChange={(event) => setModeDraft(event.target.value as BingoCell["completion"]["mode"])}>
-                          <option value="single">完成一次</option><option value="count">累積次數</option><option value="specified">指定成果</option><option value="free">自由成果</option>
+                          <option value="single">完成一次</option><option value="count">累積次數</option><option value="specified">指定成果</option><option value="free">自由成果</option><option value="checklist">子項目清單</option>
                         </select>
                         {modeDraft === "count" && <div className="cell-completion-editor">
                           <label htmlFor="bingo-completion-target">目標數量<input id="bingo-completion-target" className="field" type="number" min="1" max="99" inputMode="numeric" value={targetDraft} onChange={(event) => setTargetDraft(event.target.value)} /></label>
                           <label htmlFor="bingo-completion-unit">單位<input id="bingo-completion-unit" className="field" maxLength={20} value={unitDraft} onChange={(event) => setUnitDraft(event.target.value)} placeholder="次" /></label>
                         </div>}
+                        {modeDraft==='checklist'&&<label>子項目（每行一項）<textarea className="field" rows={4} value={checklistDraft} onChange={e=>setChecklistDraft(e.target.value)}/></label>}
                         <label htmlFor="bingo-task-note">補充說明（選填）</label>
                         <textarea id="bingo-task-note" className="field" rows={2} maxLength={2000} value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} />
                         <button type="button" className="primary" disabled={saving || !cellTextDraft.trim()} onClick={() => void saveCellEdit()}>{saving ? "儲存中…" : "儲存任務修改"}</button>
@@ -691,18 +697,23 @@ export default function BingoPage() {
                       <div className="row">{CATEGORIES.map((category) => <button key={category} className={`task-category-button ${category} ${selectedCell.category === category ? "on" : ""}`} onClick={() => void setCellCategory(category)} disabled={saving || Boolean(selectedCell.assignedDate)}>{DAILY_TASK_CATEGORIES[category].label.replace(/^一件/, "")}</button>)}</div>
                     </div>}
                     {selectedCell.completion.requiresEvidence && <label className="evidence-field">完成成果<textarea className="field" rows={3} value={evidenceNote} onChange={(event) => setEvidenceNote(event.target.value)} placeholder="記下實際完成的內容；保留你的自由寫法" /></label>}
-                    {selectedCell.text && <div className="cell-progress">
+                    {selectedCell.text && selectedCell.completion.mode!=="checklist" && <div className="cell-progress">
                       <span>本週進度 <b>{selectedCell.completion.progress}/{selectedCell.completion.target}</b> {selectedCell.completion.unit}</span>
-                      <div><button onClick={() => void changeProgress(-1)} disabled={saving || selectedCell.completion.progress === 0}>−</button><button className="primary" onClick={() => void changeProgress(1)} disabled={saving || selectedCell.completed}>{selectedCell.completed ? "已完成" : selectedCell.completion.target > 1 ? "記一次" : "完成這格"}</button></div>
+                      <div><button onClick={() => void changeProgress(-1)} disabled={saving || selectedBlocked || selectedCell.completion.progress === 0}>−</button><button className="primary" onClick={() => void changeProgress(1)} disabled={saving || selectedBlocked || selectedCell.completed}>{selectedCell.completed ? "已完成" : selectedCell.completion.target > 1 ? "記一次" : "完成這格"}</button></div>
                     </div>}
+                    {selectedCell.completion.mode==='checklist'&&<div className="weekly-checklist">{selectedCell.checklist?.map(item=><label key={item.id}><input type="checkbox" checked={item.done} disabled={saving||selectedBlocked} onChange={()=>void changeProgress(1,item.id)}/><span>{item.text}</span></label>)}<small>在今天完成整項任務時，會一併完成所有子項目。</small></div>}
+                    {selectedCell.text&&<div className="weekly-lifecycle">{selectedCell.disposition?<button disabled={saving} onClick={()=>void setDisposition()}>恢復任務</button>:<><button disabled={saving} onClick={()=>void setDisposition('paused')}>暫停任務</button><button disabled={saving} onClick={()=>void setDisposition('cancelled')}>取消任務（保留紀錄）</button></>}</div>}
                     {selectedCell.text && <div className="two">
-                      <button onClick={() => void assignToToday()} disabled={saving || !selectedCell.category}>{selectedCell.assignedDate ? `已排入 ${selectedCell.assignedDate.slice(5)}` : selectedCell.category ? `排入今天・${DAILY_TASK_CATEGORIES[selectedCell.category].label.replace(/^一件/, "")}` : "請先定色"}</button>
+                      <button onClick={() => void assignToToday()} disabled={saving || selectedBlocked || !selectedCell.category}>{selectedCell.assignedDate ? `已排入 ${selectedCell.assignedDate.slice(5)}` : selectedCell.category ? `排入今天・${DAILY_TASK_CATEGORIES[selectedCell.category].label.replace(/^一件/, "")}` : "請先定色"}</button>
                       <Link href="/" className="button-link">查看今天</Link>
                     </div>}
                   </>
                 ) : (
                   <div className="cell-progress"><span>封存進度 <b>{selectedCell.completion.progress}/{selectedCell.completion.target}</b> {selectedCell.completion.unit}</span></div>
                 )}
+                {selectedCell.text&&!selectedCell.completed&&!selectedCell.disposition&&<div className="weekly-continuation">{selectedLink?.status==='complete'?<button onClick={()=>{setSelected(null);setWeekStart(selectedLink.targetWeek)}}>已續排至 {selectedLink.targetWeek} · 前往週盤</button>:<><label>續排到哪一週（選週一）<input className="field" type="date" min={addCalendarDays(weekStart,7)} value={carryTarget} disabled={Boolean(selectedLink)} onChange={e=>setCarryTarget(e.target.value)}/></label><button disabled={saving||!carryTarget} onClick={()=>void continueTask(selectedCell.index,carryTarget)}>{selectedLink?'重試完成續排':'保留進度續排'}</button></>}</div>}
+                {error&&<p className="form-error" role="alert">{error}</p>}
+                {notice&&<p className="save-notice" role="status">{notice}</p>}
               </section>
             </div>
           )}
@@ -710,8 +721,8 @@ export default function BingoPage() {
           <section className="ritual-card">
             <span className="eyebrow">每週回望</span>
             <h2>為這一週留下脈絡</h2>
-            <label htmlFor="week-bright">這週最亮的一格</label>
-            <textarea id="week-bright" className="field" disabled={Boolean(board.archivedAt)} value={board.reflection.brightSpot} onChange={(event) => setBoard({ ...board, reflection: { ...board.reflection, brightSpot: event.target.value } })} />
+            <label htmlFor="week-bright">這週值得記下的一件事</label>
+            <textarea id="week-bright" placeholder="這週有哪些完成、發現，或讓你有感的片刻？" className="field" disabled={Boolean(board.archivedAt)} value={board.reflection.brightSpot} onChange={(event) => setBoard({ ...board, reflection: { ...board.reflection, brightSpot: event.target.value } })} />
             <label htmlFor="week-adjust">想調整什麼</label>
             <textarea id="week-adjust" className="field" disabled={Boolean(board.archivedAt)} value={board.reflection.adjustment} onChange={(event) => setBoard({ ...board, reflection: { ...board.reflection, adjustment: event.target.value } })} />
             <label htmlFor="week-next">下週想聚焦的方向</label>

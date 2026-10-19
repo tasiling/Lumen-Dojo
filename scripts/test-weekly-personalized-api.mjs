@@ -1,0 +1,63 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { mkdtemp, rm, readdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve, dirname } from "node:path";
+import { createRequire, Module } from "node:module";
+import ts from "typescript";
+import { NextRequest } from "next/server.js";
+const require=createRequire(import.meta.url),cache=new Map(),rows=new Map();
+const key="r2-3-isolated",directory=await mkdtemp(join(tmpdir(),"r2-3-api-"));
+process.env.ACCESS_KEY=key;process.env.LEARNING_WRITE_LOCK_DIR=directory;
+let failTargetOnce=false;
+let writes=0,failRead=false,failDaily=false,lostEventResponse=false;
+const order=[];const clone=v=>structuredClone(v);
+async function dispatch(title,fn){if(failTargetOnce&&title==="行光週盤-20261026"){failTargetOnce=false;throw Error("target temporarily unavailable")}return load("lib/dojo/learningFoundation/writeOutcome.ts").trackLearningWrite(async()=>{if(failDaily&&title.startsWith("行光今日-")){const e=Error("isolated confirmed rejection");e.rejected=true;throw e;}const value=fn();writes++;order.push(title);if(lostEventResponse&&title.startsWith("行光完成事件-")){lostEventResponse=false;throw Error("isolated committed response lost");}return value;},e=>e.rejected===true);}
+const mutations={createKnowledgeEntry:async data=>dispatch(data.標題,()=>{const id=crypto.randomUUID();rows.set(id,{id,title:data.標題,value:JSON.parse(data.內容)});return{id};}),updateKnowledgeEntry:async(id,data)=>dispatch(data.標題??rows.get(id).title,()=>{const row=rows.get(id);if(!row)throw Error("missing page");rows.set(id,{id,title:data.標題??row.title,value:data.內容?JSON.parse(data.內容):row.value});return{id};}),archiveKnowledgeEntry:async id=>dispatch(rows.get(id).title,()=>{rows.delete(id);return{id};})};
+function matches(row,filter){if(!filter)return true;if(filter.and)return filter.and.every(f=>matches(row,f));const v=filter.title;return v.equals!==undefined?row.title===v.equals:v.starts_with!==undefined?row.title.startsWith(v.starts_with):row.title.endsWith(v.ends_with);}
+const query=async args=>{if(failRead){failRead=false;throw Error("isolated pre-write read failure");}const all=[...rows.values()].filter(r=>matches(r,args.filter)).sort((a,b)=>b.title.localeCompare(a.title));const offset=Number(args.start_cursor??0),page=all.slice(offset,offset+(args.page_size??100));return{results:page.map(clone),has_more:offset+page.length<all.length,next_cursor:offset+page.length<all.length?String(offset+page.length):null};};
+const queries={mapKnowledge:p=>({id:p.id,標題:p.title,內容:JSON.stringify(p.value)}),findKnowledgeEntryByTitle:async title=>{const result=await query({filter:{title:{equals:title}}});if(result.results.length>1)throw Error("duplicate title");return result.results[0]?queries.mapKnowledge(result.results[0]):null;},listKnowledgeEntriesByPrefix:async prefix=>(await query({filter:{title:{starts_with:prefix}},page_size:1000})).results.map(queries.mapKnowledge),getKnowledgeEntry:async id=>{if(!rows.has(id))throw Error("owner/page missing");return queries.mapKnowledge(rows.get(id));}};
+function load(file){file=resolve(file);if(cache.has(file))return cache.get(file).exports;const m=new Module(file);cache.set(file,m);m.filename=file;m.require=s=>{if(s==="server-only")return{};if(s==="@/lib/notion/mutations")return mutations;if(s==="@/lib/notion/queries")return queries;if(s==="@/lib/notion/client")return{notion:()=>({dataSources:{query}}),withNotionRateLimit:fn=>fn()};if(s==="@/lib/dojo/englishRhythm")return{syncVocabForgeWeeklyBingo:async()=>({summary:{}})};return s.startsWith("@/")?load(resolve(s.slice(2))+".ts"):s.startsWith(".")?load(resolve(dirname(file),s)+".ts"):require(s);};m._compile(ts.transpileModule(readFileSync(file,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,file);return m.exports;}
+const request=(method,path,body,auth=true)=>new NextRequest(`http://localhost${path}`,{method,headers:{"content-type":"application/json",...(auth?{cookie:`dsc_access_key=${key}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
+const payload=async response=>({status:response.status,body:await response.json()});
+try{
+ const formal=load('lib/dojo/formal.ts');const flow=load('app/api/dojo/flow/route.ts'),carry=load('app/api/dojo/bingo/continue/route.ts'),bingo=load('app/api/dojo/bingo/route.ts');
+ const board=formal.emptyWeeklyBoard('2026-10-19');Object.assign(board.cells[0],{taskInstanceId:'room',text:'整理房間',category:'health',completion:{mode:'checklist',target:2,progress:0,unit:'項',requiresEvidence:false},checklist:[{id:'a',text:'物品歸位',done:false},{id:'b',text:'地面清潔',done:false}]});
+ rows.set('source',{id:'source',title:formal.bingoRecordTitle(board.weekStart),value:board});
+ const post=body=>flow.POST(request('POST','/api/dojo/flow',{weekStart:board.weekStart,cellIndex:0,...body}));
+ assert.equal((await carry.POST(request('POST','/api/dojo/bingo/continue',{weekStart:board.weekStart,targetWeek:'2026-10-26',taskInstanceId:'room'},false))).status,401);
+ let result=await payload(await post({action:'progress-bingo',checklistId:'a'}));assert.equal(result.status,200);assert.equal(result.body.board.cells[0].completion.progress,1);assert.equal(result.body.board.cells[0].completed,false);
+ result=await payload(await post({action:'progress-bingo',checklistId:'b'}));assert.equal(result.body.board.cells[0].completed,true);
+ result=await payload(await post({action:'progress-bingo',checklistId:'a'}));assert.equal(result.body.board.cells[0].completed,false);assert.equal(result.body.board.cells[0].completion.progress,1);
+ rows.get('source').value.cells[0].disposition='paused';assert.equal((await post({action:'progress-bingo',checklistId:'a'})).status,503);delete rows.get('source').value.cells[0].disposition;
+ const before=JSON.stringify(rows.get('source').value);const args={weekStart:board.weekStart,targetWeek:'2026-10-26',taskInstanceId:'room'};
+ failTargetOnce=true;assert.equal((await carry.POST(request('POST','/api/dojo/bingo/continue',args))).status,503);
+ assert.equal(JSON.stringify(rows.get('source').value),before);
+ assert.notEqual((await post({action:'progress-bingo',checklistId:'a'})).status,200);
+ result=await payload(await carry.POST(request('POST','/api/dojo/bingo/continue',args)));assert.equal(result.status,200);assert.equal(result.body.link.status,'complete');
+ assert.equal(JSON.stringify(rows.get('source').value),before);
+ const target=[...rows.values()].find(r=>r.title===formal.bingoRecordTitle('2026-10-26'));assert.equal(target.value.cells[0].completion.progress,1);assert.equal(target.value.cells[0].checklist[1].done,true);
+ assert.equal((await carry.POST(request('POST','/api/dojo/bingo/continue',args))).status,200);assert.equal(target.value.cells.filter(c=>c.taskInstanceId==='room').length,1);
+ const changed=structuredClone(rows.get('source').value);changed.cells[0].text='不可改舊資料';assert.equal((await bingo.PUT(request('PUT','/api/dojo/bingo',{weekStart:board.weekStart,board:changed}))).status,409);
+ assert.equal((await bingo.DELETE(request('DELETE','/api/dojo/bingo?week=2026-10-19'))).status,409);
+ assert.equal((await bingo.PATCH(request('PATCH','/api/dojo/bingo',{weekStart:board.weekStart,action:'remove-cells',cellIndexes:[0]}))).status,409);
+ const counted=formal.emptyBingoCell(1,board.weekStart);Object.assign(counted,{taskInstanceId:'counted',text:'累積練習',completion:{mode:'count',target:5,progress:3,unit:'段',requiresEvidence:false},completionSources:{manualProgress:1,events:[{id:'old-event',quantity:3,unit:'段'}]}});rows.get('source').value.cells[1]=counted;
+ const projected=load('lib/dojo/practiceEvents/projection.ts');
+ const event={id:'new-event',quantity:1,unit:'段',occurredAt:'2026-10-26T10:00:00Z',binding:{weekStart:'2026-10-26',taskInstanceId:'counted'}};
+ assert.equal((await carry.POST(request('POST','/api/dojo/bingo/continue',{weekStart:board.weekStart,targetWeek:'2026-10-26',taskInstanceId:'counted'}))).status,200);
+ const countedTarget=[...rows.values()].find(r=>r.title===formal.bingoRecordTitle('2026-10-26')).value;
+ assert.equal(countedTarget.cells[1].completionSources.events[0].id,'old-event');
+ assert.equal(projected.projectWeekly(countedTarget,event).board.cells[1].completion.progress,4);
+ const paused=structuredClone(countedTarget);paused.cells[1].disposition='paused';assert.equal(projected.projectWeekly(paused,event).state,'unlinked');
+ const sync=load('lib/dojo/englishRhythm.ts').syncVocabForgeWeeklyBingo;
+ const vfSource=rows.get('source').value;vfSource.cells[2]={...formal.emptyBingoCell(2,board.weekStart),text:'舊VF任務',taskInstanceId:'vf-paused',disposition:'paused',learning:{trackKey:'english',templateKey:'vocabforge-scientific-week',skill:'詞彙'}};
+ let vfSnapshot=JSON.stringify(vfSource);let beforeWrites=writes;await sync(board.weekStart);assert.equal(JSON.stringify(rows.get('source').value),vfSnapshot);assert.equal(writes,beforeWrites);
+ delete vfSource.cells[2].disposition;const carryTitle=load('lib/dojo/weeklyTasks.ts').carryRecordTitle(board.weekStart,'vf-paused');rows.set('vf-ledger',{id:'vf-ledger',title:carryTitle,value:{weekStart:board.weekStart,taskInstanceId:'vf-paused',targetWeek:'2026-10-26',status:'complete'}});
+ vfSnapshot=JSON.stringify(vfSource);beforeWrites=writes;await sync(board.weekStart);assert.equal(JSON.stringify(rows.get('source').value),vfSnapshot);assert.equal(writes,beforeWrites);
+ let dailyResult=await payload(await flow.POST(request('POST','/api/dojo/flow',{action:'assign-bingo',weekStart:'2026-10-26',cellIndex:0,date:'2026-10-26',category:'health'})));assert.equal(dailyResult.status,200);
+ dailyResult=await payload(await flow.POST(request('POST','/api/dojo/flow',{action:'complete-task',date:'2026-10-26',category:'health',completed:true})));assert.equal(dailyResult.status,200);assert(dailyResult.body.board.cells[0].checklist.every(i=>i.done));
+ dailyResult=await payload(await flow.POST(request('POST','/api/dojo/flow',{action:'complete-task',date:'2026-10-26',category:'health',completed:false})));assert.equal(dailyResult.body.board.cells[0].completion.progress,0);
+ const beforeAuto=JSON.stringify(rows.get('source').value.cells[0]);const auto=structuredClone(rows.get('source').value);auto.cells[0].completion.progress=2;auto.cells[0].completed=true;auto.cells[0].checklist.forEach(item=>item.done=true);await load('lib/dojo/notionStore.ts').upsertJsonRecord(formal.bingoRecordTitle(board.weekStart),auto);assert.equal(JSON.stringify(rows.get('source').value.cells[0]),beforeAuto);
+ rows.get('source').value.archivedAt='2026-10-25';assert.equal((await bingo.PUT(request('PUT','/api/dojo/bingo',{weekStart:board.weekStart,board:rows.get('source').value}))).status,409);
+ console.log('Weekly API checklist undo, pause, owner access, interrupted continuation retry, immutable source and duplicate protection passed');
+}finally{await rm(directory,{recursive:true,force:true});}

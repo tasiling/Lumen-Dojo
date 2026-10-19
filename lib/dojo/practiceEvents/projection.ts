@@ -9,6 +9,7 @@ export function projectWeekly(board: WeeklyBoard | null, event: CompletionEvent)
   const matches = board.cells.filter(c => c.taskInstanceId === event.binding!.taskInstanceId);
   if (matches.length !== 1 || event.binding.taskInstanceId.startsWith("legacy:")) return { board, state: "unlinked" };
   const cell = matches[0] as ProjectedCell;
+  if (cell.disposition) return {board,state:"unlinked"};
   if (!cell.text.trim() || cell.completion.unit !== event.unit || !["single", "count"].includes(cell.completion.mode)) return { board, state: "unmatched" };
   const ledger = cell.completionSources ?? { manualProgress: cell.completion.progress, events: [] };
   if (ledger.events.some(e => e.id === event.id)) return { board, state: "applied" };

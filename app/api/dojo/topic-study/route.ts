@@ -1,3 +1,5 @@
+import {withLearningWriteLock} from '@/lib/dojo/learningFoundation/fileLock';
+import {learningWriteOutcome} from '@/lib/dojo/learningFoundation/writeOutcome';
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -21,11 +23,15 @@ export const dynamic = "force-dynamic";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-async function syncWeeklyTopicCells(round: TopicStudyRound): Promise<boolean> {
+async function syncWeeklyTopicCellsUnlocked(round: TopicStudyRound): Promise<boolean> {
   const weekStart = mondayOf(taipeiTodayISO());
   const row = await readJsonRecord(bingoRecordTitle(weekStart));
   if (!row) return false;
   const board = normalizeWeeklyBoard(row.value, weekStart);
+  if(board.archivedAt)return false;
+  const links=await listJsonRecords(`行光續排-${weekStart}-`);
+  const blocked=new Set(links.map(row=>(row.value as {taskInstanceId:string}).taskInstanceId));
+  const eligible=(cell:typeof board.cells[number])=>!cell.disposition&&(!cell.taskInstanceId||!blocked.has(cell.taskInstanceId));
   const steps = [
     { key: "topic-select-video", ready: Boolean(round.videoUrl), evidence: "已選片" },
     { key: "topic-watch-absorb", ready: Boolean(round.summary.trim()), evidence: "已完成觀看吸收" },
@@ -43,9 +49,9 @@ async function syncWeeklyTopicCells(round: TopicStudyRound): Promise<boolean> {
       cell.learning.templateKey === step.key ||
       (step.key === "topic-context-talk" && legacySpeakingKeys.has(cell.learning.templateKey))
     );
-    const index = cells.findIndex((cell) => !cell.completed && matches(cell));
+    const index = cells.findIndex((cell) => !cell.completed && eligible(cell) && matches(cell));
     if (index < 0) {
-      if (step.key === "topic-context-talk" && cells.some((cell) => cell.completed && matches(cell))) finalSynced = true;
+      if (step.key === "topic-context-talk" && cells.some((cell) => cell.completed && eligible(cell) && matches(cell))) finalSynced = true;
       continue;
     }
     const cell = cells[index];
@@ -71,6 +77,8 @@ async function syncWeeklyTopicCells(round: TopicStudyRound): Promise<boolean> {
   }
   return finalSynced;
 }
+
+async function syncWeeklyTopicCells(round:TopicStudyRound){return learningWriteOutcome.getStore()?syncWeeklyTopicCellsUnlocked(round):withLearningWriteLock(()=>syncWeeklyTopicCellsUnlocked(round));}
 
 export async function GET() {
   try {

@@ -1,3 +1,4 @@
+import { carryRecordTitle } from "@/lib/dojo/weeklyTasks";
 import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
@@ -98,6 +99,7 @@ export async function PUT(req: NextRequest) {
     const board = normalizeWeeklyBoard(body.board, weekStart);
     const saved = await withLearningWriteLock(async () => {
       const current = await readJsonRecord(bingoRecordTitle(weekStart));
+      if(current){const before=normalizeWeeklyBoard(current.value,weekStart);if(before.archivedAt)throw new LearningError('已封存的週盤不能修改',409);const carryRows=await listJsonRecords(`行光續排-${weekStart}-`);const carriedIds=new Set(carryRows.map(r=>(r.value as {taskInstanceId:string}).taskInstanceId));for(const old of before.cells){if(!old.taskInstanceId||old.index===12)continue;if(carriedIds.has(old.taskInstanceId)){const replacement=board.cells.find(c=>c.taskInstanceId===old.taskInstanceId);if(!replacement||JSON.stringify({...replacement,index:old.index})!==JSON.stringify(old))throw new LearningError('已續排的任務請到後續週盤修改',409)}else if(old.disposition){const replacement=board.cells.find(c=>c.taskInstanceId===old.taskInstanceId);if(replacement&&replacement.completion.progress!==old.completion.progress)throw new LearningError('請先恢復暫停或取消的任務',409)}}}
       if(current && body.board?.updatedAt !== (current.value as { updatedAt?: string }).updatedAt) throw new LearningError("週盤版本已變更，請重新讀取",409);
       return upsertJsonRecord(bingoRecordTitle(weekStart), board, { manualCompletion: true });
     });
@@ -114,7 +116,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function patchUnlocked(req: NextRequest) {
   try {
     const body = await req.json();
     const week = typeof body.weekStart === "string" ? body.weekStart : "";
@@ -133,6 +135,7 @@ export async function PATCH(req: NextRequest) {
     const board = normalizeWeeklyBoard(row.value, weekStart);
     if (board.archivedAt) return NextResponse.json({ error: "已封存的週盤不能刪除格子" }, { status: 409 });
     const selected = board.cells.filter((cell) => indexes.includes(cell.index) && cell.text.trim());
+    for(const cell of selected){if(cell.taskInstanceId&&await readJsonRecord(carryRecordTitle(weekStart,cell.taskInstanceId)))throw new LearningError('已續排的任務請保留在原週盤',409)}
     let preservedDailyTasks = 0;
     for (const cell of selected) {
       if (await detachDailyTask(cell, weekStart)) preservedDailyTasks += 1;
@@ -146,14 +149,14 @@ export async function PATCH(req: NextRequest) {
       cells: board.cells.map((cell) => indexes.includes(cell.index) ? emptyBingoCell(cell.index, weekStart) : cell),
       updatedAt: new Date().toISOString(),
     }, weekStart);
-    await upsertJsonRecord(bingoRecordTitle(weekStart), next);
+    await upsertJsonRecord(bingoRecordTitle(weekStart), next, {manualCompletion:true});
     return NextResponse.json({ ok: true, board: next, removed: selected.length, preservedDailyTasks });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
 
-export async function DELETE(req: NextRequest) {
+async function deleteUnlocked(req: NextRequest) {
   try {
     const requested = req.nextUrl.searchParams.get("week") ?? "";
     if (!DATE_RE.test(requested)) return NextResponse.json({ error: "週起始日格式不正確" }, { status: 400 });
@@ -162,6 +165,8 @@ export async function DELETE(req: NextRequest) {
     if (!row) return NextResponse.json({ ok: true, board: emptyWeeklyBoard(weekStart), deleted: false, preservedDailyTasks: 0 });
     const board = normalizeWeeklyBoard(row.value, weekStart);
     if (board.archivedAt) return NextResponse.json({ error: "已封存週盤請保留為歷史紀錄" }, { status: 409 });
+    const continuationRows=await listJsonRecords(`行光續排-${weekStart}-`);
+    if(continuationRows.length)throw new LearningError('這張週盤有已續排的任務，請保留原週紀錄；仍可封存回看。',409);
     const cells = board.cells.filter((cell) => cell.index !== 12 && cell.text.trim());
     let preservedDailyTasks = 0;
     for (const cell of cells) {
@@ -174,3 +179,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: error instanceof LearningError ? error.status : 503 });
   }
 }
+
+export async function PATCH(req:NextRequest){try{requireLearningOwner(req);return await withLearningWriteLock(()=>patchUnlocked(req));}catch(error){return NextResponse.json({error:error instanceof Error?error.message:String(error)},{status:error instanceof LearningError?error.status:503})}}
+export async function DELETE(req:NextRequest){try{requireLearningOwner(req);return await withLearningWriteLock(()=>deleteUnlocked(req));}catch(error){return NextResponse.json({error:error instanceof Error?error.message:String(error)},{status:error instanceof LearningError?error.status:503})}}

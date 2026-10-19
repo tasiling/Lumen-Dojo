@@ -1,14 +1,15 @@
+import { PERSONAL_TEMPLATES, PERSONAL_PROJECTS, PERSONAL_BUNDLES } from "./weeklyPersonalizedSeed";
 import type { BingoCell, DailyTaskCategory } from "./formal";
 
 export type WeeklyTaskSource = "routine" | "project" | "custom" | "integration";
-export type WeeklyTemplateStatus = "active" | "archived";
-export type WeeklyProjectStatus = "priority" | "active" | "next" | "paused";
+export type WeeklyTemplateStatus = "active" | "archived" | "done" | "paused" | "cancelled";
+export type WeeklyProjectStatus = "priority" | "active" | "next" | "paused" | "done" | "cancelled";
 
 export type WeeklyTaskTemplate = {
   id: string;
   name: string;
   shortLabel: string;
-  category: DailyTaskCategory;
+  category: DailyTaskCategory | null;
   source: WeeklyTaskSource;
   completionMode: BingoCell["completion"]["mode"];
   target: number;
@@ -20,6 +21,8 @@ export type WeeklyTaskTemplate = {
   subproject: string;
   status: WeeklyTemplateStatus;
   builtIn: boolean;
+  checklist?: { id: string; text: string; done: boolean }[];
+  superseded?: boolean;
 };
 
 export type WeeklyProjectTemplate = {
@@ -29,6 +32,7 @@ export type WeeklyProjectTemplate = {
   status: WeeklyProjectStatus;
   statusLabel: string;
   recommendationAfter: string | null;
+  goal?: string;
 };
 
 export type WeeklyTemplateBundle = {
@@ -41,6 +45,8 @@ export type WeeklyTemplateBundle = {
 
 export type WeeklyTemplateLibrary = {
   version: 2;
+  revision?: 3;
+  retiredProjects?: WeeklyProjectTemplate[];
   templates: WeeklyTaskTemplate[];
   projects: WeeklyProjectTemplate[];
   bundles: WeeklyTemplateBundle[];
@@ -105,27 +111,33 @@ const BUNDLES: WeeklyTemplateBundle[] = [{
   status: "active", builtIn: true,
 }];
 
-export function defaultWeeklyTemplateLibrary(): WeeklyTemplateLibrary {
+function legacyWeeklyTemplateLibrary(): WeeklyTemplateLibrary {
   return { version: 2, templates: [...ROUTINES, ...PROJECT_TASKS], projects: PROJECTS, bundles: BUNDLES, updatedAt: new Date().toISOString() };
 }
 
-export function normalizeWeeklyTemplateLibrary(value: unknown): WeeklyTemplateLibrary {
-  const defaults = defaultWeeklyTemplateLibrary();
-  const source = value && typeof value === "object" ? value as Partial<WeeklyTemplateLibrary> : {};
-  const incoming = Array.isArray(source.templates) ? source.templates : [];
-  const templatesById = new Map(defaults.templates.map((item) => [item.id, item]));
-  for (const raw of incoming) {
-    if (!raw || typeof raw !== "object" || typeof raw.id !== "string" || !raw.id.trim()) continue;
-    const prior = templatesById.get(raw.id) ?? routine({ id: raw.id, name: raw.name || "未命名範本", templateCategory: raw.templateCategory || "我的範本", builtIn: false });
-    templatesById.set(raw.id, { ...prior, ...raw, id: raw.id.slice(0, 100), name: String(raw.name || prior.name).slice(0, 300), target: Math.max(1, Math.min(99, Number(raw.target) || 1)) });
-  }
-  const projectsById = new Map(defaults.projects.map((item) => [item.id, item]));
-  for (const raw of Array.isArray(source.projects) ? source.projects : []) if (raw?.id) projectsById.set(raw.id, { ...projectsById.get(raw.id), ...raw } as WeeklyProjectTemplate);
-  const bundlesById = new Map(defaults.bundles.map((item) => [item.id, item]));
-  for (const raw of Array.isArray(source.bundles) ? source.bundles : []) if (raw?.id) bundlesById.set(raw.id, { ...bundlesById.get(raw.id), ...raw } as WeeklyTemplateBundle);
-  return { version: 2, templates: [...templatesById.values()], projects: [...projectsById.values()], bundles: [...bundlesById.values()], updatedAt: new Date().toISOString() };
+export function defaultWeeklyTemplateLibrary(): WeeklyTemplateLibrary {
+ const old=legacyWeeklyTemplateLibrary();
+ return {version:2,revision:3,templates:[...structuredClone(PERSONAL_TEMPLATES),...old.templates.map(t=>({...t,status:'archived' as const}))],projects:[...structuredClone(PERSONAL_PROJECTS),...old.projects.filter(p=>["context-room","zero-chat"].includes(p.id)).map(p=>({...p,name:p.id==="context-room"?"語境修習室建置與更新":p.name}))],retiredProjects:old.projects,bundles:[...structuredClone(PERSONAL_BUNDLES),...old.bundles.map(b=>({...b,status:'archived' as const}))],updatedAt:new Date().toISOString()};
 }
-
+export function normalizeWeeklyTemplateLibrary(value: unknown): WeeklyTemplateLibrary {
+ const defaults=defaultWeeklyTemplateLibrary();
+ const source=value&&typeof value==='object'?value as Partial<WeeklyTemplateLibrary>:{};
+ const newIds=new Set(PERSONAL_TEMPLATES.map(t=>t.id));
+ const templates=new Map(defaults.templates.map(t=>[t.id,t]));
+ for(const raw of Array.isArray(source.templates)?source.templates:[]){
+  if(!raw||typeof raw.id!=='string'||!raw.id.trim())continue;
+  const prior=templates.get(raw.id)||routine({id:raw.id,name:raw.name||'未命名範本',templateCategory:'我的範本',builtIn:false});
+  const retired=source.revision!==3&&prior.builtIn&&!newIds.has(raw.id);
+  templates.set(raw.id,{...prior,...raw,name:String(raw.name||prior.name).slice(0,300),criteria:String(raw.criteria||'').slice(0,1000),target:Math.max(1,Math.min(99,Math.round(Number(raw.target)||1))),status:retired?'archived':raw.status||prior.status});
+ }
+ const removed=new Set(['muscle-education','magic-tree-house','lumen-improvement','practice-improvement']);
+ const projects=new Map(defaults.projects.map(p=>[p.id,p]));
+ const retired=new Map((defaults.retiredProjects||[]).filter(p=>removed.has(p.id)).map(p=>[p.id,p]));
+ for(const p of [...(source.retiredProjects||[]),...(source.projects||[])])if(p?.id){if(removed.has(p.id))retired.set(p.id,p);else projects.set(p.id,{...projects.get(p.id),...p} as WeeklyProjectTemplate)}
+ const bundles=new Map(defaults.bundles.map(b=>[b.id,b]));
+ for(const b of source.bundles||[])if(b?.id)bundles.set(b.id,{...b,status:source.revision!==3&&b.builtIn?'archived':b.status});
+ return {version:2,revision:3,templates:[...templates.values()],projects:[...projects.values()],retiredProjects:[...retired.values()],bundles:[...bundles.values()],updatedAt:new Date().toISOString()};
+}
 export function templateToCell(template: WeeklyTaskTemplate, index: number, weekStart: string): BingoCell {
   const now = Date.now().toString(36);
   return {
@@ -133,7 +145,8 @@ export function templateToCell(template: WeeklyTaskTemplate, index: number, week
     text: template.name, shortLabel: template.shortLabel || template.name.slice(0, 12), category: template.category,
     sourceType: template.source === "project" ? "project" : template.source === "routine" ? "routine" : "manual",
     sourceId: template.projectId || template.id, learning: null,
-    completion: { mode: template.completionMode, target: template.completionMode === "count" ? template.target : 1, progress: 0, unit: template.unit, requiresEvidence: template.completionMode === "free", criteria: template.criteria },
+    completion: { mode: template.completionMode, target: template.completionMode === "checklist" ? Math.max(1,template.checklist?.length||0) : template.completionMode === "count" ? template.target : 1, progress: 0, unit: template.unit, requiresEvidence: template.completionMode === "free", criteria: template.criteria },
+    checklist: template.checklist?.map((item,i)=>({...item,id:`item-${now}-${i}`,done:false})),
     evidenceNote: "", note: template.note, completed: false, completedAt: null, assignedDate: null, assignedCategory: null,
   };
 }

@@ -1,3 +1,4 @@
+import {carryRecordTitle} from "../weeklyTasks";
 import "server-only";
 import { createPracticeOnce } from "../learningFoundation/practiceWrite";
 import { learningWriteOutcome } from "../learningFoundation/writeOutcome";
@@ -23,6 +24,7 @@ export const practiceEvents = eventService({
   },
   async daily(date) { const row = await readJsonRecord(dailyRecordTitle(date)); return row ? normalizeDailyRecord(row.value, date) : emptyDailyRecord(date); },
   async saveDaily(date, value) { await upsertJsonRecord(dailyRecordTitle(date), { ...value, practiceEventOutput: true }, { projection: true }); },
+  async canProjectWeekly(week,id){return !await readJsonRecord(carryRecordTitle(week,id));},
   async weekly(week) { const row = await readJsonRecord(bingoRecordTitle(week)); return row ? normalizeWeeklyBoard(row.value, week) : null; },
   async saveWeekly(week, value) { await upsertJsonRecord(bingoRecordTitle(week), value, { projection: true }); },
   assertKnownOutcome() { if(learningWriteOutcome.getStore()?.unresolved) throw new LearningError("投影寫入結果不明，停止後續寫入", 503); },

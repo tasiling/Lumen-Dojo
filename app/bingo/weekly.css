@@ -1,0 +1,50 @@
+/* Approved weekly v2.5 page rules. Shared tokens and other page themes unchanged. */
+.dojo.weekly-shell{--bg:#F6F1E6;--surface:#FDFAF3;--ink:#2F2A22;--gold:#C99A4B;--line:#E4D9BE;--muted:#81796A;background:var(--bg);color:var(--ink)}
+.dojo.weekly-shell .nav{background:#FDFAF3;border-color:var(--line)}
+.dojo.weekly-shell .nav button.on{background:#EEE1C8;color:#2F2A22}
+.dojo.weekly-shell .primary{background:#4D6557;color:#FDFAF3}
+.dojo.weekly-shell .bingo-screen{max-width:680px;margin-inline:auto}
+.dojo.weekly-shell .ritual-card{background:var(--surface);border:1px solid var(--line);border-radius:20px}
+.dojo.weekly-shell .bingo-screen .field{font-size:16px;min-width:0;max-width:100%}
+.dojo.weekly-shell .bingo-grid{aspect-ratio:1;grid-template-rows:repeat(5,minmax(0,1fr));gap:6px;margin:18px 0;isolation:isolate}
+.dojo.weekly-shell .bingo-cell,.dojo.weekly-shell .bingo-grid textarea{box-sizing:border-box;aspect-ratio:1;width:100%;height:100%;min-width:0;min-height:0;padding:4px 2px;border-width:1px;border-style:solid;border-radius:10px;gap:0;overflow:hidden}
+.dojo.weekly-shell .bingo-cell{position:relative;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;text-align:center}
+.dojo.weekly-shell .bingo-cell-title{display:block;font-size:13px;line-height:1.25;font-weight:650;white-space:pre-line;word-break:normal;overflow:hidden;text-align:center;margin:auto 0;max-width:100%;-webkit-line-clamp:unset}
+.dojo.weekly-shell .weekly-cell-meta{width:100%;display:flex;align-items:center;justify-content:center;gap:4px;font-size:11px;font-variant-numeric:tabular-nums;line-height:1.15;min-height:13px;flex:none}
+.dojo.weekly-shell .bingo-cell.free{justify-content:center;gap:3px;background:#4D6557;border-color:#4D6557}
+.dojo.weekly-shell .bingo-cell.free .bingo-cell-title{margin:0}
+.dojo.weekly-shell .weekly-free-icon{font-size:23px;line-height:1}
+.dojo.weekly-shell .weekly-empty-plus{font-size:25px;line-height:1.1;margin-top:auto;font-weight:300}
+.dojo.weekly-shell .weekly-empty-number{font-size:11px;margin:5px 0 auto;color:var(--muted)}
+.dojo.weekly-shell .bingo-cell.in-line{background:#D9B568;color:#2F2A22;border-color:#99702E;border-style:solid;box-shadow:0 0 0 2px #99702E}
+.dojo.weekly-shell .bingo-cell.in-line .weekly-cell-meta{color:#594424}
+.dojo.weekly-shell .bingo-lines{z-index:4;pointer-events:none;opacity:1;filter:none}
+.dojo.weekly-shell .bingo-lines .line-underlay{stroke:#FDFAF3;stroke-width:5;opacity:.25;animation:none}
+.dojo.weekly-shell .bingo-lines .line-thread{stroke:#765321;stroke-width:2.5;opacity:1;stroke-linecap:round;animation:none}
+.dojo.weekly-shell .weekly-connection-summary{display:grid;gap:8px;padding:16px;background:#F1E5CD;color:#594424;border:1px solid var(--line);border-radius:12px;margin:18px 0}
+.dojo.weekly-shell .weekly-connection-summary span,.dojo.weekly-shell .weekly-board-hint{font-size:13px;line-height:1.75}
+.dojo.weekly-shell .weekly-view-tabs{display:flex;gap:6px;width:max-content;padding:4px;border:1px solid var(--line);border-radius:12px;background:#F6F1E6}
+.dojo.weekly-shell .weekly-view-tabs button{border:0;background:transparent;min-height:44px}
+.dojo.weekly-shell .weekly-view-tabs button[aria-pressed=true]{background:#FDFAF3;color:#594424}
+.dojo.weekly-shell .weekly-task-list{display:grid;gap:12px;margin:18px 0}
+.dojo.weekly-shell .weekly-task-list>button{display:grid;gap:8px;text-align:left;padding:16px;white-space:normal}
+.dojo.weekly-shell .weekly-task-list small{font-size:13px;line-height:1.6}
+.dojo.weekly-shell .weekly-checklist{display:grid;gap:8px;margin:18px 0}
+.dojo.weekly-shell .weekly-checklist label{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;min-height:48px;line-height:1.6}
+.dojo.weekly-shell .weekly-checklist input{width:20px;height:20px;margin-top:3px;accent-color:#99702E;flex:none}
+.dojo.weekly-shell .weekly-lifecycle{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.dojo.weekly-shell .weekly-continuation{display:grid;gap:12px;padding-top:20px;margin-top:20px;border-top:1px solid var(--line)}
+.dojo.weekly-shell .template-criteria{font-size:14px;line-height:1.75;margin:8px 14px 14px;white-space:normal}
+.dojo.weekly-shell .template-pick-main{flex-wrap:wrap;min-height:48px}
+.dojo.weekly-shell .weekly-project-group{font-size:15px;margin:18px 12px 12px;line-height:1.6;color:#765321}
+.dojo.weekly-shell .template-preview-edit,.dojo.weekly-shell .custom-template-editor{display:grid;gap:16px}
+.dojo.weekly-shell .template-preview-edit label,.dojo.weekly-shell .custom-template-editor label{display:flex;flex-direction:column;gap:8px}
+.dojo.weekly-shell .template-filter-row{flex-wrap:wrap}
+.dojo.weekly-shell .bingo-screen .two,.dojo.weekly-shell .cell-completion-editor{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.dojo.weekly-shell .bingo-screen .two>label,.dojo.weekly-shell .cell-completion-editor>label{display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.dojo.weekly-shell .bingo-screen .two>label>.field,.dojo.weekly-shell .cell-completion-editor>label>.field{height:3.25rem;min-height:3.25rem}
+.dojo.weekly-shell .template-manage-list>div{flex-wrap:wrap;gap:8px}
+.dojo.weekly-shell .template-manage-list>div>span{overflow-wrap:anywhere}
+@media(max-width:360px){.dojo.weekly-shell .board-card{padding:12px}.dojo.weekly-shell .bingo-grid{gap:5px}.dojo.weekly-shell .bingo-cell-title{font-size:12px}.dojo.weekly-shell .weekly-cell-meta{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.dojo.weekly-shell .bingo-lines line{animation:none}}
+@media(max-width:360px){.dojo.weekly-shell .bingo-cell{padding:2px 1px}.dojo.weekly-shell .bingo-cell-title{line-height:1.15}.dojo.weekly-shell .weekly-cell-meta{min-height:11px;line-height:1.1}}

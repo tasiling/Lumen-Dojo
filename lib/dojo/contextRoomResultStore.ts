@@ -1,3 +1,6 @@
+import {withLearningWriteLock} from './learningFoundation/fileLock';
+import {learningWriteOutcome} from './learningFoundation/writeOutcome';
+import {assertTaskActive,carryRecordTitle} from './weeklyTasks';
 import "server-only";
 
 import { createHash } from "node:crypto";
@@ -70,11 +73,13 @@ export async function listContextActivityCandidates(): Promise<ContextActivityCa
   if (!row) return [];
   const board = normalizeWeeklyBoard(row.value, weekStart);
   if (board.archivedAt) return [];
+  const links=await listJsonRecords(`行光續排-${weekStart}-`);
+  const carriedIds=new Set(links.map(row=>(row.value as {taskInstanceId:string}).taskInstanceId));
   return board.cells.flatMap((cell) => {
     if (
       cell.index === 12 ||
       !cell.text.trim() ||
-      cell.completed ||
+      cell.completed || cell.disposition || (cell.taskInstanceId&&carriedIds.has(cell.taskInstanceId)) ||
       cell.completion.target !== 1 ||
       cell.learning?.trackKey !== "english" ||
       (cell.learning.path ?? "practice") !== "practice" ||
@@ -121,7 +126,7 @@ async function findExistingResult(draft: ContextRoomResultDraft): Promise<Stored
   return null;
 }
 
-async function completeExactActivity(result: StoredContextResult): Promise<{ activityLabel: string | null; completedAt: string | null }> {
+async function completeExactActivityUnlocked(result: StoredContextResult): Promise<{ activityLabel: string | null; completedAt: string | null }> {
   if (!result.linkedActivityId) return { activityLabel: null, completedAt: null };
   const target = parseActivityId(result.linkedActivityId);
   if (!target) throw new Error("關聯的英文活動識別碼不正確");
@@ -140,6 +145,7 @@ async function completeExactActivity(result: StoredContextResult): Promise<{ act
     (cell.learning.path ?? "practice") !== "practice" ||
     cell.completion.target !== 1
   ) throw new Error("這項英文活動已變更，請重新選擇尚未完成的活動");
+  assertTaskActive(cell,cell.taskInstanceId&&await readJsonRecord(carryRecordTitle(target.weekStart,cell.taskInstanceId))?"後續週盤":undefined);
   if (target.templateKey === "context-room-deep-practice" && !result.secondTakeCompleted) {
     throw new Error("新版語境修習格需要完成 Second Take／Revised Draft 後才能完成");
   }
@@ -173,6 +179,8 @@ async function completeExactActivity(result: StoredContextResult): Promise<{ act
   await syncLearningActivity({ weekStart: target.weekStart, cell });
   return { activityLabel: cell.shortLabel || cell.text, completedAt };
 }
+
+async function completeExactActivity(result:StoredContextResult){return learningWriteOutcome.getStore()?completeExactActivityUnlocked(result):withLearningWriteLock(()=>completeExactActivityUnlocked(result));}
 
 export async function saveContextRoomResult(params: {
   draft: unknown;

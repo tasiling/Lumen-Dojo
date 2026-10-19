@@ -1,3 +1,5 @@
+import {withLearningWriteLock} from '@/lib/dojo/learningFoundation/fileLock';
+import {learningWriteOutcome} from '@/lib/dojo/learningFoundation/writeOutcome';
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -25,14 +27,18 @@ function seedTitle(date: string, key: string): string {
   return `${CONTEXT_SEED_TITLE_PREFIX}${date.replace(/-/g, "")}-${suffix}`;
 }
 
-async function syncWeeklyContextCell(seed: NonNullable<ReturnType<typeof normalizeContextPracticeSeed>>): Promise<boolean> {
+async function syncWeeklyContextCellUnlocked(seed: NonNullable<ReturnType<typeof normalizeContextPracticeSeed>>): Promise<boolean> {
   const weekStart = mondayOf(taipeiTodayISO());
   const title = bingoRecordTitle(weekStart);
   const row = await readJsonRecord(title);
   if (!row) return false;
   const board = normalizeWeeklyBoard(row.value, weekStart);
+  if(board.archivedAt)return false;
+  const links=await listJsonRecords(`行光續排-${weekStart}-`);
+  const blocked=new Set(links.map(row=>(row.value as {taskInstanceId:string}).taskInstanceId));
+  const eligible=(cell:typeof board.cells[number])=>!cell.disposition&&(!cell.taskInstanceId||!blocked.has(cell.taskInstanceId));
   const preferred = ["english-context-chat", "speaking-scenario", "speaking-maintenance"];
-  const index = board.cells.findIndex((cell) => !cell.completed && cell.learning?.trackKey === "english" && preferred.includes(cell.learning.templateKey));
+  const index = board.cells.findIndex((cell) => !cell.completed && eligible(cell) && cell.learning?.trackKey === "english" && preferred.includes(cell.learning.templateKey));
   if (index < 0) return false;
   const cells = [...board.cells];
   const cell = cells[index];
@@ -48,6 +54,8 @@ async function syncWeeklyContextCell(seed: NonNullable<ReturnType<typeof normali
   await syncLearningActivity({ weekStart, cell: completedCell });
   return true;
 }
+
+async function syncWeeklyContextCell(seed:NonNullable<ReturnType<typeof normalizeContextPracticeSeed>>){return learningWriteOutcome.getStore()?syncWeeklyContextCellUnlocked(seed):withLearningWriteLock(()=>syncWeeklyContextCellUnlocked(seed));}
 
 export async function GET() {
   try {
