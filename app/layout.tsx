@@ -5,6 +5,7 @@ import { BackStackProvider } from "@/lib/dojo/backstack";
 import DojoShell from "./components/DojoShell";
 import "./globals.css";
 import "./dojo.css";
+import "./today-calendar.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

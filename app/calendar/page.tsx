@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { TodayCalendarIcon } from "@/app/components/TodayCalendarArt";
+import CalendarEventEditor from "@/app/components/CalendarEventEditor";
+import { moveCalendarPeriod } from "@/lib/dojo/todayCalendarUi";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDojo } from "@/lib/dojo/store";
 import {
@@ -71,12 +74,6 @@ async function readResponse<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error((json as { error?: string }).error ?? `載入失敗（${response.status}）`);
   return json as T;
-}
-
-function shiftMonth(yearMonth: string, delta: number) {
-  const [year, month] = yearMonth.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1 + delta, 1, 12));
-  return date.toISOString().slice(0, 7);
 }
 
 function monthGrid(yearMonth: string) {
@@ -221,6 +218,7 @@ export default function CalendarPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [personal, setPersonal] = useState<PersonalCalendarItem[]>([]);
   const [daily, setDaily] = useState<DailyRecord[]>([]);
+  const [editing, setEditing] = useState<PersonalCalendarItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -325,9 +323,9 @@ export default function CalendarPage() {
   }
 
   function moveMonth(delta: number) {
-    const next = shiftMonth(yearMonth, delta);
-    setYearMonth(next);
-    setSelectedDay(`${next}-01`);
+    const next = moveCalendarPeriod(yearMonth, selectedDay, view, delta);
+    setYearMonth(next.yearMonth);
+    setSelectedDay(next.selectedDay);
   }
 
   function chooseDay(iso: string) {
@@ -350,7 +348,7 @@ export default function CalendarPage() {
           <h1>行事曆</h1>
           <p className="lead">看見每天留下的狀態，也能分開查看個人與工作排程。</p>
         </div>
-        <button className="primary compact-button" onClick={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}>＋ 新增</button>
+        <button className="primary compact-button" onClick={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}><TodayCalendarIcon name="i-plus" />新增</button>
       </div>
 
       {mode === "work" && (
@@ -365,24 +363,24 @@ export default function CalendarPage() {
       )}
 
       <div className="calendar-controls">
-        <button onClick={() => moveMonth(-1)}>←</button>
+        <button onClick={() => moveMonth(-1)} aria-label={view === "month" ? "上一個月" : view === "week" ? "上一週" : "前一天"}><TodayCalendarIcon name="i-back" /></button>
         <button className="month-label" onClick={() => { setYearMonth(today.slice(0, 7)); setSelectedDay(today); }}>
-          {yearMonth.replace("-", " 年 ")} 月
+          {yearMonth.replace("-", " 年 ")} 月<small>回到今天</small>
         </button>
-        <button onClick={() => moveMonth(1)}>→</button>
+        <button onClick={() => moveMonth(1)} aria-label={view === "month" ? "下一個月" : view === "week" ? "下一週" : "後一天"}><TodayCalendarIcon name="i-arrow" /></button>
       </div>
 
       <div className="segmented three">
         {([[
           "month", "月",
         ], ["week", "週"], ["day", "日"]] as const).map(([key, label]) => (
-          <button key={key} className={view === key ? "on" : ""} onClick={() => setView(key)}>{label}</button>
+          <button key={key} className={view === key ? "on" : ""} aria-pressed={view === key} onClick={() => setView(key)}>{label}</button>
         ))}
       </div>
 
       <div className="row source-filter" aria-label="行事曆顯示內容">
         {CALENDAR_MODES.map(({ id, label }) => (
-          <button key={id} className={mode === id ? "on" : ""} onClick={() => setMode(id)}>{label}</button>
+          <button key={id} className={mode === id ? "on" : ""} aria-pressed={mode === id} onClick={() => setMode(id)}>{label}</button>
         ))}
       </div>
 
@@ -403,6 +401,8 @@ export default function CalendarPage() {
                     key={cell.iso}
                     className={`${cell.inMonth ? "" : "outside"} ${cell.iso === today ? "today" : ""} ${cell.iso === selectedDay ? "selected" : ""}`}
                     onClick={() => chooseDay(cell.iso)}
+                    aria-pressed={cell.iso === selectedDay}
+                    aria-current={cell.iso === today ? "date" : undefined}
                     aria-label={`${cell.iso}${mode === "calendar" && hasDailyActivity(dailyRecord) ? "，有留下狀態" : items.length ? `，${items.length} 件` : ""}`}
                   >
                     <span className="calendar-date-row">
@@ -423,6 +423,8 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
+
+      {!loading && view === "month" && mode === "calendar" && <div className="tc-calendar-legend"><span><i className="am" />上半環：晨間深度</span><span><i className="pm" />下半環：收光深度</span><span><i />底部四格：英文光步</span></div>}
 
       {!loading && view === "week" && (
         <div className={`week-calendar ${mode === "calendar" ? "calendar-rich" : "calendar-compact"}`}>
@@ -451,9 +453,16 @@ export default function CalendarPage() {
             items={byDay.get(selectedDay) ?? []}
             onAdd={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}
             onRemove={removePersonal}
+            onEdit={id => setEditing(personal.find(item => item.id === id) ?? null)}
           />
         </>
       )}
+      {editing && <CalendarEventEditor key={editing.id} item={editing} onClose={() => setEditing(null)} onSaved={item => {
+        setEditing(null);
+        setSelectedDay(item.date);
+        if (item.date.slice(0, 7) !== yearMonth) setYearMonth(item.date.slice(0, 7));
+        else void load();
+      }} />}
     </section>
   );
 }
@@ -551,11 +560,13 @@ function DayAgenda({
   items,
   onAdd,
   onRemove,
+  onEdit,
 }: {
   date: string;
   items: AgendaItem[];
   onAdd: () => void;
   onRemove: (id: string) => Promise<void>;
+  onEdit: (id: string) => void;
 }) {
   return (
     <section className="ritual-card day-agenda">
@@ -581,7 +592,7 @@ function DayAgenda({
                 {item.href ? <Link href={item.href}>{item.title}</Link> : <b>{item.title}</b>}
                 {item.note && <p>{item.note}</p>}
               </div>
-              {item.manualId && <button className="icon-button danger" onClick={() => void onRemove(item.manualId!)} aria-label={`刪除「${item.title}」`}>×</button>}
+              {item.manualId && <div className="tc-agenda-actions"><button type="button" onClick={() => onEdit(item.manualId!)} aria-label={`編輯「${item.title}」`}><TodayCalendarIcon name="i-write" /><span>編輯</span></button><button type="button" className="icon-button danger" onClick={() => void onRemove(item.manualId!)} aria-label={`刪除「${item.title}」`}><TodayCalendarIcon name="i-trash" /></button></div>}
             </div>
           ))}
         </div>

@@ -1,0 +1,280 @@
+/* Approved Today/calendar v1.6. Route scope is deliberate: other page owners
+   retain their own styling and formal data behavior. */
+.dojo.tc-shell {
+  --bg:#F5F3EC;--paper:#FFFDF8;--ink:#26372F;--muted:#646B60;
+  --line:#DEDFD3;--tc-accent:#344E41;--tc-soft:#E9EEE5;
+  --tc-field:#A7B1A2;--radius-card:15px;
+  background:var(--bg);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;
+}
+.dojo.tc-today-theme {
+  --bg:#F4F6FB;--paper:#FFFEFE;--ink:#30415F;--muted:#606C83;
+  --line:#DCE2ED;--tc-accent:#4B6288;--tc-soft:#E9EEF8;--tc-field:#B1BDD0;
+  background:linear-gradient(160deg,#FCF0F3 0%,#F3F0F9 36%,#EDF3FC 76%,#E4EEFB 100%);
+}
+.dojo.tc-shell .app {max-width:1080px;background:transparent;padding-bottom:calc(116px + env(safe-area-inset-bottom));}
+.dojo.tc-shell .screen {padding:28px 22px 36px;}
+.dojo.tc-shell .top {padding:13px 22px;background:rgba(255,254,254,.96);gap:12px;}
+.dojo.tc-shell .brand {display:flex;gap:10px;align-items:center;}
+.dojo.tc-shell .brand>.tc-icon {width:24px;height:24px;flex-shrink:0;color:var(--tc-accent);}
+.dojo.tc-shell .brand b {font:600 16px/1.5 "Songti TC","PMingLiU",serif;letter-spacing:.07em;}
+.dojo.tc-shell .brand small {font-size:10px;margin-top:1px;letter-spacing:.15em;}
+.dojo.tc-shell .top-actions {display:flex;gap:8px;}
+.dojo.tc-shell .top button {display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:9px 12px;font-size:13px;border-radius:10px;}
+.dojo.tc-shell .tc-icon {display:inline-block;width:20px;height:20px;vertical-align:middle;flex-shrink:0;}
+.dojo.tc-shell .top .backbtn {padding-inline:0;border:0;background:transparent;font-size:16px;}
+.dojo.tc-shell h1,.dojo.tc-shell h2,.dojo.tc-shell h3 {font-family:"Songti TC","PMingLiU",serif;line-height:1.4;}
+.dojo.tc-shell .screen h1 {font-size:34px;margin:0 0 12px;}
+.dojo.tc-shell .screen h2 {font-size:19px;margin:0 0 12px;}
+.dojo.tc-shell .screen h3 {font-size:16px;}
+.dojo.tc-shell p {line-height:1.65;}
+.dojo.tc-shell small {font-size:12px;line-height:1.5;}
+.dojo.tc-shell .eyebrow {display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:13px;font-weight:400;line-height:1.5;letter-spacing:0;color:var(--muted);margin-bottom:7px;}
+.dojo.tc-shell .eyebrow .tc-icon {width:22px;height:22px;color:var(--tc-accent);}
+.dojo.tc-shell button,.dojo.tc-shell .button-link {min-height:44px;border-radius:10px;font-size:14px;line-height:1.5;}
+.dojo.tc-shell button:focus-visible,.dojo.tc-shell a:focus-visible,.dojo.tc-shell summary:focus-visible,.dojo.tc-shell .field:focus-visible {outline:3px solid var(--tc-accent);outline-offset:3px;}
+.dojo.tc-shell .primary {background:var(--tc-accent);border-color:var(--tc-accent);color:#FCFCFF;min-height:46px;padding:10px 16px;}
+.dojo.tc-shell .field {max-width:100%;min-width:0;min-height:46px;font-family:inherit;font-weight:400;font-size:16px;line-height:1.65;border:1px solid var(--tc-field);border-radius:9px;padding:11px 12px;background:var(--paper);color:var(--ink);margin:7px 0 0;}
+.dojo.tc-shell .field::placeholder {color:var(--muted);opacity:1;}
+.dojo.tc-shell textarea.field {min-height:92px;resize:vertical;}
+.dojo.tc-shell label {display:block;font-size:14px;font-weight:500;margin-top:18px;}
+.dojo.tc-shell input[type=checkbox] {accent-color:var(--tc-accent);}
+.dojo.tc-shell .ritual-card {padding:20px;margin:0;border:1px solid var(--line);border-radius:15px;background:var(--paper);box-shadow:0 3px 16px rgba(75,98,136,.035);}
+.dojo.tc-shell .section-heading {align-items:flex-start;gap:12px;margin-bottom:18px;}
+.dojo.tc-shell .section-heading h2 {margin-bottom:0;}
+.dojo.tc-shell .section-heading .text-link {font-size:13px;white-space:normal;flex-shrink:0;}
+.dojo.tc-shell .text-link,.dojo.tc-shell .text-action,.dojo.tc-shell .button-link {color:var(--tc-accent);}
+.dojo.tc-shell .today-screen {display:grid;gap:24px;}
+.dojo.tc-shell .today-screen> :is(.hero,.ritual-card,.spaces-shortcut) {margin:0;}
+.dojo.tc-shell .today-hero {position:relative;isolation:isolate;overflow:hidden;min-height:0;border:1px solid #D8D4E6;border-radius:18px;padding:23px;background:linear-gradient(135deg,#F2C8D1 0%,#DDD9EF 48%,#B9CCE8 100%);color:#30415F;}
+.dojo.tc-shell .tc-hero-content {position:relative;z-index:1;}
+.dojo.tc-shell .today-hero .eyebrow {font-size:13px;color:#344966;margin:0 0 12px;}
+.dojo.tc-shell .today-hero h1 {font-size:34px;line-height:1.4;margin:0 0 12px;}
+.dojo.tc-shell .today-hero p {font-size:16px;color:#344966;margin:0;}
+.dojo.tc-shell .today-summary {margin-top:22px;gap:8px;}
+.dojo.tc-shell .today-summary a {display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:10px 12px;border:1px solid rgba(255,255,255,.85);border-radius:10px;background:rgba(255,254,254,.62);color:#344966;font-size:13px;}
+.dojo.tc-shell .tc-glass-motif {position:absolute;right:-24px;top:0;width:230px;height:230px;pointer-events:none;}
+.dojo.tc-shell .tc-jumps {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border:1px solid var(--line);border-radius:10px;background:rgba(255,254,254,.72);}
+.dojo.tc-shell .tc-jumps a {display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 4px;min-height:44px;color:var(--tc-accent);font-size:13px;text-decoration:none;}
+.dojo.tc-shell .tc-jumps .tc-icon {width:18px;height:18px;}
+.dojo.tc-shell :is(#today-morning,#today-tasks,#today-daytime,#today-closing) {scroll-margin-top:100px;}
+.dojo.tc-shell .reading-today-reminder {display:flex;gap:12px;align-items:center;padding:18px 20px;border:1px solid var(--line);border-radius:15px;background:#EEF2FA;margin:0;color:var(--ink);text-decoration:none;}
+.dojo.tc-shell .reading-today-reminder>.tc-icon:first-child {width:27px;height:27px;}
+.dojo.tc-shell .reading-today-reminder div {flex:1;min-width:0;}
+.dojo.tc-shell .reading-today-reminder b {font-size:16px;}
+.dojo.tc-shell .reading-today-reminder small {display:block;font-size:14px;color:var(--muted);margin-top:5px;}
+.dojo.tc-shell .segmented {gap:4px;border:0;border-radius:10px;padding:4px;background:var(--tc-soft);margin:12px 0 18px;overflow:visible;}
+.dojo.tc-shell .segmented button {border:0;border-radius:8px;padding:8px 4px;font-size:13px;color:var(--muted);}
+.dojo.tc-shell .segmented button.on {background:var(--tc-accent);color:#FCFCFF;}
+.dojo.tc-shell .segmented button small {font-size:11px;color:inherit;}
+.dojo.tc-shell .segmented button b {font-size:14px;}
+.dojo.tc-shell :is(.morning-section-block,.role-message-section,.morning-choice-section,.morning-layer-fields,.evening-morning-context,.closing-flow-panel,.vocabforge-rounds,.evening-english-summary) {padding:18px;border-radius:13px;border-color:var(--line);background:#F4F6FB;margin-top:24px;}
+.dojo.tc-shell :is(.morning-section-title,.morning-layer-heading) b {font-size:16px;}
+.dojo.tc-shell :is(.morning-section-title,.morning-layer-heading) small {font-size:13px;}
+.dojo.tc-shell .morning-role-empty {padding:16px;background:#F8F9FC;border-color:var(--line);margin-top:24px;}
+.dojo.tc-shell .morning-role-empty p {font-size:14px;}
+.dojo.tc-shell :is(.morning-creative-setup,.morning-creative-anchor a) {font-size:13px;color:var(--tc-accent);}
+.dojo.tc-shell .morning-creative-anchor {margin:24px 0;padding:18px;border:1px solid var(--line);border-left:3px solid #C5A1B4;border-radius:13px;background:#FFFEFE;}
+.dojo.tc-shell .morning-creative-anchor b {font-size:18px;line-height:1.5;}
+.dojo.tc-shell .morning-creative-anchor small {font-size:12px;color:var(--muted);}
+.dojo.tc-shell .morning-creative-anchor span {font-size:13px;line-height:1.6;}
+.dojo.tc-shell .role-message-card {border-left-color:#C5A1B4;background:linear-gradient(120deg,#F8EDF1,#EDF1FA);padding:18px;}
+.dojo.tc-shell .role-message-card p {font-size:18px;line-height:1.7;}
+.dojo.tc-shell .role-message-card small {font-size:12px;color:var(--muted);}
+.dojo.tc-shell .role-message-actions {gap:8px;margin:12px 0;}
+.dojo.tc-shell .role-message-actions button {font-size:12px;min-height:44px;}
+.dojo.tc-shell .role-message-feedback,.dojo.tc-shell .field-help {font-size:12px;line-height:1.6;color:var(--muted);}
+.dojo.tc-shell .inline-check {display:flex;gap:8px;font-size:13px;}
+.dojo.tc-shell .inline-check input {width:20px;height:20px;}
+.dojo.tc-shell .field-heading-row {flex-wrap:wrap;gap:8px;}
+.dojo.tc-shell .field-heading-row label {margin:0;}
+.dojo.tc-shell .field-heading-row .text-action {font-size:12px;min-height:44px;color:var(--tc-accent);}
+.dojo.tc-shell .ritual-card>.primary {width:100%;margin-top:24px;}
+.dojo.tc-shell .daily-task-list {gap:12px;margin:24px 0;}
+.dojo.tc-shell .daily-task {padding:14px;grid-template-columns:44px minmax(0,1fr);gap:10px;border-radius:13px;}
+.dojo.tc-shell .task-body label {font-size:14px;margin:0 0 8px;}
+.dojo.tc-shell .task-check {width:44px;height:44px;padding:0;border-radius:50%;}
+.dojo.tc-shell .english-rhythm-card {padding:0;background:linear-gradient(145deg,#F3F0FA,#E6EFFB);}
+.dojo.tc-shell .english-rhythm-card>summary {padding:20px;}
+.dojo.tc-shell .english-rhythm-card>summary h2 {margin-bottom:5px;}
+.dojo.tc-shell .english-rhythm-card>summary small {font-size:12px;color:var(--muted);}
+.dojo.tc-shell .english-rhythm-count {font-size:16px;border-color:var(--line);color:var(--tc-accent);}
+.dojo.tc-shell .english-rhythm-count.reached {color:#FCFCFF;background:var(--tc-accent);}
+.dojo.tc-shell .english-rhythm-body {padding:20px;border-color:var(--line);}
+.dojo.tc-shell .english-rhythm-status {font-size:14px;color:var(--tc-accent);margin-bottom:16px;}
+.dojo.tc-shell .english-touch-grid {gap:10px;}
+.dojo.tc-shell .english-touch-grid button {min-height:84px;padding:12px;border-color:var(--line);}
+.dojo.tc-shell .english-touch-grid button>b {font-size:14px;}
+.dojo.tc-shell .english-touch-grid button>small {font-size:12px;line-height:1.5;}
+.dojo.tc-shell .english-touch-grid button.on {background:var(--tc-soft);border-color:var(--tc-accent);color:var(--ink);}
+.dojo.tc-shell .vocabforge-rounds {margin:20px 0;}
+.dojo.tc-shell .vocabforge-rounds>div:first-child b {font-size:15px;color:var(--ink);}
+.dojo.tc-shell .vocabforge-rounds>div:first-child small {font-size:12px;}
+.dojo.tc-shell .vocabforge-round-options {gap:8px;margin-top:16px;}
+.dojo.tc-shell .vocabforge-round-options button b {font-size:14px;}
+.dojo.tc-shell .vocabforge-round-options button small {font-size:11px;}
+.dojo.tc-shell .vocabforge-round-options button.on {background:var(--tc-accent);border-color:var(--tc-accent);}
+.dojo.tc-shell .english-rhythm-body label {font-size:14px;}
+.dojo.tc-shell .quick-log {gap:10px;margin:18px 0 24px;grid-template-columns:minmax(0,1fr) auto;}
+.dojo.tc-shell .quick-log .field {margin:0;}
+.dojo.tc-shell .day-log {padding:12px 0;gap:10px;}
+.dojo.tc-shell .day-log time {font-size:12px;}
+.dojo.tc-shell .day-log span {font-size:14px;overflow-wrap:anywhere;}
+.dojo.tc-shell .day-log button {width:44px;min-height:44px;}
+.dojo.tc-shell .evening-english-summary span {font-size:12px;color:var(--muted);}
+.dojo.tc-shell .evening-english-summary b {font-size:15px;}
+.dojo.tc-shell .evening-english-summary small {font-size:13px;}
+.dojo.tc-shell .measure-disclosure {margin:24px 0;background:#F8F9FC;border-color:var(--line);}
+.dojo.tc-shell .measure-disclosure summary {padding:16px;flex-wrap:wrap;min-height:44px;}
+.dojo.tc-shell .measure-disclosure summary small {font-size:12px;}
+.dojo.tc-shell .measure-disclosure-body {padding:16px;border-color:var(--line);}
+.dojo.tc-shell .closing-choice-grid {display:grid;grid-template-columns:1fr;gap:10px;}
+.dojo.tc-shell .closing-choice-grid button {min-height:76px;padding:16px;text-align:left;border:1px solid var(--tc-field);background:var(--paper);}
+.dojo.tc-shell .closing-choice-grid button b {display:block;font-size:16px;}
+.dojo.tc-shell .closing-choice-grid button small {display:block;font-size:13px;line-height:1.6;margin-top:5px;color:var(--muted);}
+.dojo.tc-shell .closing-choice-grid button.on {border-color:var(--tc-accent);background:var(--tc-soft);color:var(--ink);}
+.dojo.tc-shell .closing-flow-panel>.primary {width:100%;margin-top:20px;}
+.dojo.tc-shell .evening-morning-context small {font-size:12px;color:var(--muted);}
+.dojo.tc-shell .evening-morning-context p b {font-size:14px;color:var(--ink);}
+.dojo.tc-shell .reflection-prompts {gap:8px;}
+.dojo.tc-shell .reflection-prompts button {font-size:12px;min-height:44px;}
+.dojo.tc-shell .carry-date-grid {gap:8px;}
+.dojo.tc-shell .carry-date-grid button {min-height:44px;font-size:12px;}
+.dojo.tc-shell .continuation-section {margin:0;padding:20px;border-color:var(--line);background:var(--tc-soft);}
+.dojo.tc-shell .continuation-card {padding:16px;border-color:var(--line);background:var(--paper);}
+.dojo.tc-shell .spaces-shortcut .grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.dojo.tc-shell .space-link {min-width:0;display:block;padding:16px;border:1px solid var(--realm-surface);border-top-width:3px;border-radius:15px;background:var(--realm-surface);color:var(--realm-ink);text-decoration:none;}
+.dojo.tc-shell .space-link>.tc-icon {box-sizing:content-box;width:25px;height:25px;padding:9px;background:rgba(255,255,255,.4);border-radius:13px;margin-bottom:12px;}
+.dojo.tc-shell .space-link b {display:block;font-size:15px;}
+.dojo.tc-shell .space-link small {display:block;color:var(--realm-ink);font-size:12px;margin-top:3px;}
+.dojo.tc-shell .nav {width:min(100%,560px);left:50%;right:auto;transform:translateX(-50%);grid-template-columns:repeat(5,minmax(0,1fr));border-radius:0;background:rgba(255,254,254,.96);padding:7px 8px calc(7px + env(safe-area-inset-bottom));z-index:30;}
+.dojo.tc-shell .nav button {font-size:12px;min-height:64px;min-width:0;padding:4px 2px;background:transparent;color:var(--muted);}
+.dojo.tc-shell .nav .nav-icon {width:44px;height:34px;margin:0 auto 3px;border-radius:20px;}
+.dojo.tc-shell .nav button.on {color:var(--tc-accent);background:transparent;}
+.dojo.tc-shell .nav button.on .nav-icon {background:var(--tc-soft);}
+.dojo.tc-shell .nav button[data-nav=add] .nav-icon {width:44px;height:38px;background:var(--tc-accent);color:#FCFCFF;border-radius:12px;}
+.dojo.tc-shell .nav .nav-icon svg {width:24px;height:24px;}
+.dojo.tc-shell .calendar-screen {display:grid;gap:24px;}
+.dojo.tc-shell .calendar-screen>.page-heading {margin:0;align-items:flex-start;}
+.dojo.tc-shell .calendar-screen .lead {font-size:14px;margin:0;}
+.dojo.tc-shell .calendar-controls {display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:12px;align-items:center;margin:0;}
+.dojo.tc-shell .calendar-controls button {min-width:0;}
+.dojo.tc-shell .calendar-controls .month-label {font-size:19px;color:var(--ink);padding:0;}
+.dojo.tc-shell .calendar-controls small {display:block;font-size:11px;color:var(--muted);}
+.dojo.tc-shell .calendar-screen>.segmented {margin:0;}
+.dojo.tc-shell .source-filter {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0;}
+.dojo.tc-shell .source-filter button {font-size:12px;min-width:0;padding:8px 3px;}
+.dojo.tc-shell .source-filter button.on {background:var(--tc-accent);color:#FAF9F0;border-color:var(--tc-accent);}
+.dojo.tc-shell .calendar-metric {margin:0;padding:16px;background:var(--paper);}
+.dojo.tc-shell .calendar-metric small {font-size:12px;}
+.dojo.tc-shell .calendar-metric a {font-size:13px;color:var(--tc-accent);}
+.dojo.tc-shell .month-calendar {margin:0 -10px;}
+.dojo.tc-shell .calendar-frame {border:1px solid #E4D9C0;border-radius:18px;background:#FFFDF8;box-shadow:none;}
+.dojo.tc-shell .calendar-weekdays {padding:0;background:#E9EEE5;border-bottom:1px solid #E4D9C0;}
+.dojo.tc-shell .calendar-weekdays span {padding:10px 0;font-size:13px;}
+.dojo.tc-shell .calendar-grid {gap:0;padding:0;}
+.dojo.tc-shell .calendar-grid button {display:flex;flex-direction:column;align-items:center;justify-content:flex-start;aspect-ratio:3/4;min-height:0;padding:4px 2px;gap:1px;border:0;border-right:1px solid #E4D9C0;border-bottom:1px solid #E4D9C0;border-radius:0;background:#FFFDF8;overflow:hidden;}
+.dojo.tc-shell .calendar-grid button:nth-child(7n) {border-right:0;}
+.dojo.tc-shell .calendar-grid button:nth-last-child(-n + 7) {border-bottom:0;}
+.dojo.tc-shell .calendar-grid button.outside {opacity:1;background:#F5F3EC;color:#8A8D82;}
+.dojo.tc-shell .calendar-grid button.selected {background:#FFFEFE;border-color:#E4D9C0;box-shadow:inset 0 0 0 2px #B9CCE8;z-index:1;}
+.dojo.tc-shell .calendar-date-row {width:100%;justify-content:center;align-items:center;min-height:20px;}
+.dojo.tc-shell .calendar-date-row>b {font-size:13px;line-height:20px;}
+.dojo.tc-shell .calendar-grid button.today .calendar-date-row>b {width:20px;height:20px;font-size:12px;background:#344E41;}
+.dojo.tc-shell .calendar-item-count {font-size:9px;margin-left:3px;}
+.dojo.tc-shell .calendar-review-cell {gap:1px;margin:auto 0;}
+.dojo.tc-shell .calendar-review-cell>.calendar-review-mark {width:16px;height:16px;}
+.dojo.tc-shell .calendar-review-cell small {font-size:8px;line-height:9px;}
+.dojo.tc-shell .calendar-english-marks {grid-template-columns:repeat(4,5px);gap:2px;min-height:2px;margin:0;}
+.dojo.tc-shell .calendar-english-marks i {width:5px;height:2px;}
+.dojo.tc-shell .calendar-empty-dot {width:3px;height:3px;margin:auto;border-radius:50%;background:#DEDFD3;}
+.dojo.tc-shell .calendar-dots {margin:auto;}
+.dojo.tc-shell .tc-calendar-legend {display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:-12px;font-size:11px;color:var(--muted);}
+.dojo.tc-shell .tc-calendar-legend span {display:flex;align-items:center;gap:5px;}
+.dojo.tc-shell .tc-calendar-legend i {width:7px;height:7px;background:#344E41;border-radius:50%;}
+.dojo.tc-shell .tc-calendar-legend i.am {background:#9A6A23;}
+.dojo.tc-shell .tc-calendar-legend i.pm {background:#52718A;}
+.dojo.tc-shell .calendar-review-mark .morning {stroke:#9A6A23;}
+.dojo.tc-shell .calendar-review-mark .evening {stroke:#52718A;}
+.dojo.tc-shell .calendar-day-review {margin:0;background:var(--paper);}
+.dojo.tc-shell .calendar-review-date h2 {font-size:25px;margin:0;}
+.dojo.tc-shell .calendar-record-pair {gap:10px;margin:24px 0;}
+.dojo.tc-shell .calendar-record-pair span,.dojo.tc-shell .calendar-task-progress span {font-size:14px;}
+.dojo.tc-shell .calendar-record-pair strong,.dojo.tc-shell .calendar-task-progress strong {font-size:14px;}
+.dojo.tc-shell .calendar-rhythm-panel {padding:16px;margin-top:18px;background:#F1F4EF;}
+.dojo.tc-shell .calendar-rhythm-heading div>span {font-size:12px;}
+.dojo.tc-shell .calendar-rhythm-steps span {font-size:12px;}
+.dojo.tc-shell .calendar-rhythm-panel>p {font-size:13px;}
+.dojo.tc-shell .calendar-rhythm-panel>small {font-size:12px;}
+.dojo.tc-shell .week-calendar {gap:4px;}
+.dojo.tc-shell .week-calendar>button {padding:10px 2px;min-width:0;}
+.dojo.tc-shell .week-calendar small,.dojo.tc-shell .week-calendar span {font-size:11px;}
+.dojo.tc-shell .agenda-list {display:grid;gap:12px;}
+.dojo.tc-shell .agenda-item {grid-template-columns:40px minmax(0,1fr) auto;gap:10px;padding:12px;border-radius:13px;}
+.dojo.tc-shell .agenda-time {font-family:inherit;font-size:12px;line-height:1.5;}
+.dojo.tc-shell .agenda-body small {font-size:12px;}
+.dojo.tc-shell .agenda-body>a,.dojo.tc-shell .agenda-body>b {font-size:15px;}
+.dojo.tc-shell .agenda-body p {font-size:13px;}
+.dojo.tc-shell .tc-agenda-actions {display:flex;flex-direction:column;gap:8px;align-items:center;}
+.dojo.tc-shell .tc-agenda-actions button {display:flex;align-items:center;justify-content:center;gap:4px;min-width:44px;min-height:44px;padding:6px;}
+.dojo.tc-shell .tc-agenda-actions button span {font-size:11px;}
+.dojo.tc-shell .tc-agenda-actions .tc-icon {width:17px;height:17px;}
+.dojo.tc-shell .sheet {max-width:560px;padding:24px 22px calc(24px + env(safe-area-inset-bottom));background:var(--paper);}
+.dojo.tc-shell .modal {z-index:60;}
+.dojo.tc-shell .sheet .row {gap:8px;}
+.dojo.tc-shell .sheet .row button {min-width:44px;}
+.dojo.tc-shell .sheet>.primary {width:100%;margin-top:24px;}
+.dojo.tc-shell .tc-event-editor {position:fixed;inset:0;margin:auto;width:min(560px,calc(100% - 32px));max-height:calc(100dvh - 48px);padding:24px 22px;border:1px solid var(--line);border-radius:18px;background:var(--paper);color:var(--ink);overflow:auto;}
+.dojo.tc-shell .tc-event-editor::backdrop {background:rgba(30,43,60,.3);}
+.dojo.tc-shell .tc-event-editor .section-heading {align-items:center;}
+.dojo.tc-shell .tc-event-editor fieldset {min-width:0;border:0;padding:0;margin:0;}
+.dojo.tc-shell .tc-event-editor h2 {margin:0;}
+.dojo.tc-shell .tc-event-editor .field {width:100%;}
+.dojo.tc-shell .tc-event-times {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.dojo.tc-shell .tc-event-times>div {min-width:0;}
+.dojo.tc-shell .tc-event-editor .primary {width:100%;margin-top:24px;}
+.dojo.tc-shell .measure-entry {margin:16px 0;padding:16px;border-color:var(--line);}
+.dojo.tc-shell .measure-entry>div:first-child small {font-size:12px;}
+.dojo.tc-shell .measure-entry>div:first-child b {font-size:15px;}
+.dojo.tc-shell .measure-summary button,.dojo.tc-shell .measure-editor button {min-height:44px;font-size:13px;}
+.dojo.tc-shell .measure-editor {padding:16px;border-color:var(--line);}
+.dojo.tc-shell .measure-heading b {font-size:14px;}
+.dojo.tc-shell .measure-control small {font-size:12px;}
+.dojo.tc-shell .measure-control input[type=range] {min-height:44px;}
+.dojo.tc-shell .evening-milestone-capture {margin-bottom:24px;border-color:var(--line);background:#F8F9FC;}
+.dojo.tc-shell .evening-milestone-capture summary {padding:16px;min-height:44px;flex-wrap:wrap;}
+.dojo.tc-shell .evening-milestone-capture summary span {font-size:14px;}
+.dojo.tc-shell .evening-milestone-capture summary small {font-size:12px;}
+.dojo.tc-shell .evening-milestone-capture>div {padding:16px;border-color:var(--line);}
+.dojo.tc-shell .evening-milestone-capture p {font-size:14px;line-height:1.65;}
+.dojo.tc-shell .evening-milestone-capture label {font-size:14px;margin-top:18px;}
+@media (max-width:359px) {
+  .dojo.tc-shell .screen {padding-inline:16px;}
+  .dojo.tc-shell .top {padding-inline:16px;}
+  .dojo.tc-shell .brand b {font-size:14px;}
+  .dojo.tc-shell .top-actions {gap:6px;}
+  .dojo.tc-shell .top button {padding-inline:9px;font-size:12px;}
+  .dojo.tc-shell .today-hero {padding:20px;}
+  .dojo.tc-shell .ritual-card {padding:16px;}
+  .dojo.tc-shell .tc-jumps a {font-size:12px;gap:4px;}
+  .dojo.tc-shell .month-calendar {margin-inline:-11px;}
+  .dojo.tc-shell .calendar-grid button {padding-block:3px;}
+  .dojo.tc-shell .calendar-date-row {min-height:18px;}
+  .dojo.tc-shell .calendar-date-row>b {font-size:12px;line-height:18px;}
+  .dojo.tc-shell .agenda-item {grid-template-columns:36px minmax(0,1fr);}
+  .dojo.tc-shell .tc-agenda-actions {grid-column:2;flex-direction:row;justify-content:flex-end;}
+}
+@media (min-width:760px) {
+  .dojo.tc-shell .screen {padding:36px;}
+  .dojo.tc-shell .top {padding-inline:36px;}
+  .dojo.tc-shell .today-hero {padding:28px;}
+  .dojo.tc-shell .today-hero h1 {font-size:42px;}
+  .dojo.tc-shell .tc-glass-motif {width:285px;height:285px;right:2px;top:-25px;}
+  .dojo.tc-shell .ritual-card {padding:26px;}
+  .dojo.tc-shell .spaces-shortcut .grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+  .dojo.tc-shell .calendar-screen {grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px 36px;align-items:start;}
+  .dojo.tc-shell .calendar-screen>:not(.calendar-day-review):not(.day-agenda):not(.tc-event-editor) {grid-column:1/-1;}
+  .dojo.tc-shell .calendar-screen .month-calendar {max-width:720px;width:100%;margin-inline:auto;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .dojo.tc-shell * {scroll-behavior:auto;transition:none;animation:none;}
+}
