@@ -38,6 +38,7 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
 }) {
     const [step, setStep] = useState<WorkflowStep>((work.textWorkflow ?? workflowFromLegacy(work)).currentStep);
     const [justCompleted, setJustCompleted] = useState(false);
+    const locatedCompletionApplied=useRef(false);
     const conversionDialog=useRef<HTMLDialogElement>(null);const[conversion,setConversion]=useState<TextWorkflow|null>(null),[conversionTitle,setConversionTitle]=useState('');
     const leave = useLeave(), [error, setError] = useState(''), [notice, setNotice] = useState(''), [pastePreview, setPastePreview] = useState<string | null>(null), [preview, setPreview] = useState<{
         work: WeavingWork;
@@ -77,6 +78,10 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
             completions: CompletionVersion[];
         }>('/api/dojo/weaving-works?id=' + encodeURIComponent(work.id));
         setVersions(r.completions ?? []);
+        if(!locatedCompletionApplied.current){
+            const wanted=new URLSearchParams(location.search).get('completion');
+            if(wanted){locatedCompletionApplied.current=true;if(r.completions?.some(v=>v.id===wanted)){setCompletionId(wanted);setStep('review');}else setNotice('指定的成品版本已不可用；其他版本仍可查看。');}
+        }
     }
     catch (e) {
         setError(e instanceof Error ? e.message : String(e));

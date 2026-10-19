@@ -66,8 +66,13 @@ export type AnnotationDependencies = {
     update: (value: Annotation) => Promise<void>;
 };
 export function annotationService(d: AnnotationDependencies) {
-    async function read(ref: ContentRef) { const key = contentKey(ref); const rows = (await d.list()).filter(a => a.owner === d.owner && contentKey(a.ref) === key); if (rows.length > 1)
-        throw new LearningError('分類資料重複，請先核對', 409); return rows[0] ?? null; }
+    async function read(ref: ContentRef) {
+        const key = contentKey(ref);
+        const rows = (await d.list()).filter(a => a.owner === d.owner && contentKey(a.ref) === key);
+        if (rows.length > 1)
+            throw new LearningError('分類資料重複，請先核對', 409);
+        return rows[0] ?? null;
+    }
     return { read, async save(value: unknown): Promise<Annotation> {
             const v = validateAnnotationInput(value);
             return d.run(v.operationId, v, async () => {
@@ -83,10 +88,13 @@ export function annotationService(d: AnnotationDependencies) {
                     throw new LearningError('尚未新增分類，不需要建立空白紀錄');
                 const now = new Date().toISOString();
                 const next: Annotation = { schema: 1, owner: d.owner, ref: v.ref, topics: v.topics, learningItemIds: v.learningItemIds, inheritBookSubjects: v.inheritBookSubjects, revision: (old?.revision ?? 0) + 1, createdAt: old?.createdAt ?? now, updatedAt: now };
-                return async () => { if (old)
-                    await d.update(next);
-                else
-                    await d.create(next); return next; };
+                return async () => {
+                    if (old)
+                        await d.update(next);
+                    else
+                        await d.create(next);
+                    return next;
+                };
             });
         } };
 }

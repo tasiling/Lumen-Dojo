@@ -38,7 +38,7 @@
     "test:forage-ui": "node scripts/test-forage-ui.mjs && node scripts/test-forage-review-regressions.mjs",
     "test:forage-mobile": "node scripts/test-forage-mobile.mjs",
     "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow",
-    "test:reading-knowledge": "node scripts/test-reading-knowledge.mjs && node scripts/test-reading-knowledge-relations.mjs && node scripts/test-reading-knowledge-search.mjs && node scripts/test-reading-knowledge-annotations.mjs && node scripts/test-reading-knowledge-operations.mjs",
+    "test:reading-knowledge": "node scripts/test-reading-knowledge.mjs && node scripts/test-reading-knowledge-relations.mjs && node scripts/test-reading-knowledge-search.mjs && node scripts/test-reading-knowledge-annotations.mjs && node scripts/test-reading-knowledge-operations.mjs && node scripts/test-reading-knowledge-review.mjs",
     "test:reading-knowledge-api": "node scripts/test-reading-knowledge-api.mjs",
     "test:reading-knowledge-ui": "node scripts/test-reading-knowledge-ui.mjs"
   },

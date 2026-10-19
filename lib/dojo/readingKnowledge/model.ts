@@ -14,6 +14,8 @@ export type SourceLink = {
     snapshot: string;
     version: string | null;
     label?: string;
+    context?: string;
+    claimVersionId?: string;
 };
 export type ContentItem = {
     ref: ContentRef;
@@ -25,6 +27,8 @@ export type ContentItem = {
     sourceVersion: string | null;
     originalTopics: string[];
     bookId?: string;
+    bookIds?: string[];
+    workId?: string;
     sources?: SourceLink[];
 };
 export function parseRef(value: unknown): ContentRef {
@@ -52,3 +56,5 @@ export function contentHref(ref: ContentRef): string {
 export const KIND_LABELS: Record<ContentKind, string> = { book: '書籍讀次', reading_note: '閱讀筆記', reading_insight: '閱讀洞察', knowledge_claim: '知識主張', weaving_work: '作品', completion: '成品版本' };
 export function normalizeId(id: string): string { return id.replaceAll('-', '').toLowerCase(); }
 export function sameId(a: string, b: string): boolean { return normalizeId(a) === normalizeId(b); }
+
+export function contentStatusLabel(status:string):string {return ({excerpt:"原文摘錄",thought:"我的想法",free:"自由筆記",preview:"讀前提問",review:"讀後回顧",understanding:"個人理解",candidate:"候選",active:"目前採用",partial:"部分支持",disputed:"仍有爭議",refuted:"已反證",superseded:"已被取代",archived:"已封存"} as Record<string,string>)[status]??status;}

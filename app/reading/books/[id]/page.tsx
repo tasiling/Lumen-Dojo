@@ -1,5 +1,6 @@
 "use client";
 
+import {readingNoteContent} from "@/lib/reading/content";
 import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
 import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -160,7 +161,7 @@ export default function ReadingBookPage() {
       </div>
 
       <RelationsPanel target={{kind:'book',recordId:book.id}} />
-      {notes.filter(n=>n.id===new URLSearchParams(typeof window==='undefined'?'':location.search).get('note')&&(n.kind==='preview'||n.kind==='review')).map(n=><LocatedContent key={n.id} parameter="note" id={n.id}><section className="ritual-card"><h2>指定的閱讀紀錄</h2><p style={{whiteSpace:'pre-wrap'}}>{n.text}</p><RelationsPanel target={{kind:'reading_note',recordId:n.id,parentBookId:book.id}} /></section></LocatedContent>)}
+      {notes.filter(n=>n.id===new URLSearchParams(typeof window==='undefined'?'':location.search).get('note')&&(n.kind==='preview'||n.kind==='review')).map(n=><LocatedContent key={n.id} parameter="note" id={n.id}><section className="ritual-card"><h2>指定的閱讀紀錄</h2><p style={{whiteSpace:'pre-wrap'}}>{readingNoteContent(n)}</p><RelationsPanel target={{kind:'reading_note',recordId:n.id,parentBookId:book.id}} /></section></LocatedContent>)}
       <aside className="reading-question-anchor">
         <span>這輪帶著什麼問題讀</span>
         <p>{book.question}</p>
@@ -395,8 +396,8 @@ function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard }: { book: Rea
       {note.metadata.location && <span>{note.metadata.location}</span>}
     </div>
     {note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
-    {note.metadata.reflection && <div className="reading-source-reflection"><small>我當時想到</small><p>{note.metadata.reflection}</p></div>}
-    {note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} />}
+    {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection"><div className="reading-source-reflection"><small>我的理解片段</small><p>{note.metadata.reflection}</p>{note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id,fragment:'reflection'}} />}</div></LocatedContent>}
+    {note.id&&<div><small>原筆記的來源與分類</small><RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} /></div>}
     <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button className="reading-make-card" disabled={!note.id} onClick={onMakeCard}>提煉洞察</button></div>
     {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
       source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}

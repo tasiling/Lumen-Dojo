@@ -7,8 +7,12 @@ const sessions = new Map<string, {
     expires: number;
     state: unknown;
 }>();
-function signature(text: string): string { const secret = process.env.ACCESS_KEY; if (!secret)
-    throw new LearningError('伺服器未設定存取金鑰', 503); return createHmac('sha256', secret).update(`reading-knowledge:${text}`).digest('hex'); }
+function signature(text: string): string {
+    const secret = process.env.ACCESS_KEY;
+    if (!secret)
+        throw new LearningError('伺服器未設定存取金鑰', 503);
+    return createHmac('sha256', secret).update(`reading-knowledge:${text}`).digest('hex');
+}
 export function encodeCursor<T>(state: T, owner: string, query: string): string {
     const now = Date.now();
     for (const [id, s] of sessions)

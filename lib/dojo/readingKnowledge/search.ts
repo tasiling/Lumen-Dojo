@@ -25,6 +25,7 @@ type State = {
     done: ContentKind[];
     buffer: ContentItem[];
     seen: string[];
+    pendingClassification: ContentItem[];
 };
 export function normalizeQuery(q: SearchQuery): SearchQuery {
     if (typeof q.q !== 'string' || q.q.length > 200 || (q.topic !== undefined && (typeof q.topic !== 'string' || q.topic.length > 40)) || (q.bookId && !uuidPattern.test(q.bookId)) || (q.learningItemId && !uuidPattern.test(q.learningItemId)) || (q.kinds && (!Array.isArray(q.kinds) || q.kinds.some(k => !kinds.includes(k)))))
@@ -35,13 +36,29 @@ export type Classification = {
     topics: string[];
     learningItemIds: string[];
 };
-export function createSearchService(adapters: Partial<Record<ContentKind, SourceAdapter>>, classify?: (item: ContentItem) => Classification) {
+export function createSearchService(adapters: Partial<Record<ContentKind, SourceAdapter>>, classify?: (item: ContentItem) => Classification, options: {
+    classificationAvailable?: boolean;
+} = {}) {
     return async (raw: SearchQuery, cursor: string | null, owner: string): Promise<SearchPage> => {
-        const q = normalizeQuery(raw), binding = JSON.stringify(q), selected = q.kinds ?? kinds;
-        const state: State = cursor ? decodeCursor(cursor, owner, binding) : { positions: {}, done: [], buffer: [], seen: [] };
+        const q = normalizeQuery(raw), binding = JSON.stringify(q), selected = q.kinds ?? kinds, classificationAvailable = options.classificationAvailable !== false;
+        const state: State = cursor ? decodeCursor(cursor, owner, binding) : { positions: {}, done: [], buffer: [], seen: [], pendingClassification: [] };
+        state.pendingClassification ??= [];
         const sourceStates: SearchPage['sourceStates'] = {};
-        const matches = (i: ContentItem) => { const c = classify?.(i) ?? { topics: [], learningItemIds: [] }; return (!q.q || `${i.title}\n${i.text}\n${i.locator}`.toLocaleLowerCase().includes(q.q.toLocaleLowerCase())) && (!q.bookId || sameId(i.bookId ?? i.ref.parentBookId ?? '', q.bookId)) && (!q.topic || [...i.originalTopics, ...c.topics].includes(q.topic)) && (!q.learningItemId || c.learningItemIds.some(id => sameId(id, q.learningItemId!))); };
-        if (state.buffer.length < 20)
+        const baseMatch = (i: ContentItem) => (!q.q || `${i.title}\n${i.text}\n${i.locator}`.toLocaleLowerCase().includes(q.q.toLocaleLowerCase())) && (!q.bookId || [i.bookId ?? i.ref.parentBookId ?? '', ...(i.bookIds ?? [])].some(b => sameId(b, q.bookId!)));
+        const classificationMatch = (i: ContentItem) => { const c = classify?.(i) ?? { topics: [], learningItemIds: [] }; return (!q.topic || [...i.originalTopics, ...c.topics].includes(q.topic)) && (!q.learningItemId || c.learningItemIds.some(id => sameId(id, q.learningItemId!))); };
+        function accept(i: ContentItem) { if (!baseMatch(i))
+            return; if (!classificationAvailable && (q.topic || q.learningItemId)) {
+            state.pendingClassification.push(i);
+            return;
+        } if (classificationMatch(i))
+            state.buffer.push(i); }
+        if (classificationAvailable) {
+            for (const i of state.pendingClassification)
+                if (classificationMatch(i))
+                    state.buffer.push(i);
+            state.pendingClassification = [];
+        }
+        if (state.buffer.length < 20 && !(!classificationAvailable && (q.topic || q.learningItemId) && state.pendingClassification.length))
             for (const kind of selected) {
                 if (state.done.includes(kind))
                     continue;
@@ -54,8 +71,7 @@ export function createSearchService(adapters: Partial<Record<ContentKind, Source
                         const key = contentKey(i.ref);
                         if (!state.seen.includes(key)) {
                             state.seen.push(key);
-                            if (matches(i))
-                                state.buffer.push(i);
+                            accept(i);
                         }
                     }
                     sourceStates[kind] = page.complete ? 'complete' : 'pending';
@@ -66,8 +82,18 @@ export function createSearchService(adapters: Partial<Record<ContentKind, Source
             }
         for (const kind of selected)
             sourceStates[kind] ??= state.done.includes(kind) ? 'complete' : 'pending';
-        const items = state.buffer.splice(0, 20), complete = selected.every(k => state.done.includes(k)) && !state.buffer.length;
+        sourceStates.classification = classificationAvailable ? 'complete' : 'failed';
+        const items = state.buffer.splice(0, 20), complete = selected.every(k => state.done.includes(k)) && !state.buffer.length && !state.pendingClassification.length && classificationAvailable;
         return { items, complete, cursor: complete ? null : encodeCursor(state, owner, binding), sourceStates, readAt: new Date().toISOString() };
     };
 }
-export async function search(q: SearchQuery, cursor: string | null, owner: string): Promise<SearchPage> { const annotations = await listAnnotations(); return createSearchService(productionAdapters(), i => classificationFor(i, annotations, owner))(q, cursor, owner); }
+export async function search(q: SearchQuery, cursor: string | null, owner: string): Promise<SearchPage> {
+    let annotations: Awaited<ReturnType<typeof listAnnotations>> = [], classificationAvailable = true;
+    try {
+        annotations = await listAnnotations();
+    }
+    catch {
+        classificationAvailable = false;
+    }
+    return createSearchService(productionAdapters({ bookId: q.bookId }), i => classificationFor(i, annotations, owner), { classificationAvailable })(q, cursor, owner);
+}

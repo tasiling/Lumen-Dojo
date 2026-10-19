@@ -20,8 +20,7 @@ export async function isolatedServer(port, key) {
     process.execPath,
     [
       "node_modules/next/dist/bin/next",
-      "dev",
-      "--webpack",
+      ...(process.env.UI_PRODUCTION === "1" ? ["start"] : ["dev", "--webpack"]),
       "--hostname",
       "127.0.0.1",
       "--port",
