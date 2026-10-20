@@ -54,3 +54,10 @@
 - 交付：`docs/creative-source-delivery.md`、`docs/creative-source-evidence/`；spec／plan 日期 2026-10-21。沒有正式 Notion 寫入、merge/deploy 或真機驗收。第一包既有發布狀態不在本次重試。
 - 裁定／代價：沿用已授權的設計實作與 feature push／PR，例行選擇不重複等待確認，未合併版本仍可審閱修訂；正式資料／發布／iPhone 行為留待後續驗收，可能仍有環境差異；提案與外部發布留後續包，可能因實測調整順序，未代行社群發表。沒有延後 Minor。
 - 下一包：主動搜尋／提案。先讀本 checkpoint、最新遠端與 roadmap 第三包，使用已允許來源白名單；提供可設定的受眾／搜尋範圍／節奏但不虛構偏好，不預設所有私人素材都可讀。保留本人指定題目入口，一題不自動轉製所有媒體。第二包程式完成已滿足第三包開發依賴。
+
+### 第二包遠端交付 checkpoint
+
+- PR：[#101](https://github.com/tasiling/Lumen-Dojo/pull/101)，open／可合併，尚未正式 merge/deploy。
+- GitHub 已保存的程式驗證 head：`ac10bed19a5b498d59a4deb454c46b03514e698e`（tree `02030447413a44b9a63fe194de6fa88af48f5da9`）；已驗證遠端 checkpoint：`b89c6ca52a3cd64439230e46b9e503fa4f790978`（tree `4d91f64bc1d3c284ad9f02d174f23595b74ff162`）。本節是其後的交付連結文件提交，最新 branch/head 以 PR 與本檔所在 commit 為準。
+- 已逐提交保存 master／PR89 父鏈與完全相同 tree，expected_sha／非 force 更新；遠端與本機驗證 tree 一致，沒有覆蓋其他寫入者。
+- 下一包仍為主動提案；第二包已完成程式、隔離驗收與遠端交付，不重做此包，也不把未合併 PR 當成已上線。
