@@ -1,5 +1,7 @@
 "use client";
 
+import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
+import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   KNOWLEDGE_CLAIM_TYPES,
@@ -79,6 +81,7 @@ export default function KnowledgeClaimWorkbench() {
     try {
       const result = await responseJson<{ claims: KnowledgeClaim[] }>(await fetch("/api/dojo/knowledge-claims", { cache: "no-store" }));
       setClaims(result.claims ?? []);
+      const wanted=new URLSearchParams(location.search).get('claim');const selected=result.claims?.find(c=>c.id===wanted);if(selected)setView(claimView(selected));else if(wanted)setError('指定的知識已不可用；其他主張仍可查看。');
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setLoading(false); }
   }, []);
@@ -103,7 +106,7 @@ export default function KnowledgeClaimWorkbench() {
 
   return <section className="knowledge-workbench">
     <section className="ritual-card knowledge-intro">
-      <span className="eyebrow">暫用名稱</span><h2>我的知識</h2>
+      <span className="eyebrow">可評估與修訂的知識主張</span><h2>我的知識</h2>
       <p>這裡只收可獨立理解的主張。來源、素材、問題與作品仍留在各自的位置。</p>
       <details><summary>建立一項候選主張</summary>
         <label>一句完整、可判斷的主張</label><textarea className="field" rows={3} value={statement} onChange={(event) => setStatement(event.target.value)} placeholder="例如：在我開始工作前先列出三件事，通常能降低啟動阻力。" />
@@ -118,7 +121,7 @@ export default function KnowledgeClaimWorkbench() {
     {loading && <div className="empty">正在整理主張…</div>}
     {error && <p className="form-error">{error}<button className="text-link" onClick={() => void load()}>重新讀取</button></p>}
     {!loading && !error && visible.length === 0 && <div className="weaving-empty"><span>◇</span><b>這一區還沒有主張</b><p>沒有內容也沒關係；材料不必被迫成為知識。</p></div>}
-    <div className="knowledge-claim-list">{visible.map((claim) => <KnowledgeClaimCard key={`${claim.id}-${claim.updatedAt}-${view}`} claim={claim} displayActive={view === "current"} onSaved={(next) => setClaims((all) => all.map((item) => item.id === next.id ? next : item))} onArchived={() => setClaims((all) => all.filter((item) => item.id !== claim.id))} />)}</div>
+    <div className="knowledge-claim-list">{visible.map((claim) => <LocatedContent key={`${claim.id}-${claim.updatedAt}-${view}`} parameter="claim" id={claim.id}><KnowledgeClaimCard key={`${claim.id}-${claim.updatedAt}-${view}`} claim={claim} displayActive={view === "current"} onSaved={(next) => setClaims((all) => all.map((item) => item.id === next.id ? next : item))} onArchived={() => setClaims((all) => all.filter((item) => item.id !== claim.id))} /></LocatedContent>)}</div>
   </section>;
 }
 
@@ -189,7 +192,7 @@ function KnowledgeClaimCard({ claim, displayActive, onSaved, onArchived }: { cla
     catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); setSaving(false); }
   }
 
-  return <article className={`ritual-card knowledge-claim-card status-${current.status}`}>
+  return <article className={`ritual-card knowledge-claim-card status-${current.status}`}><RelationsPanel target={{kind:'knowledge_claim',recordId:claim.id}} />
     <div className="knowledge-claim-meta"><span>{KNOWLEDGE_CLAIM_TYPES[draft.type]}</span><span>{current.maturity} · {STATUS_LABELS[current.status]}</span><span>v{current.number}</span></div>
     {!editing ? <>
       <h3>{current.statement}</h3>

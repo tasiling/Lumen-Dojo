@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
+import {loader} from './weaving-test-harness.mjs';
+assert.ok(existsSync('lib/dojo/readingKnowledge/relations.ts'),'direct relation service must exist');
+const {relationService}=loader()('lib/dojo/readingKnowledge/relations.ts');
+const note={kind:'reading_note',recordId:'11111111-1111-4111-8111-111111111111',parentBookId:'22222222-2222-4222-8222-222222222222'};
+const card={ref:{kind:'reading_insight',recordId:'33333333-3333-4333-8333-333333333333'},title:'洞察',text:'x',status:'觀察中',bookId:note.parentBookId,sources:[{kind:'book',id:note.parentBookId,snapshot:'歷史摘錄',version:null}],href:'/reading/cards',originalTopics:[],sourceVersion:null,locator:''};
+const claim={...card,ref:{kind:'knowledge_claim',recordId:'44444444-4444-4444-8444-444444444444'},sources:[{kind:'reading_note',id:note.recordId,snapshot:'舊快照',version:null}]};
+const work={...card,ref:{kind:'weaving_work',recordId:'55555555-5555-4555-8555-555555555555'},sources:[{kind:'reading_note',id:`${note.parentBookId}:${note.recordId}`,snapshot:'片段',version:'v1'},{kind:'reading_note',id:`${note.parentBookId}:${note.recordId}`,snapshot:'片段2',version:'v1'}]};
+const r=relationService({resolve:async ref=>({...card,ref}),scan:async()=>({items:[card,claim,work],cursor:null,complete:true,warnings:[]})});
+const out=await r(note);
+assert.equal(out.items.filter(x=>x.item.ref.kind==='reading_insight').length,0,'legacy card must not guess source note');
+assert.equal(out.items.filter(x=>x.item.ref.kind==='weaving_work').length,1);
+assert.equal(out.items.find(x=>x.item.ref.kind==='knowledge_claim').sourceVersion,null);
+const legacy=await r(card.ref);assert.equal(legacy.items.find(x=>x.direction==='source').item.ref.kind,'book');
+console.log('PASS relations: legacy book only, unversioned claim snapshot, duplicate work selection dedup');

@@ -66,6 +66,8 @@ export default function ReadingShelfPage() {
           <b>貼上摘錄／記下想法 <i>→</i></b>
         </button>
         <div className="reading-shortcuts">
+          <button onClick={() => router.push("/dao/explore")}>閱讀與知識總覽</button>
+          <button onClick={() => router.push("/dao/knowledge")}>知識庫</button>
           <button onClick={() => router.push("/reading/visits")}>今日回訪</button>
           <button onClick={() => router.push("/reading/cards")}>洞察卡片庫</button>
         </div>
