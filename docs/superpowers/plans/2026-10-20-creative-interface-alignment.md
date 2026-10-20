@@ -86,7 +86,7 @@ assert.equal(normalizeLiaojieProject({...publicationFixture,platform:'unknown'},
 
 ## Task 4: 同源預覽、手機驗收與交付
 
-**Files:** Extend scripts/test-creative-interface-ui.mjs、scripts/isolated-practice-server.mjs（僅在需要時）；Create docs/creative-interface-delivery.md。
+**Files:** Extend scripts/test-creative-interface-ui.mjs、scripts/isolated-practice-server.mjs（僅在需要時）；Create docs/creative-interface-delivery.md、scripts/creative-interface-preview.mjs、scripts/test-creative-preview.mjs。
 
 **Interfaces:** Fixture-only preview renders actual product routes；no new public fixture route or auth bypass in production。交付包含 commit、測試、實際截圖與未驗收邊界。
 

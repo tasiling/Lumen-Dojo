@@ -18,7 +18,7 @@
 .creative-brand small{display:block;font-size:10px;letter-spacing:.13em;margin-top:2px}
 .dojo.creative-shell.creative-shell .top-actions{gap:6px}
 .dojo.creative-shell.creative-shell .top-actions .creative-icon{width:20px;height:20px}
-.dojo.creative-shell.creative-shell .hero {background:var(--creative-gradient);position:relative;isolation:isolate;overflow:hidden;border:0;border-radius:18px;padding:22px 18px;min-height:166px;color:var(--ink);box-shadow:none;margin:0 0 12px}
+.dojo.creative-shell.creative-shell :is(.hero.we,.hero.li) {background:var(--creative-gradient);position:relative;isolation:isolate;overflow:hidden;border:0;border-radius:18px;padding:22px 18px;min-height:166px;color:var(--ink);box-shadow:none;margin:0 0 12px}
 .dojo.creative-shell.creative-shell .hero::after{display:none}
 .dojo.creative-shell.creative-shell .hero>:not(.creative-hero-art){position:relative;z-index:1}
 .dojo.creative-shell.creative-shell .hero .eyebrow{color:#455B76;font-size:13px;letter-spacing:.03em}
@@ -93,3 +93,7 @@
 .dojo.creative-shell.creative-shell .hero .creative-hero-subtitle{font-size:21px;margin:0 0 12px}
 .dojo.creative-shell.creative-shell .wf-publication .publication-record{display:grid;gap:8px}
 .dojo.creative-shell.creative-shell .wf-publication .publication-save-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dojo.creative-shell.creative-shell .wf-publication .publication-save-actions button{flex:1 1 100px}
+.dojo.creative-shell.creative-shell :is(.backstage-inline-link,.wf-workspace a,.wf-publication a){min-height:44px;display:inline-flex;align-items:center;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell summary{min-height:44px;align-content:center}
+.dojo.creative-shell.creative-shell :is(input,select){min-height:44px}
+@media(max-height:550px){.dojo.creative-shell.creative-shell .wf-action-bar{position:static;margin:12px 0;inset:auto;transform:none;width:auto}.dojo.creative-shell.creative-shell .wf-clarity-workspace{padding-bottom:100px}}

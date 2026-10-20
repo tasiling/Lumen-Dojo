@@ -41,7 +41,9 @@
     "test:weekly-personalized": "node scripts/test-weekly-personalized.mjs",
     "test:today-calendar": "node scripts/test-today-calendar-ui.mjs && node scripts/test-today-calendar-components.mjs",
     "test:weekly-ui": "node scripts/test-weekly-mobile.mjs",
-    "test:owner-origin": "node scripts/test-learning-owner-origin.mjs --http"
+    "test:owner-origin": "node scripts/test-learning-owner-origin.mjs --http",
+    "preview:creative": "node scripts/creative-interface-preview.mjs",
+    "test:creative-interface": "UI_PRODUCTION=1 node scripts/test-creative-interface-ui.mjs all && node scripts/test-creative-preview.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",
