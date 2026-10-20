@@ -1,4 +1,5 @@
 "use client";
+import CreativeIcon from './creative/CreativeIcon';
 import {mutate} from "./weaving/client";
 
 import Link from "next/link";
@@ -31,10 +32,10 @@ export default function WeavingCaptureInbox() {
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => clearTimeout(timer); }, [load]);
 
   return <section className="weaving-inbox">
-    <div className="section-heading weaving-inbox-heading"><div><span className="eyebrow">野採之後</span><h2>可製作素材</h2><p className="lead">只有已採用、創作成熟度達 C2 以上並送往織光堂的材料會出現。</p></div><span className="weaving-count">{captures.length}</span></div>
+    <div className="section-heading weaving-inbox-heading"><div><CreativeIcon name="sprout" className="creative-section-icon"/><span className="eyebrow">野採之後</span><h2>可製作素材</h2><p className="lead">只有已採用、創作成熟度達 C2 以上並送往織光堂的材料會出現。</p></div><span className="weaving-count">{captures.length}</span></div>
     {loading && <div className="empty">正在打開素材匣…</div>}
     {error && <p className="form-error">{error}</p>}
-    {!loading && !error && captures.length === 0 && <div className="weaving-empty"><span>✦</span><b>目前沒有可製作素材</b><p>尚未成熟的材料可以先留在原處。</p><Link href="/forage">前往野採</Link></div>}
+    {!loading && !error && captures.length === 0 && <div className="weaving-empty"><CreativeIcon name="inbox"/><b>目前沒有可製作素材</b><p>尚未成熟的材料可以先留在原處。</p><Link href="/forage">前往野採</Link></div>}
     <div className="weaving-capture-list">{captures.map((capture) => <CaptureProjectStarter key={capture.id} capture={capture} open={editingId === capture.id} onOpen={() => setEditingId(capture.id)} onClose={() => setEditingId(null)} />)}</div>
   </section>;
 }

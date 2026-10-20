@@ -1,6 +1,6 @@
 import { LIAOJIE_PROJECT_TITLE_PREFIX } from "./formal";
 
-export const LIAOJIE_PLATFORMS = { plurk: "噗浪", instagram_post: "Instagram 貼文", instagram_story: "Instagram 限時動態", podcast: "Podcast", video: "影片", other: "其他" } as const;
+export const LIAOJIE_PLATFORMS = { plurk: "噗浪", threads: "Threads", instagram_post: "Instagram 貼文", instagram_story: "Instagram 限時動態", podcast: "Podcast", video: "影片", other: "其他" } as const;
 export type LiaojiePlatform = keyof typeof LIAOJIE_PLATFORMS;
 export type LiaojieStatus = "received" | "packaging" | "ready" | "scheduled" | "published" | "archived";
 export type LiaojiePublicationProject = {

@@ -31,8 +31,9 @@ try{
   await page.goto(server.base+'/weaving');const start=page.getByRole('button',{name:'開始第一件作品',exact:true});await start.waitFor();
   assert((await start.boundingBox()).y<650,'new-user start action must be visible in first mobile screen');
   await page.screenshot({path:out+'/home-empty-390.png',fullPage:true});
-  await start.click();await page.getByLabel('自己最想說的一句話',{exact:true}).fill('第一件作品的觀點');
-  await page.getByLabel('整理好的成熟題材',{exact:true}).fill('自己的實際經驗');
+  await start.click();await page.getByLabel('整理好的成熟題材',{exact:true}).fill('自己的實際經驗');
+  await page.getByRole('button',{name:'前往定觀點',exact:true}).click();
+  await page.getByLabel('自己最想說的一句話',{exact:true}).fill('第一件作品的觀點');
   await page.getByRole('button',{name:'建立第一件作品',exact:true}).click();await page.getByLabel('作品名稱',{exact:true}).waitFor();
   console.log('PASS first-screen start action creates a real first work');
  }else{

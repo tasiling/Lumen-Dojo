@@ -18,4 +18,13 @@ check('source limits are enforced without silently dropping selections',()=>{con
 check('prompt includes selected content only and identifies provenance',()=>{const wf=createTextWorkflow('article');wf.sourceSelections=[selection];const prompt=workflowPrompt(wf,'concept','我的主張','');assert.ok(prompt.includes(selection.selectedText));assert.ok(prompt.includes('第3頁'));assert.ok(!prompt.includes('未選全文'));assert.ok(prompt.includes('我的理解'));});
 check('invalid step, duplicate block IDs and unsafe URLs rejected',()=>{const wf=createTextWorkflow('article');assert.throws(()=>normalizeWorkflow({...wf,currentStep:'bad'}));assert.throws(()=>normalizeWorkflow({...wf,blocks:[wf.blocks[0],wf.blocks[0]]}));assert.throws(()=>validateWorkPatch({outputUrl:'javascript:alert(1)'}));});
 check('protected fields cannot be edited by generic patch',()=>{assert.throws(()=>validateWorkPatch({finalSnapshot:'forged'}),/受保護/);assert.throws(()=>validateWorkPatch({status:'completed'}),/成品/);});
+const { normalizeLiaojieProject } = load('lib/dojo/liaojiePublication.ts');
+check('Threads persists independently while legacy and unknown platform behavior stay compatible',()=>{
+  const source={weavingShuttleId:'s',weavingWorkId:'w',sourceCompletionVersionId:'completion-a',sourceDraftSnapshot:'固定原稿'};
+  for(const platform of ['threads','plurk','instagram_post','instagram_story','podcast','video','other']) {
+    const project=normalizeLiaojieProject({...source,platform},{id:'p'});
+    assert.equal(project.platform,platform);assert.equal(project.sourceDraftSnapshot,'固定原稿');assert.equal(project.sourceCompletionVersionId,'completion-a');
+  }
+  assert.equal(normalizeLiaojieProject({...source,platform:'unknown'},{id:'p'}).platform,'instagram_post');
+});
 console.log(`PASS weaving domain ${checks}/${checks}`);

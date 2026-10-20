@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { existsSync, createWriteStream } from "node:fs";
 import { spawn } from "node:child_process";
-export async function isolatedServer(port, key, {fontResponses} = {}) {
+export async function isolatedServer(port, key, {fontResponses, production=process.env.UI_PRODUCTION==='1'} = {}) {
   for (const file of [
     ".env",
     ".env.local",
     ".env.development",
     ".env.development.local",
+    ".env.production",
+    ".env.production.local",
   ])
     assert(
       !existsSync(file),
@@ -20,8 +22,7 @@ export async function isolatedServer(port, key, {fontResponses} = {}) {
     process.execPath,
     [
       "node_modules/next/dist/bin/next",
-      "dev",
-      "--webpack",
+      ...(production ? ["start"] : ["dev", "--webpack"]),
       "--hostname",
       "127.0.0.1",
       "--port",
