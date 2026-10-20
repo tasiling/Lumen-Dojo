@@ -61,3 +61,17 @@
 - GitHub 已保存的程式驗證 head：`ac10bed19a5b498d59a4deb454c46b03514e698e`（tree `02030447413a44b9a63fe194de6fa88af48f5da9`）；已驗證遠端 checkpoint：`b89c6ca52a3cd64439230e46b9e503fa4f790978`（tree `4d91f64bc1d3c284ad9f02d174f23595b74ff162`）。本節是其後的交付連結文件提交，最新 branch/head 以 PR 與本檔所在 commit 為準。
 - 已逐提交保存 master／PR89 父鏈與完全相同 tree，expected_sha／非 force 更新；遠端與本機驗證 tree 一致，沒有覆蓋其他寫入者。
 - 下一包仍為主動提案；第二包已完成程式、隔離驗收與遠端交付，不重做此包，也不把未合併 PR 當成已上線。
+
+## 2026-10-21 第三包：點點主動找題與提案
+
+- Branch：`codex/weaving-liaojie-creation-v2`；接續遠端 `689653d3a942e36a6a773987bc292afef97d4943`，本機程式驗證 head `dc9a28b8783eb7d365b0d2497cfde77ceb14cf25`、tree `9b98f85e3a99c2913cd9249ce55b5f65c55cd769`。最新 master 仍為 `680aca260e54e5fa38289012bd48c86553594cdb`，單一寫入者，PR101 open／可合併；沒有重做第二包或把 PR89 當正式上線。
+- 實際新增：`/weaving/proposals` 同源 React／CSS 與織光堂圖示入口，四步引導「整理候選→核對來源→修改試寫→選定開工」。每份候選含原來源、固定片段、角度、理由、建議形式及試寫，可修改／保存／略過，選定後開始一件真正可編輯的文字草稿，接原五步定稿／聊解交接。
+- 取材：只從逐份 discovery=allow 且符合設定種類的識別開始讀正文，每批最多10份、輪巡、不重提已略過或相同版本／正文；不同讀次與 reflection 保留身分、引用／理解／經驗／洞察保留真實種類。來源撤權或改版不能新採用；公開權限仍另行檢查，不外發私人素材。
+- 操作恢復：本機修改、未存離開提示、衝突比較與重套；未知回應保存相同操作識別，可刷新後唯讀核對。採用部分成功保存穩定提案標記，同操作／不同操作均不另建副本。無法保存操作識別時不送新操作。
+- 找題設定：受眾可空白，來源種類可選；頻率待本人決定，背景預設關閉。已實作 Node worker 的到期整理與持久收據／共用鎖協調，隔離驗證 off／未到期／到期／重複呼叫；沒有啟用正式環境。此頻率不是內容發表頻率。
+- 審查：全包唯讀 0 Critical／3 Important／0 Minor，三項按原嚴重度接受、一次 RED→GREEN 修正：未派送的來源改版／撤權拒絕不再留下永久 pending；交錯掃描重試依持久原批次與來源 step，不跳過11–15；部分採用同操作重試在最後更新前再次核對來源／修訂，保留原作品與操作。測試精確重現三項失敗，再跑完整相關回歸；沒有再次審查或延後 Minor。
+- 驗證：新 proposals domain／實際 API／recovery、source-settings、`test:weaving` 全套、reading-knowledge domain／API、build、tsc、lint通過；production proposals-ui／creative-interface／loopback預覽／weaving-clarity通過。lint 0 errors／2 個既有 warnings。375／390／430／320／1024px 實際渲染無橫溢；空白／非空、未保存、失敗／衝突、刷新原收據、來源拒絕後可續用、定稿／交接均覆蓋。
+- 交付：`docs/creative-proposals-delivery.md`、`docs/creative-proposals-evidence/`，spec／plan 日期2026-10-21；程式及本 checkpoint 即將以相同tree／父鏈、expected_sha／非force推送至同一 PR101，遠端身分於後節記錄。
+- 裁定／代價：既有 sole-writer Native checkout 接續與 feature push 已授權，不重複等待常規同意；未合併 PR 可修訂，正式發布前仍需核對整合。因外送範圍／預算未定，本包採本地規則候選，明示尚未使用外部 AI 代寫；不是品質已驗收的個人文風，也不是外部網路搜尋，需本人試用並在後包改進。六種形式只作建議，不自動全部轉製或宣稱已生成媒體。
+- 審查未判定邊界：正式 Notion、部署後跨主機共用持久目錄與實際背景可靠性另作環境驗收，仍有部署差異風險；外部模型／搜尋及付費外送未實作；前包未變更廣泛功能沿用已有證據，不視為本次重新審查。沒有本人真機驗收、正式資料寫入、社群發表或本包 merge/deploy。
+- 下一包：純文字與噗浪／Threads／IG 配文版本，保存語氣改寫與人工修訂，一份隔離素材走完改稿／固定成品／選定平台交接，不把一題自動轉全平台。先讀此 checkpoint 與最新遠端，第三包已滿足開發依賴；背景環境未啟用不阻擋這個獨立製作包。
