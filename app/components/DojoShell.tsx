@@ -152,7 +152,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
         <div id="view">{children}</div>
       </main>
 
-      <nav className="nav" aria-label="主要導覽">
+      <nav className={`nav${todayCalendarRoute || pathname === "/bingo" ? " consistent-nav" : ""}`} aria-label="主要導覽">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.key}
@@ -161,7 +161,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
             data-nav={item.key}
             onClick={() => { if(canLeavePractice()) router.push(item.href); }}
           >
-            <span className="nav-icon">{todayCalendarRoute ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : pathname === "/bingo" && item.icon === "add" ? <WeeklyIcon name="add"/> : <NavIcon name={item.icon} />}</span>
+            <span className="nav-icon">{todayCalendarRoute || pathname === "/bingo" ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : <NavIcon name={item.icon} />}</span>
             {item.label}
           </button>
         ))}
