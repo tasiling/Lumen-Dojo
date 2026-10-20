@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { TodayCalendarIcon } from "@/app/components/TodayCalendarArt";
 import CalendarEventEditor from "@/app/components/CalendarEventEditor";
 import { moveCalendarPeriod } from "@/lib/dojo/todayCalendarUi";
@@ -343,15 +344,19 @@ export default function CalendarPage() {
 
   return (
     <section className="screen calendar-screen">
-      <div className="section-heading page-heading">
-        <div>
-          <span className="eyebrow">Lumen Dojo</span>
-          <h1>行事曆</h1>
+      <div className="page-heading calendar-hero">
+        <Image className="calendar-time-motif" src="/today-calendar/calendar-time.svg" alt="" aria-hidden="true" width={360} height={280} unoptimized />
+        <div className="calendar-hero-content">
+          <div className="calendar-title-row">
+            <h1>行事曆</h1>
+            <button className="primary compact-button" onClick={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}><TodayCalendarIcon name="i-plus" />新增</button>
+          </div>
           <p className="lead">看見每天留下的狀態，也能分開查看個人與工作排程。</p>
         </div>
-        <button className="primary compact-button" onClick={() => openQuickAdd({ mode: "calendar", presetDate: selectedDay })}><TodayCalendarIcon name="i-plus" />新增</button>
       </div>
 
+      <div className="calendar-content-layout">
+      <div className="calendar-panel">
       {mode === "work" && (
         <div className="calendar-metric">
           <div>
@@ -446,6 +451,8 @@ export default function CalendarPage() {
         </div>
       )}
 
+      </div>
+      <div className="calendar-summary-stack">
       {!loading && (
         <>
           {mode === "calendar" && <DailyReviewSummary date={selectedDay} record={dailyByDay.get(selectedDay)} today={today} />}
@@ -458,6 +465,8 @@ export default function CalendarPage() {
           />
         </>
       )}
+      </div>
+      </div>
       {editing && <CalendarEventEditor key={editing.id} item={editing} onClose={() => setEditing(null)} onSaved={item => {
         setEditing(null);
         setSelectedDay(item.date);

@@ -9,6 +9,7 @@ import "./today-calendar.css";
 import "./design-v2-tokens.css";
 import "./reference-colors.css";
 import "./navigation.css";
+import "./calendar-theme.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

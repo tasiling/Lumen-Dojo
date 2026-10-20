@@ -1,0 +1,92 @@
+/* Approved calendar HTML v2.2, 2026-10-20. Presentation only; real calendar APIs remain unchanged. */
+.dojo.tc-calendar-theme {
+  --bg:#FAFCF8;--paper:#FFFFFF;--ink:#253C5C;--muted:#58677C;--line:#DFE6E6;
+  --tc-accent:#496D50;--tc-soft:#DDEADB;--tc-field:#7D899B;--accent:#496D50;
+  --morning:#C38905;--evening:#2C87D3;--seed:#607860;
+  background:linear-gradient(165deg,#FFFFFC,#F6FBF9 65%,#F9FBFE);
+}
+.dojo.tc-calendar-theme h1,.dojo.tc-calendar-theme h2,.dojo.tc-calendar-theme h3 {font-family:inherit;}
+.dojo.tc-calendar-theme .top {background:#FFFFFFD9;border-color:var(--line);}
+.dojo.tc-calendar-theme .brand>.tc-icon {width:32px;height:32px;color:#4D658B;}
+.dojo.tc-calendar-theme .brand b {font-size:22px;line-height:1.3;letter-spacing:.06em;}
+.dojo.tc-calendar-theme .brand small {font-size:11px;letter-spacing:.18em;}
+.dojo.tc-calendar-theme .calendar-hero {position:relative;isolation:isolate;overflow:hidden;padding:24px;border-radius:20px;background:linear-gradient(135deg,#E9D99B 0%,#BED8B6 52%,#B0CEE5 100%);}
+.dojo.tc-calendar-theme .calendar-time-motif {position:absolute;right:-38px;top:-29px;width:295px;height:230px;opacity:.83;pointer-events:none;}
+.dojo.tc-calendar-theme .calendar-hero-content {position:relative;z-index:1;}
+.dojo.tc-calendar-theme .calendar-title-row {display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.dojo.tc-calendar-theme .calendar-hero h1 {font-size:38px;line-height:1.4;font-weight:750;letter-spacing:.02em;margin:0;}
+.dojo.tc-calendar-theme .calendar-hero .lead {font-size:14px;line-height:1.7;max-width:28em;margin:8px 0 0;color:var(--ink);}
+.dojo.tc-calendar-theme .calendar-hero .primary {display:inline-flex;align-items:center;gap:6px;flex-shrink:0;background:#FFFFFFD9;border:1px solid #FFFFFFE8;color:var(--ink);padding:10px 15px;}
+.dojo.tc-calendar-theme .calendar-content-layout {display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;}
+.dojo.tc-calendar-theme .calendar-panel {display:grid;gap:14px;min-width:0;background:#FFFFFFED;border:1px solid var(--line);border-radius:18px;padding:16px;}
+.dojo.tc-calendar-theme .calendar-summary-stack {display:grid;gap:24px;min-width:0;}
+.dojo.tc-calendar-theme .calendar-panel .calendar-controls {gap:8px;}
+.dojo.tc-calendar-theme .calendar-controls>button {background:transparent;border:0;}
+.dojo.tc-calendar-theme .calendar-controls .month-label {font-size:20px;font-weight:700;}
+.dojo.tc-calendar-theme .calendar-panel .segmented {margin:0;padding:0;background:transparent;gap:7px;}
+.dojo.tc-calendar-theme .calendar-panel .segmented button {background:#F4F6FA;border:1px solid #E5E9EF;color:var(--ink);font-size:14px;}
+.dojo.tc-calendar-theme .calendar-panel .segmented button.on,.dojo.tc-calendar-theme .source-filter button.on {background:var(--tc-soft);border:1px solid #AAC5AD;color:#2F573E;font-weight:700;}
+.dojo.tc-calendar-theme .calendar-panel .source-filter {margin:0;gap:6px;}
+.dojo.tc-calendar-theme .source-filter button {font-size:13px;line-height:1.4;background:#FFFFFF;border-color:var(--line);padding:8px 2px;}
+.dojo.tc-calendar-theme .month-calendar {margin:0;}
+.dojo.tc-calendar-theme .calendar-frame {border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#FFFFFF;box-shadow:none;}
+.dojo.tc-calendar-theme .calendar-weekdays {padding:0;background:#FAFCFA;border-bottom:1px solid var(--line);}
+.dojo.tc-calendar-theme .calendar-weekdays span {font-size:12px;padding:7px 0;}
+.dojo.tc-calendar-theme .calendar-grid {gap:0;padding:0;aspect-ratio:7/8;grid-template-rows:repeat(6,minmax(0,1fr));align-items:stretch;}
+.dojo.tc-calendar-theme .calendar-grid button {display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:18px minmax(0,1fr);justify-content:stretch;align-items:stretch;align-self:stretch;height:100%;aspect-ratio:auto;min-height:0;padding:2px 1px;gap:1px;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:#FFFFFF;}
+.dojo.tc-calendar-theme .calendar-grid button:nth-child(7n) {border-right:0;}
+.dojo.tc-calendar-theme .calendar-grid button:nth-last-child(-n + 7) {border-bottom:0;}
+.dojo.tc-calendar-theme .calendar-grid button.outside {background:#FCFDFB;color:#A9B0B8;opacity:1;}
+.dojo.tc-calendar-theme .calendar-grid button.selected {background:#FFFFFF;border-color:var(--line);box-shadow:inset 0 0 0 2px #B9CCE8;z-index:1;}
+.dojo.tc-calendar-theme .calendar-date-row {display:flex;justify-content:center;align-items:center;min-height:18px;width:100%;}
+.dojo.tc-calendar-theme .calendar-date-row>b {display:flex;align-items:center;justify-content:center;margin:auto;min-width:18px;height:18px;font-size:11px;line-height:1;text-align:center;font-variant-numeric:tabular-nums;}
+.dojo.tc-calendar-theme .calendar-grid button.today .calendar-date-row>b {width:18px;height:18px;font-size:11px;background:var(--tc-accent);}
+.dojo.tc-calendar-theme .calendar-grid .calendar-review-cell {display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:0;margin:0;gap:1px;}
+.dojo.tc-calendar-theme .calendar-grid .calendar-review-cell>.calendar-review-mark {width:50%;height:auto;aspect-ratio:1;flex:none;}
+.dojo.tc-calendar-theme .calendar-review-mark path {stroke-width:3;}
+.dojo.tc-calendar-theme .calendar-review-mark .morning {stroke:var(--morning);}
+.dojo.tc-calendar-theme .calendar-review-mark .evening {stroke:var(--evening);}
+.dojo.tc-calendar-theme .calendar-review-cell small {font-size:8px;line-height:1.1;}
+.dojo.tc-calendar-theme .calendar-english-marks {width:70%;max-width:30px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;margin:0;min-height:3px;}
+.dojo.tc-calendar-theme .calendar-english-marks i {width:auto;height:3px;background:#DFE5E1;}
+.dojo.tc-calendar-theme .calendar-english-marks i.on {background:var(--seed);}
+.dojo.tc-calendar-theme .calendar-empty-dot {background:#D7DDD9;}
+.dojo.tc-calendar-theme .tc-calendar-legend {margin:0;font-size:10px;gap:7px 14px;}
+.dojo.tc-calendar-theme .tc-calendar-legend i {background:var(--seed);}
+.dojo.tc-calendar-theme .tc-calendar-legend i.am {background:var(--morning);}
+.dojo.tc-calendar-theme .tc-calendar-legend i.pm {background:var(--evening);}
+.dojo.tc-calendar-theme .calendar-day-review,.dojo.tc-calendar-theme .day-agenda {padding:20px;border-radius:18px;background:#FFFFFFED;}
+.dojo.tc-calendar-theme .calendar-review-date .calendar-review-mark {width:64px;height:64px;}
+.dojo.tc-calendar-theme .calendar-review-date h2 {font-family:inherit;font-size:25px;font-weight:700;}
+.dojo.tc-calendar-theme .calendar-record-pair {gap:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:18px 0;}
+.dojo.tc-calendar-theme .calendar-record-pair>div {border:0;border-radius:0;background:#FFFFFF;padding:11px 12px;}
+.dojo.tc-calendar-theme .calendar-record-pair>div+div {border-top:1px solid var(--line);}
+.dojo.tc-calendar-theme .calendar-rhythm-panel {background:linear-gradient(135deg,#F1F7EF,#F0F7F6);}
+.dojo.tc-calendar-theme .calendar-rhythm-steps>div.on {background:var(--tc-soft);color:#2F573E;}
+.dojo.tc-calendar-theme .calendar-metric {background:#F0F5F8;padding:14px;border-radius:12px;}
+.dojo.tc-calendar-theme .week-calendar>button.selected {background:#FFFFFF;box-shadow:inset 0 0 0 2px #B9CCE8;}
+.dojo.tc-calendar-theme .nav.consistent-nav {--tc-accent:#496D50;--tc-soft:#DDEADB;}
+@media(max-width:359px) {
+  .dojo.tc-calendar-theme .calendar-hero {padding:20px;}
+  .dojo.tc-calendar-theme .calendar-hero h1 {font-size:34px;}
+  .dojo.tc-calendar-theme .calendar-time-motif {right:-65px;top:-19px;width:278px;height:216px;}
+  .dojo.tc-calendar-theme .calendar-hero .lead {font-size:12px;}
+  .dojo.tc-calendar-theme .calendar-hero .primary {padding-inline:10px;font-size:13px;}
+  .dojo.tc-calendar-theme .calendar-panel {padding:12px;}
+  .dojo.tc-calendar-theme .source-filter button {font-size:12px;}
+  .dojo.tc-calendar-theme .calendar-grid button {grid-template-rows:16px minmax(0,1fr);gap:0;}
+  .dojo.tc-calendar-theme .calendar-date-row {min-height:16px;}
+  .dojo.tc-calendar-theme .calendar-date-row>b {min-width:16px;height:16px;font-size:10px;}
+  .dojo.tc-calendar-theme .calendar-review-cell small {font-size:7px;}
+  .dojo.tc-calendar-theme .calendar-english-marks {min-height:2px;}
+  .dojo.tc-calendar-theme .calendar-english-marks i {height:2px;}
+}
+@media(min-width:760px) {
+  .dojo.tc-calendar-theme .calendar-content-layout {grid-template-columns:minmax(0,1.22fr) minmax(0,1fr);}
+  .dojo.tc-calendar-theme .calendar-hero {padding:30px;}
+  .dojo.tc-calendar-theme .calendar-hero h1 {font-size:42px;}
+  .dojo.tc-calendar-theme .calendar-hero .lead {font-size:16px;}
+  .dojo.tc-calendar-theme .calendar-time-motif {width:375px;height:292px;right:2px;top:-59px;}
+  .dojo.tc-calendar-theme .calendar-panel {padding:18px;}
+  .dojo.tc-calendar-theme .calendar-review-cell small {font-size:9px;}
+}
