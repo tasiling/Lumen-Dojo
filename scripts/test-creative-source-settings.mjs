@@ -9,8 +9,8 @@ assert.notEqual(model.sourceKey(ref),model.sourceKey({...ref,sourceId:ref.source
 assert.equal(model.sourceKey({...ref,sourceId:ref.sourceId.toUpperCase()}),model.sourceKey(ref));
 for(const bad of [{...ref,sourceId:'foreign'}, {...ref,sourceId:ref.sourceId+':other'}, {...ref,extra:true},{sourceType:'manual',sourceId:note}])assert.throws(()=>model.parseSourceRef(bad));
 const {sourcePolicyService}=loader()('lib/dojo/creativeSources/service.ts');
-let rows=[],writes=0,resolved=[];
-const d={owner:'owner',list:async()=>rows,resolve:async ref=>{resolved.push(model.sourceKey(ref));return{ref,label:'隔離來源',text:'僅授權內容',href:'/reading',version:'v1'};},run:async(id,input,prepare)=>(await prepare())(),create:async value=>{writes++;rows.push(value);},update:async value=>{writes++;rows=rows.map(r=>model.sourceKey(r.ref)===model.sourceKey(value.ref)?value:r);}};
+let rows=[],resolved=[];
+const d={owner:'owner',list:async()=>rows,resolve:async ref=>{resolved.push(model.sourceKey(ref));return{ref,label:'隔離來源',text:'僅授權內容',href:'/reading',version:'v1'};},run:async(id,input,prepare)=>(await prepare())(),create:async value=>{rows.push(value);},update:async value=>{rows=rows.map(r=>model.sourceKey(r.ref)===model.sourceKey(value.ref)?value:r);}};
 const service=sourcePolicyService(d),input={ref,discovery:'allow',publication:'private',expectedRevision:0,operationId:crypto.randomUUID()};
 assert.equal(await service.read(ref),null);
 const policy=await service.save(input);assert.equal(policy.publication,'private');assert.equal(policy.discovery,'allow');
@@ -72,3 +72,9 @@ const sdk={pages:{retrieve:async()=>{reads++;return{id:book,parent:{data_source_
 const direct=loader({'@/lib/notion/client':{notion:()=>sdk,withNotionRateLimit:fn=>fn()},'@/lib/notion/schema':{DATA_SOURCES:{DB21_書籍庫:'db-books'}}})('lib/dojo/creativeSources/resolver.ts');
 assert.equal((await direct.resolvePolicySource(ref)).text,'只讀明確授權筆記');assert.equal(reads,2);raw.parent.page_id=note;assert.equal(await direct.resolvePolicySource(ref),null);
 console.log('PASS production permitted-identity adapter: only verified parent/block reads, no library scan');
+
+const {normalizeKnowledgeClaim}=loader()('lib/dojo/knowledgeClaims.ts');
+const claim=normalizeKnowledgeClaim({recordType:'knowledge-claim',title:'隔離主張',type:'experience',allowedUses:['perspective'],activeVersionId:'active-v1',currentVersionId:'candidate-v2',versions:[{id:'active-v1',number:1,statement:'已採用觀點',maturity:'K4',status:'active',adoptedBy:'Crystal',sources:[]},{id:'candidate-v2',number:2,statement:'尚未採用的新候選',maturity:'K2',status:'candidate',sources:[]}]},{id:note});
+const claimResolver=loader({'../readingKnowledge/adapters':{createResolver:()=>({resolve:async()=>({title:'隔離主張',text:'尚未採用的新候選',sourceVersion:'candidate-v2'})})},'../knowledgeClaimStore':{getKnowledgeClaim:async()=>({claim})}})('lib/dojo/creativeSources/resolver.ts');
+const approved=await claimResolver.resolvePolicySource({sourceType:'knowledge_claim',sourceId:note});assert.equal(approved.text,'已採用觀點');assert.equal(approved.version,'active-v1');
+console.log('PASS permitted claim resolves adopted active version, never its newer unadopted candidate');

@@ -205,6 +205,7 @@ try {
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       await page.screenshot({path:`${out}/work-handoff-${width}.png`,fullPage:true});
     }
+    await page.getByLabel('我已確認這個成品的人物、私密細節與引用可以送往發布準備',{exact:true}).check();
     await page.getByRole('button',{name:'手動送往聊解室',exact:true}).click();
     await page.getByRole('heading',{name:'接收作品',exact:true}).waitFor();
     console.log('PASS unsaved, conflicting and failed saves recover before immutable completion and real handoff');
