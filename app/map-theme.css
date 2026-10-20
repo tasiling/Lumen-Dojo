@@ -1,0 +1,20 @@
+/* The full map shares the homepage's realm surfaces and icon vocabulary. */
+.dojo.tc-map-theme {
+  --bg:#EDF3FC;--paper:#FFFEFE;--ink:#30415F;--muted:#606C83;
+  --line:#DCE2ED;--tc-accent:#4B6288;--tc-soft:#E9EEF8;--tc-field:#B1BDD0;
+  min-height:100dvh;
+  background:linear-gradient(160deg,#F8F4FA 0%,#EDF3FC 40%,#E4EEFB 100%);
+}
+.dojo.tc-map-theme .map-screen {display:grid;gap:24px;}
+.dojo.tc-map-theme .map-heading .eyebrow {margin-bottom:8px;}
+.dojo.tc-map-theme .map-heading .lead {margin:0;color:var(--muted);font-size:14px;}
+.dojo.tc-map-theme .spaces-shortcut {padding:0;}
+.dojo.tc-map-theme .space-link {min-height:156px;}
+.dojo.tc-map-theme .map-backstage {display:grid;gap:18px;}
+.dojo.tc-map-theme .map-backstage h2 {margin:0 0 8px;}
+.dojo.tc-map-theme .map-backstage p {margin:0;font-size:14px;color:var(--muted);}
+.dojo.tc-map-theme .map-backstage .button-link {display:inline-flex;align-items:center;justify-content:center;gap:8px;justify-self:start;min-height:44px;padding:10px 16px;border:1px solid var(--line);background:var(--tc-soft);text-decoration:none;}
+@media(min-width:760px) {
+  .dojo.tc-map-theme .space-link {min-height:178px;padding:22px;}
+  .dojo.tc-map-theme .map-backstage {grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:24px;}
+}

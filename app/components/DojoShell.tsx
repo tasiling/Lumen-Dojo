@@ -49,7 +49,7 @@ function BackButton({ pathname }: { pathname: string }) {
 
   return (
     <button className="backbtn" onClick={handleClick} aria-label={`返回${label}`}>
-      {pathname === "/calendar" ? <TodayCalendarIcon name="i-back" /> : pathname.startsWith("/forage") ? <ForageIcon name="i-back" /> : "‹"} {label}
+      {(pathname === "/calendar" || pathname === "/map") ? <TodayCalendarIcon name="i-back" /> : pathname.startsWith("/forage") ? <ForageIcon name="i-back" /> : "‹"} {label}
     </button>
   );
 }
@@ -119,6 +119,8 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   const creativeRoute = /^\/(weaving|liaojie)(\/|$)/.test(pathname);
   const creativeHome = pathname === '/weaving' || pathname === '/liaojie';
   const todayCalendarRoute = pathname === "/" || pathname === "/calendar";
+  const mapRoute = pathname === "/map";
+  const sharedUiRoute = todayCalendarRoute || mapRoute;
   const {
     entries,
     addEntry,
@@ -143,19 +145,19 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={`dojo${creativeRoute ? ` creative-shell creative-${pathname.startsWith('/weaving') ? 'weaving' : 'liaojie'}` : ''}${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : todayCalendarRoute ? ` tc-shell${pathname === "/" ? " tc-today-theme" : " tc-calendar-theme"}` : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
+    <div className={`dojo${creativeRoute ? ` creative-shell creative-${pathname.startsWith('/weaving') ? 'weaving' : 'liaojie'}` : ''}${pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : mapRoute ? " tc-shell tc-map-theme" : todayCalendarRoute ? ` tc-shell${pathname === "/" ? " tc-today-theme" : " tc-calendar-theme"}` : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
       <main className="app">
         <header className="top">
           {creativeHome ? <button className="creative-brand" onClick={() => {if(canLeavePractice()) router.push('/');}} aria-label="行光道場，返回今天"><CreativeIcon name="sun"/><span><b>行光道場</b><small>Lumen Dojo</small></span></button> : pathname === "/bingo" ? <button className="weekly-brand" onClick={() => router.push("/")} aria-label="行光道場，返回今天"><WeeklyIcon name="compass"/><span>行光道場</span></button> : todayCalendarRoute ? <div className="brand"><TodayCalendarIcon name="i-sun" /><div><b>行光道場</b><small>Lumen Dojo</small></div></div> : <BackButton pathname={pathname} />}
           <div className="top-actions">
-            <button onClick={openTimerFromHere} aria-label="計時">{creativeRoute ? <CreativeIcon name="clock"/> : todayCalendarRoute ? <TodayCalendarIcon name="i-clock" /> : pathname === "/bingo" ? <WeeklyIcon name="clock"/> : pathname.startsWith("/forage") ? <ForageIcon name="i-clock" /> : "◷"}<span> 計時</span></button>
-            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }} aria-label="場域">{creativeRoute ? <CreativeIcon name="grid"/> : todayCalendarRoute ? <TodayCalendarIcon name="i-grid" /> : pathname === "/bingo" ? <WeeklyIcon name="grid"/> : pathname.startsWith("/forage") ? <ForageIcon name="i-grid" /> : "⌘"}<span> 場域</span></button>
+            <button onClick={openTimerFromHere} aria-label="計時">{creativeRoute ? <CreativeIcon name="clock"/> : sharedUiRoute ? <TodayCalendarIcon name="i-clock" /> : pathname === "/bingo" ? <WeeklyIcon name="clock"/> : pathname.startsWith("/forage") ? <ForageIcon name="i-clock" /> : "◷"}<span> 計時</span></button>
+            <button onClick={() => { if(canLeavePractice()) router.push("/map"); }} aria-label="場域">{creativeRoute ? <CreativeIcon name="grid"/> : sharedUiRoute ? <TodayCalendarIcon name="i-grid" /> : pathname === "/bingo" ? <WeeklyIcon name="grid"/> : pathname.startsWith("/forage") ? <ForageIcon name="i-grid" /> : "⌘"}<span> 場域</span></button>
           </div>
         </header>
         <div id="view">{children}</div>
       </main>
 
-      <nav className={`nav${todayCalendarRoute || pathname === "/bingo" ? " consistent-nav" : ""}`} aria-label="主要導覽">
+      <nav className={`nav${sharedUiRoute || pathname === "/bingo" ? " consistent-nav" : ""}`} aria-label="主要導覽">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.key}
@@ -164,7 +166,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
             data-nav={item.key}
             onClick={() => { if(canLeavePractice()) router.push(item.href); }}
           >
-            <span className="nav-icon">{todayCalendarRoute || pathname === "/bingo" ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : <NavIcon name={item.icon} />}</span>
+            <span className="nav-icon">{sharedUiRoute || pathname === "/bingo" ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : <NavIcon name={item.icon} />}</span>
             {item.label}
           </button>
         ))}
