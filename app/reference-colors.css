@@ -1,0 +1,41 @@
+/* Reference palette revision, 2026-10-20. Color-only; approved layout is untouched.
+   Deep ink on pastel CTAs intentionally preserves readable text contrast. */
+.dojo.dojo.weekly-shell{--v2-gradient:linear-gradient(135deg,#FAC8BC 0%,#F2C5DF 52%,#CFB5EB 100%);--v2-background:#FCF5F9;--v2-tint:#F8E5EF;--v2-border:#ECDDE9;--v2-accent:#E79397;--v2-on:#253C5C;--task-important:#9B503B;--task-important-soft:#F9CBB9;--task-hobby:#974A70;--task-hobby-soft:#F6C4DD;--task-health:#71518E;--task-health-soft:#DFC9F1}
+.dojo.dojo.weekly-shell .weekly-project-group{color:#974A70}
+.dojo.dojo.weekly-shell .weekly-page-tabs [aria-current=page]{background-color:#EDB5CD}
+.dojo.dojo.weekly-shell .weekly-action-row>button:not(:first-child){color:#974A70;border-color:#C67887}
+.dojo.dojo.weekly-shell :is(button,a,input,textarea,select,summary):focus-visible{outline-color:#974A70}
+.dojo.dojo.weekly-shell .weekly-motif{opacity:.78}
+.dojo.dojo.forage-shell:has(.forage-home-intro),.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui{--v2-gradient:linear-gradient(135deg,#FAC29F 0%,#F7E8B5 52%,#A6DCD2 100%);--v2-background:#FEF9F2;--v2-tint:#FCEDDC;--v2-border:#EFE2D5;--v2-accent:#F2BF78;--v2-on:#253C5C}
+.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui .forage-add-entry{background-color:#E4A650;border-color:#E4A650}
+.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui :is(.eyebrow,.forage-primary-count strong,.forage-entry-title>span,.forage-secondary-entry a,.forage-recent-item b){color:#78512C}
+.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui .forage-count-grid>div:nth-child(1){background-color:#FBE9DF}
+.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui .forage-count-grid>div:nth-child(2){background-color:#FBF0D8}
+.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui .forage-count-grid>div:nth-child(3){background-color:#E1F2EC}
+.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui .forage-motif{opacity:.78}
+.dojo.dojo.forage-shell:has(.forage-home-intro) .forage-ui :is(a,button,input,select,textarea,summary):focus-visible,.dojo.dojo.forage-shell:has(.forage-home-intro) .top button:focus-visible,.dojo.dojo.forage-shell:has(.forage-home-intro) .nav button:focus-visible{outline-color:#78512C}
+/* Existing page descendants scope these colors without changing markup. */
+.dojo.dojo:has(.weaving-clarity),.dojo.dojo:has(.liaojie-workbench-entry){--ink:#253C5C;--muted:#58677C;--paper:#FFFFFF;--line:#E8DDEB;background-color:var(--bg)}
+.dojo.dojo:has(.weaving-clarity){--bg:#FCF5FB}
+.dojo.dojo:has(.liaojie-workbench-entry){--bg:#F3F7FD;--line:#D6E3F2}
+.dojo.dojo:has(:is(.weaving-clarity,.liaojie-workbench-entry)) :is(.top,.nav){background-color:#FFFFFFED;border-color:var(--line)}
+.dojo.dojo:has(:is(.weaving-clarity,.liaojie-workbench-entry)) .top button{background-color:#FFFFFF;color:var(--ink);border-color:var(--line)}
+.dojo.dojo .weaving-clarity{--accent:#9C456F;--ink:#253C5C;--muted:#58677C;--soft:#F8E7F4;--line:#EBDDEC}
+.dojo.dojo .weaving-clarity .hero{background:linear-gradient(125deg,#F5BDD5 0%,#E3C7EF 54%,#ACC9F7 100%);color:#253C5C}
+.dojo.dojo .weaving-clarity .hero .eyebrow{color:#455B76}
+.dojo.dojo .weaving-clarity :is(.ritual-card,.weaving-inbox,.weaving-project-row,.weaving-capture-card){background-color:#FFFFFF;border-color:#EBDDEC;color:#253C5C}
+.dojo.dojo .weaving-clarity .wf-start .primary{background-color:#E494BF;border-color:#E494BF;color:#253C5C}
+.dojo.dojo .weaving-clarity .domain-primary-actions button{background-color:#FBEAF5;border-color:#EAC7DE;color:#7C3D72}
+.dojo.dojo .weaving-clarity .weaving-empty{background-color:#F5F5FA;border-color:#E9E8F0;color:#58677C}
+.dojo.dojo .weaving-clarity .weaving-empty :is(span,b,a){color:#70558D}
+.dojo.dojo .weaving-clarity .weaving-count{background-color:#F6E1EF;color:#7C3D72}
+.dojo.dojo .weaving-clarity .backstage-inline-link{background-color:#F4F5FA;color:#455B76;border-color:#E9E8F0}
+.dojo.dojo:has(.liaojie-workbench-entry) .hero.li{background:linear-gradient(120deg,#B3E1E9 0%,#C2DAF7 52%,#C9B7F2 100%);color:#253C5C}
+.dojo.dojo:has(.liaojie-workbench-entry) .hero :is(p,.eyebrow){color:#455B76}
+.dojo.dojo .liaojie-workbench-entry{background-color:#FFFFFF;border-color:#D6E3F2}
+.dojo.dojo .liaojie-workbench-entry .button-link{background-color:#5676AA;border-color:#5676AA;color:#FFFFFF}
+.dojo.dojo:has(.liaojie-workbench-entry) .domain-primary-actions button{background-color:#DAE8FA;border-color:#DAE8FA;color:#253C5C}
+.dojo.dojo:has(.liaojie-workbench-entry) :is(.empty,.backstage-inline-link){background-color:#FFFFFF;border-color:#D6E3F2;color:#58677C}
+
+.dojo.dojo .weaving-clarity :is(.eyebrow){color:#9C456F}
+.dojo.dojo .weaving-clarity :is(.lead,.wf-note){color:#58677C}
