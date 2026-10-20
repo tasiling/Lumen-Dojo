@@ -222,3 +222,18 @@
 .dojo.weekly-shell .nav .nav-icon svg{width:23px;height:23px}
 @media(max-width:359px){.dojo.weekly-shell .top{padding-inline:16px}.dojo.weekly-shell .bingo-screen{padding-inline:16px}.dojo.weekly-shell .board-card{padding:12px}.dojo.weekly-shell .bingo-grid{gap:4px}.dojo.weekly-shell .bingo-cell{padding:2px;gap:1px}.dojo.weekly-shell .bingo-cell-title{font-size:12px;line-height:1.1}.dojo.weekly-shell .weekly-category-key{gap:5px}.dojo.weekly-shell .weekly-category-key button{font-size:11px}.dojo.weekly-shell .weekly-summary-meta{gap:10px}}
 @media(min-width:760px){.dojo.weekly-shell .top,.dojo.weekly-shell .bingo-screen{padding-inline:36px}.dojo.weekly-shell .weekly-board-layout{grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);align-items:start}.dojo.weekly-shell .weekly-page-tabs{max-width:620px}.dojo.weekly-shell .weekly-week-picker{max-width:620px}.dojo.weekly-shell .weekly-summary-meta{justify-content:flex-start}.dojo.weekly-shell .weekly-summary-state{margin-left:24px}.dojo.weekly-shell .bingo-cell-title{font-size:16px}.dojo.weekly-shell .weekly-cell-meta{font-size:12px;line-height:14px;min-height:14px}.dojo.weekly-shell .weekly-cell-meta .weekly-icon{width:13px;height:13px}}
+
+/* Approved color rules v2. Layout and data/category colors remain unchanged. */
+.dojo.weekly-shell{--bg:var(--v2-background);--surface:var(--v2-surface);--ink:var(--v2-ink);--muted:var(--v2-muted);--line:var(--v2-border);--weekly-soft:var(--v2-tint);--weekly-selected:var(--v2-tint);--weekly-accent:var(--v2-accent);--field-border:var(--v2-field)}
+.dojo.weekly-shell .weekly-summary{background:var(--v2-gradient);color:var(--v2-ink)}
+.dojo.weekly-shell .weekly-summary p,.dojo.weekly-shell .weekly-summary-state{color:var(--v2-ink)}
+.dojo.weekly-shell .weekly-motif{color:#FFFFFF;opacity:.56;stroke-width:1.35}
+.dojo.weekly-shell .primary,.dojo.weekly-shell .weekly-action-row>button.primary{background:var(--v2-accent);border-color:var(--v2-accent);color:var(--v2-on)}
+.dojo.weekly-shell .weekly-view-tabs button[aria-pressed=true]{background:var(--v2-tint);color:var(--v2-ink)}
+.dojo.weekly-shell .weekly-page-tabs [aria-current=page]{color:var(--v2-ink);box-shadow:inset 0 0 0 1px var(--v2-accent)}
+.dojo.weekly-shell .weekly-view-tabs,.dojo.weekly-shell .sheet{background:var(--v2-surface);color:var(--v2-ink)}
+.dojo.weekly-shell .field{background:var(--v2-surface);color:var(--v2-ink);border-color:var(--v2-field)}
+.dojo.weekly-shell .weekly-project-group{color:var(--v2-accent)}
+.dojo.weekly-shell :is(button,a,input,textarea,select,summary):focus-visible{outline-color:var(--v2-accent)}
+.dojo.weekly-shell .weekly-motif{mask-image:linear-gradient(to right,transparent 0%,#000 65%)}
+.dojo.weekly-shell .weekly-action-row>button:first-child{background:var(--v2-accent);color:var(--v2-on);border-color:var(--v2-accent)}

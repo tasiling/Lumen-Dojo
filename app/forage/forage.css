@@ -24,7 +24,7 @@
 .dojo.forage-shell .forage-ui :where(button,.forage-add-entry,.forage-card-action,.forage-page-heading>a){font:inherit;min-height:46px;padding:11px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--accent);cursor:pointer;display:inline-flex;gap:8px;align-items:center;justify-content:center;line-height:1.5;text-decoration:none;white-space:normal;overflow-wrap:anywhere}
 .dojo.forage-shell .forage-ui button:disabled{opacity:.5;cursor:not-allowed}
 .dojo.forage-shell .forage-ui button.primary,.dojo.forage-shell .forage-ui .forage-card-action{background:var(--accent);color:var(--on);border-color:var(--accent)}
-.dojo.forage-shell .forage-ui :is(a,button,input,select,textarea,summary):focus-visible,.dojo.forage-shell .top button:focus-visible,.dojo.forage-shell .nav button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;scroll-margin-block:90px 130px}
+.dojo.forage-shell .forage-ui :is(a,button,input,select,textarea,summary):focus-visible,.dojo.forage-shell .top button:focus-visible,.dojo.forage-shell .nav button:focus-visible{outline:2px solid var(--v2-accent);outline-offset:3px;scroll-margin-block:90px 130px}
 .dojo.forage-shell .forage-ui :is(input,textarea,select,.field){font:inherit;font-size:1rem;line-height:1.65;color:var(--ink)}
 .dojo.forage-shell .forage-ui :is(input:not([type=checkbox]):not([type=radio]),textarea,select,.field){max-width:100%;width:100%;min-width:0;background:var(--surface);border:1px solid var(--field-border);border-radius:9px;padding:12px;min-height:48px;box-shadow:none}
 .dojo.forage-shell .forage-ui textarea{resize:vertical;min-height:110px;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -188,3 +188,14 @@
 .dojo.forage-shell .forage-ui .forage-inbox-screen:has(.forage-detail-tabs)>.forage-page-heading{display:none}
 .dojo.forage-shell .forage-ui .forage-card>h1{font-size:1.5rem;margin:12px 0 20px}
 .dojo.forage-shell .forage-ui .weaving-capture-meta span{color:var(--muted);background:var(--soft)}
+
+/* Approved color rules v2. Includes inboxes, forms and dialog scope. */
+.dojo.forage-shell,.dojo.forage-shell .forage-ui{--paper:var(--v2-background);--surface:var(--v2-surface);--on:var(--v2-on);--accent:var(--v2-accent);--accent-dark:var(--v2-accent);--ink:var(--v2-ink);--muted:var(--v2-muted);--soft:var(--v2-tint);--line:var(--v2-border);--sub:var(--v2-tint);--ornament:#FFFFFF;--field-border:var(--v2-field);color:var(--v2-ink)}
+.dojo.forage-shell{background:var(--v2-background)}
+.dojo.forage-shell .forage-ui .forage-home-intro{background:var(--v2-gradient);color:var(--v2-ink);overflow:hidden}
+.dojo.forage-shell .forage-ui .forage-home-intro :is(h1,p,.eyebrow){color:var(--v2-ink)}
+.dojo.forage-shell .forage-ui .forage-motif{color:#FFFFFF;opacity:.56;stroke-width:1.35}
+.dojo.forage-shell .forage-ui .forage-add-entry{background:var(--v2-accent);color:var(--v2-on);border-color:var(--v2-accent)}
+.dojo.forage-shell .modal .sheet{background:var(--v2-surface);color:var(--v2-ink)}
+.dojo.forage-shell :is(a,button,input,select,textarea,summary):focus-visible{outline-color:var(--v2-accent)}
+.dojo.forage-shell .forage-ui .forage-motif{mask-image:linear-gradient(to right,transparent 0%,transparent 45%,#000 85%)}

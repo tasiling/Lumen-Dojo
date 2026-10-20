@@ -1,0 +1,254 @@
+{
+  "schemaVersion": "2.0",
+  "name": "行光道場｜八場域色彩與圖紋",
+  "status": "配色與圖紋方向已確認；頁面功能依各工作區最新核准草稿整合",
+  "reference": "K 場域漸層與專屬圖紋 + 八頁視覺稿",
+  "gradient": {
+    "type": "linear",
+    "cssAngle": "135deg",
+    "stops": [
+      "0%",
+      "52%",
+      "100%"
+    ],
+    "direction": "左上 → 右下",
+    "colorSpace": "sRGB"
+  },
+  "motherPalette": {
+    "description": "原首頁淡粉 → 淡薰衣草 → 霧藍；保留原首頁實際色值，不因本檔重寫首頁",
+    "family": [
+      "#E9CBD3",
+      "#D7D5EB",
+      "#C1CDE7"
+    ]
+  },
+  "global": {
+    "ink": "#253C5C",
+    "mutedInk": "#58677C",
+    "surface": "#FFFFFF",
+    "onAccent": "#FFFFFF",
+    "inputBorder": "#7D899B",
+    "navigationAccent": "#4D658B",
+    "motifColor": "#FFFFFF",
+    "motifOpacity": 0.56,
+    "motifStroke": 1.35
+  },
+  "themes": {
+    "practice": {
+      "label": "修習所",
+      "aliases": [],
+      "gradient": {
+        "start": "#ABD6C7",
+        "middle": "#B4D0E0",
+        "end": "#C4B3DE",
+        "css": "linear-gradient(135deg, #ABD6C7 0%, #B4D0E0 52%, #C4B3DE 100%)"
+      },
+      "background": "#FAFDFC",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#E6F3EE",
+      "decorativeBorder": "#D2E2DF",
+      "accent": "#287466",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#287466",
+      "motif": {
+        "name": "定心",
+        "description": "同心圓、中心軸與定點",
+        "file": "motifs/practice.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/01-practice.png"
+    },
+    "forage": {
+      "label": "野採",
+      "aliases": [],
+      "gradient": {
+        "start": "#F0C295",
+        "middle": "#E8D7A5",
+        "end": "#9ED5CA",
+        "css": "linear-gradient(135deg, #F0C295 0%, #E8D7A5 52%, #9ED5CA 100%)"
+      },
+      "background": "#FEFBF9",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#FAEDDF",
+      "decorativeBorder": "#E6DBD3",
+      "accent": "#87552D",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#87552D",
+      "motif": {
+        "name": "山徑",
+        "description": "有機地形等高線",
+        "file": "motifs/forage.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/02-forage.png"
+    },
+    "weaving": {
+      "label": "織光堂",
+      "aliases": [],
+      "gradient": {
+        "start": "#EEAAC8",
+        "middle": "#D3AFE0",
+        "end": "#ADBDE6",
+        "css": "linear-gradient(135deg, #EEAAC8 0%, #D3AFE0 52%, #ADBDE6 100%)"
+      },
+      "background": "#FEFAFC",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#FAE6EE",
+      "decorativeBorder": "#EAD8E1",
+      "accent": "#99476E",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#99476E",
+      "motif": {
+        "name": "織流",
+        "description": "兩束交錯的流動曲線",
+        "file": "motifs/weaving.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/03-weaving.png"
+    },
+    "liaojie": {
+      "label": "聊解室",
+      "aliases": [],
+      "gradient": {
+        "start": "#A4D8E2",
+        "middle": "#B0C7E6",
+        "end": "#B9ADE1",
+        "css": "linear-gradient(135deg, #A4D8E2 0%, #B0C7E6 52%, #B9ADE1 100%)"
+      },
+      "background": "#FAFDFD",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#E4F3F6",
+      "decorativeBorder": "#D7E0EA",
+      "accent": "#426C9C",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#426C9C",
+      "motif": {
+        "name": "相遇",
+        "description": "交疊的開放圓弧與相遇留白",
+        "file": "motifs/liaojie.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/04-liaojie.png"
+    },
+    "dao": {
+      "label": "道藏",
+      "aliases": [],
+      "gradient": {
+        "start": "#B7B1D9",
+        "middle": "#D7B4C7",
+        "end": "#E3C18E",
+        "css": "linear-gradient(135deg, #B7B1D9 0%, #D7B4C7 52%, #E3C18E 100%)"
+      },
+      "background": "#FBFAFD",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#E9E8F4",
+      "decorativeBorder": "#E1DCE7",
+      "accent": "#725A8D",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#725A8D",
+      "motif": {
+        "name": "藏序",
+        "description": "共用基線的層疊拱門",
+        "file": "motifs/dao.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/05-dao.png"
+    },
+    "closing": {
+      "label": "收光",
+      "aliases": [],
+      "gradient": {
+        "start": "#E9CBD3",
+        "middle": "#D7D5EB",
+        "end": "#C1CDE7",
+        "css": "linear-gradient(135deg, #E9CBD3 0%, #D7D5EB 52%, #C1CDE7 100%)"
+      },
+      "background": "#FEFCFC",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#F8EFF2",
+      "decorativeBorder": "#E2DDE3",
+      "accent": "#775C7C",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#775C7C",
+      "motif": {
+        "name": "歸光",
+        "description": "落日、水面與水平漣漪",
+        "file": "motifs/closing.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/06-closing.png"
+    },
+    "bingo": {
+      "label": "週盤",
+      "aliases": [
+        "weekly"
+      ],
+      "gradient": {
+        "start": "#EDB19F",
+        "middle": "#E5B0CA",
+        "end": "#CEAADE",
+        "css": "linear-gradient(135deg, #EDB19F 0%, #E5B0CA 52%, #CEAADE 100%)"
+      },
+      "background": "#FEFAF9",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#FAE8E2",
+      "decorativeBorder": "#EBD9DF",
+      "accent": "#9F4A67",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#9F4A67",
+      "motif": {
+        "name": "成線",
+        "description": "圓角格線、斜向連線與三個節點",
+        "file": "motifs/bingo.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/07-bingo.png"
+    },
+    "calendar": {
+      "label": "行事曆",
+      "aliases": [],
+      "gradient": {
+        "start": "#E9D99B",
+        "middle": "#BED8B6",
+        "end": "#B0CEE5",
+        "css": "linear-gradient(135deg, #E9D99B 0%, #BED8B6 52%, #B0CEE5 100%)"
+      },
+      "background": "#FEFDF9",
+      "surface": "#FFFFFF",
+      "surfaceTint": "#F8F4E1",
+      "decorativeBorder": "#D9E0DA",
+      "accent": "#496D50",
+      "onAccent": "#FFFFFF",
+      "ink": "#253C5C",
+      "mutedInk": "#58677C",
+      "focusRing": "#496D50",
+      "motif": {
+        "name": "時序",
+        "description": "開放時間弧、徑向刻度與標記",
+        "file": "motifs/calendar.svg",
+        "decorative": true
+      },
+      "referenceImage": "references/08-calendar.png"
+    }
+  },
+  "notes": [
+    "gradient 是代表色；accent 是為文字與操作對比衍生的深色，不取代代表色。",
+    "bingo 的相容別名為 weekly。",
+    "色彩不是狀態；錯誤、成功、週盤分類與行事曆資料圖例保留既有語義。",
+    "參考圖中的資料、文字細節及按鈕數量不構成功能規格。"
+  ]
+}
