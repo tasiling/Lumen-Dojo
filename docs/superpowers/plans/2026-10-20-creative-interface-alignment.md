@@ -1,6 +1,6 @@
 # Creative Interface Alignment Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 交付與已確認參考圖一致、可完整走過文字創作與聊解室交接的手機介面。
 
@@ -40,10 +40,10 @@ assert.deepEqual(CREATIVE_STEPS.map(x => x.label), ['選素材','定觀點','製
 assert.equal(new Set(CREATIVE_STEPS.map(x => x.icon)).size, 5);
 ```
 
-- [ ] 寫有意義的 fixture UI assertions：五步 label 完全等於規格、目前步驟 aria-current=step、長標題 320px 無溢出。
-- [ ] 執行 node scripts/test-creative-interface-ui.mjs steps，確認因尚未提供新圖示／label 而失敗。
-- [ ] 實作上述元件與路由限定樣式，首頁與工作區使用同一 CREATIVE_STEPS；保留其他路由輸出。
-- [ ] 重跑指定 assertions，檢查實際截圖後 commit 本 task。
+- [x] 寫有意義的 fixture UI assertions：五步 label 完全等於規格、目前步驟 aria-current=step、長標題 320px 無溢出。
+- [x] 執行 node scripts/test-creative-interface-ui.mjs steps，確認因尚未提供新圖示／label 而失敗。
+- [x] 實作上述元件與路由限定樣式，首頁與工作區使用同一 CREATIVE_STEPS；保留其他路由輸出。
+- [x] 重跑指定 assertions，檢查實際截圖後 commit 本 task。
 
 ## Task 2: 建立作品與五步操作
 
@@ -61,10 +61,10 @@ await page.reload();
 assert.equal(await page.getByLabel('自己最想說的一句話').inputValue(), '休息不必等到所有事情都完成。');
 ```
 
-- [ ] 增加 cases：空觀點可先到選材畫面；到第二步確認前不 POST；重新整理恢復輸入；建立失敗不清草稿；保存失敗不前進、切步不標已完成。
-- [ ] 執行 node scripts/test-creative-interface-ui.mjs create，確認新增案例在舊流程失敗。
-- [ ] 讓建立表單使用兩步 UI 與本機草稿；驗證完成後呼叫既有建立 API，不寫假觀點、不改 server 寫入收據語意。調整全工作區引導與文字交付物標示。
-- [ ] 執行新增 cases 與 npm run test:weaving-clarity，通過並 commit。
+- [x] 增加 cases：空觀點可先到選材畫面；到第二步確認前不 POST；重新整理恢復輸入；建立失敗不清草稿；保存失敗不前進、切步不標已完成。
+- [x] 執行 node scripts/test-creative-interface-ui.mjs create，確認新增案例在舊流程失敗。
+- [x] 讓建立表單使用兩步 UI 與本機草稿；驗證完成後呼叫既有建立 API，不寫假觀點、不改 server 寫入收據語意。調整全工作區引導與文字交付物標示。
+- [x] 執行新增 cases 與 npm run test:weaving-clarity，通過並 commit。
 
 ## Task 3: 聊解室分段與 Threads
 
@@ -79,10 +79,10 @@ assert.equal(normalizeLiaojieProject({...publicationFixture,platform:'plurk'},{i
 assert.equal(normalizeLiaojieProject({...publicationFixture,platform:'unknown'},{id:publicationFixture.id}).platform,'instagram_post');
 ```
 
-- [ ] 增加 normalizeLiaojieProject 接受 threads 且保留舊平台、未知值沿用舊 fallback 的 assertions；UI 確認來源快照不隨編排改寫、安排日期不宣稱外站已發布。
-- [ ] 執行 npm run test:weaving-domain 與 node scripts/test-creative-interface-ui.mjs publication，確認 Threads 新案例失敗。
-- [ ] 實作平台新增及接收／編排／預覽／發布紀錄分段，使用 Task 1 視覺元件。
-- [ ] 重跑新增 cases 與原交接流程，通過並 commit。
+- [x] 增加 normalizeLiaojieProject 接受 threads 且保留舊平台、未知值沿用舊 fallback 的 assertions；UI 確認來源快照不隨編排改寫、安排日期不宣稱外站已發布。
+- [x] 執行 npm run test:weaving-domain 與 node scripts/test-creative-interface-ui.mjs publication，確認 Threads 新案例失敗。
+- [x] 實作平台新增及接收／編排／預覽／發布紀錄分段，使用 Task 1 視覺元件。
+- [x] 重跑新增 cases 與原交接流程，通過並 commit。
 
 ## Task 4: 同源預覽、手機驗收與交付
 
@@ -90,8 +90,8 @@ assert.equal(normalizeLiaojieProject({...publicationFixture,platform:'unknown'},
 
 **Interfaces:** Fixture-only preview renders actual product routes；no new public fixture route or auth bypass in production。交付包含 commit、測試、實際截圖與未驗收邊界。
 
-- [ ] 增加 375/390/430/1024px 實際流程與 320px 溢出案例，覆蓋空白與已有作品、保存狀態、定稿交接；固定操作列不遮擋內容。
-- [ ] 執行 node scripts/test-creative-interface-ui.mjs all，確認新狀態案例會檢出未完成對齊。
-- [ ] 產生由同源元件渲染的可操作預覽與截圖；確認中文字體載入完成，逐項核對原圖並列可讀性修正。
-- [ ] 執行 npm run test:weaving、npm run test:weaving-clarity、npx tsc --noEmit、npm run lint、npm run build；僅在有新修正時重跑相關檢查。
-- [ ] 依適用技能做一次獨立審查與問題修正；保存交付紀錄、commit、push、PR，更新總排程下一階段。
+- [x] 增加 375/390/430/1024px 實際流程與 320px 溢出案例，覆蓋空白與已有作品、保存狀態、定稿交接；固定操作列不遮擋內容。
+- [x] 執行 node scripts/test-creative-interface-ui.mjs all，確認新狀態案例會檢出未完成對齊。
+- [x] 產生由同源元件渲染的可操作預覽與截圖；確認中文字體載入完成，逐項核對原圖並列可讀性修正。
+- [x] 執行 npm run test:weaving、npm run test:weaving-clarity、npx tsc --noEmit、npm run lint、npm run build；僅在有新修正時重跑相關檢查。
+- [x] 依適用技能做一次獨立審查與問題修正；保存交付紀錄、commit、push、PR，更新總排程下一階段。
