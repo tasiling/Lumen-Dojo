@@ -32,3 +32,12 @@
 - 最後整合：master 又增加 `6dd62be`，保留行事曆主題、圖案與 header；解決 DojoShell／layout imports 衝突。合併後 build、production 創作 UI／預覽、lint、行事曆元件檢查通過；行事曆 dev QA 通過。
 - 額外驗收缺口：行事曆 production QA 流程收到 React #418 hydration 錯誤；主要幾何／配色／操作已通過，但整體 QA 未通過，真實時鐘也重現。未定位原因，未假定是本包或既有問題，也未因此反覆延後創作包交付；後續整合／發布驗收需追蹤。詳見交付文件補記。
 - 下一包仍為來源／閱讀知識及公開設定，先重新讀取最新 master／PR89；不因這項跨工作區驗收問題空轉。
+
+## 2026-10-20 使用者授權發布後的狀態
+
+- 使用者已明確要求「推送和部署」。PR100 已合併至 master，merge commit `680aca260e54e5fa38289012bd48c86553594cdb`；創作 production 隔離 UI／預覽再次通過，合併前後 app/lib/scripts/package 原始碼相同。
+- Railway 既有 production Lumen-Dojo 服務已準備切換至該 merge commit；只有 1 項來源版本變更，未改變變數、磁碟或其他服務。
+- 部署尚未執行：accept-deploy 工具回傳「Cancelled — the user did not approve this action. No changes were made.」。這不代表使用者沒有文字授權，而是平台部署確認沒有通過；沒有改走其他寫入路徑繞過它。
+- 待套用 patch：`b4f87b60-f768-47ef-bf94-332a4f367c7d`（STAGED），project `15793738-2769-4165-b755-49047aa7f445`，environment `b880e871-66f8-4d30-8ca2-4876fcee8964`，service `fe2382be-d017-46df-94f0-b733e90c0936`。
+- 正式站仍為 `6dd62be`，deployment `cde840bd-c3a6-482a-9047-cfc579635427`（SUCCESS）；不能把這個舊版 SUCCESS 當作新版本部署成功。需要在 Railway 確認套用後，核對新 deployment 的 commit 與 terminal SUCCESS。
+- 下一包仍可獨立接續來源／閱讀知識與公開設定；PR89 尚未整合。
