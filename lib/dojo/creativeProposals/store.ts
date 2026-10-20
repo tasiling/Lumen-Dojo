@@ -47,26 +47,37 @@ export async function patchProposal(body:Body){
  })]);return read(p.id);
 }
 async function allowedSource(ref:SourceRef){const policy=await sourcePolicies.read(ref);if(policy?.discovery!=='allow')return null;return resolvePolicySource(ref);}
+type ScanPlan={schema:1;refs:SourceRef[];audience:string;at:string;afterKey:string|null};
+function scanPlan(value:unknown):ScanPlan{
+ const p=value as ScanPlan;
+ if(!p||p.schema!==1||!Array.isArray(p.refs)||p.refs.length>10||typeof p.audience!=='string'||typeof p.at!=='string'||!Number.isFinite(Date.parse(p.at)))throw new LearningError('找題操作缺少可核對的原批次，請核對原操作',409);
+ const refs=p.refs.map(parseSourceRef),keys=refs.map(sourceKey);
+ if(new Set(keys).size!==keys.length||p.afterKey!==(keys.at(-1)??null))throw new LearningError('找題原批次游標不符',409);
+ return{...p,refs};
+}
 export async function scan(body:Body,now=new Date()){
  const op=operationId(body),s=await settings();const policies=(await sourcePolicies.list()).filter(p=>p.discovery==='allow'&&s.sourceTypes.includes(p.ref.sourceType)).sort((a,b)=>sourceKey(a.ref).localeCompare(sourceKey(b.ref)));
  const start=s.afterKey?policies.findIndex(p=>sourceKey(p.ref)>s.afterKey!):0;const batch=policies.slice(start<0?0:start,(start<0?0:start)+10);
- if(!batch.length)return {created:0,skipped:true};
- const steps:OperationStep[]=batch.map((policy,index)=>{
-  const key='candidate-'+index;let candidate:Omit<Proposal,'id'>|null=null;
+ const plan:ScanPlan={schema:1,refs:batch.map(p=>p.ref),audience:s.audience,at:now.toISOString(),afterKey:batch.length?sourceKey(batch.at(-1)!.ref):null};
+ const receipt=await runWeavingOperation(owner,op,'proposal_scan',body,r=>{
+ const saved=scanPlan(r.context);
+ const steps:OperationStep[]=saved.refs.map(ref=>{
+  const key='candidate-'+operationDigest(sourceKey(ref));let candidate:Omit<Proposal,'id'>|null=null;
   const writing=createStep(PROPOSAL_PREFIX,key,()=>{if(!candidate)throw new LearningError('來源尚未核對',409);return candidate;});
   return {key,async findConfirmed(r){
    const confirmed=await writing.findConfirmed(r);if(confirmed)return confirmed;
-   const source=await allowedSource(policy.ref);if(!source||!source.text.trim())return{id:'unavailable'};
-   candidate=buildCandidate(source,s.audience,now.toISOString(),owner);
-   const old=(await proposals()).filter(p=>sourceKey(p.source.ref)===sourceKey(policy.ref)&&p.source.digest===candidate!.source.digest);
+   const source=await allowedSource(ref);if(!source||!source.text.trim())return{id:'unavailable'};
+   candidate=buildCandidate(source,saved.audience,saved.at,owner);
+   const old=(await proposals()).filter(p=>sourceKey(p.source.ref)===sourceKey(ref)&&p.source.digest===candidate!.source.digest);
    if(old.length>1)throw new LearningError('來源有重複提案，請先核對',409);
    return old.length?{id:old[0].id}:null;
   },execute:writing.execute};
  });
- steps.push(settingsStep(current=>({...current,lastScanAt:now.toISOString(),afterKey:sourceKey(batch.at(-1)!.ref)})));
- await runWeavingOperation(owner,op,'proposal_scan',body,steps);
+ if(saved.refs.length)steps.push(settingsStep(current=>({...current,lastScanAt:current.lastScanAt&&current.lastScanAt>saved.at?current.lastScanAt:saved.at,afterKey:saved.afterKey})));
+ return steps;
+ },plan);
  const created=(await listJsonRecords(PROPOSAL_PREFIX)).filter(row=>(row.value as {_weavingMutation?:{operationId:string;owner:string}})?._weavingMutation?.operationId===op).length;
- return{created,skipped:false};
+ return{created,skipped:scanPlan(receipt.context).refs.length===0};
 }
 export async function runDue(now=new Date()){
  const s=await settings();if(!s.automaticEnabled||!s.cadenceHours||s.lastScanAt&&now.getTime()-Date.parse(s.lastScanAt)<s.cadenceHours*3600000)return{skipped:true};
@@ -84,6 +95,6 @@ export async function acceptProposal(body:Body){
  const r=await runWeavingOperation(owner,op,'proposal_accept',body,[
   unique('shuttle',WEAVING_SHUTTLE_TITLE_PREFIX,async()=>marked({...createShuttleDraft({title:p.title,coreStatement:p.angle,sourceType:'selected_sources',sourceId:p.source.ref.sourceId,sourceRefs:[p.source.ref],sourceSnapshot:p.source.text}),sourceSelections:[selection],revision:1})),
   unique('work',WEAVING_WORK_TITLE_PREFIX,async receipt=>{const shuttle=await readShuttle(receipt.result.shuttle.id);return marked({...createWorkDraft({shuttleId:shuttle.id,title:p.title,coreVersionId:shuttle.currentCoreVersionId,format:'text'}),status:'drafting',revision:1,draftText:p.trial,nextAction:'修改提案試寫，確認自己的觀點',textWorkflow:{...createTextWorkflow('article'),currentStep:'concept',sourceSelections:[selection],blocks:[{id:'proposal-trial',role:'提案試寫（待修改）',text:p.trial,mediaNote:''}]}});}),
-  updateStep(p.id,PROPOSAL_PREFIX,'proposal',(row,receipt)=>{const old=JSON.parse(row.內容) as Proposal;expectRevision(old,body.expectedRevision);return {...old,status:'accepted',revision:old.revision+1,acceptedWorkId:receipt.result.work.id,acceptedShuttleId:receipt.result.shuttle.id,updatedAt:new Date().toISOString()};})
+  updateStep(p.id,PROPOSAL_PREFIX,'proposal',async(row,receipt)=>{await verify();const old=JSON.parse(row.內容) as Proposal;expectRevision(old,body.expectedRevision);return {...old,status:'accepted',revision:old.revision+1,acceptedWorkId:receipt.result.work.id,acceptedShuttleId:receipt.result.shuttle.id,updatedAt:new Date().toISOString()};})
  ]);return{workId:r.result.work.id,shuttleId:r.result.shuttle.id};
 }
