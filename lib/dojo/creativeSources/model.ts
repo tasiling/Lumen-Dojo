@@ -6,7 +6,7 @@ export const PERMISSIONS = ['allow', 'ask', 'private'] as const;
 export type Permission = typeof PERMISSIONS[number];
 export type SourcePolicy = { schema: 1; owner: string; ref: SourceRef; discovery: Permission; publication: Permission; revision: number; createdAt: string; updatedAt: string };
 export type PolicyInput = Pick<SourcePolicy, 'ref'|'discovery'|'publication'> & { expectedRevision: number; operationId: string };
-export type PolicySource = { ref: SourceRef; label: string; href: string; text: string; version: string | null };
+export type PolicySource = { ref: SourceRef; label: string; href: string; text: string; version: string | null; contentKind?: 'quote'|'understanding'|'experience'|'insight' };
 export const SOURCE_POLICY_PREFIX = '行光創作來源設定-v1-';
 export const defaultPolicy = (): Pick<SourcePolicy,'discovery'|'publication'> => ({discovery:'ask',publication:'ask'});
 export function parseSourceRef(value: unknown): SourceRef {

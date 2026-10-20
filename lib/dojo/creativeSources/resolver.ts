@@ -19,15 +19,15 @@ export async function resolvePolicySource(value:SourceRef):Promise<PolicySource|
       let value:unknown;try{value=JSON.parse(row.內容);}catch{return null;}
       const c=normalizeCaptureEntry(value,{id:ref.sourceId});
       if(!c||c.status!=='adopted'||!['C2','C3'].includes(c.creativeMaturity)||!c.destinations.includes('weaving'))return null;
-      return{ref,label:c.title,text:c.forageSummary||c.excerpt||c.note,version:c.updatedAt,href:sourceHref(ref)};
+      return{ref,label:c.title,text:c.forageSummary||c.excerpt||c.note,version:c.updatedAt,href:sourceHref(ref),contentKind:'insight'};
     }
     const item=await createResolver().resolve(ref.sourceType==='reading_note'?{kind:'reading_note',recordId:note,parentBookId:book,...(fragment?{fragment:'reflection' as const}:{})}:{kind:ref.sourceType,recordId:ref.sourceId});
     if(!item)return null;
     if(ref.sourceType==='reading_insight'&&!['已驗證','不成立'].includes(item.status))return null;
     if(ref.sourceType==='knowledge_claim'){
       const {claim}=await getKnowledgeClaim(ref.sourceId);if(!knowledgeClaimCanUse(claim,'perspective'))return null;
-      const active=activeClaimVersion(claim)!;return {ref,label:item.title,text:active.statement,version:active.id,href:sourceHref(ref)};
+      const active=activeClaimVersion(claim)!;return {ref,label:item.title,text:active.statement,version:active.id,href:sourceHref(ref),contentKind:claim.type==='experience'?'experience':active.claimant==='external_author'?'quote':'understanding'};
     }
-    return {ref,label:item.title,text:item.text,version:item.sourceVersion,href:sourceHref(ref)};
+    return {ref,label:item.title,text:item.text,version:item.sourceVersion,href:sourceHref(ref),contentKind:ref.sourceType==='reading_insight'?'insight':item.status==='excerpt'?'quote':'understanding'};
   }catch(e){if(typeof e==='object'&&e&&'status' in e&&e.status===404)return null;throw e;}
 }
