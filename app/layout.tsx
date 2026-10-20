@@ -8,6 +8,7 @@ import "./dojo.css";
 import "./today-calendar.css";
 import "./design-v2-tokens.css";
 import "./reference-colors.css";
+import "./components/creative/creative-interface.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

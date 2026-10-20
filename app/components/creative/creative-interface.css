@@ -1,0 +1,85 @@
+/* Shared by the real creative routes and their isolated previews. */
+.dojo.creative-shell.creative-shell {
+  --ink:#253C5C;--muted:#58677C;--paper:#fff;--line:#EBDDEC;--soft:#F8E7F4;--accent:#8B3F68;
+  --creative-gradient:linear-gradient(125deg,#F5BDD5 0%,#E3C7EF 54%,#ACC9F7 100%);
+  --creative-action:#E494BF;--bg:#FCF5FB;
+  background:var(--bg);color:var(--ink);font:16px/1.65 'Noto Sans TC','Noto Sans CJK TC','PingFang TC',system-ui,sans-serif;
+}
+.dojo.creative-shell.creative-liaojie {--bg:#F3F7FD;--line:#D6E3F2;--soft:#EAF1FC;--accent:#45638F;--creative-action:#5676AA;--creative-gradient:linear-gradient(120deg,#B3E1E9 0%,#C2DAF7 52%,#C9B7F2 100%)}
+.dojo.creative-shell.creative-shell :is(h1,h2,h3,h4,b,strong,button,input,textarea,select){font-family:inherit}
+.dojo.creative-shell.creative-shell :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #5E4B91;outline-offset:3px}
+.dojo.creative-shell.creative-shell .screen{padding:18px 18px 24px;min-width:0}
+.dojo.creative-shell.creative-shell .top{border:0;background:var(--bg);padding:14px 18px;gap:12px}
+.dojo.creative-shell.creative-shell .top button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:#ffffffc9;font-size:14px}
+.dojo.creative-shell.creative-shell .top .creative-brand{padding:0;border:0;background:transparent;text-align:left;gap:8px;justify-content:flex-start}
+.creative-icon{width:24px;height:24px;flex-shrink:0;display:inline-block;vertical-align:middle}
+.dojo.creative-shell .creative-brand>.creative-icon{width:29px;height:29px}
+.creative-brand b{display:block;font-size:18px;line-height:1.3;letter-spacing:.06em}
+.creative-brand small{display:block;font-size:10px;letter-spacing:.13em;margin-top:2px}
+.dojo.creative-shell.creative-shell .top-actions{gap:6px}
+.dojo.creative-shell.creative-shell .top-actions .creative-icon{width:20px;height:20px}
+.dojo.creative-shell.creative-shell .hero {background:var(--creative-gradient);position:relative;isolation:isolate;overflow:hidden;border:0;border-radius:18px;padding:22px 18px;min-height:166px;color:var(--ink);box-shadow:none;margin:0 0 12px}
+.dojo.creative-shell.creative-shell .hero::after{display:none}
+.dojo.creative-shell.creative-shell .hero>:not(.creative-hero-art){position:relative;z-index:1}
+.dojo.creative-shell.creative-shell .hero .eyebrow{color:#455B76;font-size:13px;letter-spacing:.03em}
+.dojo.creative-shell.creative-shell .hero h1{font-size:36px;line-height:1.35;font-weight:800;letter-spacing:.04em;margin:8px 0 10px;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell .hero p{font-size:16px;line-height:1.75;margin:0;max-width:27ch;color:var(--ink)}
+.creative-hero-art{position:absolute;z-index:0;right:-70px;bottom:-25px;width:80%;height:115%;pointer-events:none}
+.dojo.creative-liaojie.creative-shell .hero{min-height:224px;padding:28px 20px}
+.dojo.creative-liaojie.creative-shell .hero p{max-width:22ch}
+.dojo.creative-liaojie .creative-hero-art{right:-75px;width:80%;height:110%;opacity:.85}
+.dojo.creative-shell.creative-shell :is(.wf-hub,.wf-workspace,.wf-publication,.weaving-clarity){--ink:#253C5C;--muted:#58677C;--line:#EBDDEC;--soft:#F8E7F4;--accent:#8B3F68;color:var(--ink)}
+.dojo.creative-liaojie.creative-shell .wf-publication{--line:#D6E3F2;--soft:#EAF1FC;--accent:#45638F}
+.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox,.wf-context){background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:none;min-width:0}
+.dojo.creative-shell.creative-shell .wf-context{padding:0}
+.dojo.creative-shell.creative-shell .wf-context .ritual-card{border:0}
+.dojo.creative-shell.creative-shell .wf-hub{gap:16px;margin-top:12px}
+.dojo.creative-shell.creative-shell .weaving-inbox{margin:16px 0}
+.dojo.creative-shell.creative-shell .wf-hub .weaving-inbox{margin:0}
+.dojo.creative-shell.creative-shell .eyebrow{font-size:13px;line-height:1.5;color:var(--accent)}
+.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox) h2{font-size:21px;line-height:1.5;margin:4px 0 8px;font-weight:750;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell .wf-start h2{font-size:24px;line-height:1.5;margin-top:4px}
+.dojo.creative-shell.creative-shell :is(.lead,.ritual-card>p,.wf-task-guide p){font-size:16px;line-height:1.75;color:var(--muted)}
+.dojo.creative-shell.creative-shell :is(.wf-note,.weaving-project-row p,.weaving-project-row small){font-size:13px;line-height:1.65;color:var(--muted)}
+.dojo.creative-shell.creative-shell :is(button,.button-link){min-height:44px;font-size:15px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell .wf-start-actions button.primary{width:100%;min-height:48px;border-radius:12px;background:var(--creative-action);border-color:var(--creative-action);color:#253C5C;font-size:17px;font-weight:700}
+.creative-flow-overview{list-style:none;padding:0;margin:22px 0 0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;position:relative;isolation:isolate}
+.creative-flow-overview::before{content:'';position:absolute;z-index:-1;top:22px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,#F5CEE1,#D7D8FA)}
+.creative-flow-overview li{display:flex;align-items:center;flex-direction:column;gap:6px;min-width:0;text-align:center}
+.creative-flow-overview li>span{width:44px;height:44px;border-radius:50%;background:#FBE3F0;display:grid;place-items:center;color:var(--ink)}
+.creative-flow-overview li:nth-child(3)>span{background:#F1DFF5}.creative-flow-overview li:nth-child(4)>span{background:#EAE4FA}.creative-flow-overview li:nth-child(5)>span{background:#DFE8FA}
+.creative-flow-overview b{font-size:11.5px;font-weight:500;line-height:1.5;white-space:nowrap}
+.dojo.creative-shell .creative-section-icon{float:left;width:40px;height:40px;border-radius:10px;background:var(--soft);padding:8px;margin:0 12px 8px 0;color:var(--accent)}
+.dojo.creative-shell .weaving-inbox-heading{gap:8px;align-items:center}
+.dojo.creative-shell .weaving-inbox-heading>div{min-width:0}
+.dojo.creative-shell.creative-shell .weaving-count{min-width:28px;padding:5px 8px;font-size:13px;background:var(--soft);color:var(--accent)}
+.creative-empty,.dojo.creative-shell.creative-shell .weaving-empty,.dojo.creative-shell.creative-shell .empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;background:#F5F5FA;border:1px solid #EBEBF2;border-radius:12px;padding:20px 14px;font-size:15px;color:var(--muted);margin-top:14px}
+.creative-empty p,.dojo.creative-shell .empty p,.dojo.creative-shell .weaving-empty p{margin:0;font-size:14px;line-height:1.65}
+.dojo.creative-shell.creative-shell .weaving-empty>.creative-icon{color:#6B7A91;margin:0}
+.dojo.creative-shell.creative-shell .backstage-inline-link{display:flex;align-items:center;padding:10px 12px;font-size:13px;line-height:1.6;background:#F4F5FA;border-color:var(--line);margin:12px 0}
+.dojo.creative-shell.creative-shell .domain-primary-actions{gap:10px;margin:14px 0 24px}
+.dojo.creative-shell.creative-shell .domain-primary-actions button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;background:var(--soft);border:1px solid var(--line);color:var(--accent);border-radius:12px;font-size:16px}
+.dojo.creative-shell.creative-shell .wf-steps{gap:3px;margin:4px 0 8px;grid-template-columns:repeat(5,minmax(0,1fr))}
+.dojo.creative-shell.creative-shell .wf-steps button{min-height:80px;padding:4px 0;border:0;border-radius:12px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted)}
+.dojo.creative-shell.creative-shell .wf-steps .creative-step-symbol{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--soft);color:var(--ink)}
+.dojo.creative-shell.creative-shell .wf-steps b{font-size:12px;line-height:1.5;font-weight:500}
+.dojo.creative-shell.creative-shell .wf-steps [aria-current=step]{color:var(--accent);background:#ffffffb0}
+.dojo.creative-shell.creative-shell .wf-steps [aria-current=step] .creative-step-symbol{box-shadow:0 0 0 2px var(--accent);background:var(--soft)}
+.dojo.creative-shell.creative-shell :is(.wf-workspace input,.wf-workspace textarea,.wf-workspace select,.wf-publication input,.wf-publication textarea){background:white;border-color:#9FAFC4;border-radius:10px;font-size:16px;line-height:1.6}
+.dojo.creative-shell.creative-shell :is(.wf-workspace .primary,.wf-action-buttons .primary){background:#8B3F68;color:white;border-color:#8B3F68}
+.dojo.creative-shell.creative-shell .wf-action-bar{background:#FFFFFFF5;border-color:var(--line);bottom:calc(84px + env(safe-area-inset-bottom))}
+.dojo.creative-shell.creative-shell .wf-action-buttons button{font-size:14px;min-height:46px}
+.dojo.creative-shell.creative-shell .wf-clarity-workspace{gap:16px;padding-bottom:calc(240px + env(safe-area-inset-bottom))}
+.dojo.creative-shell.creative-shell .wf-clarity-workspace .hero{min-height:0}
+.dojo.creative-shell.creative-shell .wf-clarity-workspace .hero h1{font-size:25px}
+.dojo.creative-shell.creative-shell .wf-clarity-workspace .hero p{max-width:none;font-size:14px}
+.dojo.creative-shell.creative-shell .liaojie-workbench-entry{margin:12px 0}
+.dojo.creative-shell.creative-shell .liaojie-workbench-entry .button-link{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;margin-top:18px;border-radius:12px;background:#5676AA;color:white;font-weight:700;font-size:18px}
+.dojo.creative-shell.creative-shell .wf-publication .primary{background:#45638F;color:#fff}
+.dojo.creative-shell.creative-shell .wf-publication .platform-picker{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.dojo.creative-shell.creative-shell .wf-publication .platform-picker button{flex:1 1 100px;padding:10px;border-color:var(--line)}
+.dojo.creative-shell.creative-shell .nav{background:#FFFFFFF2;border-color:var(--line);color:var(--ink)}
+.dojo.creative-shell.creative-shell .nav button{font-size:12px;color:#58677C}
+.dojo.creative-shell.creative-shell .nav [data-nav=add] .nav-icon{background:#52658A;color:white;border-radius:12px;padding:6px;width:40px;height:34px;display:grid;place-items:center;margin:0 auto 2px}
+.dojo.creative-shell.creative-shell .nav [data-nav=add] svg{width:23px;height:23px}
+@media(max-width:359px){.dojo.creative-shell.creative-shell .top{padding:12px;gap:6px}.creative-brand b{font-size:15px}.creative-brand small{font-size:9px}.dojo.creative-shell.creative-shell .top button{padding:8px;font-size:12px}.dojo.creative-shell.creative-shell .screen{padding-left:14px;padding-right:14px}.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox){padding:16px}.creative-flow-overview b{font-size:10.5px}.dojo.creative-shell.creative-shell .wf-steps b{font-size:11px}.dojo.creative-shell.creative-shell .hero h1{font-size:32px}}
