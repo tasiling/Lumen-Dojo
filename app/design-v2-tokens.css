@@ -1,0 +1,3 @@
+/* Exact approved v2 tokens; opt-in page scopes only. */
+.dojo.weekly-shell{--v2-gradient:linear-gradient(135deg, #EDB19F 0%, #E5B0CA 52%, #CEAADE 100%);--v2-background:#FEFAF9;--v2-surface:#FFFFFF;--v2-tint:#FAE8E2;--v2-border:#EBD9DF;--v2-accent:#9F4A67;--v2-ink:#253C5C;--v2-muted:#58677C;--v2-on:#FFFFFF;--v2-field:#7D899B;}
+.dojo.forage-shell, .dojo.forage-shell .forage-ui{--v2-gradient:linear-gradient(135deg, #F0C295 0%, #E8D7A5 52%, #9ED5CA 100%);--v2-background:#FEFBF9;--v2-surface:#FFFFFF;--v2-tint:#FAEDDF;--v2-border:#E6DBD3;--v2-accent:#87552D;--v2-ink:#253C5C;--v2-muted:#58677C;--v2-on:#FFFFFF;--v2-field:#7D899B;}

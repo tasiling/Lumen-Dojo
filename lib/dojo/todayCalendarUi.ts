@@ -2,12 +2,12 @@ import type { SpaceKey } from "./constants";
 
 /** Approved representative surfaces; ink is intentionally kept separate. */
 export const TODAY_REALM_PALETTE: Record<SpaceKey, { surface: string; ink: string; icon: string }> = {
-  practice: { surface: "#A9C3B5", ink: "#26372F", icon: "i-compass" },
-  forage: { surface: "#E3BC9E", ink: "#383223", icon: "i-leaf" },
-  weaving: { surface: "#DCAEBB", ink: "#3F2D2D", icon: "i-write" },
-  liaojie: { surface: "#A7BDDB", ink: "#27343F", icon: "i-chat" },
-  dao: { surface: "#B1B4D5", ink: "#313140", icon: "i-layers" },
-  closing: { surface: "#C4B2D3", ink: "#35303E", icon: "i-moon" },
+  practice: { surface: "linear-gradient(135deg, #ABD6C7 0%, #B4D0E0 52%, #C4B3DE 100%)", ink: "#253C5C", icon: "i-compass" },
+  forage: { surface: "linear-gradient(135deg, #F0C295 0%, #E8D7A5 52%, #9ED5CA 100%)", ink: "#253C5C", icon: "i-leaf" },
+  weaving: { surface: "linear-gradient(135deg, #EEAAC8 0%, #D3AFE0 52%, #ADBDE6 100%)", ink: "#253C5C", icon: "i-write" },
+  liaojie: { surface: "linear-gradient(135deg, #A4D8E2 0%, #B0C7E6 52%, #B9ADE1 100%)", ink: "#253C5C", icon: "i-chat" },
+  dao: { surface: "linear-gradient(135deg, #B7B1D9 0%, #D7B4C7 52%, #E3C18E 100%)", ink: "#253C5C", icon: "i-layers" },
+  closing: { surface: "linear-gradient(135deg, #E9CBD3 0%, #D7D5EB 52%, #C1CDE7 100%)", ink: "#253C5C", icon: "i-moon" },
 };
 
 export function moveCalendarPeriod(yearMonth: string, selectedDay: string, view: "month" | "week" | "day", delta: number) {
