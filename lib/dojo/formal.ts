@@ -60,6 +60,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   CREATIVE_PRACTICE_TITLE_PREFIX,
   KNOWLEDGE_CLAIM_TITLE_PREFIX,
   "行光閱讀知識分類-v1-",
+  "行光創作來源設定-v1-",
 ] as const;
 
 // Keep the dojo day anchored to Taipei time. The environment variable remains available

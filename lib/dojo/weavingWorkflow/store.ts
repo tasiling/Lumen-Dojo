@@ -1,3 +1,4 @@
+import { sourcePolicies } from '../creativeSources/store';
 import 'server-only';
 import { createKnowledgeEntry, updateKnowledgeEntry } from '@/lib/notion/mutations';
 import { getKnowledgeEntry, listInsightCards, listReadingBooks } from '@/lib/notion/queries';
@@ -252,6 +253,7 @@ export async function handoffWork(body: Body) {
                     throw new WeavingError('請先完成並確認成品', 409);
                 if (!c && work.currentCompletionVersionId)
                     throw new WeavingError('請指定固定成品版本', 409);
+                await sourcePolicies.assertPublication(c?.sourceSelections ?? work.textWorkflow?.sourceSelections ?? shuttle.sourceSelections ?? [], body.publicationConfirmed);
                 const core = shuttle.coreVersions.find(v => v.id === (c?.coreVersionId ?? work.coreVersionId));
                 if (!core)
                     throw new WeavingError('核心版本無法核對', 409);

@@ -136,7 +136,7 @@ try {
     const original=await store.readWork(pair.works[0].id);
     const written=await store.patchWork({operationId:'creative-publication-draft',id:original.id,expectedRevision:original.revision,work:{draftText:'隔離驗收的固定文字成品。'}});
     const complete=await store.completeWork({operationId:'creative-publication-complete',workId:written.id,expectedRevision:written.revision,previewDigest:f.load('lib/dojo/weavingWorkflow/completions.ts').completionDigest(written)});
-    const project=await store.handoffWork({operationId:'creative-publication-handoff',weavingWorkId:written.id,completionVersionId:complete.completion.id});
+    const project=await store.handoffWork({operationId:'creative-publication-handoff',publicationConfirmed:true,weavingWorkId:written.id,completionVersionId:complete.completion.id});
     await page.goto(server.base+'/liaojie');
     await page.getByRole('link',{name:/進入工作台/}).waitFor();
     for(const width of [375,390,430,1024]) {
