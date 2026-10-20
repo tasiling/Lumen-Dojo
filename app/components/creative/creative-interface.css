@@ -85,3 +85,11 @@
 @media(max-width:359px){.dojo.creative-shell.creative-shell .top{padding:12px;gap:6px}.creative-brand b{font-size:15px}.creative-brand small{font-size:9px}.dojo.creative-shell.creative-shell .top button{padding:8px;font-size:12px}.dojo.creative-shell.creative-shell .screen{padding-left:14px;padding-right:14px}.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox){padding:16px}.creative-flow-overview b{font-size:10.5px}.dojo.creative-shell.creative-shell .wf-steps b{font-size:11px}.dojo.creative-shell.creative-shell .hero h1{font-size:32px}}
 
 .creative-create-fields{border:0;padding:0;margin:0;min-width:0}.creative-create-fields:disabled{opacity:.7}
+
+.creative-section-heading{display:flex;align-items:center;gap:12px;margin-bottom:14px}.creative-section-heading>.creative-icon{width:42px;height:42px;border-radius:12px;padding:8px;background:var(--soft);color:var(--accent)}
+.dojo.creative-shell.creative-shell .creative-section-heading h2{margin:0}
+.dojo.creative-shell.creative-shell .liaojie-workbench-entry .button-link{gap:14px}.liaojie-workbench-entry .button-link>.creative-icon{margin-left:auto}
+.dojo.creative-shell.creative-shell .liaojie-workbench-entry .backstage-inline-link{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;margin:16px 0 0;padding:16px 0 0;color:var(--accent)}
+.dojo.creative-shell.creative-shell .hero .creative-hero-subtitle{font-size:21px;margin:0 0 12px}
+.dojo.creative-shell.creative-shell .wf-publication .publication-record{display:grid;gap:8px}
+.dojo.creative-shell.creative-shell .wf-publication .publication-save-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dojo.creative-shell.creative-shell .wf-publication .publication-save-actions button{flex:1 1 100px}

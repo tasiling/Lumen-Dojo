@@ -36,6 +36,7 @@ export default function ModuleDomainPage({
         {creative && <CreativeHeroArt realm={space as 'weaving'|'liaojie'}/>}
         <span className="eyebrow">{creative ? title : '六個場域'}</span>
         <h1>{title}</h1>
+        {space === 'liaojie' && <p className="creative-hero-subtitle">信任・服務</p>}
         <p>{lead}</p>
       </div>
       {extra}

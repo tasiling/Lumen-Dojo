@@ -5,7 +5,7 @@ import { listJsonRecords } from '../notionStore';
 import { CAPTURE_TITLE_PREFIX, WEAVING_PROJECT_TITLE_PREFIX, WEAVING_SHUTTLE_TITLE_PREFIX, WEAVING_WORK_TITLE_PREFIX, LIAOJIE_PROJECT_TITLE_PREFIX, COMPLETION_TITLE_PREFIX, parseJson, normalizeCaptureEntry } from '../formal';
 import { createShuttleDraft, createWorkDraft, currentCore, normalizeWeavingShuttle, normalizeWeavingWork, type WeavingShuttle, type WeavingWork } from '../weavingShuttle';
 import { normalizeWeavingProject } from '../weavingProjects';
-import { normalizeLiaojieProject } from '../liaojiePublication';
+import { LIAOJIE_PLATFORMS, normalizeLiaojieProject } from '../liaojiePublication';
 import { operationKey, runWeavingOperation, inspectWeavingOperation,type EntityRef,type OperationReceipt, type OperationStep } from './operations';
 import { stringValue, validateWorkPatch, WeavingError, workflowFromLegacy,type ContentKind, type WorkflowSelection, normalizeWorkflow } from './model';
 import { convertWorkflow,TEXT_TEMPLATES,createTextWorkflow } from './templates';
@@ -188,7 +188,7 @@ export async function patchPublication(body: Body) {
             stringValue(p[k], max, k);
     if (p.status !== undefined && !['received', 'packaging', 'ready', 'scheduled', 'published', 'archived'].includes(String(p.status)))
         throw new WeavingError('發布狀態不正確');
-    if (p.platform !== undefined && !['plurk', 'instagram_post', 'instagram_story', 'podcast', 'video', 'other'].includes(String(p.platform)))
+    if (p.platform !== undefined && !Object.prototype.hasOwnProperty.call(LIAOJIE_PLATFORMS, String(p.platform)))
         throw new WeavingError('發布平台不正確');
     if (p.publishedUrl && !/^https?:\/\//i.test(String(p.publishedUrl)))
         throw new WeavingError('發布連結須使用 HTTP 或 HTTPS');
