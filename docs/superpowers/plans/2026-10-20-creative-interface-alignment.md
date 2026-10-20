@@ -33,6 +33,13 @@
 
 **Interfaces:** Consumes existing WorkflowStep；Produces CREATIVE_STEPS: ReadonlyArray<{key:WorkflowStep;label:string;icon:CreativeIconName}>、CreativeIcon({name,className?})、CreativeHeroArt({realm:'weaving'|'liaojie'})。
 
+Domain assertions（新增於既有 .mjs harness 以當前 TypeScript loader 載入新契約）：
+```js
+assert.deepEqual(CREATIVE_STEPS.map(x => x.key), ['sources','concept','production','review','handoff']);
+assert.deepEqual(CREATIVE_STEPS.map(x => x.label), ['選素材','定觀點','製作內容','預覽定稿','準備發布']);
+assert.equal(new Set(CREATIVE_STEPS.map(x => x.icon)).size, 5);
+```
+
 - [ ] 寫有意義的 fixture UI assertions：五步 label 完全等於規格、目前步驟 aria-current=step、長標題 320px 無溢出。
 - [ ] 執行 node scripts/test-creative-interface-ui.mjs steps，確認因尚未提供新圖示／label 而失敗。
 - [ ] 實作上述元件與路由限定樣式，首頁與工作區使用同一 CREATIVE_STEPS；保留其他路由輸出。
@@ -42,7 +49,17 @@
 
 **Files:** Modify app/components/weaving/CreateShuttleForm.tsx、TextWorkspace.tsx、CompletionPreview.tsx；Create lib/dojo/creativeCreateDraft.ts；Test scripts/test-creative-interface-ui.mjs；沿用 scripts/test-weaving-clarity-ui.mjs。
 
-**Interfaces:** Produces CreateDraft={schema:1;sourceMode:'manual'|'sources';sourceSnapshot:string;coreStatement:string;templateKey:string;step:'sources'|'concept';updatedAt:string}；readCreativeCreateDraft():CreateDraft|null、saveCreativeCreateDraft(draft:CreateDraft):void、clearCreativeCreateDraft():void。實作前先確認既有來源選摘資料的型別與恢復規則，選摘恢復不可憑空重建版本。
+**Interfaces:** Produces CreateDraft={schema:1;sourceMode:'manual'|'sources';sourceSnapshot:string;coreStatement:string;templateKey:string;step:'sources'|'concept';manualContentKind:string;selectionRequests:SelectionRequest[];selectedPreviews:string[];updatedAt:string}；readCreativeCreateDraft():CreateDraft|null、saveCreativeCreateDraft(draft:CreateDraft):void、clearCreativeCreateDraft():void。SelectionRequest 沿用 lib/dojo/weavingWorkflow/sources.ts 的 type-only import，來源 ID、版本與選摘起訖不可憑空重建；重新開啟後建立 API 仍核對來源版本。
+
+UI assertions（fixture HTTP 攔截記錄 writes，重用現有測試的有效回應）：
+```js
+assert.equal(writes.filter(x => x.method === 'POST' && x.path === '/api/dojo/weaving-shuttles').length, 0);
+await page.getByRole('button', {name:'前往定觀點',exact:true}).click();
+assert.equal(writes.filter(x => x.method === 'POST' && x.path === '/api/dojo/weaving-shuttles').length, 0);
+await page.getByLabel('自己最想說的一句話').fill('休息不必等到所有事情都完成。');
+await page.reload();
+assert.equal(await page.getByLabel('自己最想說的一句話').inputValue(), '休息不必等到所有事情都完成。');
+```
 
 - [ ] 增加 cases：空觀點可先到選材畫面；到第二步確認前不 POST；重新整理恢復輸入；建立失敗不清草稿；保存失敗不前進、切步不標已完成。
 - [ ] 執行 node scripts/test-creative-interface-ui.mjs create，確認新增案例在舊流程失敗。
@@ -54,6 +71,13 @@
 **Files:** Modify lib/dojo/liaojiePublication.ts、app/components/LiaojiePublicationWorkbench.tsx、app/liaojie/page.tsx；Test scripts/test-weaving-domain.mjs、scripts/test-creative-interface-ui.mjs。
 
 **Interfaces:** Extends LiaojiePlatform with 'threads'、LIAOJIE_PLATFORMS.threads='Threads'；既有企劃欄位、狀態與 API 簽章保持相容。
+
+Domain assertions（existing publicationFixture 保留來源成品欄位）：
+```js
+assert.equal(normalizeLiaojieProject({...publicationFixture,platform:'threads'},{id:publicationFixture.id}).platform,'threads');
+assert.equal(normalizeLiaojieProject({...publicationFixture,platform:'plurk'},{id:publicationFixture.id}).platform,'plurk');
+assert.equal(normalizeLiaojieProject({...publicationFixture,platform:'unknown'},{id:publicationFixture.id}).platform,'instagram_post');
+```
 
 - [ ] 增加 normalizeLiaojieProject 接受 threads 且保留舊平台、未知值沿用舊 fallback 的 assertions；UI 確認來源快照不隨編排改寫、安排日期不宣稱外站已發布。
 - [ ] 執行 npm run test:weaving-domain 與 node scripts/test-creative-interface-ui.mjs publication，確認 Threads 新案例失敗。

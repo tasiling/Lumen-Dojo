@@ -2,7 +2,9 @@
 
 ## 2026-10-20 排程建立
 
-使用者已授權自行安排並持續完成，先交付排程。本輪僅準備排程、第一包設計及計畫；尚未實作新介面、尚未建立內容製作排程、尚未部署。
+使用者已授權自行安排並持續完成，先交付排程。本輪準備排程、第一包設計及計畫；尚未實作新介面、尚未部署。開發接續任務「織光聊解持續建置」已建立並啟用，Australia/Melbourne 每四小時喚起；這不是自動製作或發布私人內容的排程。
+
+接續任務身分：6ad7497a9e308191b4e14c4328e6bfe9。全部可獨立工作完成後停用此任務；原已取消的道場總排程不變。
 
 - Roadmap：docs/superpowers/plans/2026-10-20-weaving-liaojie-roadmap.md
 - Spec：docs/superpowers/specs/2026-10-20-creative-interface-alignment-design.md
