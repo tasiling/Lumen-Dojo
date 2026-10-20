@@ -1,4 +1,7 @@
 import 'server-only';
+import {resolvePolicySource} from '../creativeSources/resolver';
+import {parseSourceRef} from '../creativeSources/model';
+import {fingerprint} from '../creativeProposals/model';
 import { createHash } from 'node:crypto';
 import { listReadingBooks, listReadingNotes, listInsightCards, getKnowledgeEntry } from '@/lib/notion/queries';
 import { listJsonRecords } from '../notionStore';
@@ -108,6 +111,11 @@ export async function resolveSelections(requests: SelectionRequest[]): Promise<W
 export async function checkSelectionAvailability(selections: WorkflowSelection[]) { const resolver = productionSources(); for (const s of selections) {
     if (s.sourceType === 'manual')
         continue;
+    if(s.sourceVersion?.startsWith('proposal-source:')){
+        const source=await resolvePolicySource(parseSourceRef({sourceType:s.sourceType,sourceId:s.sourceId}));
+        if(!source||'proposal-source:'+fingerprint(source)!==s.sourceVersion)throw new WeavingError('提案來源已更新或無法使用，請重新選摘再完成',409);
+        continue;
+    }
     const current = await resolver.get(s.sourceType, s.sourceId);
     if (!current || current.version !== s.sourceVersion)
         throw new WeavingError('來源已更新或無法使用；保留歷史，請重新選摘再完成', 409);
