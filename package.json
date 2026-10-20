@@ -43,7 +43,7 @@
     "test:weekly-ui": "node scripts/test-weekly-mobile.mjs",
     "test:owner-origin": "node scripts/test-learning-owner-origin.mjs --http",
     "preview:creative": "node scripts/creative-interface-preview.mjs",
-    "test:creative-interface": "UI_PRODUCTION=1 node scripts/test-creative-interface-ui.mjs all && node scripts/test-creative-preview.mjs"
+    "test:creative-interface": "node scripts/test-isolated-production-env.mjs && UI_PRODUCTION=1 node scripts/test-creative-interface-ui.mjs all && node scripts/test-creative-preview.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

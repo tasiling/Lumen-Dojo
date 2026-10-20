@@ -49,6 +49,37 @@ try {
     }
     emptyBundles=false;await page.setViewportSize({width:390,height:844});
   }
+  if(mode==='storage'||mode==='all') {
+    await page.goto(server.base+'/weaving');
+    await page.getByRole('button',{name:/開始新作品/}).click();
+    await page.getByLabel('整理好的成熟題材',{exact:true}).waitFor();
+    await page.evaluate(()=>{
+      const original=Storage.prototype.setItem;
+      window.failCreateStorage=true;
+      Storage.prototype.setItem=function(key,value){if(key==='weaving-buffer:create-shuttle'&&window.failCreateStorage)throw new Error('isolated storage unavailable');return original.call(this,key,value);};
+    });
+    await page.getByLabel('整理好的成熟題材',{exact:true}).fill('儲存空間不足時仍應保留的文字');
+    await page.getByText('此瀏覽器無法保留草稿，離開前請複製輸入內容。',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'收起建立表單',exact:true}).click();
+    await page.getByRole('heading',{name:'還有未保存的內容',exact:true}).waitFor();
+    await page.getByRole('button',{name:'保存後離開',exact:true}).click();
+    await page.getByRole('alert').filter({hasText:'尚有內容未保存'}).waitFor();
+    await page.getByRole('button',{name:'留在這裡',exact:true}).click();
+    assert.equal(await page.getByLabel('整理好的成熟題材',{exact:true}).inputValue(),'儲存空間不足時仍應保留的文字');
+    await page.locator('.nav [data-nav=today]').click();
+    await page.getByRole('heading',{name:'還有未保存的內容',exact:true}).waitFor();
+    await page.getByRole('button',{name:'留在這裡',exact:true}).click();
+    assert(page.url().endsWith('/weaving'));
+    await page.evaluate(()=>{window.failCreateStorage=false;});
+    await page.getByRole('button',{name:'收起建立表單',exact:true}).click();
+    await page.getByRole('button',{name:'保存後離開',exact:true}).click();
+    await page.getByRole('button',{name:/開始新作品/}).click();
+    assert.equal(await page.getByLabel('整理好的成熟題材',{exact:true}).inputValue(),'儲存空間不足時仍應保留的文字');
+    assert.equal(writes.filter(w=>w.method==='POST').length,0,'saving before leaving a create draft never creates a work');
+    await page.evaluate(()=>sessionStorage.removeItem('weaving-buffer:create-shuttle'));
+    await page.reload();
+    console.log('PASS storage failure guards collapse and SPA navigation; local save retains input without creating a work');
+  }
   if(mode==='create'||mode==='all') {
     await page.goto(server.base+'/weaving');
     await page.getByRole('button',{name:/開始新作品/}).click();

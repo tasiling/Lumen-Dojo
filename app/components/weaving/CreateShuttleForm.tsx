@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { clearCreativeCreateDraft, emptyCreativeCreateDraft, readCreativeCreateDraft, saveCreativeCreateDraft, type CreateDraft } from '@/lib/dojo/creativeCreateDraft';
 import { mutate } from './client';
+import { useLeave } from './LeaveDialog';
 import SourcePicker from './SourcePicker';
 import CreativeIcon from '../creative/CreativeIcon';
 import type { WeavingShuttleBundle } from '@/lib/dojo/weavingShuttle';
@@ -9,30 +10,44 @@ import type { WeavingShuttleBundle } from '@/lib/dojo/weavingShuttle';
 export default function CreateShuttleForm() {
     const [v, setValue] = useState(emptyCreativeCreateDraft), [ready, setReady] = useState(false);
     const [busy, setBusy] = useState(false), [error, setError] = useState(''), [storageError, setStorageError] = useState('');
-    useEffect(() => { const timer = setTimeout(() => { setValue(readCreativeCreateDraft() ?? emptyCreativeCreateDraft()); setReady(true); }, 0); return () => clearTimeout(timer); }, []);
+    const leave = useLeave(), local = useRef(v), storageFailure = useRef(''), pending = useRef(false);
+    useEffect(() => { const timer = setTimeout(() => { const restored = readCreativeCreateDraft() ?? emptyCreativeCreateDraft(); local.current = restored; setValue(restored); setReady(true); }, 0); return () => clearTimeout(timer); }, []);
+    function storageNotice(message: string) { storageFailure.current = message; setStorageError(message); }
+    useEffect(() => leave.register('create-shuttle', {
+        dirty: () => pending.current || !!storageFailure.current,
+        save: async () => {
+            if (pending.current) return false;
+            try { saveCreativeCreateDraft(local.current); storageNotice(''); return true; }
+            catch { return false; }
+        },
+        discard: () => {
+            if (pending.current) throw new Error('正在建立作品，請等待結果後再離開。');
+            storageNotice('');
+        },
+    }), [leave]);
     function edit(patch: Partial<CreateDraft>) {
         const next = { ...v, ...patch, updatedAt: new Date().toISOString() };
-        setValue(next); setError('');
-        try { saveCreativeCreateDraft(next); setStorageError(''); }
-        catch { setStorageError('此瀏覽器無法保留草稿，離開前請複製輸入內容。'); }
+        local.current = next; setValue(next); setError('');
+        try { saveCreativeCreateDraft(next); storageNotice(''); }
+        catch { storageNotice('此瀏覽器無法保留草稿，離開前請複製輸入內容。'); }
     }
     useEffect(() => {
-        if (!storageError) return;
-        const guard = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+        const guard = (e: BeforeUnloadEvent) => { if (pending.current || storageFailure.current) { e.preventDefault(); e.returnValue = ''; } };
         window.addEventListener('beforeunload', guard); return () => window.removeEventListener('beforeunload', guard);
-    }, [storageError]);
+    }, []);
     const sourceReady = v.sourceMode === 'manual' ? !!v.sourceSnapshot.trim() : v.selectionRequests.length > 0;
     async function create() {
         if (busy || !sourceReady || !v.coreStatement.trim()) return;
-        setBusy(true); setError('');
+        pending.current = true; setBusy(true); setError('');
         try {
             const r = await mutate<{ bundle: WeavingShuttleBundle }>('/api/dojo/weaving-shuttles', 'POST', {
                 format: 'text', coreStatement: v.coreStatement, templateKey: v.templateKey,
                 ...(v.sourceMode === 'manual' ? { sourceType: 'manual', sourceSnapshot: v.sourceSnapshot, manualContentKind: v.manualContentKind } : { selectionRequests: v.selectionRequests })
             });
             try { clearCreativeCreateDraft(); } catch { /* Known success can still open the created work. */ }
+            pending.current = false; storageNotice('');
             location.href = `/weaving/${r.bundle.shuttle.id}?work=${r.bundle.works[0].id}`;
-        } catch (e) { setError(`${e instanceof Error ? e.message : String(e)}。輸入仍保留；若結果未明，請以相同內容重試。`); setBusy(false); }
+        } catch (e) { setError(`${e instanceof Error ? e.message : String(e)}。輸入仍保留；若結果未明，請以相同內容重試。`); pending.current = false; setBusy(false); }
     }
     if (!ready) return <p role="status">正在恢復建立草稿…</p>;
     return <div className="wf-workspace wf-create-form">

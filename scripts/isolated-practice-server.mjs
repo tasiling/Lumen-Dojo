@@ -7,6 +7,8 @@ export async function isolatedServer(port, key, {fontResponses, production=proce
     ".env.local",
     ".env.development",
     ".env.development.local",
+    ".env.production",
+    ".env.production.local",
   ])
     assert(
       !existsSync(file),
