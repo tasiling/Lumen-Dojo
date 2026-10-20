@@ -43,4 +43,4 @@ Interfaces: 使用 Task2 snapshot/API；useWeavingDraft 包含修訂／操作識
 - [x] 實作頁面與圖示入口、設定、候選卡與明確試寫標示。runDue 與現有五步到定稿／交接接得上，不將規則候選或媒體建議當媒體成品。
 - [x] Run build、tsc、lint、新 domain/API、source-settings、reading-knowledge、weaving、production 新 UI／creative-interface／weaving-clarity；Expected GREEN，容許兩個既有 lint warnings。截圖以實際元件產生並檢視。
 - [x] Commit；task-done `env UI_PRODUCTION=1 node scripts/test-creative-proposals-ui.mjs`。全包 fresh review，Critical/Important 一次 RED→GREEN 修正後回歸，保留所有裁定及邊界。
-- [ ] 更新同一進度檔 branch/head、實際成果、驗證與下一包；Git Data 同 tree／parent／expected_sha 非 force 推送，更新既有 PR101（若狀態變更則建立新 PR）。不正式 merge/deploy。
+- [x] 更新同一進度檔 branch/head、實際成果、驗證與下一包；Git Data 同 tree／parent／expected_sha 非 force 推送，更新既有 PR101（若狀態變更則建立新 PR）。不正式 merge/deploy。
