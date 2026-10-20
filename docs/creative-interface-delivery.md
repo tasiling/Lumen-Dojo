@@ -1,6 +1,6 @@
 # 織光堂與聊解室：第一包交付
 
-2026-10-20。分支 `codex/weaving-liaojie-creation-v2`；本機驗證基準 `8523e2c`（含獨立審查後修正），已整合最新 master `5538ec8`（PR99 導覽與週盤配色），保留 PR98 行事曆修正。這是待審閱版本，尚未合併或部署。PR89 閱讀／知識整合未加入本包。
+2026-10-20。分支 `codex/weaving-liaojie-creation-v2`；本機驗證基準 `8523e2c`（含獨立審查後修正），已整合 master `6dd62be`（含 PR99 導覽／週盤配色與最新行事曆主題），保留 PR98 行事曆修正。GitHub 實作 checkpoint `3fd5d03c27a15f91eefb5cd0e46ffd5b05c5f597`，PR [#100](https://github.com/tasiling/Lumen-Dojo/pull/100)。這是待審閱版本，尚未合併或部署。PR89 閱讀／知識整合未加入本包。
 
 ## 可操作的結果
 
@@ -81,6 +81,14 @@ npm run preview:creative
 修正後重跑 production build、TypeScript、lint、完整織光領域／API回歸、創作 UI／預覽、clarity 流程，全部通過；lint 保留上述 2 個既有 warnings。沒有待延後 Minor。
 
 審查未獨立判斷的範圍與本次裁決：iPhone 真機／裝置字體保留為未驗收邊界；原參考圖片由主要實作者與產品截圖核對，並記錄對比修正，沒有逐像素相同聲明；正式 Notion 依授權不用真實寫入驗證，因此保留 live-write 驗收缺口。
+
+## 最新 master 整合補記
+
+PR 建立期間 master 增加 `6dd62be`。已保留其行事曆主題／圖案與 header 改動，解決 DojoShell 及 CSS import 衝突。合併後再次 production build、創作 UI／隔離預覽、lint 與行事曆元件檢查通過；行事曆原 QA 在 dev 通過全部尺寸、操作及零寫入檢查。
+
+額外的行事曆 production QA 在跨回首頁的測試流程中收到了 React #418 hydration 錯誤；日期框、配色、環形深度、篩選與 modal assertions 已走完，但該整體 production QA **未通過**。改用真實時鐘仍重現，尚未定位原因，因此沒有把它列為已通過，也沒有直接修改其他工作區的產品行為。這是整合／發布驗收需要追蹤的項目；本包創作路由 production 操作測試仍全數通過。
+
+遠端保存使用 GitHub Git Data：保留提交父鏈與 master merge parent，各 tree SHA 與本機已驗證 tree 相同，expected_sha、非 force 更新；本機驗證 SHA 與 GitHub 提交 SHA 因提交 metadata 不同而不同。
 
 ## 下一包與尚未交付
 
