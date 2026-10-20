@@ -83,3 +83,5 @@
 .dojo.creative-shell.creative-shell .nav [data-nav=add] .nav-icon{background:#52658A;color:white;border-radius:12px;padding:6px;width:40px;height:34px;display:grid;place-items:center;margin:0 auto 2px}
 .dojo.creative-shell.creative-shell .nav [data-nav=add] svg{width:23px;height:23px}
 @media(max-width:359px){.dojo.creative-shell.creative-shell .top{padding:12px;gap:6px}.creative-brand b{font-size:15px}.creative-brand small{font-size:9px}.dojo.creative-shell.creative-shell .top button{padding:8px;font-size:12px}.dojo.creative-shell.creative-shell .screen{padding-left:14px;padding-right:14px}.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox){padding:16px}.creative-flow-overview b{font-size:10.5px}.dojo.creative-shell.creative-shell .wf-steps b{font-size:11px}.dojo.creative-shell.creative-shell .hero h1{font-size:32px}}
+
+.creative-create-fields{border:0;padding:0;margin:0;min-width:0}.creative-create-fields:disabled{opacity:.7}

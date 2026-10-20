@@ -8,6 +8,7 @@ import { currentCore, type WeavingShuttleBundle } from '@/lib/dojo/weavingShuttl
 import LeaveProvider, { useLeave } from './weaving/LeaveDialog';
 import CreateShuttleForm from './weaving/CreateShuttleForm';
 import { get } from './weaving/client';
+import { readCreativeCreateDraft } from '@/lib/dojo/creativeCreateDraft';
 import '@/app/weaving/workflow.css';
 const SHUTTLE_STATUS = { active: '正在發展', resting: '暫時沉澱', branched: '已產生分支', archived: '已封存' };
 const WORK_STATUS = { selecting: '選擇中', drafting: '草稿中', producing: '製作中', reviewing: '確認中', completed: '已完成', sent_to_liaojie: '已送聊解室', archived: '已封存' };
@@ -28,7 +29,7 @@ function Hub() {
     finally {
         setLoading(false);
     } }, []);
-    useEffect(() => { const t = setTimeout(() => void load(), 0); return () => clearTimeout(t); }, [load]);
+    useEffect(() => { const t = setTimeout(() => { if (readCreativeCreateDraft()) setCreating(true); void load(); }, 0); return () => clearTimeout(t); }, [load]);
     return <div className="wf-hub">
     <section className="ritual-card wf-start"><span className="eyebrow">從一件作品開始</span><h2>{resumable ? '接著寫，讓作品慢慢成形' : '今天，想把什麼寫出來？'}</h2><p>選一段素材，寫下自己的觀點，再完成文字。不需要先整理所有筆記。</p>
     <div className="wf-start-actions">{resumable && <Link className="primary wf-resume" href={`/weaving/${resumable.bundle.shuttle.id}?work=${resumable.work.id}`}>繼續創作：{resumable.work.title}</Link>}
