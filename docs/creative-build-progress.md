@@ -41,3 +41,16 @@
 - 待套用 patch：`b4f87b60-f768-47ef-bf94-332a4f367c7d`（STAGED），project `15793738-2769-4165-b755-49047aa7f445`，environment `b880e871-66f8-4d30-8ca2-4876fcee8964`，service `fe2382be-d017-46df-94f0-b733e90c0936`。
 - 正式站仍為 `6dd62be`，deployment `cde840bd-c3a6-482a-9047-cfc579635427`（SUCCESS）；不能把這個舊版 SUCCESS 當作新版本部署成功。需要在 Railway 確認套用後，核對新 deployment 的 commit 與 terminal SUCCESS。
 - 下一包仍可獨立接續來源／閱讀知識與公開設定；PR89 尚未整合。
+
+## 2026-10-21 第二包：來源／閱讀知識與公開設定
+
+- Branch：`codex/weaving-liaojie-creation-v2`；本機驗證 head `7de5cda8481bc7c467c683c393933236504e46fb`、tree `02030447413a44b9a63fe194de6fa88af48f5da9`。本節為後續 checkpoint 文件；最終遠端 head 以最新 PR／branch 為準。
+- 整合基底：master `680aca260e54e5fa38289012bd48c86553594cdb`，PR89 head `6bdd699ab4ac3c83c816e6c5b826c84d1ac52efb`。只整合到此開發分支，保留 master／PR89 parent；PR89 尚未正式合併。衝突為 package.json 與隔離 server，保留兩包測試集合、production dotenv 防護、production 選項與字型注入。
+- 實際新增：`/weaving/sources` 同源素材設定頁與首頁圖示入口；來源原處連結；每份素材獨立的主動取材／公開設定；預設均逐次確認；原文、理解、不同讀次各自獨立，沒有整本書／個人日記的默認許可。新政策使用獨立前綴，不改來源正文、分類或歷史成品。
+- 來源白名單：先讀已允許的識別再單筆解析，確認來源歸屬與成熟度；不先取全庫正文再篩選。知識只回傳已採用 active 版本，不把較新的未採用候選交給提案。這是第三包的基礎，尚未生成主動提案。
+- 保存與公開：durable 收據、修訂衝突、保留輸入／最新比較、重新整理後原操作核對；瀏覽器無法保存操作識別時拒絕送新設定。定稿可私人保存；送聊解室前需本人確認成品，伺服器鎖內核對固定來源的公開設定；不公開選摘阻擋新交接，不自動外部發表。
+- 審查修正：全分支 0 Critical／1 Important／0 Minor。非文字成品來源遺失造成私人政策繞過，漫畫／影片實際 store 回歸 RED→GREEN；新定稿保留固定來源，舊非文字版本缺少可核對來源時要求重新確認成品，歷史不改寫。修正後全套相關測試通過。
+- 驗證：`test:reading-knowledge`、`test:reading-knowledge-api`、`test:weaving`、新 integration／source-settings 測試、build、tsc、lint；production source-settings-ui／reading-knowledge-ui／creative-interface／weaving-clarity 全部通過。lint 0 errors／2 個既有 warnings。375／390／430／320／1024px 真實渲染無橫溢；覆蓋空／非空、未保存、失敗／衝突、未知回應／刷新核對、定稿與交接。
+- 交付：`docs/creative-source-delivery.md`、`docs/creative-source-evidence/`；spec／plan 日期 2026-10-21。沒有正式 Notion 寫入、merge/deploy 或真機驗收。第一包既有發布狀態不在本次重試。
+- 裁定／代價：沿用已授權的設計實作與 feature push／PR，例行選擇不重複等待確認，未合併版本仍可審閱修訂；正式資料／發布／iPhone 行為留待後續驗收，可能仍有環境差異；提案與外部發布留後續包，可能因實測調整順序，未代行社群發表。沒有延後 Minor。
+- 下一包：主動搜尋／提案。先讀本 checkpoint、最新遠端與 roadmap 第三包，使用已允許來源白名單；提供可設定的受眾／搜尋範圍／節奏但不虛構偏好，不預設所有私人素材都可讀。保留本人指定題目入口，一題不自動轉製所有媒體。第二包程式完成已滿足第三包開發依賴。
