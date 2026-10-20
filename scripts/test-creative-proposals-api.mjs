@@ -5,7 +5,7 @@ assert(existsSync('lib/dojo/creativeProposals/store.ts'),'persistent proposals m
 const sources=new Map(),reads=[];const resolvePolicySource=async ref=>{reads.push(ref.sourceId);return sources.get(ref.sourceId)??null;};
 const f=await fixture({'../creativeSources/resolver':{resolvePolicySource},'./resolver':{resolvePolicySource}});
 try{
- const store=f.load('lib/dojo/creativeProposals/store.ts'),m=f.load('lib/dojo/creativeProposals/model.ts'),owner=f.load('lib/dojo/learningFoundation/store.ts').learningOwner;
+ const store=f.load('lib/dojo/creativeProposals/store.ts'),owner=f.load('lib/dojo/learningFoundation/store.ts').learningOwner;
  const policyPrefix=f.load('lib/dojo/creativeSources/model.ts').SOURCE_POLICY_PREFIX;
  const add=(i,discovery='allow')=>{const id=`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`,ref={sourceType:'reading_insight',sourceId:id};sources.set(id,{ref,label:`隔離洞察 ${i}`,href:'/reading/cards?card='+id,text:`第 ${i} 個生活觀察：休息也值得被理解。`,version:'v1',contentKind:'insight'});f.records.set(`policy-${i}`,{title:policyPrefix+i,value:{schema:1,owner,ref,discovery,publication:'ask',revision:1,createdAt:'now',updatedAt:'now'}});};
  await store.scan({operationId:'proposal-empty-scan'});assert.equal(reads.length,0,'no permission means no content reads');
