@@ -146,13 +146,6 @@
 .dojo.tc-shell .space-link>.tc-icon {box-sizing:content-box;width:25px;height:25px;padding:9px;background:rgba(255,255,255,.4);border-radius:13px;margin-bottom:12px;}
 .dojo.tc-shell .space-link b {display:block;font-size:15px;}
 .dojo.tc-shell .space-link small {display:block;color:var(--realm-ink);font-size:12px;margin-top:3px;}
-.dojo.tc-shell .nav {width:min(100%,560px);left:50%;right:auto;transform:translateX(-50%);grid-template-columns:repeat(5,minmax(0,1fr));border-radius:0;background:rgba(255,254,254,.96);padding:7px 8px calc(7px + env(safe-area-inset-bottom));z-index:30;}
-.dojo.tc-shell .nav button {font-size:12px;min-height:64px;min-width:0;padding:4px 2px;background:transparent;color:var(--muted);}
-.dojo.tc-shell .nav .nav-icon {width:44px;height:34px;margin:0 auto 3px;border-radius:20px;}
-.dojo.tc-shell .nav button.on {color:var(--tc-accent);background:transparent;}
-.dojo.tc-shell .nav button.on .nav-icon {background:var(--tc-soft);}
-.dojo.tc-shell .nav button[data-nav=add] .nav-icon {width:44px;height:38px;background:var(--tc-accent);color:#FCFCFF;border-radius:12px;}
-.dojo.tc-shell .nav .nav-icon svg {width:24px;height:24px;}
 .dojo.tc-shell .calendar-screen {display:grid;gap:24px;}
 .dojo.tc-shell .calendar-screen>.page-heading {margin:0;align-items:flex-start;}
 .dojo.tc-shell .calendar-screen .lead {font-size:14px;margin:0;}

@@ -1,7 +1,5 @@
 /* Approved weekly v2.5 page rules. Shared tokens and other page themes unchanged. */
 .dojo.weekly-shell{--bg:#F6F1E6;--surface:#FDFAF3;--ink:#2F2A22;--gold:#C99A4B;--line:#E4D9BE;--muted:#81796A;background:var(--bg);color:var(--ink)}
-.dojo.weekly-shell .nav{background:#FDFAF3;border-color:var(--line)}
-.dojo.weekly-shell .nav button.on{background:#EEE1C8;color:#2F2A22}
 .dojo.weekly-shell .primary{background:#4D6557;color:#FDFAF3}
 .dojo.weekly-shell .bingo-screen{max-width:680px;margin-inline:auto}
 .dojo.weekly-shell .ritual-card{background:var(--surface);border:1px solid var(--line);border-radius:20px}
@@ -166,7 +164,7 @@
 .dojo.weekly-shell .template-pick-main>small{font-size:12px;white-space:normal}
 .dojo.weekly-shell .template-criteria{font-size:14px;line-height:1.65;margin:0 16px 16px}
 .dojo.weekly-shell .template-preview-edit{padding:0 16px 16px}
-.dojo.weekly-shell .template-selection-bar{position:fixed;left:0;right:0;bottom:calc(78px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:10px max(22px,calc((100vw - 1008px)/2));margin:0;border-radius:0;border-top:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;z-index:15}
+.dojo.weekly-shell .template-selection-bar{position:fixed;left:0;right:0;bottom:calc(82px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:10px max(22px,calc((100vw - 1008px)/2));margin:0;border-radius:0;border-top:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;z-index:15}
 .dojo.weekly-shell .template-selection-bar button{font-size:13px;padding:8px 10px}
 .dojo.weekly-shell .template-preview-edit label,.dojo.weekly-shell .custom-template-editor label{font-size:14px}
 .dojo.weekly-shell .weekly-reason-picker{border:0;padding:0;margin:0;min-width:0}
@@ -215,11 +213,6 @@
 .dojo.weekly-shell .cell-color-picker .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .dojo.weekly-shell .cell-color-picker .row button{font-size:12px;padding:8px 3px;min-width:0}
 .dojo.weekly-shell .save-notice,.dojo.weekly-shell .form-error{font-size:14px;line-height:1.65;margin:0 0 18px}
-.dojo.weekly-shell .nav{left:0;right:0;bottom:0;transform:none;width:100%;max-width:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:9px max(22px,calc((100vw - 680px)/2)) calc(9px + env(safe-area-inset-bottom));border:0;border-top:1px solid var(--line);border-radius:0;background:var(--surface);box-shadow:none;z-index:20}
-.dojo.weekly-shell .nav button{min-height:59px;min-width:0;padding:0;border:0;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:transparent;color:var(--muted);font-size:11px;line-height:1.5}
-.dojo.weekly-shell .nav button.on{background:var(--weekly-selected);color:var(--ink);font-weight:600}
-.dojo.weekly-shell .nav .nav-icon{display:flex;align-items:center;justify-content:center;width:25px;height:25px;margin:0}
-.dojo.weekly-shell .nav .nav-icon svg{width:23px;height:23px}
 @media(max-width:359px){.dojo.weekly-shell .top{padding-inline:16px}.dojo.weekly-shell .bingo-screen{padding-inline:16px}.dojo.weekly-shell .board-card{padding:12px}.dojo.weekly-shell .bingo-grid{gap:4px}.dojo.weekly-shell .bingo-cell{padding:2px;gap:1px}.dojo.weekly-shell .bingo-cell-title{font-size:12px;line-height:1.1}.dojo.weekly-shell .weekly-category-key{gap:5px}.dojo.weekly-shell .weekly-category-key button{font-size:11px}.dojo.weekly-shell .weekly-summary-meta{gap:10px}}
 @media(min-width:760px){.dojo.weekly-shell .top,.dojo.weekly-shell .bingo-screen{padding-inline:36px}.dojo.weekly-shell .weekly-board-layout{grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);align-items:start}.dojo.weekly-shell .weekly-page-tabs{max-width:620px}.dojo.weekly-shell .weekly-week-picker{max-width:620px}.dojo.weekly-shell .weekly-summary-meta{justify-content:flex-start}.dojo.weekly-shell .weekly-summary-state{margin-left:24px}.dojo.weekly-shell .bingo-cell-title{font-size:16px}.dojo.weekly-shell .weekly-cell-meta{font-size:12px;line-height:14px;min-height:14px}.dojo.weekly-shell .weekly-cell-meta .weekly-icon{width:13px;height:13px}}
 
@@ -237,3 +230,13 @@
 .dojo.weekly-shell :is(button,a,input,textarea,select,summary):focus-visible{outline-color:var(--v2-accent)}
 .dojo.weekly-shell .weekly-motif{mask-image:linear-gradient(to right,transparent 0%,#000 65%)}
 .dojo.weekly-shell .weekly-action-row>button:first-child{background:var(--v2-accent);color:var(--v2-on);border-color:var(--v2-accent)}
+
+/* Selection is theme color, not a success signal. Keep completed/saved green. */
+.dojo.weekly-shell .weekly-template-tabs button.on,
+.dojo.weekly-shell .template-filter-row button.on,
+.dojo.weekly-shell .template-pick-list article.selected{background:var(--v2-tint);border-color:#974A70;color:var(--v2-ink)}
+.dojo.weekly-shell .template-pick-main span{color:#974A70}
+.dojo.weekly-shell .template-selection-bar{background:#974A70;color:#FFFFFF}
+.dojo.weekly-shell .english-rhythm-week{background:var(--v2-surface);border-color:var(--v2-border)}
+.dojo.weekly-shell .english-rhythm-week :is(.subsection-title small,.subsection-title a,.english-week-stats b,.english-week-stats b small,.english-week-days b){color:var(--v2-muted)}
+.dojo.weekly-shell .english-week-days>div.today{border-color:#974A70;background:var(--v2-tint)}

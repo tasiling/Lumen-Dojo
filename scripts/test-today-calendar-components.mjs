@@ -85,8 +85,9 @@ try{
 }finally{globalThis.fetch=previousFetch}
 const css=postcss.parse(readFileSync('app/today-calendar.css','utf8'));
 const rules=new Map();css.walkRules(rule=>{assert(rule.selector.startsWith('.dojo.tc-'),'Presentation selectors remain route scoped');rules.set(rule.selector,rule)});
+postcss.parse(readFileSync('app/navigation.css','utf8')).walkRules(rule=>rules.set(rule.selector,rule));
 const declaration=(selector,key)=>rules.get(selector)?.nodes.find(n=>n.prop===key)?.value;
-assert(+declaration('.dojo.tc-shell .modal','z-index')>+declaration('.dojo.tc-shell .nav','z-index'),'Quick-add stays above bottom navigation');
-assert.equal(declaration('.dojo.tc-shell .nav','grid-template-columns'),'repeat(5,minmax(0,1fr))','Bottom navigation shrinks on narrow phones');
+assert(+declaration('.dojo.tc-shell .modal','z-index')>+declaration('.dojo .nav.consistent-nav','z-index'),'Quick-add stays above bottom navigation');
+assert.equal(declaration('.dojo .nav.consistent-nav','grid-template-columns'),'repeat(5,minmax(0,1fr))','Bottom navigation shrinks on narrow phones');
 assert.equal(declaration('.dojo.tc-shell .calendar-grid button.selected','border-color'),'#E4D9C0','Selected compact cells preserve warm separators');
 console.log('today-calendar-components: scoped shell, daily depths, 42 cells, period controls and failed/successful edits passed (Node only)');

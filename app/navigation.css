@@ -1,0 +1,10 @@
+/* Shared bottom navigation geometry from the approved Today/calendar UI. */
+.dojo .nav.consistent-nav {width:min(100%,560px);left:50%;right:auto;transform:translateX(-50%);grid-template-columns:repeat(5,minmax(0,1fr));border-radius:0;background:rgba(255,254,254,.96);padding:7px 8px calc(7px + env(safe-area-inset-bottom));z-index:30;}
+.dojo .nav.consistent-nav button {font-size:12px;min-height:64px;min-width:0;padding:4px 2px;background:transparent;color:var(--muted);}
+.dojo .nav.consistent-nav .nav-icon {width:44px;height:34px;margin:0 auto 3px;border-radius:20px;}
+.dojo .nav.consistent-nav button.on {color:var(--tc-accent);background:transparent;}
+.dojo .nav.consistent-nav button.on .nav-icon {background:var(--tc-soft);}
+.dojo .nav.consistent-nav button[data-nav=add] .nav-icon {width:44px;height:38px;background:var(--tc-accent);color:#FCFCFF;border-radius:12px;}
+.dojo .nav.consistent-nav .nav-icon svg {width:24px;height:24px;}
+ .dojo .nav.consistent-nav button{line-height:1.5;border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;}
+.dojo.weekly-shell .nav.consistent-nav{--tc-accent:#974A70;--tc-soft:var(--v2-tint);}
