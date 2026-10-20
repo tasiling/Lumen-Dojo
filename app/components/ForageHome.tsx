@@ -55,7 +55,7 @@ export default function ForageHome() {
 
       <div className="forage-entry-grid" aria-label="採集匣入口">
         <article className="forage-entry-card is-english">
-          <div className="forage-entry-title"><span aria-hidden="true"><ForageIcon name="i-type" /></span><div><small>學習素材</small><h2>英文影像</h2></div></div>
+          <div className="forage-entry-title"><span aria-hidden="true"><ForageIcon name="image" /></span><div><small>學習素材</small><h2>英文影像</h2></div></div>
           <div className="forage-primary-count"><strong>{english.pending}</strong><span>待處理</span></div>
           <div className="forage-count-grid">
             <CountItem value={english.classification} label="待分類" />

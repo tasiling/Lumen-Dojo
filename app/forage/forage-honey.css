@@ -1,0 +1,40 @@
+/* Approved forage-color-review.html, 2026-10-20. Route-only palette;
+   shared tokens and layouts are unchanged. The explicit marker outranks
+   the earlier landing-only reference palette, including after navigation. */
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey),
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui {
+  --v2-gradient:linear-gradient(115deg,#F7BEA0 0%,#F3DFAC 48%,#A6DCD2 100%);
+  --v2-background:#FEFBF9;--v2-surface:#FFFFFF;--v2-border:#F0E6DE;
+  --v2-tint:#FCEBE3;--v2-accent:#253C5C;--v2-ink:#253C5C;
+  --v2-muted:#58677C;--v2-on:#FFFFFF;
+  --forage-honey:linear-gradient(115deg,#F5C88E,#F0B96E);
+  --forage-honey-border:#EFB873;
+  --forage-peach:#FCEBE3;--forage-yellow:#FAF0DA;--forage-mint:#E3F2ED;
+}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui :is(button.primary,.forage-card-action,.forage-add-entry),
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .modal button.primary {
+  background:var(--forage-honey);border-color:var(--forage-honey-border);color:var(--v2-ink);
+}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-add-entry {
+  background:linear-gradient(110deg,#E6A653,#EDB969);border-color:#FFEBCC;
+}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui :is(.forage-primary-count strong,.forage-entry-title>span,.forage-secondary-entry a,.forage-recent-item b,.eyebrow) {color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-home-intro .eyebrow {
+  display:inline-block;padding:4px 10px;background:#FFFFFF99;border:1px solid #FFFFFF66;border-radius:7px;
+}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-entry-title>span {background:var(--forage-peach)}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .is-capture .forage-entry-title>span {background:#ECF4E6}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-entry-title .forage-icon {width:28px;height:28px}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-count-grid>div:nth-child(1) {background:var(--forage-peach)}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-count-grid>div:nth-child(2) {background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-count-grid>div:nth-child(3) {background:var(--forage-mint)}
+/* Errors retain the existing explicit red text and labels on the soft mint. */
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui :is(.forage-entry-card,.forage-recent-item) {box-shadow:0 4px 20px #BD937506}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-alert {background:#FFF4EF;border-color:#EAD8CF}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-alert a {color:#874A39}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-motif {
+  width:370px;height:430px;right:-65px;top:-70px;opacity:.78;color:#FFFFFF;
+  mask-image:linear-gradient(90deg,transparent,#000 34%);pointer-events:none;
+}
+.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) :is(a,button,input,select,textarea,summary):focus-visible {outline-color:#48617E}
+@media(min-width:760px){.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-motif {width:520px;height:520px;right:0;top:-120px}}
