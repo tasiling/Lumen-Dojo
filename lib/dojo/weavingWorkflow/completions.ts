@@ -14,6 +14,7 @@ export type CompletionVersion = {
     operationId: string;
     coreVersionId: string;
     sourceSelections: WorkflowSelection[];
+    sourceSnapshotState?: 'captured';
     outputKind: OutputKind;
     text: string;
     outputUrl: string;

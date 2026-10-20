@@ -213,8 +213,9 @@ export async function completeWork(body: Body) {
             stringValue(work.draftText, 80000, '成品文字');
             if (completionDigest(work) !== body.previewDigest)
                 throw new WeavingError('預覽已失效，請重新預覽目前保存版本', 409);
-            await checkSelectionAvailability(work.textWorkflow?.sourceSelections ?? []);
-            return { ...completionPayload(work), schemaVersion: 1, owner: WEAVING_OWNER, operationId: op, createdAt: receipt.createdAt, state: 'confirmed', supersededBy: null };
+            const selections=work.textWorkflow?.sourceSelections ?? (await readShuttle(work.shuttleId)).sourceSelections;
+            await checkSelectionAvailability(selections);
+            return { ...completionPayload(work), sourceSelections: selections, sourceSnapshotState: 'captured', schemaVersion: 1, owner: WEAVING_OWNER, operationId: op, createdAt: receipt.createdAt, state: 'confirmed', supersededBy: null };
         }), updateStep(id, WEAVING_WORK_TITLE_PREFIX, 'work', async (row, receipt) => { const work = normalizeWeavingWork(parseJson(row.內容), { id })!; expectRevision(work, body.expectedRevision); const c = await readCompletion(receipt.result.completion.id); return { ...work, revision: work.revision + 1, status: 'completed', finalSnapshot: c.text, completedAt: receipt.createdAt, completionVersionRefs: [...new Set([...work.completionVersionRefs, c.id])], currentCompletionVersionId: c.id, nextAction: '回看創作，或手動送往聊解室' }; })]);
     return { work: await readWork(id), completion: await readCompletion(r.result.completion.id) };
 }
@@ -253,6 +254,8 @@ export async function handoffWork(body: Body) {
                     throw new WeavingError('請先完成並確認成品', 409);
                 if (!c && work.currentCompletionVersionId)
                     throw new WeavingError('請指定固定成品版本', 409);
+                if(c && work.format!=='text' && c.sourceSnapshotState!=='captured' && !c.sourceSelections?.length)
+                    throw new WeavingError('舊版成品未保留完整來源，請重新保存並確認成品；歷史版本仍保留',409);
                 await sourcePolicies.assertPublication(c?.sourceSelections ?? work.textWorkflow?.sourceSelections ?? shuttle.sourceSelections ?? [], body.publicationConfirmed);
                 const core = shuttle.coreVersions.find(v => v.id === (c?.coreVersionId ?? work.coreVersionId));
                 if (!core)

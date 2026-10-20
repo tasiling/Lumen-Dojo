@@ -78,3 +78,26 @@ const claim=normalizeKnowledgeClaim({recordType:'knowledge-claim',title:'隔離�
 const claimResolver=loader({'../readingKnowledge/adapters':{createResolver:()=>({resolve:async()=>({title:'隔離主張',text:'尚未採用的新候選',sourceVersion:'candidate-v2'})})},'../knowledgeClaimStore':{getKnowledgeClaim:async()=>({claim})}})('lib/dojo/creativeSources/resolver.ts');
 const approved=await claimResolver.resolvePolicySource({sourceType:'knowledge_claim',sourceId:note});assert.equal(approved.text,'已採用觀點');assert.equal(approved.version,'active-v1');
 console.log('PASS permitted claim resolves adopted active version, never its newer unadopted candidate');
+// Review regression: each non-text completion must freeze its actual selected sources.
+for(const format of ['comic','video']){
+ const n=await fixture();
+ try{
+  n.queries.listReadingBooks=async()=>[{id:book,title:'隔離書'}];n.queries.listReadingNotes=async()=>[{id:note,kind:'excerpt',text:'不公開的原片段',metadata:{chapter:'一'}}];
+  const store=n.load('lib/dojo/weavingWorkflow/store.ts'),versions=n.load('lib/dojo/weavingWorkflow/completions.ts');const c=(await n.load('lib/dojo/weavingWorkflow/sources.ts').productionSources().list('reading_note',null)).items[0];
+  const pair=await store.createPair({operationId:`nontext-${format}-pair`,coreStatement:'測試觀點',format,selectionRequests:[{...ref,sourceVersion:c.version,start:0,end:5,contentKind:'quote'}]});
+  const work=await store.patchWork({id:pair.works[0].id,operationId:`nontext-${format}-draft`,expectedRevision:1,work:{outputUrl:'https://example.invalid/isolated-output'}});
+  const completed=await store.completeWork({workId:work.id,operationId:`nontext-${format}-complete`,expectedRevision:work.revision,previewDigest:versions.completionDigest(work)});
+  assert.equal(completed.completion.sourceSelections.length,1,`${format} freezes sources from its shuttle at completion`);
+  const owner=n.load('lib/dojo/learningFoundation/store.ts').learningOwner;
+  n.records.set(crypto.randomUUID(),{title:model.SOURCE_POLICY_PREFIX+'fixture',value:{schema:1,owner,ref,discovery:'allow',publication:'private',revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}});
+  const body={operationId:`nontext-${format}-handoff`,weavingWorkId:work.id,completionVersionId:completed.completion.id,publicationConfirmed:true};
+  await assert.rejects(()=>store.handoffWork(body),e=>e.status===403);
+  // Later shuttle changes cannot alter a completion's frozen sources.
+  n.records.get(pair.shuttle.id).value.sourceSelections=[];
+  await assert.rejects(()=>store.handoffWork({...body,operationId:`nontext-${format}-retry`}),e=>e.status===403);
+  assert.equal((await versions.readCompletion(completed.completion.id)).sourceSelections.length,1);
+  const saved=n.records.get(completed.completion.id).value;saved.sourceSelections=[];delete saved.sourceSnapshotState;
+  await assert.rejects(()=>store.handoffWork({...body,operationId:`nontext-${format}-legacy`}),e=>e.status===409&&/來源/.test(e.message));
+ }finally{await n.close();}
+}
+console.log('PASS non-text comic/video completion freezes selected sources; private gate uses history; unverifiable legacy version requires a new completion');
