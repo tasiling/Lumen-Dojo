@@ -155,9 +155,10 @@ function hasDailyTaskPlan(record?: DailyRecord) {
 }
 
 function ReviewMark({ review, large = false }: { review: DailyReviewSnapshot; large?: boolean }) {
-  const radii = large ? [8, 13, 18] : [5, 8, 11];
-  const center = large ? 22 : 14;
-  const box = large ? 44 : 28;
+  // Depth grows from the inner ring outward in both morning and evening.
+  const radii = [7, 12, 17];
+  const center = 21;
+  const box = 42;
   return (
     <svg
       className={`calendar-review-mark ${large ? "large" : ""}`}
