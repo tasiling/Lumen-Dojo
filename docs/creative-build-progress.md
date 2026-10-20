@@ -15,7 +15,7 @@
 
 ## 2026-10-20 第一包實作交付
 
-- Branch：`codex/weaving-liaojie-creation-v2`。實作 head：`8523e2cf671401e449211693d1eaf4c62ce5c863`；本紀錄與截圖是其後的交付文件提交，最終 checkpoint 以本檔所在提交及 PR head 為準。
+- Branch：`codex/weaving-liaojie-creation-v2`。本機驗證 head：`8523e2cf671401e449211693d1eaf4c62ce5c863`；本紀錄與截圖是其後的交付文件提交，最終 checkpoint 以本檔所在提交及 PR head 為準。
 - 已整合 master `5538ec80627c97e4d08e3d3726426b7f56729e77`（PR99），保留日曆／導覽更新；沒有整合 PR89，沒有改動或部署正式資料。
 - 實際新增：同源五步圖示與漸層／線條、路由限定手機介面；先選素材再定觀點的本機草稿；來源模式及選摘恢復；四段聊解工作台；真正可讀寫的 Threads；只使用隔離資料的可操作 production 預覽。
 - 行為證據：失敗輸入保留、未知建立回應不重複、保存失敗不前進、版本比較與重套、固定成品／交接快照維持；儲存失敗時的收起／SPA 保護及 production dotenv 拒絕已補回歸測試。
