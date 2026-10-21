@@ -166,7 +166,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
             data-nav={item.key}
             onClick={() => { if(canLeavePractice()) router.push(item.href); }}
           >
-            <span className="nav-icon">{sharedUiRoute || pathname === "/bingo" ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : <NavIcon name={item.icon} />}</span>
+            <span className="nav-icon">{sharedUiRoute || pathname === "/bingo" ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : pathname.startsWith("/forage") && item.icon === "add" ? <ForageIcon name="i-plus"/> : <NavIcon name={item.icon} />}</span>
             {item.label}
           </button>
         ))}

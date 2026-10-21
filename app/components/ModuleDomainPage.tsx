@@ -2,6 +2,7 @@
 
 import CreativeIcon from './creative/CreativeIcon';
 import CreativeHeroArt from './creative/CreativeHeroArt';
+import ForageIcon from './ForageIcon';
 import { useRouter } from "next/navigation";
 import { useDojo } from "@/lib/dojo/store";
 import { SPACES, type SpaceKey } from "@/lib/dojo/constants";
@@ -13,12 +14,14 @@ export default function ModuleDomainPage({
   space,
   defaultKind,
   extra,
+  heroDecoration,
 }: {
   title: string;
   lead: string;
   space: SpaceKey;
   defaultKind: string;
   extra?: React.ReactNode;
+  heroDecoration?: React.ReactNode;
 }) {
   const { entries, entriesLoading, entriesError, openQuickAdd, startTimerFromSpace } = useDojo();
   const router = useRouter();
@@ -33,6 +36,7 @@ export default function ModuleDomainPage({
   return (
     <section className="screen">
       <div className={`hero ${SPACES[space][1]}`}>
+        {heroDecoration}
         {creative && <CreativeHeroArt realm={space as 'weaving'|'liaojie'}/>}
         <span className="eyebrow">{creative ? title : '六個場域'}</span>
         <h1>{title}</h1>
@@ -42,9 +46,9 @@ export default function ModuleDomainPage({
       {extra}
       <div className="two domain-primary-actions">
         <button className="primary" onClick={() => openQuickAdd({ presetSpace: space, presetKind: defaultKind })}>
-          {creative ? <CreativeIcon name="add"/> : '＋'} 新增紀錄
+          {creative ? <CreativeIcon name="add"/> : space === 'forage' ? <ForageIcon name="i-plus"/> : '＋'} 新增紀錄
         </button>
-        <button onClick={startTimerHere}>{creative ? <CreativeIcon name="clock"/> : '◷'} 在此計時</button>
+        <button onClick={startTimerHere}>{creative ? <CreativeIcon name="clock"/> : space === 'forage' ? <ForageIcon name="i-clock"/> : '◷'} 在此計時</button>
       </div>
 
       <h2 className="section-title">留下的痕跡</h2>

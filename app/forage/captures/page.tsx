@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ForagePageHeading from "../../components/ForagePageHeading";
 import ForageCaptureInbox from "../../components/ForageCaptureInbox";
 
 export default async function ForageCapturesPage({
@@ -11,14 +11,7 @@ export default async function ForageCapturesPage({
 
   return (
     <section className="screen forage-inbox-screen">
-      <div className="forage-page-heading">
-        <div>
-          <span className="eyebrow">野採・原始材料</span>
-          <h1>一般採集匣</h1>
-          <p>整理 LINE 剪藏與手動擷取，補上分類、用途、成熟度及知識關聯。</p>
-        </div>
-        <Link href="/forage">回到野採</Link>
-      </div>
+      <ForagePageHeading eyebrow="野採・原始材料" title="一般採集匣" description="整理 LINE 剪藏與手動擷取，補上分類、用途、成熟度及知識關聯。" />
       <ForageCaptureInbox initialCaptureId={captureId} />
     </section>
   );
