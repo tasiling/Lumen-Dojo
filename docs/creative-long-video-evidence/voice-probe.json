@@ -1,0 +1,33 @@
+{
+  "file": "/workspace/scratch/ad1d9c2e7938/weaving-creation/docs/creative-long-video-evidence/voice.wav",
+  "format": "wav",
+  "duration": 60.0,
+  "size_bytes": 960044,
+  "bitrate": 128005,
+  "video": null,
+  "audio": {
+    "codec": "pcm_s16le",
+    "channels": 1,
+    "channel_layout": null,
+    "sample_rate": 8000,
+    "bitrate": 128000,
+    "duration": 60.0,
+    "start_time": null
+  },
+  "subtitle_streams": 0,
+  "data_streams": 0,
+  "chapters": [],
+  "tags": {},
+  "subtitle_stream_details": [],
+  "audio_streams": [
+    {
+      "index": 0,
+      "codec": "pcm_s16le",
+      "channels": 1,
+      "channel_layout": null,
+      "sample_rate": 8000,
+      "language": null,
+      "title": null
+    }
+  ]
+}

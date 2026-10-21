@@ -1,0 +1,37 @@
+{
+  "status": "completed",
+  "output": "docs/creative-podcast-evidence/final.wav",
+  "dry_run": false,
+  "verified": true,
+  "summary": {
+    "duration_s": 10.0,
+    "acodec": "pcm_s16le",
+    "channels": 1,
+    "lufs": -16.01
+  },
+  "commands": 3,
+  "result": {
+    "input_i": "-16.01",
+    "input_tp": "-9.79",
+    "input_lra": "2.80",
+    "input_thresh": "-26.95",
+    "target_offset": "-0.32",
+    "silent": false,
+    "tp_ceiling_used": -1.5,
+    "encodes": 1
+  },
+  "dropped_non_av_streams": false,
+  "measured": {
+    "input_i": "-34.93",
+    "input_tp": "-28.72",
+    "input_lra": "2.80",
+    "input_thresh": "-45.80",
+    "target_offset": "-0.31",
+    "silent": false
+  },
+  "targets": {
+    "lufs": -16.0,
+    "tp": -1.5,
+    "lra": 11.0
+  }
+}

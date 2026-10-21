@@ -4,7 +4,13 @@ export const LIAOJIE_PLATFORMS = { plurk: "噗浪", threads: "Threads", instagra
 export type LiaojiePlatform = keyof typeof LIAOJIE_PLATFORMS;
 export type LiaojieStatus = "received" | "packaging" | "ready" | "scheduled" | "published" | "archived";
 export type LiaojiePublicationProject = {
+  illustratedOutputRefs: string[];
+  podcastOutputRefs: string[];
+  comicOutputRefs: string[];
+  longVideoOutputRefs: string[];
+  videoOutputRefs: string[];
   revision: number; sourceCompletionVersionId: string | null; handoffOperationId: string | null;
+  sourceFormat: "text" | "comic" | "video" | "legacy";
   version: 2; recordType: "liaojie-publication-project"; id: string;
   weavingProjectId: string; weavingShuttleId: string; weavingWorkId: string; sourceCoreVersionId: string;
   sourceTitle: string; sourceCoreStatement: string; sourceOutputUrl: string; sourceDraftSnapshot: string;
@@ -24,8 +30,14 @@ export function normalizeLiaojieProject(value: unknown, options: { id: string; t
   const now = new Date().toISOString(); const createdAt = text(source.createdAt, 50) || now;
   const platform = typeof source.platform === "string" && source.platform in LIAOJIE_PLATFORMS ? source.platform as LiaojiePlatform : "instagram_post";
   return {
+    videoOutputRefs: Array.isArray(source.videoOutputRefs) ? [...new Set(source.videoOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
+    podcastOutputRefs: Array.isArray(source.podcastOutputRefs) ? [...new Set(source.podcastOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
+    comicOutputRefs: Array.isArray(source.comicOutputRefs) ? [...new Set(source.comicOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
+    longVideoOutputRefs: Array.isArray(source.longVideoOutputRefs) ? [...new Set(source.longVideoOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
+    illustratedOutputRefs: Array.isArray(source.illustratedOutputRefs) ? [...new Set(source.illustratedOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
     sourceCompletionVersionId: text(source.sourceCompletionVersionId, 300) || null, handoffOperationId: text(source.handoffOperationId, 120) || null,
+    sourceFormat: source.sourceFormat === "text" || source.sourceFormat === "comic" || source.sourceFormat === "video" ? source.sourceFormat : "legacy",
     version: 2, recordType: "liaojie-publication-project", id: options.id,
     weavingProjectId, weavingShuttleId, weavingWorkId, sourceCoreVersionId: text(source.sourceCoreVersionId, 100),
     sourceTitle: text(source.sourceTitle, 200), sourceCoreStatement: text(source.sourceCoreStatement, 3000),

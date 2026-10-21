@@ -1,0 +1,19 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:reading-knowledge
+> node scripts/test-reading-knowledge.mjs && node scripts/test-reading-knowledge-relations.mjs && node scripts/test-reading-knowledge-search.mjs && node scripts/test-reading-knowledge-annotations.mjs && node scripts/test-reading-knowledge-operations.mjs && node scripts/test-reading-knowledge-review.mjs
+
+PASS identity: read rounds, reflection, safe local routes, invalid refs
+PASS production adapter: paged provider reads, owner book membership, foreign note excluded
+PASS relations: legacy book only, unversioned claim snapshot, duplicate work selection dedup
+PASS search: partial empty, provider retry, query/owner-bound cursor, 20 per page, replay stable, filters
+PASS annotations: strict limits, inheritance off, concurrent single create, revision conflict, invalid subject, archived subject retained
+PASS durable operations: concurrent single dispatch, exact replay, payload conflict, unknown outcome retains real FS lock, no redispatch
+PASS transient relation enrichment stays retryable
+PASS relations retain prior claim-version references while search remains current only
+PASS book predicate accepts verified multiple-book associations on claims
+PASS preview review secondary saved fields are searchable
+PASS single-note resolution uses verified parent retrieval without library scan
+PASS classification outage keeps readable unfiltered content and retries metadata
+PASS classification-dependent results are retained without unbounded rescans during outage
+PASS claim-book association verifies original note parent before including claim

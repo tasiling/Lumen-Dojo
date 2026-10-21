@@ -9,7 +9,7 @@ export async function startCreativePreview({port=3045,appPort=3047,empty=false}=
   if(!existsSync('.next/BUILD_ID')) throw new Error('Run npm run build before npm run preview:creative.');
   const f=await fixture();
   const app=await isolatedServer(appPort,'weaving-fixture',{production:true});
-  const handlers=Object.fromEntries(['weaving-shuttles','weaving-works','weaving-sources','liaojie-projects'].map(k=>['/api/dojo/'+k,f.load('app/api/dojo/'+k+'/route.ts')]));
+  const handlers=Object.fromEntries(['weaving-shuttles','weaving-works','weaving-sources','liaojie-projects','liaojie-text-variants','creative-releases'].map(k=>['/api/dojo/'+k,f.load('app/api/dojo/'+k+'/route.ts')]));
   f.queries.listReadingBooks=async()=>[{id:'preview-book',title:'隔離示範書'}];
   f.queries.listReadingNotes=async()=>[{id:'preview-note',kind:'excerpt',text:'這是隔離示範素材，不是你的私人紀錄。',metadata:{chapter:'示範章節',location:'第 1 頁'}}];
   if(!empty) {
@@ -17,7 +17,7 @@ export async function startCreativePreview({port=3045,appPort=3047,empty=false}=
     const pair=await s.createPair({operationId:'preview-source-pair',sourceType:'manual',sourceSnapshot:'隔離示範：忙碌時仍想練習休息。',coreStatement:'休息不必等到所有事情完成。',format:'text'});
     const written=await s.patchWork({operationId:'preview-draft-text',id:pair.works[0].id,expectedRevision:pair.works[0].revision,work:{title:'給忙碌的自己一點空間',draftText:'今天的待辦還沒做完，我先替自己留了十分鐘。\n\n休息不必等到所有事情完成。'}});
     const done=await s.completeWork({operationId:'preview-fixed-completion',workId:written.id,expectedRevision:written.revision,previewDigest:f.load('lib/dojo/weavingWorkflow/completions.ts').completionDigest(written)});
-    await s.handoffWork({operationId:'preview-publication-handoff',weavingWorkId:written.id,completionVersionId:done.completion.id});
+    await s.handoffWork({operationId:'preview-publication-handoff',publicationConfirmed:true,weavingWorkId:written.id,completionVersionId:done.completion.id});
     const latest=await s.readWork(written.id);
     await s.patchWork({operationId:'preview-next-draft',id:latest.id,expectedRevision:latest.revision,work:{status:'drafting',nextAction:'補充一個自己的生活例子'}});
   }

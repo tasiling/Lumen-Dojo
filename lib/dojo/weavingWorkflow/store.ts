@@ -1,8 +1,9 @@
+import { sourcePolicies } from '../creativeSources/store';
 import 'server-only';
 import { createKnowledgeEntry, updateKnowledgeEntry } from '@/lib/notion/mutations';
-import { getKnowledgeEntry, listInsightCards, listReadingBooks } from '@/lib/notion/queries';
+import { getKnowledgeEntry, listInsightCards, listPlurkDrafts, listReadingBooks } from '@/lib/notion/queries';
 import { listJsonRecords } from '../notionStore';
-import { CAPTURE_TITLE_PREFIX, WEAVING_PROJECT_TITLE_PREFIX, WEAVING_SHUTTLE_TITLE_PREFIX, WEAVING_WORK_TITLE_PREFIX, LIAOJIE_PROJECT_TITLE_PREFIX, COMPLETION_TITLE_PREFIX, parseJson, normalizeCaptureEntry } from '../formal';
+import { CAPTURE_TITLE_PREFIX, WEAVING_PROJECT_TITLE_PREFIX, WEAVING_SHUTTLE_TITLE_PREFIX, WEAVING_WORK_TITLE_PREFIX, LIAOJIE_PROJECT_TITLE_PREFIX, LIAOJIE_TEXT_VARIANT_PREFIX, LIAOJIE_TEXT_VERSION_PREFIX, COMPLETION_TITLE_PREFIX, parseJson, normalizeCaptureEntry } from '../formal';
 import { createShuttleDraft, createWorkDraft, currentCore, normalizeWeavingShuttle, normalizeWeavingWork, type WeavingShuttle, type WeavingWork } from '../weavingShuttle';
 import { normalizeWeavingProject } from '../weavingProjects';
 import { LIAOJIE_PLATFORMS, normalizeLiaojieProject } from '../liaojiePublication';
@@ -12,6 +13,7 @@ import { convertWorkflow,TEXT_TEMPLATES,createTextWorkflow } from './templates';
 import { productionSources, resolveSelections, checkSelectionAvailability, type SelectionRequest } from './sources';
 import { operationDigest } from './operations';
 import { completionDigest, completionPayload, readCompletion } from './completions';
+import { decodePlurkContent } from '@/lib/plurk/notionFormat';
 export const WEAVING_OWNER = 'dojo-private-owner';
 export type Body = Record<string, unknown>;
 export type JsonRow = {
@@ -212,8 +214,9 @@ export async function completeWork(body: Body) {
             stringValue(work.draftText, 80000, '成品文字');
             if (completionDigest(work) !== body.previewDigest)
                 throw new WeavingError('預覽已失效，請重新預覽目前保存版本', 409);
-            await checkSelectionAvailability(work.textWorkflow?.sourceSelections ?? []);
-            return { ...completionPayload(work), schemaVersion: 1, owner: WEAVING_OWNER, operationId: op, createdAt: receipt.createdAt, state: 'confirmed', supersededBy: null };
+            const selections=work.textWorkflow?.sourceSelections ?? (await readShuttle(work.shuttleId)).sourceSelections;
+            await checkSelectionAvailability(selections);
+            return { ...completionPayload(work), sourceSelections: selections, sourceSnapshotState: 'captured', schemaVersion: 1, owner: WEAVING_OWNER, operationId: op, createdAt: receipt.createdAt, state: 'confirmed', supersededBy: null };
         }), updateStep(id, WEAVING_WORK_TITLE_PREFIX, 'work', async (row, receipt) => { const work = normalizeWeavingWork(parseJson(row.內容), { id })!; expectRevision(work, body.expectedRevision); const c = await readCompletion(receipt.result.completion.id); return { ...work, revision: work.revision + 1, status: 'completed', finalSnapshot: c.text, completedAt: receipt.createdAt, completionVersionRefs: [...new Set([...work.completionVersionRefs, c.id])], currentCompletionVersionId: c.id, nextAction: '回看創作，或手動送往聊解室' }; })]);
     return { work: await readWork(id), completion: await readCompletion(r.result.completion.id) };
 }
@@ -252,10 +255,13 @@ export async function handoffWork(body: Body) {
                     throw new WeavingError('請先完成並確認成品', 409);
                 if (!c && work.currentCompletionVersionId)
                     throw new WeavingError('請指定固定成品版本', 409);
+                if(c && work.format!=='text' && c.sourceSnapshotState!=='captured' && !c.sourceSelections?.length)
+                    throw new WeavingError('舊版成品未保留完整來源，請重新保存並確認成品；歷史版本仍保留',409);
+                await sourcePolicies.assertPublication(c?.sourceSelections ?? work.textWorkflow?.sourceSelections ?? shuttle.sourceSelections ?? [], body.publicationConfirmed);
                 const core = shuttle.coreVersions.find(v => v.id === (c?.coreVersionId ?? work.coreVersionId));
                 if (!core)
                     throw new WeavingError('核心版本無法核對', 409);
-                const p = normalizeLiaojieProject({ weavingProjectId: '', weavingShuttleId: shuttle.id, weavingWorkId: work.id, sourceCoreVersionId: core.id, sourceCompletionVersionId: c?.id ?? null, handoffOperationId: op, sourceTitle: c?.title ?? work.title, sourceCoreStatement: core.statement, sourceOutputUrl: c?.outputUrl ?? work.outputUrl, sourceDraftSnapshot: c?.text ?? (work.finalSnapshot || work.draftText), brandAngle: core.statement, audience: shuttle.audience, title: c?.title ?? work.title, status: 'received', revision: 1, createdAt: receipt.createdAt }, { id: 'pending' })!;
+                const p = normalizeLiaojieProject({ weavingProjectId: '', weavingShuttleId: shuttle.id, weavingWorkId: work.id, sourceCoreVersionId: core.id, sourceCompletionVersionId: c?.id ?? null, handoffOperationId: op, sourceFormat: work.format, sourceTitle: c?.title ?? work.title, sourceCoreStatement: core.statement, sourceOutputUrl: c?.outputUrl ?? work.outputUrl, sourceDraftSnapshot: c?.text ?? (work.finalSnapshot || work.draftText), brandAngle: core.statement, audience: shuttle.audience, title: c?.title ?? work.title, status: 'received', revision: 1, createdAt: receipt.createdAt }, { id: 'pending' })!;
                 return createStep(LIAOJIE_PROJECT_TITLE_PREFIX, 'publication', () => p).execute(receipt);
             } }, updateStep(workId, WEAVING_WORK_TITLE_PREFIX, 'work', async (row) => { const w = normalizeWeavingWork(parseJson(row.內容), { id: workId })!; const c=typeof body.completionVersionId==='string'?await readCompletion(body.completionVersionId):null;const current=!c||c.id===w.currentCompletionVersionId&&c.text===w.draftText&&c.outputUrl===w.outputUrl&&c.title===w.title;return { ...w, revision: w.revision + 1, status: current?'sent_to_liaojie':w.status, sentToLiaojieAt: new Date().toISOString(), nextAction: '在聊解室完成首發版本' }; })]);
     return publication(r.result.publication.id);
@@ -291,14 +297,17 @@ export type Reconciliation={receipt:OperationReceipt|null;observations:Record<st
 /** Read-only remote evidence; never acquires/releases the writer lock or updates receipts. */
 export async function reconcileOperation(op:string):Promise<Reconciliation>{
  const receipt=await inspectWeavingOperation(WEAVING_OWNER,op);if(!receipt)return {receipt:null,observations:{}};
- const prefixes=[WEAVING_SHUTTLE_TITLE_PREFIX,WEAVING_WORK_TITLE_PREFIX,COMPLETION_TITLE_PREFIX,LIAOJIE_PROJECT_TITLE_PREFIX,WEAVING_PROJECT_TITLE_PREFIX];
+ const prefixes=[WEAVING_SHUTTLE_TITLE_PREFIX,WEAVING_WORK_TITLE_PREFIX,COMPLETION_TITLE_PREFIX,LIAOJIE_PROJECT_TITLE_PREFIX,LIAOJIE_TEXT_VARIANT_PREFIX,LIAOJIE_TEXT_VERSION_PREFIX,WEAVING_PROJECT_TITLE_PREFIX,'行光圖文稿-v1-','行光圖文版本-v1-','行光圖文成品-v1-','行光短片稿-v1-','行光短片版本-v1-','行光短片成品-v1-','行光聲音稿-v1-','行光聲音版本-v1-','行光聲音成品-v1-','行光短漫稿-v1-','行光短漫版本-v1-','行光短漫成品-v1-','行光長片稿-v1-','行光長片版本-v1-','行光長片成品-v1-','行光作品發布紀錄-v1-'];
  const observations:Reconciliation['observations']={};const key=operationKey(receipt.owner,receipt.operationId);
  const rows=(await Promise.all(prefixes.map(prefix=>listJsonRecords(prefix)))).flat();
  for(const step of Object.keys(receipt.steps)){
   const matches=rows.filter(row=>{const m=(row.value as {_weavingMutation?:ReturnType<typeof marker>})?._weavingMutation;return row.title.endsWith(`${key}:${step}`)||m?.owner===receipt.owner&&m.operationId===op&&m.key===step;});
   const unique=[...new Map(matches.map(row=>[row.id,row])).values()];
   const mismatch=unique.some(row=>!isMarked(row.value,receipt,step)&&!(receipt.steps[step]==='confirmed'&&receipt.result[step]?.id===row.id));
-  observations[step]={state:unique.length>1||mismatch?'collision':unique.length===1?'confirmed':'unknown',refs:unique.map(row=>({id:row.id,revision:revisionOf(row.value)}))};
+  if(step==='plurkDraft'){
+   const drafts=(await listPlurkDrafts()).filter(row=>decodePlurkContent(row.內容).meta.sourceOperationId===op||receipt.steps[step]==='confirmed'&&receipt.result[step]?.id===row.id);
+   observations[step]={state:drafts.length>1?'collision':drafts.length===1?'confirmed':'unknown',refs:drafts.map(row=>({id:row.id}))};
+  }else observations[step]={state:unique.length>1||mismatch?'collision':unique.length===1?'confirmed':'unknown',refs:unique.map(row=>({id:row.id,revision:revisionOf(row.value)}))};
  }
  return {receipt,observations};
 }

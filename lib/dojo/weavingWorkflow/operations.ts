@@ -5,7 +5,7 @@ import { isAbsolute, join } from 'node:path';
 import { withLearningWriteLock } from '../learningFoundation/fileLock';
 import { learningWriteOutcome } from '../learningFoundation/writeOutcome';
 import { WeavingError } from './model';
-export type OperationKind = 'create_pair' | 'create_work' | 'migrate' | 'reflect' | 'complete' | 'handoff' | 'patch' | 'archive';
+export type OperationKind = 'release_create' | 'release_save' | 'create_pair' | 'create_work' | 'migrate' | 'reflect' | 'complete' | 'handoff' | 'patch' | 'archive' | 'proposal_scan' | 'proposal_accept' | 'text_variant_create' | 'text_variant_save' | 'text_variant_status' | 'text_variant_plurk' | 'illustrated_create' | 'illustrated_save' | 'illustrated_output' | 'illustrated_handoff' | 'video_create' | 'video_save' | 'video_output' | 'video_handoff' | 'podcast_create' | 'podcast_save' | 'podcast_output' | 'podcast_handoff' | 'comic_create' | 'comic_save' | 'comic_output' | 'comic_handoff' | 'long_video_create' | 'long_video_save' | 'long_video_output' | 'long_video_handoff';
 export type EntityRef = {
     id: string;
     revision?: number;
@@ -22,6 +22,8 @@ export type OperationReceipt = {
     result: Record<string, EntityRef>;
     state: 'pending' | 'confirmed' | 'rejected' | 'unresolved';
     error?: string;
+    // Server-owned immutable recovery plan; never inferred again on a retry.
+    context?: unknown;
 };
 export type OperationStep = {
     key: string;
@@ -82,7 +84,15 @@ async function persist(receipt: OperationReceipt): Promise<void> {
         await parent.close();
     }
 }
-export async function runWeavingOperation(owner: string, id: string, kind: OperationKind, input: unknown, steps: OperationStep[]): Promise<OperationReceipt> {
+async function recordFailure(receipt: OperationReceipt, error: unknown): Promise<void> {
+    const states = Object.values(receipt.steps);
+    receipt.state = states.some(s => s === 'dispatching' || s === 'unresolved') ? 'unresolved'
+        : states.includes('confirmed') ? 'pending' : 'rejected';
+    receipt.error = error instanceof Error ? error.message : String(error);
+    receipt.updatedAt = new Date().toISOString();
+    await persist(receipt);
+}
+export async function runWeavingOperation(owner: string, id: string, kind: OperationKind, input: unknown, steps: OperationStep[] | ((receipt: OperationReceipt) => OperationStep[]), context?: unknown): Promise<OperationReceipt> {
     const digest = operationDigest(input), old = await inspectWeavingOperation(owner, id);
     if (old && (old.kind !== kind || old.inputDigest !== digest))
         throw new WeavingError('同一操作識別的內容不同，請保留原操作或重新確認新內容', 409);
@@ -95,12 +105,22 @@ export async function runWeavingOperation(owner: string, id: string, kind: Opera
         if (previous?.state === 'confirmed')
             return previous;
         const now = new Date().toISOString();
-        const receipt: OperationReceipt = previous ?? { schemaVersion: 1, owner, operationId: id, kind, inputDigest: digest, createdAt: now, updatedAt: now, steps: {}, result: {}, state: 'pending' };
+        const receipt: OperationReceipt = previous ?? { schemaVersion: 1, owner, operationId: id, kind, inputDigest: digest, createdAt: now, updatedAt: now, steps: {}, result: {}, state: 'pending', ...(context === undefined ? {} : {context}) };
         await persist(receipt);
-        for (const step of steps) {
+        let planned: OperationStep[];
+        try { planned = typeof steps === 'function' ? steps(receipt) : steps; }
+        catch (error) { await recordFailure(receipt, error); throw error; }
+        for (const step of planned) {
             if (receipt.steps[step.key] === 'confirmed')
                 continue;
-            const found = await step.findConfirmed(receipt);
+            let found: EntityRef | null;
+            try { found = await step.findConfirmed(receipt); }
+            catch (error) {
+                // Pre-dispatch validation can safely release an untouched operation.
+                // Never discard confirmed partial work or an uncertain dispatched step.
+                await recordFailure(receipt, error);
+                throw error;
+            }
             if (found) {
                 receipt.result[step.key] = found;
                 receipt.steps[step.key] = 'confirmed';
@@ -124,9 +144,7 @@ export async function runWeavingOperation(owner: string, id: string, kind: Opera
             catch (e) {
                 const unknown = outcome.sent - sent !== outcome.rejected - rejected;
                 receipt.steps[step.key] = unknown ? 'unresolved' : 'rejected';
-                receipt.state = unknown ? 'unresolved' : 'rejected';
-                receipt.error = e instanceof Error ? e.message : String(e);
-                await persist(receipt);
+                await recordFailure(receipt, e);
                 throw e;
             }
         }

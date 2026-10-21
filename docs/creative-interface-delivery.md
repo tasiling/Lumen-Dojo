@@ -1,6 +1,6 @@
 # 織光堂與聊解室：第一包交付
 
-2026-10-20。分支 `codex/weaving-liaojie-creation-v2`；本機驗證基準 `8523e2c`（含獨立審查後修正），已整合 master `6dd62be`（含 PR99 導覽／週盤配色與最新行事曆主題），保留 PR98 行事曆修正。GitHub 實作 checkpoint `3fd5d03c27a15f91eefb5cd0e46ffd5b05c5f597`，PR [#100](https://github.com/tasiling/Lumen-Dojo/pull/100)。這是待審閱版本，尚未合併或部署。PR89 閱讀／知識整合未加入本包。
+2026-10-20。分支 `codex/weaving-liaojie-creation-v2`；本機驗證基準 `8523e2c`（含獨立審查後修正），已整合 master `6dd62be`（含 PR99 導覽／週盤配色與最新行事曆主題），保留 PR98 行事曆修正。GitHub 實作 checkpoint `3fd5d03c27a15f91eefb5cd0e46ffd5b05c5f597`，PR [#100](https://github.com/tasiling/Lumen-Dojo/pull/100)。PR100 已於使用者授權後合併（680aca2）；Railway 部署確認遭工具取消，目前仍待套用，尚未上線。PR89 閱讀／知識整合未加入本包。
 
 ## 可操作的結果
 

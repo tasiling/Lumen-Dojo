@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useRef,useState } from 'react';
 import type { WeavingShuttle, WeavingWork } from '@/lib/dojo/weavingShuttle';
 import { workflowFromLegacy, type TextWorkflow, type WorkflowSelection, type WorkflowStep } from '@/lib/dojo/weavingWorkflow/model';
@@ -38,6 +39,9 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
 }) {
     const [step, setStep] = useState<WorkflowStep>((work.textWorkflow ?? workflowFromLegacy(work)).currentStep);
     const [justCompleted, setJustCompleted] = useState(false);
+    const [publicationConfirmed,setPublicationConfirmed]=useState(false);
+    function chooseCompletion(id:string|null){setCompletionId(id);setPublicationConfirmed(false);}
+    const locatedCompletionApplied=useRef(false);
     const conversionDialog=useRef<HTMLDialogElement>(null);const[conversion,setConversion]=useState<TextWorkflow|null>(null),[conversionTitle,setConversionTitle]=useState('');
     const leave = useLeave(), [error, setError] = useState(''), [notice, setNotice] = useState(''), [pastePreview, setPastePreview] = useState<string | null>(null), [preview, setPreview] = useState<{
         work: WeavingWork;
@@ -77,6 +81,10 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
             completions: CompletionVersion[];
         }>('/api/dojo/weaving-works?id=' + encodeURIComponent(work.id));
         setVersions(r.completions ?? []);
+        if(!locatedCompletionApplied.current){
+            const wanted=new URLSearchParams(location.search).get('completion');
+            if(wanted){locatedCompletionApplied.current=true;if(r.completions?.some(v=>v.id===wanted)){setCompletionId(wanted);setStep('review');}else setNotice('指定的成品版本已不可用；其他版本仍可查看。');}
+        }
     }
     catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -110,7 +118,7 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
         }>('/api/dojo/weaving-works', 'POST', { action: 'complete', workId: work.id, expectedRevision: preview.work.revision, previewDigest: preview.digest });
         draft.applyServer(ticket,buffer(r.work));
         onSaved(r.work);
-        setCompletionId(r.completion.id);
+        chooseCompletion(r.completion.id);
         setPreview(null);
         setNotice('已保存固定成品版本，後續編輯不會改動這個版本。');
         setJustCompleted(true);
@@ -130,7 +138,7 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
             project: {
                 id: string;
             };
-        }>('/api/dojo/liaojie-projects', 'POST', { weavingWorkId: work.id, weavingShuttleId: shuttle.id, ...(completionId ? { completionVersionId: completionId } : {}), createNewVersion: newPublication });
+        }>('/api/dojo/liaojie-projects', 'POST', { weavingWorkId: work.id, weavingShuttleId: shuttle.id, ...(completionId ? { completionVersionId: completionId } : {}), createNewVersion: newPublication, publicationConfirmed });
         leave.requestLeave(() => { location.href = `/liaojie/workbench?id=${r.project.id}`; });
     }
     catch (e) {
@@ -167,7 +175,7 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
  {step === 'concept' && <><h3>先決定這次要說什麼</h3><p>這件作品的核心觀點：{core}</p><label htmlFor="work-audience">想讓誰理解？</label><input id="work-audience" value={w.audience} onChange={e => workflow({ audience: e.target.value })}/><p className="wf-note">例如：也總覺得自己做得不夠、想練習休息的人。</p><label htmlFor="work-outline">構思／段落方向</label><textarea id="work-outline" rows={6} value={w.outline} onChange={e => workflow({ outline: e.target.value })}/><h3>文字形式</h3><p className="wf-note">換一種形式會先預覽，確認後另建作品，原稿仍保留。</p>{w.templateKey==='plurk'&&<><label htmlFor="plurk-output-kind">交付種類</label><select id="plurk-output-kind" value={w.outputKind} onChange={e=>workflow({outputKind:e.target.value as TextWorkflow['outputKind']})}><option value="post">單篇短貼文</option><option value="thread">有順序的串文</option></select></>}<div className="wf-templates">{Object.entries(TEXT_TEMPLATES).map(([key, t]) => <button key={key} aria-pressed={w.templateKey === key} onClick={() => template(key)}><b>{t.label}</b><p>{t.note}</p></button>)}</div></>}
  {step === 'production' && <><h3>{TEXT_TEMPLATES[w.templateKey]?.label ?? '保留舊稿／自由文字'}</h3><p className="wf-note">{TEXT_TEMPLATES[w.templateKey]?.note}</p><TextBlockEditor blocks={w.blocks} onChange={blocks => workflow({ blocks })}/><details className="wf-ai-paste"><summary>貼回 AI 或外部工具的文字</summary><p className="wf-note">確認套用會替換目前段落。想保留逐頁結構時，可把文字分別填回上方各段。</p><label htmlFor="paste-candidate">外部工具结果貼回（候選）</label><textarea id="paste-candidate" rows={6} value={value.pasteCandidate} onChange={e => { edit({ pasteCandidate: e.target.value }); setPastePreview(null); }}/><button disabled={!value.pasteCandidate.trim()} onClick={() => setPastePreview(value.pasteCandidate)}>預覽貼回候選</button>{pastePreview !== null && <div><div className="full-text-preview">{pastePreview}</div><button disabled={pastePreview !== value.pasteCandidate} onClick={() => { edit({ textWorkflow: { ...w, blocks: [{ id: crypto.randomUUID(), role: '確認貼回的文字', text: pastePreview, mediaNote: '' }] }, pasteCandidate: '' }); setPastePreview(null); }}>確認套用貼回文字</button></div>}</details></>}
  {step === 'review' && <><h3>確認交付內容</h3><div className="full-text-preview">{serializeWorkflow(w)}</div><label htmlFor="output-url">成品連結（選填）</label><input id="output-url" type="url" value={value.outputUrl} onChange={e => edit({ outputUrl: e.target.value })}/><p className="wf-note">變更文字、来源或連結後，需再次預覽。</p></>}
- {step === 'handoff' && <><h3>手動交接已確認的成品</h3><p>選擇下方固定版本，再把內容送往聊解室。</p><label htmlFor="handoff-version">交接版本</label><select id="handoff-version" value={completionId ?? ''} onChange={e => setCompletionId(e.target.value || null)}><option value="">舊版完成快照（若有）</option>{versions.map(v => <option key={v.id} value={v.id}>{v.title} · {new Date(v.createdAt).toLocaleString('zh-TW')}</option>)}</select><details className="wf-version-options"><summary>已有發布企劃時的版本選項</summary><label><input type="checkbox" style={{ width: 'auto' }} checked={newPublication} onChange={e => setNewPublication(e.target.checked)}/> 這件作品已有企劃時，確認為不同成品建立新的發布版本</label></details>{!completionId && !['completed','sent_to_liaojie'].includes(value.status) && <div className="wf-blocker"><p>還沒有定稿成品。先到「預覽定稿」確認一個版本，才能交接。</p><button onClick={() => selectStep('review')}>前往預覽定稿</button></div>}{draft.dirty && <p className="wf-note">有未保存的修改；請先按下方「保存進度」，再交接成品。</p>}</>}
+ {step === 'handoff' && <><h3>手動交接已確認的成品</h3><p>選擇下方固定版本，再把內容送往聊解室。</p><label htmlFor="handoff-version">交接版本</label><select id="handoff-version" value={completionId ?? ''} onChange={e => chooseCompletion(e.target.value || null)}><option value="">舊版完成快照（若有）</option>{versions.map(v => <option key={v.id} value={v.id}>{v.title} · {new Date(v.createdAt).toLocaleString('zh-TW')}</option>)}</select><label className="creative-publication-confirmation"><input type="checkbox" checked={publicationConfirmed} onChange={e=>setPublicationConfirmed(e.target.checked)}/>我已確認這個成品的人物、私密細節與引用可以送往發布準備</label><p className="wf-note">只確認這個成品的內部交接，不會自動發表。包含「不公開」來源時會停止交接；可到<Link href="/weaving/sources">來源與公開設定</Link>核對。</p><details className="wf-version-options"><summary>已有發布企劃時的版本選項</summary><label><input type="checkbox" style={{ width: 'auto' }} checked={newPublication} onChange={e => setNewPublication(e.target.checked)}/> 這件作品已有企劃時，確認為不同成品建立新的發布版本</label></details>{!completionId && !['completed','sent_to_liaojie'].includes(value.status) && <div className="wf-blocker"><p>還沒有定稿成品。先到「預覽定稿」確認一個版本，才能交接。</p><button onClick={() => selectStep('review')}>前往預覽定稿</button></div>}{draft.dirty && <p className="wf-note">有未保存的修改；請先按下方「保存進度」，再交接成品。</p>}</>}
  <details className="wf-tools"><summary>請 AI 協助這個步驟</summary><p className="wf-note">先保存選材，再複製指令到慣用的 AI 對話。完成後回到這裡預覽並決定是否套用。</p><div className="wf-actions"><button onClick={() => void copy()}>複製此步驟製作指令</button>{tool?.href && <a href={tool.href} target="_blank" rel="noreferrer">開啟 {tool.label} ↗</a>}</div></details>
  <label htmlFor="next-action">這件作品的下一步</label><input id="next-action" placeholder="例如：補一個生活例子" value={value.nextAction} onChange={e => edit({ nextAction: e.target.value })}/>
  </section>
@@ -177,8 +185,8 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
  {step === 'concept' && <button className="primary" disabled={acting || draft.busy} onClick={() => void advance('production')}>保存並前往製作</button>}
  {step === 'production' && <button className="primary" disabled={acting || draft.busy} onClick={() => void advance('review')}>保存並前往確認</button>}
  {step === 'review' && (preview ? <button className="primary" disabled={acting || draft.busy || draft.dirty || preview.sequence !== draft.state.editSequence} onClick={() => void complete()}>確認這件作品已織成</button> : justCompleted && !draft.dirty ? <button className="primary" onClick={() => selectStep('handoff')}>準備發布這個成品</button> : <button className="primary" disabled={acting || draft.busy} onClick={() => void previewSaved()}>保存並預覽目前版本</button>)}
- {step === 'handoff' && <button className="primary" disabled={acting || draft.busy || draft.dirty || (!completionId && !['completed', 'sent_to_liaojie'].includes(value.status))} onClick={() => void handoff()}>手動送往聊解室</button>}
+ {step === 'handoff' && <button className="primary" disabled={!publicationConfirmed || acting || draft.busy || draft.dirty || (!completionId && !['completed', 'sent_to_liaojie'].includes(value.status))} onClick={() => void handoff()}>手動送往聊解室</button>}
  <button disabled={draft.busy || acting} onClick={() => void saveStep()}>保存進度</button></div></div>
- {(step === 'review' || step === 'handoff') && <CompletionHistory versions={versions} legacy={work.finalSnapshot} onSelect={id => { setCompletionId(id); selectStep('handoff'); }}/>}
+ {(step === 'review' || step === 'handoff') && <><CompletionHistory versions={versions} legacy={work.finalSnapshot} onSelect={id => { chooseCompletion(id); selectStep('handoff'); }}/>{completionId&&<Link href={`/weaving/long-video?completionId=${encodeURIComponent(completionId)}`}>以選定的固定成品製作長影片</Link>}{completionId&&<Link href={`/weaving/comic?completionId=${encodeURIComponent(completionId)}`}>以選定的固定成品製作短漫</Link>}{completionId&&<Link href={`/weaving/illustrated?completionId=${encodeURIComponent(completionId)}`}>以選定的固定成品製作圖文</Link>}{completionId&&<Link href={`/weaving/podcast?completionId=${encodeURIComponent(completionId)}`}>以選定的固定成品製作Podcast</Link>}{completionId&&<Link href={`/weaving/short-video?completionId=${encodeURIComponent(completionId)}`}>以選定的固定成品製作短片</Link>}</>}
  </>;
 }

@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
+import {fixture} from './weaving-fixture.mjs';
+assert(existsSync('lib/dojo/creativeProposals/store.ts'),'persistent proposals must exist');
+const sources=new Map(),reads=[];const resolvePolicySource=async ref=>{reads.push(ref.sourceId);return sources.get(ref.sourceId)??null;};
+const f=await fixture({'../creativeSources/resolver':{resolvePolicySource},'./resolver':{resolvePolicySource}});
+try{
+ const store=f.load('lib/dojo/creativeProposals/store.ts'),owner=f.load('lib/dojo/learningFoundation/store.ts').learningOwner;
+ const policyPrefix=f.load('lib/dojo/creativeSources/model.ts').SOURCE_POLICY_PREFIX;
+ const add=(i,discovery='allow')=>{const id=`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`,ref={sourceType:'reading_insight',sourceId:id};sources.set(id,{ref,label:`隔離洞察 ${i}`,href:'/reading/cards?card='+id,text:`第 ${i} 個生活觀察：休息也值得被理解。`,version:'v1',contentKind:'insight'});f.records.set(`policy-${i}`,{title:policyPrefix+i,value:{schema:1,owner,ref,discovery,publication:'ask',revision:1,createdAt:'now',updatedAt:'now'}});};
+ await store.scan({operationId:'proposal-empty-scan'});assert.equal(reads.length,0,'no permission means no content reads');
+ for(let i=1;i<=12;i++)add(i);add(90,'private');add(91,'ask');
+ await store.scan({operationId:'proposal-first-scan'});let snap=await store.snapshot();assert.equal(snap.proposals.length,10);assert.equal(reads.length,10);
+ await store.scan({operationId:'proposal-next-scan'});snap=await store.snapshot();assert.equal(snap.proposals.length,12);assert(!reads.some(id=>id.endsWith('90')||id.endsWith('91')));
+ const p=snap.proposals[0];await store.patchProposal({id:p.id,expectedRevision:p.revision,operationId:'proposal-skip-one',skip:true});
+ const repeated=await store.scan({operationId:'proposal-again-scan'});assert.equal((await store.snapshot()).proposals.length,12,'skipped/current versions do not regenerate');assert.equal(repeated.created,0,'new candidate count excludes reused proposals');
+ const active=(await store.snapshot()).proposals.find(p=>p.status==='pending');
+ await assert.rejects(()=>store.patchProposal({id:active.id,expectedRevision:0,operationId:'proposal-stale-edit',patch:{title:'改題',angle:'角度',format:'text',trial:'試寫'}}),e=>e.status===409);
+ const edited=await store.patchProposal({id:active.id,expectedRevision:1,operationId:'proposal-valid-edit',patch:{title:'自己的標題',angle:'我想說的觀點',format:'text',trial:'本人修改後的文字'}});
+ const policy=[...f.records.values()].find(r=>r.value?.ref?.sourceId===edited.source.ref.sourceId);policy.value.discovery='private';reads.length=0;
+ await assert.rejects(()=>store.acceptProposal({id:edited.id,expectedRevision:2,operationId:'proposal-denied-accept'}),e=>e.status===403);assert.equal(reads.length,0,'revoked source never read for acceptance');policy.value.discovery='allow';
+ const original=sources.get(edited.source.ref.sourceId);sources.set(edited.source.ref.sourceId,{...original,version:'v2'});
+ await assert.rejects(()=>store.acceptProposal({id:edited.id,expectedRevision:2,operationId:'proposal-changed-accept'}),e=>e.status===409);sources.set(edited.source.ref.sourceId,original);
+ const pair=await store.acceptProposal({id:edited.id,expectedRevision:2,operationId:'proposal-good-accept'});
+ const work=await f.load('lib/dojo/weavingWorkflow/store.ts').readWork(pair.workId);assert.equal(work.draftText,'本人修改後的文字');assert.equal(work.textWorkflow.sourceSelections[0].sourceType,'reading_insight');assert.equal(work.textWorkflow.sourceSelections[0].contentKind,'insight');assert.equal(work.status,'drafting');
+ const count=f.records.size;assert.deepEqual(await store.acceptProposal({id:edited.id,expectedRevision:2,operationId:'proposal-other-accept'}),pair);assert.equal(f.records.size,count);
+ const workflow=f.load('lib/dojo/weavingWorkflow/store.ts'),completed=await workflow.completeWork({workId:work.id,operationId:'proposal-to-completion',expectedRevision:work.revision,previewDigest:f.load('lib/dojo/weavingWorkflow/completions.ts').completionDigest(work)});
+ assert.equal(completed.completion.sourceSelections[0].selectedText,original.text);
+ const publication=await workflow.handoffWork({weavingWorkId:work.id,completionVersionId:completed.completion.id,operationId:'proposal-to-handoff',publicationConfirmed:true});assert.equal(publication.sourceDraftSnapshot,'本人修改後的文字');
+ // Definite failure after pair creation: different operation retries must reuse both marked records.
+ const partial=(await store.snapshot()).proposals.find(p=>p.status==='pending');let fail=true;const update=f.mutations.updateKnowledgeEntry;
+ f.mutations.updateKnowledgeEntry=async(id,row)=>{if(id===partial.id&&fail){fail=false;throw Error('isolated proposal update failure');}return update(id,row);};
+ await assert.rejects(()=>store.acceptProposal({id:partial.id,expectedRevision:1,operationId:'proposal-partial-accept'}));const afterPartial=f.records.size;
+ await store.acceptProposal({id:partial.id,expectedRevision:1,operationId:'proposal-partial-retry'});assert.equal(f.records.size,afterPartial);
+ assert.equal((await store.runDue(new Date('2026-10-21T03:00:00Z'))).skipped,true);
+ let settings=(await store.snapshot()).settings;
+ await store.saveSettings({operationId:'proposal-set-cadence',expectedRevision:settings.revision,settings:{audience:'',sourceTypes:['reading_insight'],automaticEnabled:true,cadenceHours:4}});
+ settings=(await store.snapshot()).settings;const time=new Date(settings.lastScanAt);assert.equal((await store.runDue(new Date(time.getTime()+3600000))).skipped,true);
+ await store.runDue(new Date(time.getTime()+5*3600000));const afterDue=f.records.size;await store.runDue(new Date(time.getTime()+5*3600000));assert.equal(f.records.size,afterDue);
+ const h=f.load('app/api/dojo/creative-proposals/route.ts');const before=f.writes();assert.equal((await h.GET(f.req('GET','/api/dojo/creative-proposals',null,false))).status,401);assert.equal(f.writes(),before);
+ const response=await h.GET(f.req('GET','/api/dojo/creative-proposals'));assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal(f.writes(),before);
+ const req=f.req('POST','/api/dojo/creative-proposals',{action:'scan',operationId:'proposal-csrf-scan'});req.headers.set('origin','https://foreign.invalid');assert.equal((await h.POST(req)).status,403);
+ console.log('PASS real proposals store/API: permission before reads, 10-source rotation, skipped dedupe, edits/conflicts, revoke/version protection, immutable accepted draft, partial retry once, due cadence, owner/origin/read-only');
+}finally{await f.close();}

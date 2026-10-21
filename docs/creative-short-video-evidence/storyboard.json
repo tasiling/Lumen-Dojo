@@ -1,0 +1,62 @@
+{
+  "title": "雨停以後",
+  "angle": "允許生活有慢慢生長的時候",
+  "style": "mixed",
+  "rawTranscript": "隔離測試音訊為提示音，沒有語音逐字稿。",
+  "voice": {
+    "assetId": "51f12adc85634e958929e76f30df7f1238d346a794fe17ccecb66519e6dcf9ba",
+    "kind": "test",
+    "sourceNote": "本機生成非語音提示音，非Crystal本人",
+    "publicConfirmed": true
+  },
+  "scenes": [
+    {
+      "id": "scene-0",
+      "title": "第1鏡",
+      "narration": "休息，也在生長。",
+      "caption": "休息，也在生長。",
+      "duration": 4,
+      "motion": "drift",
+      "image": {
+        "assetId": "cbd92b7d9828b45380d4a02d9a304ffa401c6095134a7a77f23179f0a7ea8757",
+        "kind": "generated",
+        "tool": "imagegen",
+        "prompt": "承接第五包雨後窗邊小芽水彩配圖",
+        "sourceNote": "虛構隔離配圖，非本人日記",
+        "publicConfirmed": true
+      }
+    },
+    {
+      "id": "scene-1",
+      "title": "第2鏡",
+      "narration": "有些感受，只在安靜下來以後。",
+      "caption": "有些感受，只在安靜下來以後。",
+      "duration": 4,
+      "motion": "paper",
+      "image": {
+        "assetId": "cbd92b7d9828b45380d4a02d9a304ffa401c6095134a7a77f23179f0a7ea8757",
+        "kind": "generated",
+        "tool": "imagegen",
+        "prompt": "承接第五包雨後窗邊小芽水彩配圖",
+        "sourceNote": "虛構隔離配圖，非本人日記",
+        "publicConfirmed": true
+      }
+    },
+    {
+      "id": "scene-2",
+      "title": "第3鏡",
+      "narration": "今天，先照顧一件小事。",
+      "caption": "今天，先照顧一件小事。",
+      "duration": 4,
+      "motion": "drift",
+      "image": {
+        "assetId": "cbd92b7d9828b45380d4a02d9a304ffa401c6095134a7a77f23179f0a7ea8757",
+        "kind": "generated",
+        "tool": "imagegen",
+        "prompt": "承接第五包雨後窗邊小芽水彩配圖",
+        "sourceNote": "虛構隔離配圖，非本人日記",
+        "publicConfirmed": true
+      }
+    }
+  ]
+}

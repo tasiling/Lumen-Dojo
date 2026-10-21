@@ -1,0 +1,96 @@
+{
+  "title": "雲豆的四章練習",
+  "angle": "先生活，再慢慢生長",
+  "style": "mixed",
+  "rawTranscript": "隔離非語音測試，不聲稱已錄製這份旁白。",
+  "scenes": [
+    {
+      "id": "chapter-1",
+      "title": "等待，沒有進度的時候",
+      "narration": "雲豆每天等待小芽，卻看不見任何變化。",
+      "caption": "今天，土裡還沒有動靜。",
+      "duration": 60,
+      "motion": "still",
+      "image": {
+        "assetId": "be3d6d9669094c1ab4006617fab6b9e6d4a332c786555d820ced396a6b5aaf7e",
+        "kind": "generated",
+        "tool": "內建image_gen",
+        "prompt": "原創雲豆水彩蠟筆，完整生成與局部修改提示見creative-comic-evidence/prompts.json",
+        "sourceNote": "沿用已實際生成的虛構雲豆圖，非本人私人生活",
+        "publicConfirmed": true
+      },
+      "voice": {
+        "assetId": "165b167905aee69bf23857d20b67b7460f3d55cb4f20f0441d2c1ce8a872308c",
+        "kind": "test",
+        "sourceNote": "非語音隔離220Hz提示音，非本人錄音；每章原音60秒",
+        "publicConfirmed": true
+      }
+    },
+    {
+      "id": "chapter-2",
+      "title": "觀察，想把一切弄清楚",
+      "narration": "牠拿起放大鏡，想找到生長的線索。",
+      "caption": "再仔細看，也不會長得更快。",
+      "duration": 60,
+      "motion": "still",
+      "image": {
+        "assetId": "0f5419ceaa8ea84c8d7c2be591d02b6779686313fa44888bf02ba3bc161f1360",
+        "kind": "generated",
+        "tool": "內建image_gen",
+        "prompt": "原創雲豆水彩蠟筆，完整生成與局部修改提示見creative-comic-evidence/prompts.json",
+        "sourceNote": "沿用已實際生成的虛構雲豆圖，非本人私人生活",
+        "publicConfirmed": true
+      },
+      "voice": {
+        "assetId": "165b167905aee69bf23857d20b67b7460f3d55cb4f20f0441d2c1ce8a872308c",
+        "kind": "test",
+        "sourceNote": "非語音隔離220Hz提示音，非本人錄音；每章原音60秒",
+        "publicConfirmed": true
+      }
+    },
+    {
+      "id": "chapter-3",
+      "title": "休息，先照顧此刻生活",
+      "narration": "雨落下時，牠決定先喝杯茶，照顧自己。",
+      "caption": "先喝杯茶，讓生活繼續。",
+      "duration": 60,
+      "motion": "still",
+      "image": {
+        "assetId": "957a5800dcc29cda52745298d164ee7a68449a13e7f99b35dd8472c62ab726d2",
+        "kind": "generated",
+        "tool": "內建image_gen",
+        "prompt": "原創雲豆水彩蠟筆，完整生成與局部修改提示見creative-comic-evidence/prompts.json",
+        "sourceNote": "沿用已實際生成的虛構雲豆圖，非本人私人生活",
+        "publicConfirmed": true
+      },
+      "voice": {
+        "assetId": "165b167905aee69bf23857d20b67b7460f3d55cb4f20f0441d2c1ce8a872308c",
+        "kind": "test",
+        "sourceNote": "非語音隔離220Hz提示音，非本人錄音；每章原音60秒",
+        "publicConfirmed": true
+      }
+    },
+    {
+      "id": "chapter-4",
+      "title": "發現，生長有自己的時間",
+      "narration": "晴天，小芽終於出現。這個故事不是教人停止行動，而是替生活保留自己的時間。",
+      "caption": "原來，你有自己的時間。",
+      "duration": 60,
+      "motion": "still",
+      "image": {
+        "assetId": "9c08064ca57f8741cf768165b16425a0ab55b9b31dfc4e3d5673f8b4ca3882c1",
+        "kind": "generated",
+        "tool": "內建image_gen",
+        "prompt": "原創雲豆水彩蠟筆，完整生成與局部修改提示見creative-comic-evidence/prompts.json",
+        "sourceNote": "沿用已實際生成的虛構雲豆圖，非本人私人生活",
+        "publicConfirmed": true
+      },
+      "voice": {
+        "assetId": "165b167905aee69bf23857d20b67b7460f3d55cb4f20f0441d2c1ce8a872308c",
+        "kind": "test",
+        "sourceNote": "非語音隔離220Hz提示音，非本人錄音；每章原音60秒",
+        "publicConfirmed": true
+      }
+    }
+  ]
+}

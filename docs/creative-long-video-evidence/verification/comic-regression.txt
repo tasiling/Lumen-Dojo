@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:comic
+> node scripts/test-comic.mjs && node scripts/test-comic-api.mjs
+
+PASS comic strict limits/refs/confirmed panel and character guard/local replacement/sheets/overflow/escaped SVG
+PASS comic real API owner/dedupe/immutable/locked/stale/replay/partial withdrawal/no writes/unknown/handoff/fixed original

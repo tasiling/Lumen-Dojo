@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:liaojie-text
+> node scripts/test-liaojie-text-domain.mjs && node scripts/test-liaojie-text-api.mjs
+
+PASS single-platform adaptation, per-platform bounds/long-source rejection, protected patch, immutable history pointer and status validation
+PASS actual API single-platform create/replay/deduplicate/save/stale/immutable restore/status/list

@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:short-video
+> node scripts/test-short-video.mjs && node scripts/test-short-video-api.mjs
+
+PASS short video domain, escaped deterministic frames/SRT, real WAV probe, durable media and limits
+PASS short video real API owner/version/replay/stale/partial revocation/output/handoff/Range/original

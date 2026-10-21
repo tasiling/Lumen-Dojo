@@ -1,0 +1,38 @@
+{
+  "status": "completed",
+  "output": "docs/creative-podcast-evidence/edited.wav",
+  "dry_run": true,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -ss 1.000000 -i docs/creative-podcast-evidence/original.wav -t 10.000000 -af atrim=end=10.000000,asetpts=PTS-STARTPTS -sn -dn -vn -c:a pcm_s16le -avoid_negative_ts make_zero docs/creative-podcast-evidence/edited.wav"
+  ],
+  "verified": false,
+  "verification": [],
+  "expected_duration": 10.0,
+  "duration_error_ms": null,
+  "precision": "sample",
+  "reencoded": true,
+  "dropped_non_av_streams": false,
+  "requested_start": 1.0,
+  "requested_end": 11.0,
+  "requested_segments": null,
+  "requested_duration": 10.0,
+  "output_duration": 0.0,
+  "duration_delta_seconds": null,
+  "mode": "accurate",
+  "keyframe_snapped": false,
+  "start_snapped": false,
+  "reencode_reason": [
+    "requested"
+  ],
+  "least_exact_precision": "sample",
+  "segment_precision": null,
+  "edit_list": false,
+  "stored_preroll_seconds": null,
+  "av_start_skew_seconds": null,
+  "join_check": null,
+  "segment_end_snap_seconds": null,
+  "notes": [],
+  "nearest_keyframes": null,
+  "lossless_alternative": null,
+  "snap": null
+}

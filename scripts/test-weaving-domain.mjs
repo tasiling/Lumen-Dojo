@@ -23,7 +23,7 @@ check('Threads persists independently while legacy and unknown platform behavior
   const source={weavingShuttleId:'s',weavingWorkId:'w',sourceCompletionVersionId:'completion-a',sourceDraftSnapshot:'固定原稿'};
   for(const platform of ['threads','plurk','instagram_post','instagram_story','podcast','video','other']) {
     const project=normalizeLiaojieProject({...source,platform},{id:'p'});
-    assert.equal(project.platform,platform);assert.equal(project.sourceDraftSnapshot,'固定原稿');assert.equal(project.sourceCompletionVersionId,'completion-a');
+    assert.equal(project.platform,platform);assert.equal(project.sourceDraftSnapshot,'固定原稿');assert.equal(project.sourceCompletionVersionId,'completion-a');assert.equal(project.sourceFormat,'legacy');
   }
   assert.equal(normalizeLiaojieProject({...source,platform:'unknown'},{id:'p'}).platform,'instagram_post');
 });

@@ -1,0 +1,17 @@
+# Long video isolated production evidence
+
+This is fictional Cloud Bean material and explicit non-speech test tone, not Crystal's private records or recorded narration.
+
+- `final.mp4`: actual 240.0-second output, four 60-second chapters, H264/AAC 1280×720/24fps; final-probe, final-chapters, final-check verify actual bytes.
+- `chapter-1.png` through `chapter-4.png`: real product PNG downloads from the same React/SVG preview, with loaded Noto Sans TC text painted into the export.
+- `voice.wav`: original generated non-speech 220Hz tone, 60 seconds. Its SHA is in trial-draft; reused explicitly in each chapter. Not a synthetic human voice.
+- `trial-draft.json`, `trial-inputs.json`: chapter plan and original source references. Actual AI images and original prompts remain in `../creative-comic-evidence`; third image uses its genuinely edited version.
+- `captions.srt`, `chapters.json`, `script.txt`: real UI downloads; HTML download was also verified, its hash is retained in html-verification.json. The HTML contains reproducible embedded originals and relative original-audio filenames, and is not represented as a rendered long animation.
+- `source-package-manifest.json`, `source-package.gz.part-*`: exact final browser JSON, restore with `node scripts/restore-long-video-evidence.mjs`; SHA/length checked. Product export is still one JSON. Its fictional fixture completion/source IDs intentionally cannot be imported into another original.
+- `*-plan.json`, `*-result.json`: FFmpeg skill dry-run commands and actual stages. Original clip generation commands, corrected transition-none join, chapter metadata, final check and decoded contact sheet are preserved. Run `node scripts/long-video-trial.mjs --prepare` then the UI frames-only test to regenerate frames; run `node scripts/long-video-trial.mjs` to create a fresh temporary render. `FFMPEG_SKILL_DIR` can point to an installed copy of the same skill. Existing outputs are not overwritten by the tool without explicit consent; an optional `LONG_VIDEO_TRIAL_WORK` reuses that run's already-generated chapter clips for iteration, and also refuses collisions.
+- `initial-fade-*` and trial-adjustments.json: first trial was 238.5 seconds because of default 0.5-second crossfades. Changed to transition none and actually rendered again. Final actual duration and all chapter starts were separately asserted, not inferred from script wording or maximum-length check.
+- `contact.png`: six actual decoded frames, author inspected. Its timestamp labels belong to the contact-sheet tool and are relative to its seek; authoritative container chapter times are final-chapters.json.
+- `workspace-{320,375,390,430,1024}.png`, `empty-390.png`: final production same-component screenshots. Each width tests chapter selection and layout. Main workflow is390px then1024px; not five complete end-to-end repetitions.
+- `verification/`: actual passing domain/API, dev/production, build/tsc/lint and relevant regression logs. Two lint warnings are pre-existing. No live Notion data, social accounts, subscriptions, formal deployment or billing were changed.
+
+Final check has one warning: no separate switchable subtitle stream. Visible chapter subtitles are burnt into each frame; SRT remains available for a later external mux. Loudness was deliberately skipped for the test tone. This fixture proves duration, chapter/image/source traceability, export/return and handoff, not completed spoken narration, final artistic quality, all maximum-size workloads, all device codecs or iPhone acceptance.

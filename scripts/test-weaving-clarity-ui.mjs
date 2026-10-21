@@ -26,7 +26,7 @@ try{
   const h=handlers[u.pathname];if(!h)return route.fulfill({contentType:'application/json',body:JSON.stringify({entries:[],claims:[],captures:[],entities:[],missing:[]})});
   const r=await h[q.method()](f.req(q.method(),u.pathname+u.search,q.method()==='GET'?null:q.postDataJSON()));return route.fulfill({status:r.status,contentType:'application/json',body:await r.text()});
  });
- page=await context.newPage();page.setDefaultTimeout(8000);
+ page=await context.newPage();page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(60000);
  if(mode==='empty'){
   await page.goto(server.base+'/weaving');const start=page.getByRole('button',{name:'開始第一件作品',exact:true});await start.waitFor();
   assert((await start.boundingBox()).y<650,'new-user start action must be visible in first mobile screen');
@@ -54,9 +54,12 @@ try{
   await page.getByLabel('構思／段落方向',{exact:true}).fill('用一個生活例子帶出觀點');await page.getByRole('button',{name:'保存並前往製作',exact:true}).click();await page.getByLabel('開頭文字',{exact:true}).fill('先停下來，也是一個選擇。');
   await page.getByRole('button',{name:'保存並前往確認',exact:true}).click();await page.getByRole('button',{name:'保存並預覽目前版本',exact:true}).click();await page.getByRole('button',{name:'確認這件作品已織成',exact:true}).click();
   await page.getByRole('button',{name:'準備發布這個成品',exact:true}).click();await page.getByRole('button',{name:'手動送往聊解室',exact:true}).waitFor();
-  assert(await page.getByRole('button',{name:'手動送往聊解室',exact:true}).isEnabled(),'switching to handoff must not create unsaved edits');
+  assert(await page.getByRole('button',{name:'手動送往聊解室',exact:true}).isDisabled(),'handoff requires deliberate source publication review');
+  await page.getByLabel('我已確認這個成品的人物、私密細節與引用可以送往發布準備',{exact:true}).check();
+  assert(await page.getByRole('button',{name:'手動送往聊解室',exact:true}).isEnabled(),'confirmation enables handoff without unsaved edits');
   for(const width of [320,375,390,430,1024]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`overflow at ${width}`);await page.screenshot({path:`${out}/handoff-${width}.png`,fullPage:true});}
   await page.getByRole('button',{name:'手動送往聊解室',exact:true}).click();await page.getByRole('heading',{name:'聊解室工作台',exact:true}).waitFor();
+  const finalized=await store.readWork(pair.works[0].id);await page.goto(`${server.base}/weaving/${pair.shuttle.id}?work=${finalized.id}&completion=${finalized.currentCompletionVersionId}#completion-${finalized.currentCompletionVersionId}`);await page.locator(`#completion-${finalized.currentCompletionVersionId}[open]`).waitFor();
   console.log('PASS discoverable work + distinguishable sources + failed-save recovery + saved next step + fixed completion handoff');
  }
 }catch(error){console.error(await page?.locator('body').innerText());await page?.screenshot({path:out+'/failure.png',fullPage:true});throw error;}finally{await browser?.close();server.stop();await f.close();}

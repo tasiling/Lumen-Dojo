@@ -16,10 +16,10 @@ try {
  assert.equal((await versions.readCompletion(a.completion.id)).text,'成品 A');assert.notEqual(a.completion.id,b.completion.id);
  const before=f.writes();assert.equal((await versions.listCompletions(work.id)).length,2);assert.equal(f.writes(),before);
  const liaojie=f.load('app/api/dojo/liaojie-projects/route.ts');assert.equal((await liaojie.GET(f.req('GET','/api/dojo/liaojie-projects',null,false))).status,401);
- const handoff={operationId:'handoff-version-a',weavingWorkId:work.id,completionVersionId:a.completion.id};const p=await store.handoffWork(handoff);assert.equal(p.sourceDraftSnapshot,'成品 A');
+ const handoff={operationId:'handoff-version-a',publicationConfirmed:true,weavingWorkId:work.id,completionVersionId:a.completion.id};const p=await store.handoffWork(handoff);assert.equal(p.sourceDraftSnapshot,'成品 A');
  assert.equal((await store.handoffWork({...handoff,operationId:'handoff-repeat-aa'})).id,p.id);
- await assert.rejects(()=>store.handoffWork({operationId:'handoff-version-b',weavingWorkId:work.id,completionVersionId:b.completion.id}),e=>e.status===409);
- const p2=await store.handoffWork({operationId:'handoff-confirm-b',weavingWorkId:work.id,completionVersionId:b.completion.id,createNewVersion:true});assert.equal(p2.sourceDraftSnapshot,'成品 B');assert.equal((await versions.readCompletion(a.completion.id)).text,'成品 A');
+ await assert.rejects(()=>store.handoffWork({operationId:'handoff-version-b',publicationConfirmed:true,weavingWorkId:work.id,completionVersionId:b.completion.id}),e=>e.status===409);
+ const p2=await store.handoffWork({operationId:'handoff-confirm-b',publicationConfirmed:true,weavingWorkId:work.id,completionVersionId:b.completion.id,createNewVersion:true});assert.equal(p2.sourceDraftSnapshot,'成品 B');assert.equal((await versions.readCompletion(a.completion.id)).text,'成品 A');
  await assert.rejects(()=>store.patchPublication({id:p.id,operationId:'publication-forged',expectedRevision:p.revision,project:{sourceDraftSnapshot:'forged'}}));
  await assert.rejects(()=>store.patchPublication({id:p.id,operationId:'published-no-link',expectedRevision:p.revision,project:{status:'published'}}));
  const scheduled=await store.patchPublication({id:p.id,operationId:'schedule-version-a',expectedRevision:p.revision,project:{status:'scheduled',scheduledOn:'2026-10-20'}});assert.equal(scheduled.status,'scheduled');

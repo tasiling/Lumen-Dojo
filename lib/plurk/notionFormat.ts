@@ -16,6 +16,9 @@ export type PlurkContentMeta = {
   at?: string; // 草稿專用:排程時間(datetime-local 字串)
   status?: PlurkDraftStatus; // 草稿專用
   createdAt?: string; // 草稿專用:建立日期(YYYY-MM-DD),標題後綴用,建立後不變
+  sourceVariantId?: string; // 聊解室平台稿來源；用於安全重送與更新同一草稿
+  sourceVersionId?: string;
+  sourceOperationId?: string; // 交接操作；遠端寫入後遺失回應時用來唯讀確認
 };
 
 export function encodePlurkContent(meta: PlurkContentMeta, main: string, floors: string[]): string {

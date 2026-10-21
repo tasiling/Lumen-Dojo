@@ -1,0 +1,3 @@
+READY isolated UI server 3069
+UI imported, retried images, and recovered failed save
+PASS aggregate package preflight stops oversized JSON before serialization/download

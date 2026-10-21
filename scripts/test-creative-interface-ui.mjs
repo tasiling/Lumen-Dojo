@@ -136,7 +136,7 @@ try {
     const original=await store.readWork(pair.works[0].id);
     const written=await store.patchWork({operationId:'creative-publication-draft',id:original.id,expectedRevision:original.revision,work:{draftText:'隔離驗收的固定文字成品。'}});
     const complete=await store.completeWork({operationId:'creative-publication-complete',workId:written.id,expectedRevision:written.revision,previewDigest:f.load('lib/dojo/weavingWorkflow/completions.ts').completionDigest(written)});
-    const project=await store.handoffWork({operationId:'creative-publication-handoff',weavingWorkId:written.id,completionVersionId:complete.completion.id});
+    const project=await store.handoffWork({operationId:'creative-publication-handoff',publicationConfirmed:true,weavingWorkId:written.id,completionVersionId:complete.completion.id});
     await page.goto(server.base+'/liaojie');
     await page.getByRole('link',{name:/進入工作台/}).waitFor();
     for(const width of [375,390,430,1024]) {
@@ -205,6 +205,7 @@ try {
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       await page.screenshot({path:`${out}/work-handoff-${width}.png`,fullPage:true});
     }
+    await page.getByLabel('我已確認這個成品的人物、私密細節與引用可以送往發布準備',{exact:true}).check();
     await page.getByRole('button',{name:'手動送往聊解室',exact:true}).click();
     await page.getByRole('heading',{name:'接收作品',exact:true}).waitFor();
     console.log('PASS unsaved, conflicting and failed saves recover before immutable completion and real handoff');

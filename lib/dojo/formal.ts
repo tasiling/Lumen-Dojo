@@ -37,7 +37,10 @@ export const WEAVING_SHUTTLE_TITLE_PREFIX = "行光織光杼-";
 export const WEAVING_WORK_TITLE_PREFIX = "行光作品緯線-";
 export const LIAOJIE_PROJECT_TITLE_PREFIX = "行光聊解企劃-";
 export const COMPLETION_TITLE_PREFIX = "行光作品成品-v1-";
+export const LIAOJIE_TEXT_VARIANT_PREFIX = "行光聊解文字版本-v1-";
+export const LIAOJIE_TEXT_VERSION_PREFIX = "行光聊解文字稿-v1-";
 export const FORMAL_STATE_TITLE_PREFIXES = [
+  '行光圖文稿-v1-', '行光圖文版本-v1-', '行光圖文成品-v1-', '行光短片稿-v1-', '行光短片版本-v1-', '行光短片成品-v1-','行光聲音稿-v1-','行光聲音版本-v1-','行光聲音成品-v1-','行光短漫稿-v1-','行光短漫版本-v1-','行光短漫成品-v1-','行光長片稿-v1-','行光長片版本-v1-','行光長片成品-v1-','行光作品發布紀錄-v1-',
   DAILY_TITLE_PREFIX,
   BINGO_TITLE_PREFIX,
   WEEKLY_TEMPLATE_LIBRARY_TITLE,
@@ -52,6 +55,8 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   WEAVING_WORK_TITLE_PREFIX,
   LIAOJIE_PROJECT_TITLE_PREFIX,
   COMPLETION_TITLE_PREFIX,
+  LIAOJIE_TEXT_VARIANT_PREFIX,
+  LIAOJIE_TEXT_VERSION_PREFIX,
   ENGLISH_JOURNAL_TITLE_PREFIX,
   CONTEXT_ROOM_RESULT_TITLE_PREFIX,
   ENGLISH_IMAGE_TITLE_PREFIX,
@@ -59,6 +64,10 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   MANIFESTATION_MILESTONE_TITLE_PREFIX,
   CREATIVE_PRACTICE_TITLE_PREFIX,
   KNOWLEDGE_CLAIM_TITLE_PREFIX,
+  "行光閱讀知識分類-v1-",
+  "行光創作來源設定-v1-",
+  "行光創作提案-v1-",
+  "行光創作找題設定-v1-",
 ] as const;
 
 // Keep the dojo day anchored to Taipei time. The environment variable remains available

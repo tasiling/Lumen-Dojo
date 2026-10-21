@@ -1,0 +1,26 @@
+[
+  {
+    "sceneId": "chapter-1",
+    "title": "等待，沒有進度的時候",
+    "start": 0,
+    "end": 60
+  },
+  {
+    "sceneId": "chapter-2",
+    "title": "觀察，想把一切弄清楚",
+    "start": 60,
+    "end": 120
+  },
+  {
+    "sceneId": "chapter-3",
+    "title": "休息，先照顧此刻生活",
+    "start": 120,
+    "end": 180
+  },
+  {
+    "sceneId": "chapter-4",
+    "title": "發現，生長有自己的時間",
+    "start": 180,
+    "end": 240
+  }
+]

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {fixture} from './weaving-fixture.mjs';
+const f=await fixture();try{
+ const w=f.load('lib/dojo/weavingWorkflow/store.ts'),cm=f.load('lib/dojo/weavingWorkflow/completions.ts'),s=f.load('lib/dojo/longVideo/store.ts'),m=f.load('lib/dojo/longVideo/model.ts'),media=f.load('lib/dojo/shortVideo/media.ts'),composition=f.load('lib/dojo/longVideo/composition.ts');
+ const pair=await w.createPair({operationId:'distinct-pair',sourceType:'manual',sourceSnapshot:'隔離雙音檔',coreStatement:'聲音各有對應',format:'text'}),work=await w.patchWork({operationId:'distinct-write',id:pair.works[0].id,expectedRevision:1,work:{title:'雙音章節',draftText:'先聽乙，再聽甲。'}}),fixed=await w.completeWork({operationId:'distinct-fixed',workId:work.id,expectedRevision:work.revision,previewDigest:cm.completionDigest(work)}),b=await s.createLongVideo({operationId:'distinct-create',completionId:fixed.completion.id});
+ const voices=[];for(const [name,seconds,hz]of [['a',120,220],['b',90,330]]){const path=join(f.dir,name+'.wav');execFileSync('ffmpeg',['-v','error','-f','lavfi','-i',`sine=frequency=${hz}:sample_rate=8000`,'-t',String(seconds),path]);voices.push(await media.saveMedia(await readFile(path),'long-video'));}assert.notEqual(voices[0].id,voices[1].id);
+ const image=await f.load('lib/dojo/illustrated/assets.ts').saveAsset(await readFile('docs/creative-comic-evidence/assets/panel-1.png'));
+ const d={title:'雙音章節',angle:'先乙再甲',style:'mixed',rawTranscript:'',scenes:[1,0].map(i=>({...m.newScene('voice-'+i),title:i?'乙':'甲',duration:voices[i].duration,caption:'隔離測試音',image:{assetId:image.id,kind:'generated',tool:'imagegen',prompt:'fixture',sourceNote:'虛構雲豆',publicConfirmed:true},voice:{assetId:voices[i].id,kind:'test',sourceNote:'非本人聲音',publicConfirmed:true}}))};
+ // Prepare resolves each separately persisted source instead of an assumed duration map.
+ const saved=await s.saveLongVideo({operationId:'distinct-save',projectId:b.project.id,expectedRevision:b.project.revision,draft:d});const {voiceDurations:seconds}=await s.prepareLongVideo({projectId:b.project.id,versionId:saved.version.id,expectedRevision:saved.project.revision});assert.deepEqual(seconds,Object.fromEntries(voices.map(v=>[v.id,v.duration])));m.assertChapterAudio(saved.version,seconds);const html=composition.compositionHtml(saved.version,{}, {[voices[0].id]:'alpha.wav',[voices[1].id]:'beta.wav'},seconds);assert.match(html,/<audio[^>]*data-start="0"[^>]*src="beta.wav"/);assert.match(html,/<audio[^>]*data-start="90"[^>]*src="alpha.wav"/);assert.throws(()=>m.assertChapterAudio(saved.version,{[voices[0].id]:90,[voices[1].id]:120}),/0.5/);assert.deepEqual(m.chapters(saved.version).map(c=>c.start),[0,90]);console.log('PASS distinct real WAV SHA/durations/order/HTML src-start/wrong audio rejection');
+}finally{await f.close();}

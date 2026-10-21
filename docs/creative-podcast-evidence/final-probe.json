@@ -1,0 +1,33 @@
+{
+  "file": "docs/creative-podcast-evidence/final.wav",
+  "format": "wav",
+  "duration": 10.0,
+  "size_bytes": 480078,
+  "bitrate": 384062,
+  "video": null,
+  "audio": {
+    "codec": "pcm_s16le",
+    "channels": 1,
+    "channel_layout": null,
+    "sample_rate": 24000,
+    "bitrate": 384000,
+    "duration": 10.0,
+    "start_time": null
+  },
+  "subtitle_streams": 0,
+  "data_streams": 0,
+  "chapters": [],
+  "tags": {},
+  "subtitle_stream_details": [],
+  "audio_streams": [
+    {
+      "index": 0,
+      "codec": "pcm_s16le",
+      "channels": 1,
+      "channel_layout": null,
+      "sample_rate": 24000,
+      "language": null,
+      "title": null
+    }
+  ]
+}

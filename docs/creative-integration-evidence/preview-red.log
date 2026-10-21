@@ -1,0 +1,85 @@
+READY isolated UI server 3049
+行光道場
+Lumen Dojo
+計時
+場域
+織光堂
+織光堂
+
+把閱讀與生活裡的體會，寫成一件有自己觀點的作品。
+
+從一件作品開始
+接著寫，讓作品慢慢成形
+
+選一段素材，寫下自己的觀點，再完成文字。不需要先整理所有筆記。
+
+繼續創作：給忙碌的自己一點空間
+＋ 開始新作品
+選素材
+定觀點
+製作內容
+預覽定稿
+準備發布
+長影片製作：章節、原音與成品回收
+短漫製作：角色、分鏡與逐格對白
+Podcast製作：節目稿、錄音與成品回收
+短影音製作：分鏡、配音與影片回收
+圖文製作：把固定原稿排成圖卡
+持續發展的觀點
+創作主題・織光杼
+
+同一個主題，可以長出文章、貼文與不同作品。
+
+1
+正在發展 · 核心經線 v1
+手動題材
+
+休息不必等到所有事情完成。
+
+1 件作品
+文字 · 草稿中
+
+補充一個自己的生活例子
+點點的提案
+從允許素材找題，修改試寫，再選定開工
+來源與公開設定
+分別決定點點能否取材、來源能否公開
+野採之後
+可製作素材
+
+只有已採用、創作成熟度達 C2 以上並送往織光堂的材料會出現。
+
+0
+目前沒有可製作素材
+
+尚未成熟的材料可以先留在原處。
+
+前往野採
+內容生產工具已集中到工作後台 →
+新增紀錄
+在此計時
+留下的痕跡
+
+這個場域還沒有紀錄。
+
+今天
+行事曆
+新增
+週盤
+回看
+{"bundles":[{"shuttle":{"revision":1,"version":3,"recordType":"weaving-shuttle","id":"48add4c8-83f9-4a9e-ab25-469085a00bd7","title":"手動題材","sourceSelections":[{"sourceType":"manual","sourceId":"e89ef800117c760dadc7f91b52c512b7","sourceVersion":null,"locator":"人工輸入","contentKind":"insight","selectedText":"隔離示範：忙碌時仍想練習休息。","capturedAt":"2026-10-21T07:51:55.366Z","digest":"9988e8730caf730e9f3f87491bf55cedf832218d305429a14a1b237fcf838e8f"}],"sourceType":"manual","sourceId":null,"sourceRefs":[],"sourceSnapshot":"隔離示範：忙碌時仍想練習休息。","audience":"","direction":"","status":"active","coreVersions":[{"id":"842b328396d11ff82f88e10885f11552","number":1,"statement":"休息不必等到所有事情完成。","changeNote":"最初建立","derivedFromWorkId":null,"createdAt":"2026-10-21T07:51:55.366Z"}],"currentCoreVersionId":"842b328396d11ff82f88e10885f11552","branchedFromShuttleId":null,"branchedFromWorkId":null,"createdAt":"2026-10-21T07:51:55.366Z","updatedAt":"2026-10-21T07:51:55.382Z"},"works":[{"revision":6,"textWorkflow":{"schemaVersion":1,"templateKey":"article","currentStep":"sources","blocks":[{"id":"legacy-4029f830-aa73-413c-a2e0-a2f970d32c6b","role":"自由文字","text":"今天的待辦還沒做完，我先替自己留了十分鐘。\n\n休息不必等到所有事情完成。","mediaNote":""}],"sourceSelections":[{"sourceType":"manual","sourceId":"e89ef800117c760dadc7f91b52c512b7","sourceVersion":null,"locator":"人工輸入","contentKind":"insight","selectedText":"隔離示範：忙碌時仍想練習休息。","capturedAt":"2026-10-21T07:51:55.366Z","digest":"9988e8730caf730e9f3f87491bf55cedf832218d305429a14a1b237fcf838e8f"}],"outputKind":"article","audience":"","outline":""},"legacyProjectId":null,"completionVersionRefs":["87d45032-9a36-45ae-ba45-f1d6a4baaa2c"],"currentCompletionVersionId":"87d45032-9a36-45ae-ba45-f1d6a4baaa2c","version":1,"recordType":"weaving-work","id":"4029f830-aa73-413c-a2e0-a2f970d32c6b","shuttleId":"48add4c8-83f9-4a9e-ab25-469085a00bd7","title":"預覽可操作的隔離作品","coreVersionId":"842b328396d11ff82f88e10885f11552","format":"text","formatSubtype":"unselected","status":"drafting","nextAction":"補充一個自己的生活例子","draftText":"今天的待辦還沒做完，我先替自己留了十分鐘。\n\n休息不必等到所有事情完成。","finalSnapshot":"今天的待辦還沒做完，我先替自己留了十分鐘。\n\n休息不必等到所有事情完成。","outputUrl":"","toolKey":null,"derivedFromWorkId":null,"reflection":null,"completedAt":"2026-10-21T07:51:55.408Z","sentToLiaojieAt":"2026-10-21T07:51:55.441Z","createdAt":"2026-10-21T07:51:55.366Z","updatedAt":"2026-10-21T07:51:56.097Z"}],"legacyProjectId":null}]}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: preview serves real creative release API
+    at file:///workspace/scratch/ad1d9c2e7938/weaving-creation/scripts/test-creative-preview.mjs:25:129 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

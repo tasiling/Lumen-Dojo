@@ -1,0 +1,77 @@
+{
+  "status": "completed",
+  "output": null,
+  "dry_run": false,
+  "commands": [],
+  "verified": false,
+  "verification": [],
+  "platform": "custom",
+  "checks": [
+    {
+      "check": "duration",
+      "status": "PASS",
+      "value": "238.50s",
+      "expected": "<= 3600s",
+      "fix": "decide with the user: cut.py keeps quality but drops content; fit.py --duration speeds up (audio pitch-preserved, motion faster)",
+      "reason": "",
+      "kind": "judgement"
+    },
+    {
+      "check": "aspect",
+      "status": "PASS",
+      "value": "16:9",
+      "expected": "16:9",
+      "fix": "fit.py --aspect 16:9 --fit pad (keeps everything, adds bars) or crop (fills the frame, loses the edges: check the subject with look.py)",
+      "reason": "",
+      "kind": "judgement"
+    },
+    {
+      "check": "vfr",
+      "status": "PASS",
+      "value": "constant",
+      "expected": "constant",
+      "fix": "fit.py --fps N (any re-encode conforms it)",
+      "reason": "",
+      "kind": "format"
+    },
+    {
+      "check": "colour",
+      "status": "PASS",
+      "value": "bt709/bt709",
+      "expected": "bt709/bt709 tagged (or HDR)",
+      "fix": "",
+      "reason": "",
+      "kind": "format"
+    },
+    {
+      "check": "file size",
+      "status": "PASS",
+      "value": "5.1 MB",
+      "expected": "<= 256 MB",
+      "fix": "export.py --crf 24 or lower resolution",
+      "reason": "",
+      "kind": "format"
+    },
+    {
+      "check": "audio",
+      "status": "PASS",
+      "value": "aac 1ch 48000Hz",
+      "expected": "present",
+      "fix": "",
+      "reason": "",
+      "kind": "format"
+    },
+    {
+      "check": "subtitles",
+      "status": "WARN",
+      "value": "none",
+      "expected": ">= 1 language-tagged subtitle track",
+      "fix": "caption.py video.mp4 --mode mux --srt subs.srt:en -o video_subs.mkv (streams are copied)",
+      "reason": "subtitles are optional, but they are the cheapest accessibility win a delivery has",
+      "kind": "format"
+    }
+  ],
+  "failed": 0,
+  "warnings": 1,
+  "ok": true
+}

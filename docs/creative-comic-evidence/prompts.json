@@ -1,0 +1,34 @@
+{
+  "tool": "built-in image_gen",
+  "isolation": "fictional story, not Crystal diary or likeness",
+  "characterPrompt": "Use case: illustration-story. Asset type: a single character reference image for a fictional four-panel everyday comic tool trial. Original character: a small round white bird called 雲豆, pale blue scarf, tiny warm gray feet and dot eyes, soft muted watercolor with visible crayon outlines on white paper. Show a clear full body three-quarter pose standing beside a small turquoise watering can, friendly calm expression. Clean square composition, no other characters. Consistent distinctive blue scarf and round silhouette intended as reference for later panels. No writing, no letters, no watermark. This is fictional isolated test material, not a real person.",
+  "reference": "assets/character.png",
+  "panels": [
+    {
+      "index": 1,
+      "prompt": "Use case: illustration-story. Generate ONE standalone comic-panel illustration, not a grid. Input image is ONLY character and style reference. Keep this exact fictional round white bird, light blue scarf, dot eyes, gray crayon outline and soft watercolor paper texture. A quiet windowsill with a tiny terracotta plant pot with bare soil. The bird leans forward and peers into the pot, looking mildly impatient; a turquoise watering can is beside it. Square scene. Compose main actions comfortably within middle 80%, keep a coherent eye-level view with breathing space. No text, no speech bubbles, no panel numbers, no watermark. This is original fictional isolated test story about allowing growth to take time, not a person's real life.",
+      "asset": "assets/panel-1.png"
+    },
+    {
+      "index": 2,
+      "prompt": "Use case: illustration-story. Generate ONE standalone comic-panel illustration, not a grid. Input image is ONLY character and style reference. Keep this exact fictional round white bird, light blue scarf, dot eyes, gray crayon outline and soft watercolor paper texture. The same windowsill and pot. The white bird with blue scarf holds a small magnifying glass, inspecting the still bare soil very closely, curious and a little funny. Square scene. Compose main actions comfortably within middle 80%, keep a coherent eye-level view with breathing space. No text, no speech bubbles, no panel numbers, no watermark. This is original fictional isolated test story about allowing growth to take time, not a person's real life.",
+      "asset": "assets/panel-2.png"
+    },
+    {
+      "index": 3,
+      "prompt": "Use case: illustration-story. Generate ONE standalone comic-panel illustration, not a grid. Input image is ONLY character and style reference. Keep this exact fictional round white bird, light blue scarf, dot eyes, gray crayon outline and soft watercolor paper texture. The same windowsill and pot, in gentle rain seen through the window. The bird sits peacefully nearby drinking a tiny warm cup, having set the magnifying glass down, no hurry. Square scene. Compose main actions comfortably within middle 80%, keep a coherent eye-level view with breathing space. No text, no speech bubbles, no panel numbers, no watermark. This is original fictional isolated test story about allowing growth to take time, not a person's real life.",
+      "asset": "assets/panel-3-before.png"
+    },
+    {
+      "index": 4,
+      "prompt": "Use case: illustration-story. Generate ONE standalone comic-panel illustration, not a grid. Input image is ONLY character and style reference. Keep this exact fictional round white bird, light blue scarf, dot eyes, gray crayon outline and soft watercolor paper texture. The same windowsill, now soft sunshine. A small green two-leaf sprout has emerged from the terracotta pot; the bird with blue scarf notices with delighted surprise, the turquoise watering can beside it. Square scene. Compose main actions comfortably within middle 80%, keep a coherent eye-level view with breathing space. No text, no speech bubbles, no panel numbers, no watermark. This is original fictional isolated test story about allowing growth to take time, not a person's real life.",
+      "asset": "assets/panel-4.png"
+    }
+  ],
+  "targetedEdit": {
+    "input": "assets/panel-3-before.png",
+    "output": "assets/panel-3-edited.png",
+    "prompt": "Use case: precise-object-edit. Edit ONLY the plant in the terracotta pot in this single comic panel: replace all the green leaves/stem growing out of the pot with bare dark soil. This is panel three, BEFORE sprouting. Keep EVERYTHING else unchanged, especially the round white bird with pale blue scarf, its face and feet, its cup, watering can, pot position and shape, rainy window, composition, colors and watercolor/crayon paper style. No text, no speech bubbles. Do not add a sprout or leaves to the pot.",
+    "inspection": "Original panel3 incorrectly sprouted before the final scene. Revised image has bare soil. Other three panel files unchanged; slight generative drift within the edited image remains possible."
+  }
+}

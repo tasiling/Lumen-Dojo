@@ -1,0 +1,62 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:weaving
+> npm run test:weaving-domain && npm run test:weaving-api && node scripts/test-weaving-lock.mjs && npm run test:weaving-sources && npm run test:weaving-draft && npm run test:weaving-completion && node scripts/test-weaving-edgecases.mjs && npm run test:weaving-review
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:weaving-domain
+> node scripts/test-weaving-domain.mjs
+
+PASS legacy whole draft and ID survive reads
+PASS five templates preserve stable block identity and order
+PASS explicit workflow survives old work normalizer
+PASS 80000 text accepted; oversized text rejected before truncation
+PASS source limits are enforced without silently dropping selections
+PASS prompt includes selected content only and identifies provenance
+PASS invalid step, duplicate block IDs and unsafe URLs rejected
+PASS protected fields cannot be edited by generic patch
+PASS Threads persists independently while legacy and unknown platform behavior stay compatible
+PASS weaving domain 9/9
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:weaving-api
+> node scripts/test-weaving-api.mjs
+
+PASS weaving receipts 7/7: replay, digest, collision, owner, restart, rejection retry, unknown-result protection
+PASS actual weaving handlers: auth, create/replay, patch, stale/missing revision, protected identity, GET read-only, concurrent writers
+PASS cross-process writer exclusion and confirmed retry, shared durable filesystem
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:weaving-sources
+> node scripts/test-weaving-sources.mjs
+
+PASS precise sources 7/7: ranges, provenance, stale version, owner, surrogate boundary, limits, pagination
+PASS production reading resolver + handlers: owner book/block membership, separate understanding, exact snapshot, forged snapshot rejected, changed-source completion blocked, historical snapshot preserved
+PASS adopted Claim version + K4 allowed-use filter + unadopted exclusion + experiential provenance
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:weaving-draft
+> node scripts/test-weaving-draft.mjs
+
+PASS draft coordination: delayed edit preserved, A response cannot replace B, discard baseline, saved value clean
+PASS nested draft three-way merge: confirmed selections + newer blocks + only unsubmitted requests remain
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:weaving-completion
+> node scripts/test-weaving-completion.mjs
+
+PASS immutable completion + handoff + reflection: empty/stale/replay/A→B/read-only/duplicate/new-version/protected source/schedule/core lineage
+PASS partial mother/child confirmed rejection resumes same parent, duplicate identity blocks, invalid template has no writes
+PASS legacy upgrade ID mapping + full snapshot + soft archive + existing publication reused unchanged + revision0 first save
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:weaving-review
+> node scripts/test-weaving-review.mjs
+
+PASS template conversion preserves original text/notes/IDs and is previewable
+PASS revision recovery rebases explicit local edits onto reviewed latest baseline
+PASS two migration operation IDs reuse same durable legacy mapping
+PASS unknown-result reconciliation reports remote ID read-only with retained writer lock
+PASS server conversion creates new work from saved source without clearing original
+PASS confirmed historical creation stays confirmed after normal later edits

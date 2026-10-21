@@ -1,0 +1,88 @@
+{
+  "status": "completed",
+  "output": null,
+  "dry_run": false,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -nostdin -i docs/creative-podcast-evidence/final.wav -vn -af loudnorm=I=-14:TP=-1:LRA=11:print_format=json -f null -"
+  ],
+  "verified": false,
+  "verification": [],
+  "platform": "podcast",
+  "checks": [
+    {
+      "check": "duration",
+      "status": "PASS",
+      "value": "10.00s",
+      "expected": "any",
+      "fix": "",
+      "reason": "",
+      "kind": "judgement"
+    },
+    {
+      "check": "audio",
+      "status": "PASS",
+      "value": "pcm_s16le 1ch 24000Hz",
+      "expected": "present",
+      "fix": "",
+      "reason": "",
+      "kind": "format"
+    },
+    {
+      "check": "channels",
+      "status": "PASS",
+      "value": "1ch",
+      "expected": "1 (mono) or 2 (stereo)",
+      "fix": "audio.py --downmix (5.1/7.1 to stereo with the standard weights) or audio.py --mono",
+      "reason": "",
+      "kind": "format"
+    },
+    {
+      "check": "chapters",
+      "status": "WARN",
+      "value": "none",
+      "expected": ">= 1 chapter marker",
+      "fix": "metadata.py episode.m4a --chapters chapters.txt (`TIME TITLE` per line; streams copied)",
+      "reason": "chapter markers are optional, but a podcast app shows them as the episode's seekable table of contents",
+      "kind": "format"
+    },
+    {
+      "check": "subtitles",
+      "status": "WARN",
+      "value": "none",
+      "expected": ">= 1 language-tagged subtitle track",
+      "fix": "caption.py video.mp4 --mode mux --srt subs.srt:en -o video_subs.mkv (streams are copied)",
+      "reason": "subtitles are optional, but they are the cheapest accessibility win a delivery has",
+      "kind": "format"
+    },
+    {
+      "check": "sample rate",
+      "status": "WARN",
+      "value": 24000,
+      "expected": "44100 or 48000",
+      "fix": "loudness.py --sample-rate 48000",
+      "reason": "",
+      "kind": "format"
+    },
+    {
+      "check": "loudness",
+      "status": "PASS",
+      "value": "-16.0 LUFS",
+      "expected": "-16 ± 1 LUFS",
+      "fix": "loudness.py -I -16 for speech or music; leave ambience/near-silence (<= -40 LUFS) alone and say so",
+      "reason": "",
+      "kind": "judgement"
+    },
+    {
+      "check": "true peak",
+      "status": "PASS",
+      "value": "-9.8 dBTP",
+      "expected": "<= -1 dBTP",
+      "fix": "loudness.py --tp -1",
+      "reason": "",
+      "kind": "judgement"
+    }
+  ],
+  "failed": 0,
+  "warnings": 3,
+  "ok": true
+}

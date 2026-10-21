@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Reconstructed browser export; exact durable bytes in chunked evidence.
+/docs/creative-comic-evidence/ui-source.json
+
+/docs/creative-long-video-evidence/ui-source.json

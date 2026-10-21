@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import sharp from 'sharp';
+import { fixture } from './weaving-fixture.mjs';
+const f = await fixture();
+try {
+ const w=f.load('lib/dojo/weavingWorkflow/store.ts'), cm=f.load('lib/dojo/weavingWorkflow/completions.ts'), api=f.load('app/api/dojo/illustrated/route.ts'), assets=f.load('lib/dojo/illustrated/assets.ts');
+ let pair=await w.createPair({operationId:'illustrated-pair-01',sourceType:'manual',sourceSnapshot:'隔離素材，休息也是照顧自己。',coreStatement:'慢慢生長',format:'text'});
+ const work=await w.patchWork({operationId:'illustrated-write-01',id:pair.works[0].id,expectedRevision:1,work:{title:'雨停以後',draftText:'休息的時候，也有事情正在發生。'}});
+ const c=await w.completeWork({operationId:'illustrated-fixed-01',workId:work.id,expectedRevision:work.revision,previewDigest:cm.completionDigest(work)});
+ assert.equal((await api.GET(f.req('GET','/api/dojo/illustrated',null,false))).status,401);
+ const body={operationId:'illustrated-create-01',completionId:c.completion.id};
+ const created=await (await api.POST(f.req('POST','/api/dojo/illustrated',body))).json(); assert(created.deck?.id,JSON.stringify(created));
+ const duplicate=await (await api.POST(f.req('POST','/api/dojo/illustrated',{...body,operationId:'illustrated-create-02'}))).json(); assert.equal(duplicate.deck.id,created.deck.id);
+ const img=await assets.saveAsset(await readFile('docs/creative-illustrated-evidence/assets/rain-sprout.png'));
+ const draft={title:'慢下來以後',caption:'這份圖文是隔離測試，不代表本人經驗。',pages:[{...created.version.pages[0],title:'慢慢長出名字',body:'休息的時候，也有事情正在發生。',image:{assetId:img.id,kind:'generated',tool:'imagegen',prompt:'雨後窗邊的小芽，水彩蠟筆',sourceNote:'內建AI隔離生成',publicConfirmed:true}}]};
+ const save={action:'save',operationId:'illustrated-save-01',deckId:created.deck.id,expectedRevision:created.deck.revision,draft};
+ let saved=await (await api.PATCH(f.req('PATCH','/api/dojo/illustrated',save))).json(); assert.equal(saved.versions.length,2);
+ assert.equal((await api.PATCH(f.req('PATCH','/api/dojo/illustrated',{...save,operationId:'illustrated-stale-01'}))).status,409);
+ const count=f.writes(); assert.equal((await (await api.PATCH(f.req('PATCH','/api/dojo/illustrated',save))).json()).version.id,saved.version.id); assert.equal(f.writes(),count);
+ const rendered=await assets.saveAsset(await sharp({create:{width:1080,height:1350,channels:3,background:'#ffffff'}}).png().toBuffer());
+ const output={action:'output',operationId:'illustrated-output-01',deckId:saved.deck.id,expectedRevision:saved.deck.revision,versionId:saved.version.id,publicationConfirmed:true,renders:[{pageId:draft.pages[0].id,assetId:rendered.id}]};
+ const noConfirm=await api.PATCH(f.req('PATCH','/api/dojo/illustrated',{...output,operationId:'illustrated-output-no',publicationConfirmed:false})); assert.equal(noConfirm.status,400);
+ // Partial output exists, but the final index update has not been dispatched.
+ const originalUpdate=f.mutations.updateKnowledgeEntry;let interrupt=true;
+ f.mutations.updateKnowledgeEntry=async(...args)=>{if(interrupt&&args[0]===saved.deck.id){interrupt=false;throw Error('before dispatch');}return originalUpdate(...args);};
+ assert.equal((await api.PATCH(f.req('PATCH','/api/dojo/illustrated',output))).status,503);
+ f.mutations.updateKnowledgeEntry=originalUpdate;
+ const policies=f.load('lib/dojo/creativeSources/store.ts').sourcePolicies,originalPublication=policies.assertPublication;
+ let gateChecks=0;policies.assertPublication=async()=>{gateChecks++;throw new (f.load('lib/dojo/learningFoundation/model.ts').LearningError)('來源已撤回公開許可',403);};
+ const denied=await api.PATCH(f.req('PATCH','/api/dojo/illustrated',output));assert.equal(denied.status,403);assert(gateChecks>0);assert.equal((await f.load('lib/dojo/illustrated/store.ts').bundle(saved.deck.id)).outputs.length,0);
+ policies.assertPublication=originalPublication;
+ const done=await (await api.PATCH(f.req('PATCH','/api/dojo/illustrated',output))).json(); assert(done.output?.id,JSON.stringify(done));
+ const hand={action:'handoff',operationId:'illustrated-handoff-01',deckId:saved.deck.id,expectedRevision:done.deck.revision,outputId:done.output.id,publicationConfirmed:true};
+ const handed=await (await api.PATCH(f.req('PATCH','/api/dojo/illustrated',hand))).json(); assert(handed.publication?.id,JSON.stringify(handed)); assert.deepEqual(handed.publication.illustratedOutputRefs,[done.output.id]);
+ const handAgain=await (await api.PATCH(f.req('PATCH','/api/dojo/illustrated',hand))).json();assert.equal(handAgain.publication.id,handed.publication.id);
+ const textPub=await w.handoffWork({operationId:'illustrated-text-again',weavingWorkId:work.id,completionVersionId:c.completion.id,publicationConfirmed:true}); assert.equal(textPub.id,handed.publication.id);
+ const original=f.mutations.updateKnowledgeEntry;let once=true;
+ f.mutations.updateKnowledgeEntry=async(...args)=>{const r=await original(...args);if(once&&args[0]===saved.deck.id){once=false;throw Error('lost response');}return r;};
+ const unknown={...save,operationId:'illustrated-unknown-save',expectedRevision:done.deck.revision,draft:{...draft,title:'回應遺失仍保留'}};
+ await assert.rejects(()=>f.load('lib/dojo/illustrated/store.ts').saveDeck(unknown));f.mutations.updateKnowledgeEntry=original;
+ const recovered=await f.load('lib/dojo/illustrated/store.ts').saveDeck(unknown);assert.equal(recovered.version.title,'回應遺失仍保留');assert.equal(recovered.versions.length,3);
+ const staleOutput=await api.PATCH(f.req('PATCH','/api/dojo/illustrated',{...output,operationId:'illustrated-old-output',expectedRevision:recovered.deck.revision}));assert.equal(staleOutput.status,409);
+ assert.equal((await cm.readCompletion(c.completion.id)).text,'休息的時候，也有事情正在發生。');
+ console.log('PASS illustrated real API owner/create/dedupe/version/replay/stale/output/public gate/handoff/unknown recovery/fixed source');
+} finally {await f.close();}

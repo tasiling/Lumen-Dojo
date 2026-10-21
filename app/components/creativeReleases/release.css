@@ -1,0 +1,17 @@
+.release-workspace,.release-history-screen{font-size:16px;line-height:1.65;overflow-wrap:anywhere;min-width:0}
+.release-workspace label,.release-filters label{display:grid;gap:6px;font-weight:600;margin:16px 0}
+.release-workspace input,.release-workspace select,.release-workspace textarea,.release-filters select{box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:46px;font:inherit;color:inherit;background:#fff;border:1px solid #c6d5e8;border-radius:12px;padding:10px 12px;font-weight:400}
+.release-workspace button,.release-history-screen button,.release-history-screen a,.release-workspace a{min-height:44px;padding:10px 12px;display:inline-flex;align-items:center;gap:8px;white-space:normal;overflow-wrap:anywhere;max-width:100%}
+.release-workspace button,.release-history-screen button{border:1px solid #c6d5e8;border-radius:12px;background:#f1f6fc;font:inherit;text-align:left;cursor:pointer}
+.release-workspace button.primary{background:#5778a4;color:#fff;border-color:#5778a4;justify-content:center}
+.release-workspace button:disabled,.release-history-screen button:disabled{opacity:.55;cursor:default}
+.release-workspace :focus-visible,.release-history-screen :focus-visible{outline:3px solid #4c73aa;outline-offset:3px}
+.release-create,.release-editor{margin-top:24px;padding-top:16px;border-top:1px solid #dce5f0}
+.release-create>button,.release-editor>button{width:100%}
+.release-record-list{display:grid;gap:8px;margin:24px 0}
+.release-record-list button{display:grid;width:100%}.release-record-list small{font-size:14px}.release-record-list [aria-pressed=true]{border:2px solid #5778a4;background:#e7effb}
+.release-facts{display:grid;gap:12px}.release-facts div{min-width:0}.release-facts dt{font-weight:600;color:#536b88}.release-facts dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.release-version{overflow-wrap:anywhere;white-space:pre-wrap;font-size:14px;color:#536b88}
+.release-workspace summary,.release-history-screen summary{cursor:pointer;min-height:44px;display:flex;align-items:center;list-style:revert}
+.release-history-screen{padding-bottom:110px}.release-history-card,.release-filters,.release-legacy{margin-top:20px}.release-post-link{font-weight:600;color:#325c94}.release-legacy article+article{border-top:1px solid #dce5f0;margin-top:20px;padding-top:16px}
+@media(min-width:760px){.release-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:end}.release-filters button{grid-column:1/-1}}

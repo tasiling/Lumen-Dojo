@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { loader } from './weaving-test-harness.mjs';
+const {contentHref}=loader()('lib/dojo/readingKnowledge/model.ts');
+const book='11111111-1111-4111-8111-111111111111',note='22222222-2222-4222-8222-222222222222';
+assert.equal(contentHref({kind:'reading_note',recordId:note,parentBookId:book,fragment:'reflection'}),`/reading/books/${book}?note=${note}&fragment=reflection`);
+const scripts=JSON.parse(readFileSync('package.json')).scripts;
+for(const name of ['test:reading-knowledge','test:reading-knowledge-api','test:reading-knowledge-ui','test:creative-interface','preview:creative'])assert(scripts[name],`Missing ${name}`);
+await import('./test-isolated-production-env.mjs');
+console.log('PASS integrated reading provenance + both package test entrypoints + production isolation');

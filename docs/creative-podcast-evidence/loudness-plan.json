@@ -1,0 +1,19 @@
+{
+  "status": "completed",
+  "output": "docs/creative-podcast-evidence/final.wav",
+  "dry_run": true,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -nostdin -i docs/creative-podcast-evidence/edited.wav -vn -af loudnorm=I=-16.0:TP=-1.5:LRA=11.0:print_format=json -f null -",
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -i docs/creative-podcast-evidence/edited.wav -af loudnorm=I=-16.0:TP=-1.5:LRA=11.0:measured_I=-34.93:measured_TP=-28.72:measured_LRA=2.80:measured_thresh=-45.80:offset=-0.31:linear=true:print_format=summary -ar 24000 -vn -c:a pcm_s16le docs/creative-podcast-evidence/final.wav"
+  ],
+  "verified": false,
+  "verification": [],
+  "measured": {
+    "input_i": "-34.93",
+    "input_tp": "-28.72",
+    "input_lra": "2.80",
+    "input_thresh": "-45.80",
+    "target_offset": "-0.31",
+    "silent": false
+  }
+}

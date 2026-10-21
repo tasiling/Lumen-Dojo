@@ -1,5 +1,8 @@
 "use client";
 
+import {readingNoteContent} from "@/lib/reading/content";
+import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
+import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ReadingQuickCapture from "@/app/components/ReadingQuickCapture";
@@ -68,7 +71,10 @@ export default function ReadingBookPage() {
       setNotes(loaded);
       setCards(json.cards ?? []);
       const hasReadingRecord = loaded.some((note) => note.kind !== "review");
-      setStage(json.book.status === "閱讀中" ? (hasReadingRecord ? "during" : "before") : "after");
+      const wanted=new URLSearchParams(location.search).get('note');
+      const selected=loaded.find(n=>n.id===wanted);
+      setStage(selected ? selected.kind==='preview'?'before':selected.kind==='review'?'after':'during' : json.book.status === "閱讀中" ? (hasReadingRecord ? "during" : "before") : "after");
+      if(wanted&&!selected)setNotice('指定的筆記已不可用；其餘閱讀紀錄仍保留。');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -154,6 +160,8 @@ export default function ReadingBookPage() {
         {book.author && <p>{book.author}</p>}
       </div>
 
+      <RelationsPanel target={{kind:'book',recordId:book.id}} />
+      {notes.filter(n=>n.id===new URLSearchParams(typeof window==='undefined'?'':location.search).get('note')&&(n.kind==='preview'||n.kind==='review')).map(n=><LocatedContent key={n.id} parameter="note" id={n.id}><section className="ritual-card"><h2>指定的閱讀紀錄</h2><p style={{whiteSpace:'pre-wrap'}}>{readingNoteContent(n)}</p><RelationsPanel target={{kind:'reading_note',recordId:n.id,parentBookId:book.id}} /></section></LocatedContent>)}
       <aside className="reading-question-anchor">
         <span>這輪帶著什麼問題讀</span>
         <p>{book.question}</p>
@@ -189,13 +197,13 @@ export default function ReadingBookPage() {
             {grouped.reading.length === 0 ? <div className="reading-soft-empty">還沒有摘錄或零碎想法。從上方貼入第一段 Readmoo 文字即可。</div> : (
               <div className="reading-source-note-list">
                 {grouped.reading.map((note) => (
-                  <ReadingSourceNoteCard
+                  <LocatedContent key={note.clientKey} parameter="note" id={note.id}><ReadingSourceNoteCard
                     key={note.clientKey}
                     book={book}
                     note={note}
                     onDelete={() => void removeNote(note)}
                     onMakeCard={() => setCardDraft({ noteId: note.id, text: note.text })}
-                  />
+                  /></LocatedContent>
                 ))}
               </div>
             )}
@@ -205,7 +213,7 @@ export default function ReadingBookPage() {
             <div className="reading-section-heading"><div><h2>自由筆記</h2><p>這裡保持完全自由，不要求套用格式。</p></div></div>
             <div className="reading-note-list">
               {grouped.free.map((note) => (
-                <ReadingNoteEditor
+                <LocatedContent key={note.clientKey} parameter="note" id={note.id}><ReadingNoteEditor
                   key={note.clientKey}
                   bookId={bookId}
                   note={note}
@@ -213,7 +221,7 @@ export default function ReadingBookPage() {
                   onSaved={(id) => updateNote(note.clientKey, { id })}
                   onDelete={() => setNotes((current) => current.filter((item) => item.clientKey !== note.clientKey))}
                   onMakeCard={(text) => setCardDraft({ noteId: note.id, text })}
-                />
+                /></LocatedContent>
               ))}
             </div>
             <button className="reading-add-note" onClick={() => setNotes((current) => [...current, newNote()])}>＋ 新增自由筆記</button>
@@ -388,7 +396,8 @@ function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard }: { book: Rea
       {note.metadata.location && <span>{note.metadata.location}</span>}
     </div>
     {note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
-    {note.metadata.reflection && <div className="reading-source-reflection"><small>我當時想到</small><p>{note.metadata.reflection}</p></div>}
+    {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection"><div className="reading-source-reflection"><small>我的理解片段</small><p>{note.metadata.reflection}</p>{note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id,fragment:'reflection'}} />}</div></LocatedContent>}
+    {note.id&&<div><small>原筆記的來源與分類</small><RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} /></div>}
     <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button className="reading-make-card" disabled={!note.id} onClick={onMakeCard}>提煉洞察</button></div>
     {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
       source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}
@@ -461,6 +470,7 @@ function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onMakeCard
       <span className={`reading-save-state ${saveState}`}>{saveState === "saving" ? "儲存中…" : saveState === "saved" ? "已自動儲存" : saveState === "error" ? "尚未存入" : note.id ? "已存入 Notion" : "輸入後自動儲存"}</span>
       {saveState === "error" && <button onClick={() => void save(note.text)}>重試</button>}
       {note.editable && <button className="reading-delete-note" disabled={saveState === "saving"} onClick={() => void remove()}>刪除</button>}
+      {note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:bookId}} />}
       <button className="reading-make-card" disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={() => onMakeCard(note.text)}>提煉洞察</button>
     </div>
   </article>;

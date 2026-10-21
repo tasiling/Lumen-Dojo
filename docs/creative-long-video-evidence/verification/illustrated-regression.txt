@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:illustrated
+> node scripts/test-illustrated.mjs && node scripts/test-illustrated-api.mjs
+
+PASS illustrated domain limits/identity/layout overflow + durable raster assets/dedupe/no paths
+PASS illustrated real API owner/create/dedupe/version/replay/stale/output/public gate/handoff/unknown recovery/fixed source

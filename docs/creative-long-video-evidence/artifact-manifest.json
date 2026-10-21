@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "path": "final.mp4",
+      "bytes": 4752776,
+      "sha256": "21f2aa78b24775bff0637c6b73b1e5e0998ace84fd166187d29d6fbb1b7a1aa0"
+    },
+    {
+      "path": "voice.wav",
+      "bytes": 960044,
+      "sha256": "165b167905aee69bf23857d20b67b7460f3d55cb4f20f0441d2c1ce8a872308c"
+    },
+    {
+      "path": "chapter-1.png",
+      "bytes": 328388,
+      "sha256": "d37abe2549eb79e29ea4fece7d7d8216024f27386c33e33b38fb0a938c1ad9c1"
+    },
+    {
+      "path": "chapter-2.png",
+      "bytes": 338339,
+      "sha256": "3910b6d8da4e9ab739988f06e6ce2f863f4da95afa771aff39752101c794b90c"
+    },
+    {
+      "path": "chapter-3.png",
+      "bytes": 338995,
+      "sha256": "c88108b6fcbf1deea36680158609ff4ba5be3dc15b5470bedb6bb22ea5bd50b0"
+    },
+    {
+      "path": "chapter-4.png",
+      "bytes": 333419,
+      "sha256": "913e39a653cbaadc3648e929613a1f6a4db73b817ee3ca802641b2ea9892fefd"
+    },
+    {
+      "path": "contact.png",
+      "bytes": 173496,
+      "sha256": "247252b6afff170dbadbdbaa1e2b8b7f6b4e0fac4753d68e0ac5166047babfa9"
+    },
+    {
+      "path": "captions.srt",
+      "bytes": 273,
+      "sha256": "f7432ae1a9c29a7a5fa182cc3f9b9e791e8eca5d6830a61dee1c2292eab1e97c"
+    },
+    {
+      "path": "chapters.json",
+      "bytes": 469,
+      "sha256": "f8a6635722ba5df13a8b34ab57a64191c2e7b6df6ade5ef94d638b86a6c0e6fe"
+    },
+    {
+      "path": "script.txt",
+      "bytes": 643,
+      "sha256": "28554b184a6dd55bb57ea3fbdb7de7156158fe6fd93bcd43527423c713dc0df2"
+    }
+  ]
+}

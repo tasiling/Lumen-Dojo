@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "encoding": "gzip",
+  "bytes": 16259375,
+  "sha256": "5cba68ce5a616eac06b20db48536714de23548765f6b65edd4b714d1898af2a5",
+  "parts": [
+    "source-package.gz.part-000",
+    "source-package.gz.part-001",
+    "source-package.gz.part-002"
+  ]
+}

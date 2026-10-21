@@ -1,0 +1,110 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/final-240.mp4",
+  "dry_run": false,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -i /tmp/lumen-long-video-trial-iPzvFX/chapter-1.mp4 -i /tmp/lumen-long-video-trial-iPzvFX/chapter-2.mp4 -i /tmp/lumen-long-video-trial-iPzvFX/chapter-3.mp4 -i /tmp/lumen-long-video-trial-iPzvFX/chapter-4.mp4 -filter_complex '[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v0];[0:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a0];[1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v1];[1:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a1];[2:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v2];[2:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a2];[3:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v3];[3:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a3];[v0]trim=duration=60.000[vp0];[a0]apad=whole_dur=60.000,atrim=duration=60.000[ap0];[v1]trim=duration=60.000[vp1];[a1]apad=whole_dur=60.000,atrim=duration=60.000[ap1];[v2]trim=duration=60.000[vp2];[a2]apad=whole_dur=60.000,atrim=duration=60.000[ap2];[v3]trim=duration=60.000[vp3];[a3]apad=whole_dur=60.000,atrim=duration=60.000[ap3];[vp0][ap0][vp1][ap1][vp2][ap2][vp3][ap3]concat=n=4:v=1:a=1[vout][aout]' -map '[vout]' -map '[aout]' -fps_mode passthrough -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -movflags +faststart -colorspace bt709 -color_primaries bt709 -color_trc bt709 -c:a aac -b:a 192k /tmp/lumen-long-video-trial-iPzvFX/final-240_work_32/joined.mp4",
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -i /tmp/lumen-long-video-trial-iPzvFX/final-240.mp4 -i /tmp/ffskill_meta_lqb3_pcj/chapters.ffmeta -map 0 -map_metadata 0 -map_chapters 1 -c copy /tmp/lumen-long-video-trial-iPzvFX/final-240_work_32/chapters.mp4"
+  ],
+  "probe": {
+    "file": "/tmp/lumen-long-video-trial-iPzvFX/final-240.mp4",
+    "format": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": 240.0,
+    "size_bytes": 4752776,
+    "bitrate": 158425,
+    "video": {
+      "codec": "h264",
+      "profile": "High",
+      "width": 1280,
+      "height": 720,
+      "display_aspect": "16:9",
+      "fps": 24.0,
+      "r_frame_rate": "24/1",
+      "avg_frame_rate": "24/1",
+      "variable_frame_rate_suspected": false,
+      "pix_fmt": "yuv420p",
+      "bit_depth": 8,
+      "hdr": false,
+      "hdr_signal": false,
+      "bt2020_or_hdr": false,
+      "hdr_format": null,
+      "dolby_vision": null,
+      "color_space": "bt709",
+      "color_primaries": "bt709",
+      "color_transfer": "bt709",
+      "color_range": "tv",
+      "rotation": 0,
+      "nb_frames": 5760,
+      "duration": 240.0,
+      "start_time": 0.0,
+      "bitrate": 63449
+    },
+    "audio": {
+      "codec": "aac",
+      "channels": 1,
+      "channel_layout": "mono",
+      "sample_rate": 48000,
+      "bitrate": 89334,
+      "duration": 240.0,
+      "start_time": 0.0
+    },
+    "subtitle_streams": 0,
+    "data_streams": 1,
+    "chapters": [
+      {
+        "index": 0,
+        "start": 0.0,
+        "end": 60.0,
+        "title": "等待，沒有進度的時候"
+      },
+      {
+        "index": 1,
+        "start": 60.0,
+        "end": 120.0,
+        "title": "觀察，想把一切弄清楚"
+      },
+      {
+        "index": 2,
+        "start": 120.0,
+        "end": 180.0,
+        "title": "休息，先照顧此刻生活"
+      },
+      {
+        "index": 3,
+        "start": 180.0,
+        "end": 240.0,
+        "title": "發現，生長有自己的時間"
+      }
+    ],
+    "tags": {},
+    "subtitle_stream_details": [],
+    "audio_streams": [
+      {
+        "index": 0,
+        "codec": "aac",
+        "channels": 1,
+        "channel_layout": "mono",
+        "sample_rate": 48000,
+        "language": "und",
+        "title": null
+      }
+    ]
+  },
+  "verified": true,
+  "verification": [
+    {
+      "step": "probe",
+      "ok": true
+    }
+  ],
+  "encoder": "libx264",
+  "stages": [
+    "clips",
+    "join",
+    "chapters"
+  ],
+  "check": null,
+  "snap": null,
+  "cache": null,
+  "caption": null
+}

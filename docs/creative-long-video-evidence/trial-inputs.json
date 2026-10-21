@@ -1,0 +1,10 @@
+{
+  "imagePaths": [
+    "docs/creative-comic-evidence/assets/panel-1.png",
+    "docs/creative-comic-evidence/assets/panel-2.png",
+    "docs/creative-comic-evidence/assets/panel-3-edited.png",
+    "docs/creative-comic-evidence/assets/panel-4.png"
+  ],
+  "voice": "voice.wav",
+  "testAudio": true
+}
