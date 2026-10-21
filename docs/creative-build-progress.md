@@ -202,3 +202,10 @@
 - 交付：creative-long-video-delivery.md、creative-long-video-review.md、creative-long-video-evidence、spec／plan2026-10-21。實際約16.26MB來源包以gzip分段保存完全相同bytes及SHA，restore-long-video-evidence已重建核對，產品仍是一份JSON。即將以Native相同tree、保留遠端parent、expected_sha非force推送同一PR101。
 - 邊界：首版章節圖像＋各段原音、外部剪輯回收，非NLE／站內自動長動畫；試片靜止，未把HTML動作當已渲染。本人內容／錄音製作驗收、真機H264／字型、正式磁碟／Notion／跨host、滿額40章／60分鐘／256MiB、低記憶體／輔具仍未全面驗；不因4分鐘fixture聲稱已上線或全容量流暢。沒有正式資料、社群、購買／計費、merge／deploy或重試取消的Railway。
 - 下一包：第十包整合與交付，六形式到聊解室、平台／發布連結與回看、手機完整路徑及正式上線包；處理上述保留Minor。所有獨立建置尚未全部完成，既有持續建置保留，不重做長影片。
+
+### 第九包遠端交付 checkpoint
+
+- 同一[PR101](https://github.com/tasiling/Lumen-Dojo/pull/101)已更新至長影片，維持open／merged=false；沒有merge／deploy。
+- GitHub程式驗證head `37288bcb571208959cc0d093b56c3967e5150ae8`、tree `dcb216f6757c1345ee7ad1c3c5f6f0f0b3926442`，對應Native `911c87e2ea8edba68dc407f5a8163c8ffd3e02fe`。完整交付head `38f771973a21f436ed5f24e2816c126eb2c30d8e`、tree `705c5fb351951560fd76e6168d5414ad37f9daa9`，對應Native `07751d868165cdaf1adadcdf4f6ba7f96b0c49c9`完全相同。
+- GitHub Git Data依序保存設計、domain、API、UI、集中修正與交付六個提交，每個提交核對Native tree，保留遠端parent；自`efac89e010701d4f65af66c2b425baadef8ad25a` expected_sha非force更新。fresh fetch確認兩邊tree相同、舊head仍為ancestor、工作樹乾淨；遠端feature對master19ccc891fb04af8ee6bef0d89f0076a299e8a33a的merge-tree通過。
+- 本節是其後文件提交，最新head以本檔所在commit／PR為準。第九包完成可審閱遠端交付；下一輪直接接第十包整合驗收／正式上線包，含三項保留Minor，不重做長影片、不重試取消的正式發布。本人內容／錄音、真機及正式持久環境驗收另接；其他獨立工作尚未全部完成，持續建置保留。

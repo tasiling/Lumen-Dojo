@@ -42,7 +42,7 @@ Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voice
 
 ## Task 4: Review與遠端交付
 - [x] 一次fresh全包review，Important集中RED→GREEN修正，Minor記錄。
-- [ ] delivery／evidence／同一progress與roadmap、checkpoint與Native同tree／expected_sha非force推送PR101，無merge/deploy。
+- [x] delivery／evidence／同一progress與roadmap、checkpoint與Native同tree／expected_sha非force推送PR101，無merge/deploy。
 
 ## Ledger
 - Pre-flight: Task1每段Scene.voice／chapters→Task2真音訊metadata與固定快照→Task3選章編輯／JSON聲音Map；相同欄位與時長語意。共用media新增固定profile、不接受client指定profile；舊預設保留。
@@ -74,3 +74,5 @@ Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voice
 - Final: Ruling: 每尺寸完整流程 — 只聲稱每寬選章及排版，主要390／後段1024完整互動 — 特定裝置仍可能有未覆蓋差異。
 - Final: Ruling: 正式Notion／deploy／計費／社群 — 不屬本包執行範圍，沒有冒用舊發布同意 — 本包交付仍為PR開發成果。
 - Final: Ruling: 全檔排版重構 — 沿用同類模組結構，本輪以功能邊界與驗證為範圍 — 後續維護可另安排，未把可讀性重構混入本包。
+
+- Task4 complete: 全部程式與證據已expected_sha非force推送PR101，fresh fetch核對Native／遠端tree相同、舊headancestor、遠端對最新master merge-tree PASS、PR open未合併。遠端程式37288bc、完整交付38f7719；本節其後文件提交，最新head以本檔／PR為準。下一包整合，保留3Minor，沒有正式發布。
