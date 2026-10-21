@@ -9,7 +9,7 @@ export async function startCreativePreview({port=3045,appPort=3047,empty=false}=
   if(!existsSync('.next/BUILD_ID')) throw new Error('Run npm run build before npm run preview:creative.');
   const f=await fixture();
   const app=await isolatedServer(appPort,'weaving-fixture',{production:true});
-  const handlers=Object.fromEntries(['weaving-shuttles','weaving-works','weaving-sources','liaojie-projects'].map(k=>['/api/dojo/'+k,f.load('app/api/dojo/'+k+'/route.ts')]));
+  const handlers=Object.fromEntries(['weaving-shuttles','weaving-works','weaving-sources','liaojie-projects','liaojie-text-variants','creative-releases'].map(k=>['/api/dojo/'+k,f.load('app/api/dojo/'+k+'/route.ts')]));
   f.queries.listReadingBooks=async()=>[{id:'preview-book',title:'隔離示範書'}];
   f.queries.listReadingNotes=async()=>[{id:'preview-note',kind:'excerpt',text:'這是隔離示範素材，不是你的私人紀錄。',metadata:{chapter:'示範章節',location:'第 1 頁'}}];
   if(!empty) {

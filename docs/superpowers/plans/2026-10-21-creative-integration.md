@@ -37,12 +37,12 @@ Interfaces: ReleaseSource／CreativeRelease／ReleasePatch；parseReleasePatch�
 Files: app/components/creativeReleases/{ReleaseWorkspace,ReleaseHistory,ReleaseEditor}.tsx及release.css；app/liaojie/releases/page.tsx；LiaojiePublicationWorkbench及liaojie入口；scripts/test-creative-release-ui.mjs。
 Interfaces: ReleaseEditor useWeavingDraft＋ConflictRecovery全欄位，ReleaseWorkspace明選來源／平台及同步gate，ReleaseHistory全覽篩選與既有唯讀links。
 - [x] 寫空／非空、dirty／save503／完整衝突、unknown回應找回、六形式來源選擇、每寬完整建立→保存→回看與長字串；Expected missing UI FAIL。
-- [x] 實作沿用視覺、手動不發文文案，Expected dev及production UI PASS，實際截圖目視，commit。
+- [x] 實作沿用視覺、手動不發文文案，production UI PASS，實際截圖目視，commit；dev manifest限制見Ledger。
 
 ## Task 4: 整合交付
 Files: docs/creative-integration-delivery.md、release-ready.md、creative-integration-evidence、同一progress／roadmap。
-- [ ] 六形式／來源／知識／提案／文字交接適當回歸、build／tsc／lint，Expected PASS／既有warnings明示。
-- [ ] 一次fresh最終review，Critical／Important集中RED→GREEN，Minor及每項set aside裁定記錄。
+- [x] 六形式／來源／知識／提案／文字交接適當回歸、build／tsc／lint，Expected PASS／既有warnings明示。
+- [x] 一次fresh最終review，Critical／Important集中RED→GREEN，Minor及每項set aside裁定記錄。
 - [ ] 正式上線包、checkpoint／Native同tree保遠端parent／expected_sha非force推PR101，核最新master；無merge/deploy。
 - [ ] 全部獨立工作完成後列本人驗收／正式授權、停用本持續建置（不動舊取消總排程）。
 
@@ -57,3 +57,12 @@ Files: docs/creative-integration-delivery.md、release-ready.md、creative-integ
 - Task2 complete: model/API suite RED missing module→GREEN；六形式代表固定資料的來源綁定（各媒體實際生成由既有suite驗證）、平台文字版本、跨parent／平台拒絕、日期URL、owner/CSRF/no-store、防重、stale及unknown create/save只讀找回均PASS；tsc與targeted lint PASS。資料夾無正式憑證。
 
 - Task3: production真React五寬各建立→保存→回看PASS；實際六形式真試製bytes由正式save/output/handoff stores接同企劃，非只代表metadata。涵蓋六形式與IG／Threads、unknown建立找回、invalid published／503 dirty離開、完整conflict六欄位、篩選與長中文URL。字型QA最初只套欄位，已改全介面重截。dev連續導航出現Next manifest JSON讀取競態，正式build及production沒有；不把早期局部dev結果稱完整通過，補dev重跑。
+
+- Fresh review: 0 Critical／3 Important／0 Minor；集中一次fix pass（無第二次review）。三項先RED：V1在V2後消失、video被text catalog接收、回看無精確紀錄入口。修正改以release ID獨立私人編輯頁，封存／缺parent仍可編收據；workbench顯式不存在ID不fallback其他企劃。catalog枚舉平台versionRefs、標版號；completion文字須p.sourceFormat及work.format皆text；舊非文字維持原發布欄位。
+- Ruling: private release獨立頁是Task3歷史導航修正，來源與平台仍immutable，不讀原素材／不解封企劃／不新增公開動作；原企劃缺失以明確訊息結束，不自動選其他企劃。
+- Ruling: 平台來源列全部固定版本，單筆失效顯missing且保留其他來源；平台查詢整組失敗也保留completion／media catalog。補可區分第n版與ID，不以恢復舊稿假造歷史版本。
+- Ruling: dev連續路由導航的Next manifest偶發JSON錯誤無法歸因本diff；正式編譯五寬流程及獨立導航回歸為交付依據，不把dev未全過隱瞞成PASS。正式環境／本人／真機另驗。
+
+- Self-detected integration boundary in same fix pass: 舊preview proxy沒有liaojie-text-variants／creative-releases handler，會回缺sources的fallback。先加無Playwright攔截的真loopback預覽RED，再接同一正式route；舊test期待早已不存在的標題改為實際建立→保存→回看。僅補當前文字示範範圍，不宣稱CLI預覽已含全部六媒體。
+
+- Fix pass verification: review domain／API／真production導航（多紀錄、封存／缺parent、missing ID、V1 picker）／五寬六形式完整production UI／無攔截loopback預覽均exit0；最後build／tsc PASS，全lint 0 errors／2既有warnings，修正範圍lint 0 warnings。原稿未變。無第二次review，dev失敗明示未列PASS。
