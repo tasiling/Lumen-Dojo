@@ -148,3 +148,16 @@
 - GitHub程式驗證head `df3667d91354cc206a15189e73aa2a87a6becccb`、tree `6dbfcc2f06504fd69e4d1ab9c8b655d78092b1d3`；完整實作／證據head `5fb7d51fa8b5c2330435cf67fc0bddd60aa68e32`、tree `f0f2fae6fab4934233bb7d89e2f2405e1db06614`。Native對應完整head `f516ccd196481cc6b0d9be03df4cb4409da834a7`，tree完全相同。
 - 已連接GitHub Git Data依序保存設計、domain／媒體、UI／版本、審查修正、成品交付五個提交，各次核對Native完全相同tree、保留遠端parent，自`afa3a452344b276b1cea69536da8cd65ddcccd2c` expected_sha非force更新。fresh fetch證實遠端／Native tree相同、原遠端head仍為ancestor；最新master仍`680aca2`且native merge-tree成功，未覆蓋其他寫入者。
 - 本節是其後的交付身分文件提交，最新head以本檔所在commit／PR為準。第六包完成遠端可審閱交付；下一輪直接接第七包Podcast，不重做短片、不重試已取消的正式發布，也不停止其餘可獨立建置。
+
+## 2026-10-21 第七包：Podcast
+
+- Branch：`codex/weaving-liaojie-creation-v2`；接續遠端`90b30fec11d330e73f47f29e3c8adc4ccba4a663`，master`680aca260e54e5fa38289012bd48c86553594cdb`。開始前確認上一包已結束、單一writer，沿用Native checkout。本機最終程式驗證head `1a1ffdc4b8ac92e5bb929d0cf36dd1c1513b366b`、tree `611b43e8669352fa7933fc7305659415b09c0b87`；本節／證據是其後提交，最新head以本檔所在commit／PR為準。
+- 實際新增：`/weaving/podcast`五步、固定文字成品入口、節目／單集／介紹、1–40段稿與剪輯註記、獨立原逐字稿、原始本人／明示測試音訊、封面來源與公開確認、1080方形同源PNG、可修改JSON／原音／稿／章節下載與重匯。真音檔回收固定、時間變更另確認、章節按實測長度驗收、聊解室聲音／介紹／封面下載／章節／發布資料，不自動上架或全平台轉製。
+- 共用媒體：固定server profile提供Podcast128MiB／3600秒、音訊專用與獨立目錄；短片64MiB／181秒不變。owner／SHA／ffprobe／有界ffmpeg完整解碼／Range沿用，不信任客戶端metadata，不剪改原音；圖片沿用既有資產與rasterize可選1080高度，舊預設1350保持。
+- 實際工具試製：虛構雨後小芽及非語音隔離音。FFmpeg cut原12秒首尾各1秒→10秒，再loudness兩階段-16LUFS；最終WAV 24000Hz mono PCM、10秒、480078bytes、-16.01LUFS／-9.79dBTP。原音、剪後音、成品、計畫／實際命令、probe／check、真封面PNG與素材包保留；`podcast-trial.mjs`獨立暫存重現成功。check無FAIL／3 WARN為未嵌章節、無字幕、24000Hz；章節為另存JSON，不把試音當本人聲音品質。
+- 保存／可靠性：版本不可覆寫、同來源防重、stale拒絕、dirty與失敗保留、完整bundle衝突恢復、候選音檔綁版／回收欄位刷新、unknown output找回及handoff marker唯讀恢復。最後output／handoff副作用在同鎖重核來源公開政策／資產／目前版，partial撤權不新增引用，不解未知寫鎖或重複建成果。
+- 審查：fresh全包原0 Critical／1 Important／2 Minor；按影響重評比較隱藏錄音／來源等差異為Important。兩項集中RED→GREEN修正dirty JSON丟稿及比較全欄位；圖片GET延遲亦RED→GREEN防止沿用舊圖。無第二次review。保留1 Minor：聊解接收卡固定封面需下載查看，尚未內嵌，PNG完整可取用。
+- 驗證：最終podcast domain／real API與dev／production全流程、PNG1080方圖、刷新後固定PNG文字區與預覽pixel一致、真WAV播放currentTime前進、375／390／430／320／1024無溢出；含dirty、保存失敗／衝突、JSON失敗保留／成功重匯、圖片競態、剪輯確認、回收刷新、unknown output／handoff與交接。short-video／illustrated／weaving／liaojie-text／reading-knowledge-api、原圖文production UI、build／tsc通過，lint0 errors／2既有warnings。
+- 交付：`docs/creative-podcast-delivery.md`、`docs/creative-podcast-evidence/`，spec／plan日期2026-10-21。即將以Native相同tree、保留遠端parent、expected_sha非force推送同一PR101，沒有merge/deploy、正式Notion、社群、計費或重試取消的Railway操作。
+- 裁定／代價：外部剪輯回收非DAW，128MiB／60分鐘以外需轉檔；配圖必須載好再匯出；自動化常規選擇已授權，不反覆詢問。review未獨立重跑browser／Next，實作者已另驗；正式磁碟／工具、Notion、本人iPhone／錄音音質及Podcast供應商上架仍待本人／環境驗收，不能據隔離例宣告全部上線。完整裁定與保留Minor見delivery／plan Ledger。
+- 下一包：短漫，依角色參考／分鏡／逐格生圖與替換／對白／合成，保留每格來源／版次，完成真正可閱讀作品。再接長影片、整合驗收；第七包依賴已滿足，不因本人錄音／供應商尚缺而停止獨立建置，既有持續建置保留。

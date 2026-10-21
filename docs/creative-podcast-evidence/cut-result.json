@@ -1,0 +1,40 @@
+{
+  "status": "completed",
+  "output": "docs/creative-podcast-evidence/edited.wav",
+  "dry_run": false,
+  "verified": true,
+  "summary": {
+    "duration_s": 10.0,
+    "acodec": "pcm_s16le",
+    "channels": 1
+  },
+  "commands": 1,
+  "expected_duration": 10.0,
+  "duration_error_ms": 0.0,
+  "precision": "sample",
+  "reencoded": true,
+  "dropped_non_av_streams": false,
+  "requested_start": 1.0,
+  "requested_end": 11.0,
+  "requested_segments": null,
+  "requested_duration": 10.0,
+  "output_duration": 10.0,
+  "duration_delta_seconds": 0.0,
+  "mode": "accurate",
+  "keyframe_snapped": false,
+  "start_snapped": false,
+  "reencode_reason": [
+    "requested"
+  ],
+  "least_exact_precision": "sample",
+  "segment_precision": null,
+  "edit_list": false,
+  "stored_preroll_seconds": null,
+  "av_start_skew_seconds": null,
+  "join_check": null,
+  "segment_end_snap_seconds": null,
+  "notes": [],
+  "nearest_keyframes": null,
+  "lossless_alternative": null,
+  "snap": null
+}
