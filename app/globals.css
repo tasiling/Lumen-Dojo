@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Test source packages contain raster base64, never product utility classes. */
+@source not "../docs/creative-comic-evidence";
 
 :root {
   --background: #ffffff;

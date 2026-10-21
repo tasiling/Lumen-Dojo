@@ -18,6 +18,7 @@ try{
  assert.equal(m.comicSheets({...d,panels:Array.from({length:5},(_,i)=>({...d.panels[0],id:`p${i}`}))}).length,2);
  assert.throws(()=>m.assertComicReady({...d,panels:[{...d.panels[0],confirmed:false}]}),/確認/);
  assert.throws(()=>m.assertComicReady({...d,panels:[{...d.panels[0],dialogue:'a\n'.repeat(8)}]}),/版面/);
+ assert(!svg.comicSvg({...d,panels:[{...d.panels[0],speaker:'',dialogue:''}]},0,{}).includes('<text xml:space="preserve" x="84"'),'silent panels must not create zero-width text that blocks rasterization');
  const s=svg.comicSvg({...d,title:'<script>字&'},0,{});assert(!s.includes('<script>'));assert(s.includes('&lt;script&gt;'));assert(!s.includes('href="javascript:'));
  assert.throws(()=>svg.comicSvg(d,0,{[image.assetId]:'javascript:alert(1)'}),/圖片/);
  console.log('PASS comic strict limits/refs/confirmed panel and character guard/local replacement/sheets/overflow/escaped SVG');
