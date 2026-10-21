@@ -23,3 +23,5 @@ export function parseVideoDraft(value:unknown):VideoDraft{
  const result={title:cardText(v.title,200,'短片名稱'),angle:cardText(v.angle,2000,'觀點'),style:v.style as VideoDraft['style'],rawTranscript:cardText(v.rawTranscript,40000,'原始逐字稿'),scenes,voice};if(duration(result)>180)throw new WeavingError('短片總長不可超過180秒');return result;
 }
 export function assertVideoReady(d:VideoDraft){if(!d.title.trim()||!d.angle.trim())throw new WeavingError('請填短片名稱與觀點');for(const [i,s]of d.scenes.entries()){if(!s.image)throw new WeavingError(`第${i+1}鏡尚未加入圖片`);if(!s.caption.trim()||wrapCardText(s.caption,13).length>3)throw new WeavingError(`第${i+1}鏡字幕請填寫並縮短至3行以內`);if(!s.image.publicConfirmed||!s.image.sourceNote.trim())throw new WeavingError(`第${i+1}鏡圖片公開確認尚未完成`);}if(!d.voice||!d.voice.publicConfirmed||!d.voice.sourceNote.trim())throw new WeavingError('聲音來源及公開確認尚未完成');}
+
+export function assertVoiceDuration(d:VideoDraft,seconds:number){if(!Number.isFinite(seconds)||Math.abs(seconds-duration(d))>.5)throw new WeavingError('配音與分鏡總長差超過0.5秒；請調整分鏡或在外部剪輯，不會自動裁切');}

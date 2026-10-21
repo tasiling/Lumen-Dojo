@@ -1,5 +1,5 @@
 import {wrapCardText} from '../illustrated/model';
-import {duration,type Scene,type VideoDraft} from './model';
+import {assertVoiceDuration,duration,type Scene,type VideoDraft} from './model';
 const escape=(s:string)=>s.replace(/[&<>"']|[^\x00-\x7f]/gu,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??`&#${c.codePointAt(0)};`));
 export function motionTransform(motion:Scene['motion'],progress:number){const p=Math.max(0,Math.min(1,progress));return motion==='still'?'translateY(0px) rotate(0deg)':motion==='drift'?`translateY(${12-24*p}px) rotate(0deg)`:`translateY(0px) rotate(${-2+4*p}deg)`;}
 export function sceneSvg(scene:Scene,style:VideoDraft['style'],imageData?:string,progress=0,testAudio=false){
@@ -9,7 +9,8 @@ export function sceneSvg(scene:Scene,style:VideoDraft['style'],imageData?:string
  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" role="img" aria-label="短片分鏡預覽"><rect width="1080" height="1920" fill="${paper}"/>${testAudio?`<text x="110" y="120" font-family="inherit" font-size="28" fill="${ink}">${escape('隔離測試音訊，非本人錄音')}</text>`:''}<path d="M75 150 L980 180 L950 1260 L90 1230Z" fill="#fffdf8"/><g class="video-art" style="transform:${motionTransform(scene.motion,progress)};transform-origin:540px 740px">${image}</g>${style!=='watercolor'?'<path d="M135 1200 Q430 1230 820 1190 M155 1220 Q400 1240 775 1220" stroke="#749c8c" stroke-width="8" fill="none"/>':''}<g fill="${ink}" font-family="inherit" font-size="60" font-weight="600">${lines.map((s,i)=>`<text xml:space="preserve" x="110" y="${1350+i*80}">${escape(s)}</text>`).join('')}</g></svg>`;
 }
 export function srt(d:VideoDraft){let start=0;const time=(n:number)=>{const ms=Math.round(n*1000);return `00:${String(Math.floor(ms/60000)).padStart(2,'0')}:${String(Math.floor(ms/1000)%60).padStart(2,'0')},${String(ms%1000).padStart(3,'0')}`;};return d.scenes.map((s,i)=>{const a=start;start+=s.duration;return `${i+1}\n${time(a)} --> ${time(start)}\n${s.caption}\n`;}).join('\n');}
-export function compositionHtml(d:VideoDraft,images:Record<string,string>,voiceData:string,fontData=''){
+export function compositionHtml(d:VideoDraft,images:Record<string,string>,voiceData:string,voiceSeconds:number,fontData=''){
+ assertVoiceDuration(d,voiceSeconds);
  if(!/^voice\.(wav|mp3|m4a)$/.test(voiceData))throw Error('聲音需以voice.wav、voice.mp3或voice.m4a保存在製作包旁');
  const font=/^data:font\/ttf;base64,[A-Za-z0-9+/=]+$/.test(fontData)?`@font-face{font-family:LumenTC;src:url(${fontData})}body{font-family:LumenTC,sans-serif}`:'body{font-family:sans-serif}';let start=0;
  const scenes=d.scenes.map((s,i)=>{const t=start;start+=s.duration;return `<div id="scene-${i}" class="clip" data-start="${t}" data-duration="${s.duration}" data-track-index="1" style="position:absolute;inset:0">${sceneSvg(s,d.style,s.image?images[s.image.assetId]:undefined,0,d.voice?.kind==='test')}</div>`;}).join('');

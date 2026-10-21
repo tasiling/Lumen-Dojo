@@ -9,7 +9,10 @@ const f=await fixture();try{
  const source=JSON.parse(await readFile('docs/creative-short-video-evidence/project-source.json','utf8'));
  const img=await f.load('lib/dojo/illustrated/assets.ts').saveAsset(await readFile('docs/creative-illustrated-evidence/assets/rain-sprout.png'));assert.equal(img.id,source.draft.scenes[0].image.assetId);
  const media=f.load('lib/dojo/shortVideo/media.ts');await media.saveMedia(await readFile('docs/creative-short-video-evidence/test-tone.wav'));
- const saved=await store.saveVideo({operationId:'video-save-test',projectId:b.project.id,expectedRevision:b.project.revision,draft:source.draft});assert.equal(saved.versions.length,2);
+ let saved=await store.saveVideo({operationId:'video-save-test',projectId:b.project.id,expectedRevision:b.project.revision,draft:source.draft});assert.equal(saved.versions.length,2);
+ const short=await store.saveVideo({operationId:'video-short-voice',projectId:b.project.id,expectedRevision:saved.project.revision,draft:{...source.draft,scenes:source.draft.scenes.slice(0,1)}});
+ const invalidRender=await api.GET(f.req('GET',`/api/dojo/short-video?id=${b.project.id}&renderVersionId=${short.version.id}&expectedRevision=${short.project.revision}`));assert.equal(invalidRender.status,400,'long voice must be rejected before HTML export');
+ saved=await store.saveVideo({operationId:'video-full-voice',projectId:b.project.id,expectedRevision:short.project.revision,draft:source.draft});
  await assert.rejects(()=>store.saveVideo({operationId:'video-stale-test',projectId:b.project.id,expectedRevision:1,draft:source.draft}),e=>e.status===409);
  const video=await media.saveMedia(await readFile('docs/creative-short-video-evidence/final.mp4'));assert.equal(video.kind,'video');
  const output={operationId:'video-output-test',projectId:b.project.id,expectedRevision:saved.project.revision,versionId:saved.version.id,assetId:video.id,tool:'Hyperframes 0.8.181',returnNote:'隔離影片，字幕及試製聲音已核對',reviewed:true,publicationConfirmed:true};
