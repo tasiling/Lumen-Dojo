@@ -82,3 +82,21 @@
 - GitHub 已保存的程式驗證 head：`b33fc868f67156f7477b2fb372ea8ff984f3a85e`（tree `9b98f85e3a99c2913cd9249ce55b5f65c55cd769`）；已驗證完整 checkpoint：`f10abaf76eebbada83d4b1a8ee8dea2e72d9aab2`（tree `ee0c66ec69149c0e1aca1904bac06936759403ee`）。本節為其後的連結文件提交；最新 head 以本檔所在 commit／PR 為準。
 - 逐一保存六個實作／文件提交的父鏈與完全相同 tree；以 expected_sha=`689653d3a942e36a6a773987bc292afef97d4943`、非 force 更新分支成功，fetch 後 native／remote tree 一致，未覆蓋其他寫入者。
 - 第三包程式、隔離驗收、審查修正及遠端交付完成。下一輪接第四包純文字三平台協作，不重做提案或重試前包發布動作。
+
+## 2026-10-21 排程頻率調整
+
+- 使用者將「織光聊解持續建置」由每四小時改為每兩小時；既有任務身分與工作順序不變，未建立第二個重複排程，也未重新啟用已取消的道場總排程。
+- 排程只接續尚未完成且依賴滿足的工作包；不是自動讀取全部私人紀錄、社群發文或全天常駐程序。
+
+## 2026-10-21 第四包：純文字與三平台版本
+
+- Branch：`codex/weaving-liaojie-creation-v2`；接續遠端／本地 checkpoint `6c3a4ee`。本機程式驗證 head `cb3bab8972c2e3cf157ef10ee48c64fcb32b084b`、tree `86f9b6a847cb47f6f005e595ad3f9f250b1963f9`；本節及 delivery 為其後文件提交，最終遠端 head 以本檔所在提交／PR 為準。
+- 實際新增：單平台建立、不可覆寫版本年輪、語氣／修改註記、逐段編輯與字數、同源預覽、ready／scheduled／published、真正稿件複製、AI 協作指令及噗浪蓋樓草稿交接。噗浪、Threads、IG 配文只按本人選擇逐一建立，不自動全平台轉製。
+- 保存與恢復：平台稿、日期及發布連結納入同一 dirty/session guard；保存前失敗保留輸入，遠端寫入後回應遺失以原操作唯讀恢復；文字保存及狀態／交接衝突均可比較目前保存版與本人畫面後選擇重套。
+- 伺服器安全：同企劃／平台的並行建立在共用鎖內防重；公開許可、固定來源、expected revision 與目前版本在副作用前同鎖重核；超長噗浪來源在 seed 前拒絕。噗浪 metadata 經人工蓋樓編輯仍保留，操作 reconciliation 可核對文字與噗浪草稿。
+- 相容：新交接保存 `sourceFormat`；既有／非文字／外部連結企劃走原發布整理介面，品牌角度、受眾、平台、標題、封面、摘要、CTA、日期、狀態、發布連結、回收與下一步仍可編輯。封存及切平台同樣受未保存保護。
+- 審查：0 Critical／9 Important／1 Minor；全部按一次集中修正完成並以 RED→GREEN 案例覆蓋，沒有延後 Minor 或第二次審查。修正清單及邊界見 `docs/creative-text-delivery.md`。
+- 驗證：`test:liaojie-text`、dev／production `test:liaojie-text-ui`、`test:weaving`、`test:weaving-ui`、source-settings、proposals、reading-knowledge、build、tsc、lint 通過；lint 0 errors／2 個既有 warnings。production 375／390／430／320／1024px 無橫溢，含空白／非空、dirty、保存失敗／未知回應、保存及狀態衝突、ready、噗浪交接、舊企劃編輯。
+- 交付：`docs/creative-text-delivery.md`、`docs/creative-text-evidence/`、spec `docs/superpowers/specs/2026-10-21-text-platform-versions-design.md`、plan `docs/superpowers/plans/2026-10-21-text-platform-versions.md`。本包沒有正式資料寫入、社群發布、merge/deploy 或 iPhone 真機驗收。
+- 裁定／代價：IG 本包只交付配文，不宣稱圖卡完成；Threads／IG 採人工複製與連結回收，不處理帳號權限；舊資料預設 `sourceFormat=legacy`，避免錯判文字而奪走原編輯流程。代價是歷史文字企劃不自動升級，需之後明確遷移或沿用原發布整理。
+- 下一包：圖文實際製作。先以隔離素材選可用外部工具實際生成圖片，保存逐頁文案、提示、圖片、版次、輸出與回收結果；不把 prompt 或空白圖框算成已完成圖卡。
