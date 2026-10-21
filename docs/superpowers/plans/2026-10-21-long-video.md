@@ -24,8 +24,8 @@
 ## Task 1: 長片模型／章節／媒體
 Files: lib/dojo/longVideo/{model,composition}.ts，shortVideo/media.ts，scripts/test-long-video.mjs。
 Interfaces: LongVideoDraft／Scene／Version／Project／Output／Bundle；newScene、duration、chapters、parseLongVideoDraft、assertLongVideoReady、assertChapterAudio；sceneSvg、srt、compositionHtml。
-- [ ] 寫strict／上限／章節順序／分段音長／escaping／SRT及長profile隔離測試，Expected missing module FAIL。
-- [ ] 實作固定profile與domain，Expected node scripts/test-long-video.mjs PASS、short-video與podcast回歸PASS，commit。
+- [x] 寫strict／上限／章節順序／分段音長／escaping／SRT及長profile隔離測試，Expected missing module FAIL。
+- [x] 實作固定profile與domain，Expected node scripts/test-long-video.mjs PASS、short-video與podcast回歸PASS，commit。
 
 ## Task 2: 持久API／不可覆寫回收
 Files: lib/dojo/longVideo/store.ts；app/api/dojo/long-video/{route,media/route}.ts；formal／operations／liaojiePublication；scripts/test-long-video-api.mjs。
@@ -48,3 +48,5 @@ Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voice
 - Pre-flight: Task1每段Scene.voice／chapters→Task2真音訊metadata與固定快照→Task3選章編輯／JSON聲音Map；相同欄位與時長語意。共用media新增固定profile、不接受client指定profile；舊預設保留。
 - Ruling: 依已授權Native單一writer與持久Ledger直接建置，不重複要求常規同意；Native與遠端前包head不同但tree已相同，保留Native歷史，Git Data將保留遠端parent — 不要求重傳 — 代價是交付時需逐提交核對tree與parent。
 - Ruling: 首版章節圖像敘事＋各段原音，橫式1280×720設計、外部編輯回收 — 完成可操作路徑而不另造NLE — 代價是實拍多軌剪輯仍在外部工具處理，本人錄音／藝術品質另驗。
+
+- Task1 complete: missing module RED→GREEN；strict／章節累加及排序／分段原音長／HTML escaping／SRT跨小時／240秒long profile與短片拒絕／跨目錄／256MiB界限通過；short-video及podcast原套件回歸通過。
