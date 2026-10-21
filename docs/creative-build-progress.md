@@ -188,3 +188,17 @@
 - GitHub程式驗證head `6adce552eac946893476fdec685dab883f979022`、tree `3b2d6c63c70a4aba7663d498623322c948b97ccb`；完整交付head `a127c8dea3c1c124065a662873cdd8f2e1082a7a`、tree `3bd7a48fa58f78ec7b405ed6633950fb328df7a4`，對應Native `22540e66e8e91ed74bce33bf1e7082b07090f2d4`同tree。
 - GitHub Git Data依序保存設計、domain、API、UI及交付五個提交，各次核對Native tree、保留遠端parent；自`1031b4c79bc706869e3266e26f544fde901ceb68` expected_sha非force更新。fresh fetch已核對兩邊tree相同、舊head仍為ancestor、工作樹乾淨，沒有覆蓋其他寫入者。master為`19ccc891fb04af8ee6bef0d89f0076a299e8a33a`，merge-tree通過。
 - 本節是其後文件提交，最新head以本檔所在commit／PR為準。第八包已遠端可審閱交付；下輪直接接第九包長影片，不重做短漫、不重試取消的正式發布。重建試製JSON可執行`node scripts/restore-comic-evidence.mjs`，無需重傳成果。保留兩項Minor與未驗邊界見delivery／Ledger；持續建置保留。
+
+## 2026-10-21 第九包：長影片
+
+- Branch：`codex/weaving-liaojie-creation-v2`；從遠端efac89e／Native d93bf26相同tree379a97f接續，確認單一writer。最新master19ccc891fb04af8ee6bef0d89f0076a299e8a33a，Native merge-tree通過；不覆蓋其他工作區。
+- Native程式驗證head `911c87e2ea8edba68dc407f5a8163c8ffd3e02fe`、tree `dcb216f6757c1345ee7ad1c3c5f6f0f0b3926442`；本節與證據為其後文件提交，最新head以本檔所在commit／PR為準。
+- 實際新增：`/weaving/long-video`、固定文字入口與同源五步；1–40章／5–300秒／總長60分鐘、各章口播／字幕／配圖／原音與來源、章節累計／換序、同源1280×720 PNG、SRT／章節JSON／稿／原音及可修改JSON／外部HTML。長profile獨立256MiB／3600秒／300秒有界解碼，不放寬短片64MiB及Podcast128MiB；每章原音與總片長差<=0.5秒，不暗裁音。
+- 外部實試：沿用第八包真正生圖／局部改圖的虛構雲豆四圖，產品實際匯出四章PNG，FFmpeg skill probe／dry-run／insert／audio／render／check／look真正製作240.0秒1280×720／24fps H264-AAC，中文章節0／60／120／180秒。預設fade縮至238.5秒，已實際改none並重製240秒，保留初始結果與調整。非人聲測試音、不當本人聲音；check0FAIL／1WARN缺可切換字幕軌（已燒字幕、SRT另可下載），明確略過loudness；已目視六張解碼圖。
+- 可靠性：owner、SHA／完整解碼／原子安裝／Range、不可覆寫版本、防重／stale／同操作重試、來源公開／資產／目前版在最後副作用同鎖核對、partial撤權零新增及unknown marker唯讀恢復。UI同步gate綁上傳、dirty匯入拒絕／失敗保留、完整bundle比較／恢復、配圖就地重試、候選MP4綁版及刷新找回、unknown成品找回與聊解接收。
+- fresh獨立全包review0Critical／2Important／3Minor；兩項集中RED→GREEN修正同檔圖片／音訊／MP4重試，以及整包超出自身匯入門檻。新增JSON／HTML encoded256MiB預算先驗再讀client完整素材，JSON匯出／匯入同常數，超出可分章下載；不縮減一小時保存容量。reviewer另驗不同真WAV SHA／時長及換序對應通過；沒有第二次review。
+- 保留Minor：衝突遠端換序後需重點章節對齊預覽（PNG會防錯拒絕）；延遲A企劃GET可能切回A（本機稿同步暫存）；不同真音檔案例尚未納入固定suite。完整裁定與代價見creative-long-video-review與plan Ledger，列第十包整合改善。
+- 驗證：long-video domain／真API及focused同檔／預算UI、dev及最終production完整流程；375／390／430／320／1024每寬選章與無橫溢截圖、主流程390／後段1024，非五寬各自全流程。涵蓋空白／非空、dirty、save503、完整衝突、換序、HTML／SRT／稿／JSON、圖片重試、回收刷新／unknown／固定交接。short-video／podcast／comic／illustrated／weaving／liaojie-text／reading-knowledge及reading-knowledge-api回歸通過；集中修正後long／short／podcast3套重跑PASS，最後build／tsc、dev／production重跑PASS，lint0errors／2既有warnings、修正檔0warnings。
+- 交付：creative-long-video-delivery.md、creative-long-video-review.md、creative-long-video-evidence、spec／plan2026-10-21。實際約16.26MB來源包以gzip分段保存完全相同bytes及SHA，restore-long-video-evidence已重建核對，產品仍是一份JSON。即將以Native相同tree、保留遠端parent、expected_sha非force推送同一PR101。
+- 邊界：首版章節圖像＋各段原音、外部剪輯回收，非NLE／站內自動長動畫；試片靜止，未把HTML動作當已渲染。本人內容／錄音製作驗收、真機H264／字型、正式磁碟／Notion／跨host、滿額40章／60分鐘／256MiB、低記憶體／輔具仍未全面驗；不因4分鐘fixture聲稱已上線或全容量流暢。沒有正式資料、社群、購買／計費、merge／deploy或重試取消的Railway。
+- 下一包：第十包整合與交付，六形式到聊解室、平台／發布連結與回看、手機完整路徑及正式上線包；處理上述保留Minor。所有獨立建置尚未全部完成，既有持續建置保留，不重做長影片。

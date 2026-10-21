@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:reading-knowledge-api
+> node scripts/test-reading-knowledge-api.mjs
+
+PASS authenticated relation GET: denied before reads, authorized, no writes, no-store
+PASS search auth, partial state retained, annotation CSRF blocked before save, management metadata excluded from knowledge scan

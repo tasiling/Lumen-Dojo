@@ -1,0 +1,38 @@
+{
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/final-240.mp4",
+  "transition": {
+    "type": "none"
+  },
+  "clips": [
+    {
+      "src": "/tmp/lumen-long-video-trial-iPzvFX/chapter-1.mp4"
+    },
+    {
+      "src": "/tmp/lumen-long-video-trial-iPzvFX/chapter-2.mp4"
+    },
+    {
+      "src": "/tmp/lumen-long-video-trial-iPzvFX/chapter-3.mp4"
+    },
+    {
+      "src": "/tmp/lumen-long-video-trial-iPzvFX/chapter-4.mp4"
+    }
+  ],
+  "chapters": [
+    {
+      "at": 0,
+      "title": "等待，沒有進度的時候"
+    },
+    {
+      "at": 60,
+      "title": "觀察，想把一切弄清楚"
+    },
+    {
+      "at": 120,
+      "title": "休息，先照顧此刻生活"
+    },
+    {
+      "at": 180,
+      "title": "發現，生長有自己的時間"
+    }
+  ]
+}

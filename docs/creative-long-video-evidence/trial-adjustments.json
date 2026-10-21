@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "initialTransition": "implicit fade 0.5s",
+  "initialSeconds": 238.5,
+  "targetSeconds": 240,
+  "adjustment": {
+    "transition": {
+      "type": "none"
+    }
+  },
+  "reason": "Chapter timestamps and each original 60-second source must remain aligned; no chapter overlap.",
+  "sourceVoice": "non-speech test tone; not user recording"
+}

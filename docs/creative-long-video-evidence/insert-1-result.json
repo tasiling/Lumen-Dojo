@@ -1,0 +1,56 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/silent-1.mp4",
+  "dry_run": false,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -loop 1 -i /workspace/scratch/ad1d9c2e7938/weaving-creation/docs/creative-long-video-evidence/chapter-1.png -t 60.000 -vf scale=out_color_matrix=bt709:out_range=tv,format=yuv444p,scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=24 -c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p -movflags +faststart -colorspace bt709 -color_primaries bt709 -color_trc bt709 -an /tmp/lumen-long-video-trial-iPzvFX/silent-1.mp4"
+  ],
+  "probe": {
+    "file": "/tmp/lumen-long-video-trial-iPzvFX/silent-1.mp4",
+    "format": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": 60.0,
+    "size_bytes": 417988,
+    "bitrate": 55731,
+    "video": {
+      "codec": "h264",
+      "profile": "High",
+      "width": 1280,
+      "height": 720,
+      "display_aspect": "16:9",
+      "fps": 24.0,
+      "r_frame_rate": "24/1",
+      "avg_frame_rate": "24/1",
+      "variable_frame_rate_suspected": false,
+      "pix_fmt": "yuv420p",
+      "bit_depth": 8,
+      "hdr": false,
+      "hdr_signal": false,
+      "bt2020_or_hdr": false,
+      "hdr_format": null,
+      "dolby_vision": null,
+      "color_space": "bt709",
+      "color_primaries": "bt709",
+      "color_transfer": "bt709",
+      "color_range": "tv",
+      "rotation": 0,
+      "nb_frames": 1440,
+      "duration": 60.0,
+      "start_time": 0.0,
+      "bitrate": 53310
+    },
+    "audio": null,
+    "subtitle_streams": 0,
+    "data_streams": 0,
+    "chapters": [],
+    "tags": {},
+    "subtitle_stream_details": []
+  },
+  "verified": true,
+  "verification": [
+    {
+      "step": "probe",
+      "ok": true
+    }
+  ],
+  "encoder": "libx264"
+}

@@ -1,0 +1,4 @@
+READY isolated UI server 3069
+UI imported, retried images, and recovered failed save
+UI HTML, SRT and chapter script downloads verified
+PASS long video UI workflow + five-width chapter controls/layout + JSON/failure/conflict/reload/unknown/handoff

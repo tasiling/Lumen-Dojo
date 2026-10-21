@@ -1,0 +1,11 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/silent-4.mp4",
+  "dry_run": true,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -loop 1 -i /workspace/scratch/ad1d9c2e7938/weaving-creation/docs/creative-long-video-evidence/chapter-4.png -t 60.000 -vf scale=out_color_matrix=bt709:out_range=tv,format=yuv444p,scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=24 -c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p -movflags +faststart -colorspace bt709 -color_primaries bt709 -color_trc bt709 -an /tmp/lumen-long-video-trial-iPzvFX/silent-4.mp4"
+  ],
+  "verified": false,
+  "verification": [],
+  "encoder": "libx264"
+}

@@ -1,0 +1,58 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/contact-240.png",
+  "dry_run": false,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -ss 20.000000 -i docs/creative-long-video-evidence/final.mp4 -vf 'select='\\''isnan(prev_selected_t)+gte(t-prev_selected_t\\,39.200000)'\\'',scale=426:-2,drawtext=text='\\''%{pts\\:hms}'\\'':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=h/18:box=1:boxcolor=black@0.55:boxborderw=6:x=8:y=8,tile=3x2:padding=2:margin=2:color=0x202020' -frames:v 1 /tmp/lumen-long-video-trial-iPzvFX/contact-240.png"
+  ],
+  "probe": {
+    "file": "/tmp/lumen-long-video-trial-iPzvFX/contact-240.png",
+    "format": "png_pipe",
+    "duration": null,
+    "size_bytes": 173496,
+    "bitrate": null,
+    "video": {
+      "codec": "png",
+      "profile": null,
+      "width": 1286,
+      "height": 486,
+      "display_aspect": "411520:155277",
+      "fps": 25.0,
+      "r_frame_rate": "25/1",
+      "avg_frame_rate": "25/1",
+      "variable_frame_rate_suspected": false,
+      "pix_fmt": "rgb24",
+      "bit_depth": 8,
+      "hdr": false,
+      "hdr_signal": false,
+      "bt2020_or_hdr": false,
+      "hdr_format": null,
+      "dolby_vision": null,
+      "color_space": "gbr",
+      "color_primaries": "bt709",
+      "color_transfer": "bt709",
+      "color_range": "pc",
+      "rotation": 0,
+      "nb_frames": null,
+      "duration": null,
+      "start_time": null,
+      "bitrate": null
+    },
+    "audio": null,
+    "subtitle_streams": 0,
+    "data_streams": 0,
+    "chapters": [],
+    "tags": {},
+    "subtitle_stream_details": []
+  },
+  "verified": true,
+  "verification": [
+    {
+      "step": "probe",
+      "ok": true
+    }
+  ],
+  "outputs": [
+    "/tmp/lumen-long-video-trial-iPzvFX/contact-240.png"
+  ]
+}

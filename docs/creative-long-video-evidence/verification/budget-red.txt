@@ -1,0 +1,15 @@
+node:fs:484
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/workspace/scratch/ad1d9c2e7938/weaving-creation/lib/dojo/longVideo/package.ts'
+    at readFileSync (node:fs:484:20)
+    at Object.load (file:///workspace/scratch/ad1d9c2e7938/weaving-creation/scripts/weaving-test-harness.mjs:23:37)
+    at file:///workspace/scratch/ad1d9c2e7938/weaving-creation/scripts/test-long-video.mjs:9:17 {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/workspace/scratch/ad1d9c2e7938/weaving-creation/lib/dojo/longVideo/package.ts'
+}
+
+Node.js v24.19.0

@@ -1,0 +1,85 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/chapter-3.mp4",
+  "dry_run": false,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -i /tmp/lumen-long-video-trial-iPzvFX/silent-3.mp4 -i /workspace/scratch/ad1d9c2e7938/weaving-creation/docs/creative-long-video-evidence/voice.wav -filter_complex '[1:a:0]anull[main];[main]apad,atrim=0:60.000[out]' -map '[out]' -map 0:v:0 -c:v copy -movflags +faststart -c:a aac -b:a 192k -map '0:s?' -map '0:d?' -c:s copy -c:d copy /tmp/lumen-long-video-trial-iPzvFX/chapter-3.mp4"
+  ],
+  "probe": {
+    "file": "/tmp/lumen-long-video-trial-iPzvFX/chapter-3.mp4",
+    "format": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": 60.0,
+    "size_bytes": 653209,
+    "bitrate": 87094,
+    "video": {
+      "codec": "h264",
+      "profile": "High",
+      "width": 1280,
+      "height": 720,
+      "display_aspect": "16:9",
+      "fps": 24.0,
+      "r_frame_rate": "24/1",
+      "avg_frame_rate": "24/1",
+      "variable_frame_rate_suspected": false,
+      "pix_fmt": "yuv420p",
+      "bit_depth": 8,
+      "hdr": false,
+      "hdr_signal": false,
+      "bt2020_or_hdr": false,
+      "hdr_format": null,
+      "dolby_vision": null,
+      "color_space": "bt709",
+      "color_primaries": "bt709",
+      "color_transfer": "bt709",
+      "color_range": "tv",
+      "rotation": 0,
+      "nb_frames": 1440,
+      "duration": 60.0,
+      "start_time": 0.0,
+      "bitrate": 55751
+    },
+    "audio": {
+      "codec": "aac",
+      "channels": 1,
+      "channel_layout": "mono",
+      "sample_rate": 8000,
+      "bitrate": 27927,
+      "duration": 60.0,
+      "start_time": 0.0
+    },
+    "subtitle_streams": 0,
+    "data_streams": 0,
+    "chapters": [],
+    "tags": {},
+    "subtitle_stream_details": [],
+    "audio_streams": [
+      {
+        "index": 0,
+        "codec": "aac",
+        "channels": 1,
+        "channel_layout": "mono",
+        "sample_rate": 8000,
+        "language": "und",
+        "title": null
+      }
+    ]
+  },
+  "verified": true,
+  "verification": [
+    {
+      "step": "probe",
+      "ok": true
+    }
+  ],
+  "encoder": "copy",
+  "audio": {
+    "voice": null,
+    "stereo_widen": null,
+    "effects": false,
+    "effects_volume": null
+  },
+  "video": true,
+  "audio_stream": 0,
+  "dynamics": [],
+  "dropped_non_av_streams": false
+}

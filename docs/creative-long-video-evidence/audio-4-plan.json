@@ -1,0 +1,21 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/chapter-4.mp4",
+  "dry_run": true,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -i /tmp/lumen-long-video-trial-iPzvFX/silent-4.mp4 -i /workspace/scratch/ad1d9c2e7938/weaving-creation/docs/creative-long-video-evidence/voice.wav -filter_complex '[1:a:0]anull[main];[main]apad,atrim=0:60.000[out]' -map '[out]' -map 0:v:0 -c:v copy -movflags +faststart -c:a aac -b:a 192k -map '0:s?' -map '0:d?' -c:s copy -c:d copy /tmp/lumen-long-video-trial-iPzvFX/chapter-4.mp4"
+  ],
+  "verified": false,
+  "verification": [],
+  "encoder": "copy",
+  "audio": {
+    "voice": null,
+    "stereo_widen": null,
+    "effects": false,
+    "effects_volume": null
+  },
+  "video": true,
+  "audio_stream": 0,
+  "dynamics": [],
+  "dropped_non_av_streams": false
+}

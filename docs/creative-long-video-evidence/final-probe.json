@@ -1,0 +1,84 @@
+{
+  "file": "/workspace/scratch/ad1d9c2e7938/weaving-creation/docs/creative-long-video-evidence/final.mp4",
+  "format": "mov,mp4,m4a,3gp,3g2,mj2",
+  "duration": 240.0,
+  "size_bytes": 4752776,
+  "bitrate": 158425,
+  "video": {
+    "codec": "h264",
+    "profile": "High",
+    "width": 1280,
+    "height": 720,
+    "display_aspect": "16:9",
+    "fps": 24.0,
+    "r_frame_rate": "24/1",
+    "avg_frame_rate": "24/1",
+    "variable_frame_rate_suspected": false,
+    "pix_fmt": "yuv420p",
+    "bit_depth": 8,
+    "hdr": false,
+    "hdr_signal": false,
+    "bt2020_or_hdr": false,
+    "hdr_format": null,
+    "dolby_vision": null,
+    "color_space": "bt709",
+    "color_primaries": "bt709",
+    "color_transfer": "bt709",
+    "color_range": "tv",
+    "rotation": 0,
+    "nb_frames": 5760,
+    "duration": 240.0,
+    "start_time": 0.0,
+    "bitrate": 63449
+  },
+  "audio": {
+    "codec": "aac",
+    "channels": 1,
+    "channel_layout": "mono",
+    "sample_rate": 48000,
+    "bitrate": 89334,
+    "duration": 240.0,
+    "start_time": 0.0
+  },
+  "subtitle_streams": 0,
+  "data_streams": 1,
+  "chapters": [
+    {
+      "index": 0,
+      "start": 0.0,
+      "end": 60.0,
+      "title": "等待，沒有進度的時候"
+    },
+    {
+      "index": 1,
+      "start": 60.0,
+      "end": 120.0,
+      "title": "觀察，想把一切弄清楚"
+    },
+    {
+      "index": 2,
+      "start": 120.0,
+      "end": 180.0,
+      "title": "休息，先照顧此刻生活"
+    },
+    {
+      "index": 3,
+      "start": 180.0,
+      "end": 240.0,
+      "title": "發現，生長有自己的時間"
+    }
+  ],
+  "tags": {},
+  "subtitle_stream_details": [],
+  "audio_streams": [
+    {
+      "index": 0,
+      "codec": "aac",
+      "channels": 1,
+      "channel_layout": "mono",
+      "sample_rate": 48000,
+      "language": "und",
+      "title": null
+    }
+  ]
+}

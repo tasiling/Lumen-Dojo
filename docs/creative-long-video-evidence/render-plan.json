@@ -1,0 +1,23 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/final-240.mp4",
+  "dry_run": true,
+  "commands": [
+    "[dry-run] $ /usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -i /tmp/lumen-long-video-trial-iPzvFX/chapter-1.mp4 -i /tmp/lumen-long-video-trial-iPzvFX/chapter-2.mp4 -i /tmp/lumen-long-video-trial-iPzvFX/chapter-3.mp4 -i /tmp/lumen-long-video-trial-iPzvFX/chapter-4.mp4 -filter_complex '[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v0];[0:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a0];[1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v1];[1:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a1];[2:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v2];[2:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a2];[3:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,setpts=PTS-STARTPTS,fps=24,format=yuv420p,settb=AVTB[v3];[3:a:0]aformat=sample_rates=48000:channel_layouts=mono,asetpts=PTS-STARTPTS[a3];[v0]trim=duration=60.000[vp0];[a0]apad=whole_dur=60.000,atrim=duration=60.000[ap0];[v1]trim=duration=60.000[vp1];[a1]apad=whole_dur=60.000,atrim=duration=60.000[ap1];[v2]trim=duration=60.000[vp2];[a2]apad=whole_dur=60.000,atrim=duration=60.000[ap2];[v3]trim=duration=60.000[vp3];[a3]apad=whole_dur=60.000,atrim=duration=60.000[ap3];[vp0][ap0][vp1][ap1][vp2][ap2][vp3][ap3]concat=n=4:v=1:a=1[vout][aout]' -map '[vout]' -map '[aout]' -fps_mode passthrough -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -movflags +faststart -colorspace bt709 -color_primaries bt709 -color_trc bt709 -c:a aac -b:a 192k /tmp/lumen-long-video-trial-iPzvFX/final-240_work_20/joined.mp4",
+    "[dry-run] would write /tmp/lumen-long-video-trial-iPzvFX/final-240_work_20/joined.mp4 (0.000s, expected ~240.000s, 1280x720 @ 24fps, 4 clips, none)",
+    "[dry-run] $ /usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -i /tmp/lumen-long-video-trial-iPzvFX/final-240.mp4 -i /tmp/ffskill_meta_au2xiz1q/chapters.ffmeta -map 0 -map_metadata 0 -map_chapters 1 -c copy /tmp/lumen-long-video-trial-iPzvFX/final-240_work_20/chapters.mp4",
+    "[dry-run] would write /tmp/lumen-long-video-trial-iPzvFX/final-240_work_20/chapters.mp4 (0 chapters, tags: unchanged, streams copied)"
+  ],
+  "verified": false,
+  "verification": [],
+  "encoder": "libx264",
+  "stages": [
+    "clips",
+    "join",
+    "chapters"
+  ],
+  "check": null,
+  "snap": null,
+  "cache": null,
+  "caption": null
+}

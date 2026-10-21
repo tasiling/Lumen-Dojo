@@ -1,0 +1,13 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-long-video-trial-iPzvFX/contact-240.png",
+  "dry_run": true,
+  "commands": [
+    "/usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -y -ss 20.000000 -i docs/creative-long-video-evidence/final.mp4 -vf 'select='\\''isnan(prev_selected_t)+gte(t-prev_selected_t\\,39.200000)'\\'',scale=426:-2,drawtext=text='\\''%{pts\\:hms}'\\'':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=h/18:box=1:boxcolor=black@0.55:boxborderw=6:x=8:y=8,tile=3x2:padding=2:margin=2:color=0x202020' -frames:v 1 /tmp/lumen-long-video-trial-iPzvFX/contact-240.png"
+  ],
+  "verified": false,
+  "verification": [],
+  "outputs": [
+    "/tmp/lumen-long-video-trial-iPzvFX/contact-240.png"
+  ]
+}
