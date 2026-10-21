@@ -141,3 +141,10 @@
 - 裁定／代價：外部render回收首版，非站內自動影片生成；HTML與相對voice檔一起交付，WAAPI有限動作，外部Studio每鏡一列；一般字型依裝置，隔離試片使用OFL Noto子集，跨裝置需核對。FFmpeg與ffprobe及共用持久磁碟未做正式環境驗收，上傳較慢；伺服器不證明影片像素／聲音的語意，仍需本人播放審閱。所有裁定、review未判定邊界與代價見delivery／plan Ledger。
 - 交付：`docs/creative-short-video-delivery.md`、`docs/creative-short-video-evidence/`、spec／plan日期2026-10-21；即將以保留遠端parent、Native完全相同tree、expected_sha非force更新同一PR101。沒有merge/deploy、正式Notion或社群發布。
 - 下一包：Podcast；第六包開發依賴已滿足，不重做圖文或短片。先建節目稿／段落／本人音訊匯入／外部處理與音檔回收，隔離聲音驗證可獨立部分；本人錄音及選題另列缺項。再接短漫、長影片、整合驗收，既有持續建置保留。
+
+### 第六包遠端交付 checkpoint
+
+- 同一[PR101](https://github.com/tasiling/Lumen-Dojo/pull/101)已更新至短影音，維持open；沒有merge/deploy。
+- GitHub程式驗證head `df3667d91354cc206a15189e73aa2a87a6becccb`、tree `6dbfcc2f06504fd69e4d1ab9c8b655d78092b1d3`；完整實作／證據head `5fb7d51fa8b5c2330435cf67fc0bddd60aa68e32`、tree `f0f2fae6fab4934233bb7d89e2f2405e1db06614`。Native對應完整head `f516ccd196481cc6b0d9be03df4cb4409da834a7`，tree完全相同。
+- 已連接GitHub Git Data依序保存設計、domain／媒體、UI／版本、審查修正、成品交付五個提交，各次核對Native完全相同tree、保留遠端parent，自`afa3a452344b276b1cea69536da8cd65ddcccd2c` expected_sha非force更新。fresh fetch證實遠端／Native tree相同、原遠端head仍為ancestor；最新master仍`680aca2`且native merge-tree成功，未覆蓋其他寫入者。
+- 本節是其後的交付身分文件提交，最新head以本檔所在commit／PR為準。第六包完成遠端可審閱交付；下一輪直接接第七包Podcast，不重做短片、不重試已取消的正式發布，也不停止其餘可獨立建置。

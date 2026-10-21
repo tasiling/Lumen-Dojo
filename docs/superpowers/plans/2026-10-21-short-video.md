@@ -45,7 +45,7 @@ Interfaces: 共用composition sceneSvg，create/save/output/handoff API；HTML�
 ## Task4: 審查與交付
 - [x] 圖文／文字／weaving適當回歸、build、tsc、lint；Expected PASS或清楚記錄無關既有問題。
 - [x] 一次全包獨立review、集中修正Critical／Important，focused RED→GREEN。
-- [ ] delivery／素材／影片／probe／截圖、同一progress檔與roadmap更新，expected_sha非force推送同一PR101。
+- [x] delivery／素材／影片／probe／截圖、同一progress檔與roadmap更新，expected_sha非force推送同一PR101。
 
 ## Ledger
 - Spec自查完成，沿用非互動持續建置授權，自行裁定常規設計；Task1媒體／幀介面→Task2版本／輸出→Task3 UI與同一composition，無介面矛盾。
@@ -70,3 +70,5 @@ Interfaces: 共用composition sceneSvg，create/save/output/handoff API；HTML�
 
 - Task3: complete；最終dev與production UI通過，375／390／430／320／1024無橫溢；空白／3鏡／dirty／保存失敗／衝突完整bundle／HTML時長拒絕與有效下載／JSON重匯／音軌／MP4回收／回應遺失／播放不支援提示／聊解交接。
 - Task4驗證：完整short-video、weaving、illustrated、liaojie-text、build、tsc與lint通過，lint0 errors／2既有warnings；production介面實際驗證。Next dev殘留型別快取曾不完整，移至暫存保留後重建及tsc通過，非以略過型別檢查處理。
+
+- Task4: complete；五個Git Data提交逐一核對Native tree，expected_sha非force推送PR101，fetch後tree相同與父鏈確認；遠端完整交付5fb7d51、程式df3667d。此行及遠端checkpoint為後續文件提交，最新head以檔案所在提交為準。
