@@ -1,0 +1,19 @@
+[SystemMemory] cgroup memory limit detected: 8192 MiB. It governs memory-adaptive render behaviour instead of host RAM.
+fatal library error, lookup self
+┌  hyperframes preview
+[?25l│
+◇  Studio running
+[?25h
+
+  Project   weaving-creation
+  Studio    http://localhost:3097/#project/weaving-creation
+  Server    http://localhost:3097
+  Desktop   Keep editing by chatting with Framey in the HyperFrames desktop app → https://hyperframes.dev/studio/download?os=linux
+
+  Edit with your AI agent — it has HyperFrames skills installed.
+  Changes reload automatically in the studio.
+
+  Press Ctrl+C to stop
+
+
+HTTP ready: true

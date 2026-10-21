@@ -128,3 +128,16 @@
 - GitHub程式驗證head `f9933d9b8350288e9f0b3e2f4c8d29125865b1c1`，tree `67ec24c8f15b43c24d8d8a94af5c33b8ec490b0f`；完整實作／證據checkpoint `20bd26ab137857f4cafd23f00a0413fb56d64448`，tree `b9d772dbebf2eb81158bae80fe726c7a1cd00ef9`。
 - 使用已連接GitHub Git Data依序保存設計、實作、審查修正、成品證據四個提交，各自核對Native tree；保留遠端parent鏈，自 `7b47180e6ae03755a6a4c587a07dd3cfbeb232b1` expected_sha、非force更新。fetch後遠端與Native完整tree相同、原遠端head仍為ancestor，沒有覆蓋其他寫入者。更新PR工具一度回傳舊head快照，以上述fresh native fetch核對為準。
 - 本節是其後的交付身分文件提交；最新branch/head以本檔所在commit為準。第五包完成遠端交付，下一輪直接接第六包短影音；不重做圖文、不重試取消的正式部署，也不因本人錄音尚缺而停止其他獨立工作。
+
+## 2026-10-21 第六包：不露臉短影音
+
+- Branch：`codex/weaving-liaojie-creation-v2`；接續第五包遠端`afa3a452344b276b1cea69536da8cd65ddcccd2c`，master仍為`680aca260e54e5fa38289012bd48c86553594cdb`。Native單一writer，開始前確認前包已結束。本機最終程式驗證head `aac237e95e71e22ab2c1ae1d7af5e3ec5934f5fb`、tree `6dbfcc2f06504fd69e4d1ab9c8b655d78092b1d3`；本節及證據為後續提交，最新head以本檔所在commit／PR為準。
+- 實際新增：`/weaving/short-video`五步圖示、固定原稿入口、1–12鏡編輯／排序、獨立原逐字稿／口播／字幕、配圖來源、本人或明示測試音匯入、時間滑桿／聲音預覽、不可覆寫版本。下載JSON原素材包並重匯、HTML／原音／SRT外部製作、真MP4回收固定與聊解影片交接，不自動轉全部形式或平台。
+- 同源／外部實試：產品VideoFrame與Hyperframes用同一sceneSvg／motionTransform／compositionHtml；實際製作三鏡12秒水彩／蠟筆拼貼，真MP4再經FFmpeg壓縮為約2.2MB，1080×1920／30fps／H264-AAC，probe與解碼圖保存。虛構題材、非語音測試音，非本人錄音；未開帳號、計費或外送私人庫。
+- 可靠性：owner API、64MiB、SHA、持久目錄原子安裝、ffprobe實測metadata及ffmpeg有界完整解碼、Range；公開政策／目前版／配圖及聲音來源在output／handoff副作用前同鎖重核。部分重試撤權拒絕，完成marker只唯讀恢復；回收表單跨刷新、未知回應找回、完整bundle衝突恢復、候選MP4綁版本，不重複寫副本或自行解除未知寫鎖。
+- 審查：fresh whole-package 0 Critical／2 Important／0 Minor，一次集中RED→GREEN修正損毀mdat被接受及長配音被HTML截斷；加入原子安裝前解碼，以及HTML前目前版／音長prepare與composition guard。無延後Minor或第二次review。
+- 驗證：完整short-video、dev及最終production短片UI、weaving、illustrated、liaojie-text、reading-knowledge-api、build、tsc通過；lint0 errors／2既有warnings。375／390／430／320／1024實際無橫溢，含空白／非空、dirty、保存失敗／衝突、HTML時長拒絕／有效下載、JSON重匯、回收刷新、未知output、媒體不支援提示、定稿／交接。
+- 實測邊界：Hyperframes check無error但有3項nested SVG timeline warnings；foreground預覽HTTP200，background受執行環境限制不常駐。最終Reels音量檢查未通過（測試純音約-32.2LUFS），未把測試音當正式音質；現有Chromium無H264解碼，真MP4由FFmpeg實際解碼，UI覆蓋不支援提示，不能聲稱本人iPhone／正式Chrome或Safari已播放。
+- 裁定／代價：外部render回收首版，非站內自動影片生成；HTML與相對voice檔一起交付，WAAPI有限動作，外部Studio每鏡一列；一般字型依裝置，隔離試片使用OFL Noto子集，跨裝置需核對。FFmpeg與ffprobe及共用持久磁碟未做正式環境驗收，上傳較慢；伺服器不證明影片像素／聲音的語意，仍需本人播放審閱。所有裁定、review未判定邊界與代價見delivery／plan Ledger。
+- 交付：`docs/creative-short-video-delivery.md`、`docs/creative-short-video-evidence/`、spec／plan日期2026-10-21；即將以保留遠端parent、Native完全相同tree、expected_sha非force更新同一PR101。沒有merge/deploy、正式Notion或社群發布。
+- 下一包：Podcast；第六包開發依賴已滿足，不重做圖文或短片。先建節目稿／段落／本人音訊匯入／外部處理與音檔回收，隔離聲音驗證可獨立部分；本人錄音及選題另列缺項。再接短漫、長影片、整合驗收，既有持續建置保留。

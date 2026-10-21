@@ -1,0 +1,27 @@
+{
+  "status": "completed",
+  "output": "/tmp/lumen-short-video-compact.mp4",
+  "dry_run": false,
+  "verified": false,
+  "summary": {
+    "duration_s": 12.01,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30.0,
+    "vcodec": "h264",
+    "acodec": "aac",
+    "channels": 2
+  },
+  "commands": 2,
+  "encoder": "libx264",
+  "loudness": {
+    "lufs": -32.24,
+    "tp": -28.69,
+    "target_lufs": -14,
+    "target_tp": -1.0,
+    "ok": false
+  },
+  "notes": [
+    "loudness -32.2 LUFS / -28.7 dBTP is outside reels's -14 LUFS / -1 dBTP; run loudness.py -I -14 --tp -1 on this file, or export with --normalize"
+  ]
+}
