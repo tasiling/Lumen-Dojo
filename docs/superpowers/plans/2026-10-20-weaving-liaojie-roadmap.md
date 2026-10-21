@@ -48,6 +48,6 @@
 - [x] 階段 7 Podcast：段落／原錄音、實際FFmpeg音檔、方形封面、JSON／稿／章節與回收交接，審查集中修正及production五尺寸完成；保留封面下載Minor及本人／環境驗收邊界，見進度檔；未正式上線。
 - [x] 階段 8 短漫：角色參考／分鏡／逐格圖片與對白、確認格保護、實際四格PNG與可修改來源、聊解交接、獨立審查及production流程加五寬排版完成；保留圖片重試與完整尺寸矩陣Minor，見進度檔，未正式上線。
 - [x] 階段 9 長影片實作、240秒真影片／章節回溯、dev／production與獨立審查完成；見creative-long-video-delivery及同一progress。
-- [ ] 階段 10 整合驗收／正式上線包，包含六形式、發布連結／回看及保留Minor；下一包直接接續，不重做第九包。
+- [x] 階段 10 六形式整合、私人發布紀錄／回看、前包收尾、審查集中修正、production五寬完整路徑與正式上線接續單已交付PR101；詳creative-integration-delivery與同一progress。十包可獨立建置完成，持續建置已停用；當前整合版尚未merge／deploy，本人及正式環境驗收另接。
 
 後續執行紀錄追加於 docs/creative-build-progress.md。每筆包含開始／結束、branch／commit、實際產物、驗證、未完成、下一個工作包。無本機 checkout 時從遠端分支恢復，不要求使用者重傳已推送程式。

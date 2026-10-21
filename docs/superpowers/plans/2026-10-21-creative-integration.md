@@ -43,8 +43,8 @@ Interfaces: ReleaseEditor useWeavingDraft＋ConflictRecovery全欄位，ReleaseW
 Files: docs/creative-integration-delivery.md、release-ready.md、creative-integration-evidence、同一progress／roadmap。
 - [x] 六形式／來源／知識／提案／文字交接適當回歸、build／tsc／lint，Expected PASS／既有warnings明示。
 - [x] 一次fresh最終review，Critical／Important集中RED→GREEN，Minor及每項set aside裁定記錄。
-- [ ] 正式上線包、checkpoint／Native同tree保遠端parent／expected_sha非force推PR101，核最新master；無merge/deploy。
-- [ ] 全部獨立工作完成後列本人驗收／正式授權、停用本持續建置（不動舊取消總排程）。
+- [x] 正式上線包、checkpoint／Native同tree保遠端parent／expected_sha非force推PR101，核最新master；無merge/deploy。
+- [x] 全部獨立工作完成後列本人驗收／正式授權、停用本持續建置（不動舊取消總排程）。
 
 ## Ledger
 - Pre-flight: Task1不改output形狀；Task2 sources由既有immutable outputs產生ReleaseSource，Task3只消費server catalog且PATCH只metadata；Task4證據不當正式驗收。共享介面一致。
@@ -66,3 +66,5 @@ Files: docs/creative-integration-delivery.md、release-ready.md、creative-integ
 - Self-detected integration boundary in same fix pass: 舊preview proxy沒有liaojie-text-variants／creative-releases handler，會回缺sources的fallback。先加無Playwright攔截的真loopback預覽RED，再接同一正式route；舊test期待早已不存在的標題改為實際建立→保存→回看。僅補當前文字示範範圍，不宣稱CLI預覽已含全部六媒體。
 
 - Fix pass verification: review domain／API／真production導航（多紀錄、封存／缺parent、missing ID、V1 picker）／五寬六形式完整production UI／無攔截loopback預覽均exit0；最後build／tsc PASS，全lint 0 errors／2既有warnings，修正範圍lint 0 warnings。原稿未變。無第二次review，dev失敗明示未列PASS。
+
+- Delivery close: Native9863434與GitHub2fc6469同tree7b4bf02，fresh fetch確認舊2708bc5為ancestor、工作樹乾淨、對最新master19ccc89 merge-tree PASS；PR101 open／merged=false。全部獨立建置完成後已停用本持續建置，只留下本人／真機／正式環境與當前整合版發布決定；沒有動舊取消總排程。此checkpoint另提交並同tree非force推送。
