@@ -23,16 +23,16 @@
 ## Task1: Domain、媒體與幀契約
 Files: lib/dojo/shortVideo/{model,media,composition}.ts；scripts/test-short-video.mjs。
 Interfaces: VideoDraft／Scene／MediaUse；parseVideoDraft(value)、duration(draft)、assertVideoReady(draft)；saveMedia(bytes)／readMedia(id)；sceneSvg(scene,style,imageData,progress)、compositionHtml(draft,assets,fontData?)、srt(draft)。
-- [ ] 寫domain／媒體測試，新增欄位拒絕、秒數／文字安全、逐字稿獨立、真實WAV／MP4 probe；先因未提供能力失敗。
-- [ ] 實作最小domain、原子資產保存與安全probe、純函式同源SVG／HTML。
-- [ ] `node scripts/test-short-video.mjs`，Expected PASS，commit。
+- [x] 寫domain／媒體測試，新增欄位拒絕、秒數／文字安全、逐字稿獨立、真實WAV／MP4 probe；先因未提供能力失敗。
+- [x] 實作最小domain、原子資產保存與安全probe、純函式同源SVG／HTML。
+- [x] `node scripts/test-short-video.mjs`，Expected PASS，commit。
 
 ## Task2: 版本API與交接
 Files: lib/dojo/shortVideo/store.ts；app/api/dojo/short-video/{route.ts,media/route.ts}；formal／operations／reconciliation／liaojiePublication；scripts/test-short-video-api.mjs。
 Interfaces: createVideo/saveVideo/outputVideo/handoffVideo/bundleVideo/listVideos；owner GET、POST、PATCH；新videoOutputRefs:string[]。
-- [ ] 寫fixture assertions owner401、建立防重、revision409、保存原操作、固定來源不變、錯媒體／未確認拒絕、未知與partial恢復；Expected missing API FAIL。
-- [ ] 沿用既有原語實作，回收／交接副作用前重核全部來源及目前版。
-- [ ] `node scripts/test-short-video-api.mjs`，Expected PASS，commit。
+- [x] 寫fixture assertions owner401、建立防重、revision409、保存原操作、固定來源不變、錯媒體／未確認拒絕、未知與partial恢復；Expected missing API FAIL。
+- [x] 沿用既有原語實作，回收／交接副作用前重核全部來源及目前版。
+- [x] `node scripts/test-short-video-api.mjs`，Expected PASS，commit。
 
 ## Task3: 同源手機工作區與外部試製
 Files: app/components/shortVideo/{VideoWorkspace,VideoFrame,VideoDelivery}.tsx、video.css；app/weaving/short-video/page.tsx；織光入口／聊解室；scripts/test-short-video-ui.mjs。
@@ -51,3 +51,12 @@ Interfaces: 共用composition sceneSvg，create/save/output/handoff API；HTML�
 - Spec自查完成，沿用非互動持續建置授權，自行裁定常規設計；Task1媒體／幀介面→Task2版本／輸出→Task3 UI與同一composition，無介面矛盾。
 - Ruling: 站內先編輯與預覽，Hyperframes本機渲染後匯回，不接計費render服務；代價是正式環境不會自動產片，使用者需要點點或外部工具完成渲染。
 - Ruling: 媒體需要ffprobe；部署未具備時API明示503，不將客戶端metadata當驗收；代價是正式上線前需要環境能力驗收。
+
+- Task1: complete，原missing model RED→GREEN；domain、HTML、WAV持久probe通過。
+- Task2: complete，原missing route RED→GREEN；owner、版本／重試、partial撤權、真MP4、Range、固定原稿不變通過；真實未知handoff marker測試先409 RED，補唯讀恢復後GREEN，不移除結果不明寫鎖。
+- Ruling: Hyperframes實測要求相對音訊檔及可seek動畫；改為voice.wav／mp3／m4a另存＋data-no-timeline／paused WAAPI — CLI實測證實可渲染 — 代價是HTML與聲音需一起交付。
+- Ruling: 繁中先以完整head／UTF-8修正實際編譯亂碼，隔離試片嵌入OFL Noto子集；一般輸出依渲染環境字型 — 不臆測使用者裝置有相同字體 — 代價是跨裝置需要預覽核對。
+- Ruling: 接受Hyperframes三項nested SVG timeline warnings，check無error且snapshot／render實測通過 — 首版每鏡一列即可 — 代價是外部Studio尚非逐內層素材自由編輯。
+- Ruling: 低音量非語音提示音保留原樣，不將其當作已通過Reels音量品質 — 試製目的為時長／媒體回收，避免放大測試純音 — 代價是正式配音仍須音量及聽感驗收。
+- Task3: 同一圖片跨鏡未觸發change的UI RED已定位input重用，按scene.id重建後GREEN；手機完整路徑持續驗證。
+- Ruling: 現有測試Chromium不含H.264解碼；FFmpeg實際解碼驗證影片，UI另驗證能力偵測與不支援提示 — 不將不支援解碼的瀏覽器聲稱可播放 — 代價是本人iPhone與正式Chrome/Safari仍待真機驗收。

@@ -5,7 +5,7 @@ import { isAbsolute, join } from 'node:path';
 import { withLearningWriteLock } from '../learningFoundation/fileLock';
 import { learningWriteOutcome } from '../learningFoundation/writeOutcome';
 import { WeavingError } from './model';
-export type OperationKind = 'create_pair' | 'create_work' | 'migrate' | 'reflect' | 'complete' | 'handoff' | 'patch' | 'archive' | 'proposal_scan' | 'proposal_accept' | 'text_variant_create' | 'text_variant_save' | 'text_variant_status' | 'text_variant_plurk' | 'illustrated_create' | 'illustrated_save' | 'illustrated_output' | 'illustrated_handoff';
+export type OperationKind = 'create_pair' | 'create_work' | 'migrate' | 'reflect' | 'complete' | 'handoff' | 'patch' | 'archive' | 'proposal_scan' | 'proposal_accept' | 'text_variant_create' | 'text_variant_save' | 'text_variant_status' | 'text_variant_plurk' | 'illustrated_create' | 'illustrated_save' | 'illustrated_output' | 'illustrated_handoff' | 'video_create' | 'video_save' | 'video_output' | 'video_handoff';
 export type EntityRef = {
     id: string;
     revision?: number;

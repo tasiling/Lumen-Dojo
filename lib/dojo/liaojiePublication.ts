@@ -5,6 +5,7 @@ export type LiaojiePlatform = keyof typeof LIAOJIE_PLATFORMS;
 export type LiaojieStatus = "received" | "packaging" | "ready" | "scheduled" | "published" | "archived";
 export type LiaojiePublicationProject = {
   illustratedOutputRefs: string[];
+  videoOutputRefs: string[];
   revision: number; sourceCompletionVersionId: string | null; handoffOperationId: string | null;
   sourceFormat: "text" | "comic" | "video" | "legacy";
   version: 2; recordType: "liaojie-publication-project"; id: string;
@@ -26,6 +27,7 @@ export function normalizeLiaojieProject(value: unknown, options: { id: string; t
   const now = new Date().toISOString(); const createdAt = text(source.createdAt, 50) || now;
   const platform = typeof source.platform === "string" && source.platform in LIAOJIE_PLATFORMS ? source.platform as LiaojiePlatform : "instagram_post";
   return {
+    videoOutputRefs: Array.isArray(source.videoOutputRefs) ? [...new Set(source.videoOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     illustratedOutputRefs: Array.isArray(source.illustratedOutputRefs) ? [...new Set(source.illustratedOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
     sourceCompletionVersionId: text(source.sourceCompletionVersionId, 300) || null, handoffOperationId: text(source.handoffOperationId, 120) || null,

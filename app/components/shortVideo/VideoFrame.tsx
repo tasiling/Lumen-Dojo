@@ -1,0 +1,4 @@
+'use client';
+import {sceneSvg} from '@/lib/dojo/shortVideo/composition';
+import {duration,type VideoDraft} from '@/lib/dojo/shortVideo/model';
+export default function VideoFrame({draft,time,images}:{draft:VideoDraft;time:number;images:Record<string,string>}){if(draft.scenes.some(s=>!Number.isFinite(s.duration)||s.duration<1||s.duration>30)||duration(draft)>180)return <p role="alert">請先填妥每鏡秒數，總長180秒以內。</p>;const t=Math.max(0,Math.min(time,duration(draft)-.001));let start=0,index=draft.scenes.length-1;for(let i=0;i<draft.scenes.length;i++){if(t<start+draft.scenes[i].duration){index=i;break;}start+=draft.scenes[i].duration;}const scene=draft.scenes[index],progress=(t-start)/scene.duration;return <div className="video-frame"><p>第 {index+1} 鏡</p><div dangerouslySetInnerHTML={{__html:sceneSvg(scene,draft.style,scene.image?images[scene.image.assetId]:undefined,progress,draft.voice?.kind==='test')}}/></div>;}

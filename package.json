@@ -50,7 +50,9 @@
     "test:creative-interface": "node scripts/test-isolated-production-env.mjs && UI_PRODUCTION=1 node scripts/test-creative-interface-ui.mjs all && node scripts/test-creative-preview.mjs",
     "test:reading-knowledge": "node scripts/test-reading-knowledge.mjs && node scripts/test-reading-knowledge-relations.mjs && node scripts/test-reading-knowledge-search.mjs && node scripts/test-reading-knowledge-annotations.mjs && node scripts/test-reading-knowledge-operations.mjs && node scripts/test-reading-knowledge-review.mjs",
     "test:reading-knowledge-api": "node scripts/test-reading-knowledge-api.mjs",
-    "test:reading-knowledge-ui": "node scripts/test-reading-knowledge-ui.mjs"
+    "test:reading-knowledge-ui": "node scripts/test-reading-knowledge-ui.mjs",
+    "test:short-video": "node scripts/test-short-video.mjs && node scripts/test-short-video-api.mjs",
+    "test:short-video-ui": "node scripts/test-short-video-ui.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

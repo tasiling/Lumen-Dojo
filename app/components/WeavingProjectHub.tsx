@@ -34,7 +34,7 @@ function Hub() {
     <section className="ritual-card wf-start"><span className="eyebrow">從一件作品開始</span><h2>{resumable ? '接著寫，讓作品慢慢成形' : '今天，想把什麼寫出來？'}</h2><p>選一段素材，寫下自己的觀點，再完成文字。不需要先整理所有筆記。</p>
     <div className="wf-start-actions">{resumable && <Link className="primary wf-resume" href={`/weaving/${resumable.bundle.shuttle.id}?work=${resumable.work.id}`}>繼續創作：{resumable.work.title}</Link>}
     <button className={resumable ? '' : 'primary'} disabled={loading} onClick={() => leave.requestLeave(() => setCreating(!creating))}>{creating ? '收起建立表單' : resumable || bundles.length ? '＋ 開始新作品' : '開始第一件作品'}</button></div>
-    <CreativeFlowOverview /><Link className="wf-resume" href="/weaving/illustrated"><CreativeIcon name="layers"/> 圖文製作：把固定原稿排成圖卡</Link>{creating && <CreateShuttleForm />}</section>
+    <CreativeFlowOverview /><Link className="wf-resume" href="/weaving/short-video"><CreativeIcon name="pen"/> 短影音製作：分鏡、配音與影片回收</Link><Link className="wf-resume" href="/weaving/illustrated"><CreativeIcon name="layers"/> 圖文製作：把固定原稿排成圖卡</Link>{creating && <CreateShuttleForm />}</section>
     <section className="weaving-inbox">
       <div className="section-heading weaving-inbox-heading"><div><CreativeIcon name="layers" className="creative-section-icon"/><span className="eyebrow">持續發展的觀點</span><h2>創作主題・織光杼</h2><p className="lead">同一個主題，可以長出文章、貼文與不同作品。</p></div><span className="weaving-count">{bundles.length}</span></div>
       {loading && <div className="empty">正在整理織光杼…</div>}
