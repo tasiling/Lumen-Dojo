@@ -1,0 +1,7 @@
+'use client';
+import { useEffect,useState } from 'react';
+import Link from 'next/link';
+import { get } from '../weaving/client';
+import type { DeckOutput } from '@/lib/dojo/illustrated/model';
+import './illustrated.css';
+export default function IllustratedDelivery({ids}:{ids:string[]}){const [outputs,setOutputs]=useState<DeckOutput[]>([]),[error,setError]=useState('');const key=ids.join(',');useEffect(()=>{let active=true;Promise.all(key.split(',').filter(Boolean).map(id=>get<{output:DeckOutput}>(`/api/dojo/illustrated?outputId=${encodeURIComponent(id)}`))).then(rows=>{if(active)setOutputs(rows.map(r=>r.output));}).catch(e=>{if(active)setError(String(e));});return()=>{active=false;};},[key]);if(!ids.length)return null;return <section className="ritual-card illustrated-delivery"><h2>圖文成品</h2><p>已交接的固定圖片版本，修改稿件不會覆蓋這裡的成品。</p>{error&&<p role="alert">{error}</p>}{outputs.map(o=><details key={o.id}><summary>{o.title}・{o.renders.length} 頁</summary>{o.renders.map((r,i)=><figure key={r.pageId}>{/* Owner-authenticated asset endpoint; ordinary img preserves signed-in cookie. */}{/* eslint-disable-next-line @next/next/no-img-element */}<img src={`/api/dojo/illustrated/assets?id=${r.assetId}`} alt={`${o.title} 第 ${i+1} 頁`}/><a href={`/api/dojo/illustrated/assets?id=${r.assetId}`} download={`illustrated-${i+1}.png`}>下載第 {i+1} 頁</a></figure>)}<p className="full-text-preview">{o.caption}</p><Link href="/weaving/illustrated">回到圖文製作</Link></details>)}</section>;}

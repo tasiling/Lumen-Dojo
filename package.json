@@ -37,6 +37,8 @@
     "test:weaving-review": "node scripts/test-weaving-review.mjs",
     "test:liaojie-text": "node scripts/test-liaojie-text-domain.mjs && node scripts/test-liaojie-text-api.mjs",
     "test:liaojie-text-ui": "node scripts/test-liaojie-text-ui.mjs",
+    "test:illustrated": "node scripts/test-illustrated.mjs && node scripts/test-illustrated-api.mjs",
+    "test:illustrated-ui": "node scripts/test-illustrated-ui.mjs",
     "test:forage-ui": "node scripts/test-forage-ui.mjs && node scripts/test-forage-review-regressions.mjs",
     "test:forage-mobile": "node scripts/test-forage-mobile.mjs",
     "test:weaving-clarity": "node scripts/test-weaving-clarity-ui.mjs empty && node scripts/test-weaving-clarity-ui.mjs flow",
@@ -54,7 +56,8 @@
     "@notionhq/client": "^5.22.0",
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
