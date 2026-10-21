@@ -40,7 +40,7 @@ export const COMPLETION_TITLE_PREFIX = "行光作品成品-v1-";
 export const LIAOJIE_TEXT_VARIANT_PREFIX = "行光聊解文字版本-v1-";
 export const LIAOJIE_TEXT_VERSION_PREFIX = "行光聊解文字稿-v1-";
 export const FORMAL_STATE_TITLE_PREFIXES = [
-  '行光圖文稿-v1-', '行光圖文版本-v1-', '行光圖文成品-v1-', '行光短片稿-v1-', '行光短片版本-v1-', '行光短片成品-v1-',
+  '行光圖文稿-v1-', '行光圖文版本-v1-', '行光圖文成品-v1-', '行光短片稿-v1-', '行光短片版本-v1-', '行光短片成品-v1-','行光聲音稿-v1-','行光聲音版本-v1-','行光聲音成品-v1-',
   DAILY_TITLE_PREFIX,
   BINGO_TITLE_PREFIX,
   WEEKLY_TEMPLATE_LIBRARY_TITLE,

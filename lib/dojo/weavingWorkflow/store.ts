@@ -297,7 +297,7 @@ export type Reconciliation={receipt:OperationReceipt|null;observations:Record<st
 /** Read-only remote evidence; never acquires/releases the writer lock or updates receipts. */
 export async function reconcileOperation(op:string):Promise<Reconciliation>{
  const receipt=await inspectWeavingOperation(WEAVING_OWNER,op);if(!receipt)return {receipt:null,observations:{}};
- const prefixes=[WEAVING_SHUTTLE_TITLE_PREFIX,WEAVING_WORK_TITLE_PREFIX,COMPLETION_TITLE_PREFIX,LIAOJIE_PROJECT_TITLE_PREFIX,LIAOJIE_TEXT_VARIANT_PREFIX,LIAOJIE_TEXT_VERSION_PREFIX,WEAVING_PROJECT_TITLE_PREFIX,'行光圖文稿-v1-','行光圖文版本-v1-','行光圖文成品-v1-','行光短片稿-v1-','行光短片版本-v1-','行光短片成品-v1-'];
+ const prefixes=[WEAVING_SHUTTLE_TITLE_PREFIX,WEAVING_WORK_TITLE_PREFIX,COMPLETION_TITLE_PREFIX,LIAOJIE_PROJECT_TITLE_PREFIX,LIAOJIE_TEXT_VARIANT_PREFIX,LIAOJIE_TEXT_VERSION_PREFIX,WEAVING_PROJECT_TITLE_PREFIX,'行光圖文稿-v1-','行光圖文版本-v1-','行光圖文成品-v1-','行光短片稿-v1-','行光短片版本-v1-','行光短片成品-v1-','行光聲音稿-v1-','行光聲音版本-v1-','行光聲音成品-v1-'];
  const observations:Reconciliation['observations']={};const key=operationKey(receipt.owner,receipt.operationId);
  const rows=(await Promise.all(prefixes.map(prefix=>listJsonRecords(prefix)))).flat();
  for(const step of Object.keys(receipt.steps)){
