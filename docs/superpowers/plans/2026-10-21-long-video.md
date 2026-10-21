@@ -30,8 +30,8 @@ Interfaces: LongVideoDraft／Scene／Version／Project／Output／Bundle；newSc
 ## Task 2: 持久API／不可覆寫回收
 Files: lib/dojo/longVideo/store.ts；app/api/dojo/long-video/{route,media/route}.ts；formal／operations／liaojiePublication；scripts/test-long-video-api.mjs。
 Interfaces: createLongVideo/saveLongVideo/prepareLongVideo/outputLongVideo/handoffLongVideo/bundleLongVideo/listLongVideos/readLongVideoOutput；longVideoOutputRefs。
-- [ ] 寫owner／dedupe／immutable／stale／真音長／16:9與成品長／partial撤權／unknown／交接，Expected missing route FAIL。
-- [ ] 實作同鎖最終重核與marker恢復，Expected node scripts/test-long-video-api.mjs PASS，commit。
+- [x] 寫owner／dedupe／immutable／stale／真音長／16:9與成品長／partial撤權／unknown／交接，Expected missing route FAIL。
+- [x] 實作同鎖最終重核與marker恢復，Expected node scripts/test-long-video-api.mjs PASS，commit。
 
 ## Task 3: 製作工具／實際4分鐘影片
 Files: app/components/longVideo/{LongVideoWorkspace,LongVideoFrame,LongVideoComparison,LongVideoDelivery}.tsx及long-video.css；app/weaving/long-video/page.tsx；織光與固定文字／聊解入口；scripts/test-long-video-ui.mjs、long-video-trial.mjs。
@@ -50,3 +50,5 @@ Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voice
 - Ruling: 首版章節圖像敘事＋各段原音，橫式1280×720設計、外部編輯回收 — 完成可操作路徑而不另造NLE — 代價是實拍多軌剪輯仍在外部工具處理，本人錄音／藝術品質另驗。
 
 - Task1 complete: missing module RED→GREEN；strict／章節累加及排序／分段原音長／HTML escaping／SRT跨小時／240秒long profile與短片拒絕／跨目錄／256MiB界限通過；short-video及podcast原套件回歸通過。
+
+- Task2 complete: missing route RED→GREEN；真實API owner／防重／immutable／每章錄音時長拒絕／stale／partial撤權零新增／240秒16:9成品／Range／handoff及unknown保鎖marker恢復通過；固定原文不改。
