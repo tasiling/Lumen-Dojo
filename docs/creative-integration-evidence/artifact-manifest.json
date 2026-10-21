@@ -9,8 +9,8 @@
     },
     {
       "path": "build.log",
-      "bytes": 5263,
-      "sha256": "b51839d7f7d14d38c93d775a596327c38ecc13f1414a3f0b8df878464a52577f"
+      "bytes": 5262,
+      "sha256": "cd33d3cae9add115691309bf06e9d1b67ca322bbd3a214fe469fc8281a642e49"
     },
     {
       "path": "comic-long-video.log",
@@ -79,8 +79,8 @@
     },
     {
       "path": "lint.log",
-      "bytes": 712,
-      "sha256": "70709c750d0f5864d67ee43f4a744d29a3108552573adb5cffd83d240bb323c9"
+      "bytes": 711,
+      "sha256": "7ff27f70df5f8c232db42206608f74170ba08d941c54a582e6710a45c22400d3"
     },
     {
       "path": "navigation.log",
