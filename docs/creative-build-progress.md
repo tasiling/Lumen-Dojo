@@ -161,3 +161,10 @@
 - 交付：`docs/creative-podcast-delivery.md`、`docs/creative-podcast-evidence/`，spec／plan日期2026-10-21。即將以Native相同tree、保留遠端parent、expected_sha非force推送同一PR101，沒有merge/deploy、正式Notion、社群、計費或重試取消的Railway操作。
 - 裁定／代價：外部剪輯回收非DAW，128MiB／60分鐘以外需轉檔；配圖必須載好再匯出；自動化常規選擇已授權，不反覆詢問。review未獨立重跑browser／Next，實作者已另驗；正式磁碟／工具、Notion、本人iPhone／錄音音質及Podcast供應商上架仍待本人／環境驗收，不能據隔離例宣告全部上線。完整裁定與保留Minor見delivery／plan Ledger。
 - 下一包：短漫，依角色參考／分鏡／逐格生圖與替換／對白／合成，保留每格來源／版次，完成真正可閱讀作品。再接長影片、整合驗收；第七包依賴已滿足，不因本人錄音／供應商尚缺而停止獨立建置，既有持續建置保留。
+
+### 第七包遠端交付 checkpoint
+
+- 同一[PR101](https://github.com/tasiling/Lumen-Dojo/pull/101)已更新至Podcast，維持open；沒有merge/deploy。
+- GitHub程式驗證head `6bcbae3f2c415095935d64525df057f216f729af`、tree `611b43e8669352fa7933fc7305659415b09c0b87`；完整程式／證據head `4cc2ba8652f61894584f01f964abae1548e0699f`、tree `ecd621508add918dced039213ccef545928bee72`。Native完整head `69e3aa26add31dfd20f9022f1f580ff7c83e60c5`，tree完全相同。
+- 已連接GitHub Git Data逐次保存設計、domain、API、UI、集中修正及交付六個提交，各次核對Native tree；保留遠端parent，自 `90b30fec11d330e73f47f29e3c8adc4ccba4a663` expected_sha非force更新。fresh fetch證實遠端／Native tree相同，原遠端head仍為ancestor，未覆蓋其他寫入者；master仍 `680aca260e54e5fa38289012bd48c86553594cdb`，merge-tree通過。
+- 本節是其後文件提交，最新head以本檔所在commit／PR為準。第七包完成可審閱遠端交付，下一輪直接接第八包短漫，不重做Podcast，也不重試取消的正式發布。本人錄音與真機／正式環境驗收列為必要人工作業，繼續其他獨立製作。
