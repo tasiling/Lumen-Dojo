@@ -30,8 +30,8 @@ Interfaces: 長片reset/reapply對齊章節；projectGeneration guard與完成�
 ## Task 2: 私人發布紀錄model／來源／API
 Files: lib/dojo/creativeReleases/{model,sources,store}.ts；app/api/dojo/creative-releases/route.ts；formal／operations／store operation觀察；scripts/test-creative-releases.mjs。
 Interfaces: ReleaseSource／CreativeRelease／ReleasePatch；parseReleasePatch／parseReleasePlatform／sourceKey；releaseSources(publicationId)／resolveReleaseSource(publicationId,kind,id,platform)；listReleases／readRelease／createRelease／saveRelease／legacyReleaseLinks。
-- [ ] 寫strict、日期／URL、跨企劃／格式／平台、防重／immutable、stale、owner／CSRF／no-store、unknown marker零新增、六種真來源catalog與既有URL；Expected missing module／route FAIL。
-- [ ] 實作prefix、source核membership及parent、private history鎖／marker，GET全覽＋企劃sources，POST明選／PATCH metadata；Expected script PASS，commit。
+- [x] 寫strict、日期／URL、跨企劃／格式／平台、防重／immutable、stale、owner／CSRF／no-store、unknown marker零新增、六種真來源catalog與既有URL；Expected missing module／route FAIL。
+- [x] 實作prefix、source核membership及parent、private history鎖／marker，GET全覽＋企劃sources，POST明選／PATCH metadata；Expected script PASS，commit。
 
 ## Task 3: 工作台與回看同源UI
 Files: app/components/creativeReleases/{ReleaseWorkspace,ReleaseHistory,ReleaseEditor}.tsx及release.css；app/liaojie/releases/page.tsx；LiaojiePublicationWorkbench及liaojie入口；scripts/test-creative-release-ui.mjs。
@@ -53,3 +53,5 @@ Files: docs/creative-integration-delivery.md、release-ready.md、creative-integ
 - Ruling: 保留既有文字／Legacy發布資料並唯讀彙整，不批次遷移 — 不改正式歷史語意 — 回看會區分既有與新紀錄。
 
 - Task1 complete: 真UI recovery／race／comic／cover四mode均RED→GREEN，前兩者重現錯章與晚A覆蓋B；comic測試需持續503至本人重試，避免dev StrictMode重讀偶然成功。不同真WAV／prepare／HTML換序及拒錯固定suite PASS（覆蓋既有正確行為，未改映射）；long-video／comic／podcast3套回歸PASS。
+
+- Task2 complete: model/API suite RED missing module→GREEN；六形式代表固定資料的來源綁定（各媒體實際生成由既有suite驗證）、平台文字版本、跨parent／平台拒絕、日期URL、owner/CSRF/no-store、防重、stale及unknown create/save只讀找回均PASS；tsc與targeted lint PASS。資料夾無正式憑證。
