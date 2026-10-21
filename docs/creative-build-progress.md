@@ -233,3 +233,13 @@
 - 本節是其後checkpoint文件提交，最新完整head以本檔所在commit及PR為準；全部成果在遠端，可從最新分支恢復，不要求本人重傳。log末尾空白已清理且更新SHA manifest，最終整包diff --check通過。
 - 十包可獨立程式、隔離驗證、審查與交付已完成。已依原授權停用「織光聊解持續建置」，不再因相同待本人／正式環境項目反覆喚起；沒有重新啟用取消的行光道場總排程，也沒有改其他工作區的排程。
 - 下一步不是另一個獨立工作包：依creative-release-ready.md核對當前整合版發布授權、正式持久環境／備份回復，再由本人驗收常用iPhone／瀏覽器、選一件本人作品及錄音測語氣／版面／權利隱私。正式環境／真機／最大容量與本人內容未驗部分維持明示，已提供的其他對話錄音不自動採用。保留dev manifest限制與各媒體邊界；不把開發交付稱已上線或本人品質驗收完成。
+
+## 2026-10-21 正式發布接續：已合併，部署套用取消
+
+- 使用者明確授權「都部署吧！明天來測試」，本次整合版的merge／deploy授權已取得；不是沿用舊版本同意。
+- PR101已以expected head `9eebf91ef63304dfaf5aab6fe802fb4fce82a13b`合併。正式master merge為`4655f78d190d0637abd2643dafb7bcdcff5c1f73`，parents為原master19ccc891及該PR head，tree `d63ceca0fa1de68d215921da590d86e9a4c74dde`；與預先merge-tree完全一致，保留正式道場地圖變更。
+- Railway範圍：fortunate-harmony／production／Lumen-Dojo，沿用既有/data volume、單replica、overlap0及固定Next啟動程式，不建立新服務或計費項目。
+- 已準備並檢閱非破壞性staged patch `ccebefbd-c6ac-4a63-9130-483a18749d7d`（6 changes）：source pin改到4655f78、runtime apt ffmpeg、啟動前核ffmpeg／ffprobe及可寫/data持久目錄，再作一次操作狀態tar備份後exec既有Next start。啟動guard／備份／重啟不重複備份／拒錯路徑已在隔離目錄測試PASS；正式backup尚未執行，因新部署未啟動。
+- 最後`accept-deploy`回報「Cancelled — the user did not approve this action. No changes were made.」（INVALID_ARGUMENT）。沒有換另一個工具繞過取消，也沒有重送同一套用動作。待部署變更仍保留在production，沒有正式Notion變更或社群發布。
+- 回查實際正式部署仍為`7d51d980-a1cd-44c3-8dae-3daa78bc7e1a` SUCCESS，source commit19ccc891（舊版）；不能把PR已合併或設定已staged當成新版已上線。現在只有最後部署套用確認未完成。
+- 接續：在既有Railway production檢視這份明確staged patch並Apply／Deploy；只有觀察新commit的SUCCESS、runtime preflight／backup ready及正式路由才報上線。本人明日真機／首件作品驗收仍待新版實際上線。持續建置維持停用，沒有新增提醒或重啟舊總排程。
