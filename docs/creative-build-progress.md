@@ -181,3 +181,10 @@
 - 交付：`docs/creative-comic-delivery.md`、`docs/creative-comic-evidence/`、spec／plan日期2026-10-21。原17MiB來源JSON遇connector16MiB單次限制，以gzip分段保存相同bytes及SHA-256；`scripts/restore-comic-evidence.mjs`已實際還原核對。產品仍直接下載單一JSON。將保留遠端parent、Native相同tree、expected_sha非force更新同一PR101。
 - 裁定／代價：固定四格頁與獨立對白區，任意畫布／自由氣泡／其他比例留後續。大型JSON仍受手機記憶體，256MiB／20張滿額圖與12格3頁browser未驗；實際4格1頁／約17MiB已驗。字型／Unicode全面矩陣、輔具、真機、正式Notion／持久磁碟／跨host與部署、本人審美／權利與像素語意不由fixture或review保證。全部裁定及保留Minor見delivery／plan Ledger。
 - 沒有正式Notion、社群、計費、merge／deploy或重試取消的Railway操作。下一包第九包長影片：章節、長腳本、分段素材／本人聲音與外部編輯接續、實際可播放測試長片及回收；再第十包整合驗收。第八包依賴滿足，既有持續建置保留，不重做短漫。
+
+### 第八包遠端交付 checkpoint
+
+- 同一[PR101](https://github.com/tasiling/Lumen-Dojo/pull/101)已更新至短漫，維持open；沒有merge／deploy。
+- GitHub程式驗證head `6adce552eac946893476fdec685dab883f979022`、tree `3b2d6c63c70a4aba7663d498623322c948b97ccb`；完整交付head `a127c8dea3c1c124065a662873cdd8f2e1082a7a`、tree `3bd7a48fa58f78ec7b405ed6633950fb328df7a4`，對應Native `22540e66e8e91ed74bce33bf1e7082b07090f2d4`同tree。
+- GitHub Git Data依序保存設計、domain、API、UI及交付五個提交，各次核對Native tree、保留遠端parent；自`1031b4c79bc706869e3266e26f544fde901ceb68` expected_sha非force更新。fresh fetch已核對兩邊tree相同、舊head仍為ancestor、工作樹乾淨，沒有覆蓋其他寫入者。master為`19ccc891fb04af8ee6bef0d89f0076a299e8a33a`，merge-tree通過。
+- 本節是其後文件提交，最新head以本檔所在commit／PR為準。第八包已遠端可審閱交付；下輪直接接第九包長影片，不重做短漫、不重試取消的正式發布。重建試製JSON可執行`node scripts/restore-comic-evidence.mjs`，無需重傳成果。保留兩項Minor與未驗邊界見delivery／Ledger；持續建置保留。
