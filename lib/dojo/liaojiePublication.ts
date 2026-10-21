@@ -6,6 +6,7 @@ export type LiaojieStatus = "received" | "packaging" | "ready" | "scheduled" | "
 export type LiaojiePublicationProject = {
   illustratedOutputRefs: string[];
   podcastOutputRefs: string[];
+  comicOutputRefs: string[];
   videoOutputRefs: string[];
   revision: number; sourceCompletionVersionId: string | null; handoffOperationId: string | null;
   sourceFormat: "text" | "comic" | "video" | "legacy";
@@ -30,6 +31,7 @@ export function normalizeLiaojieProject(value: unknown, options: { id: string; t
   return {
     videoOutputRefs: Array.isArray(source.videoOutputRefs) ? [...new Set(source.videoOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     podcastOutputRefs: Array.isArray(source.podcastOutputRefs) ? [...new Set(source.podcastOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
+    comicOutputRefs: Array.isArray(source.comicOutputRefs) ? [...new Set(source.comicOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     illustratedOutputRefs: Array.isArray(source.illustratedOutputRefs) ? [...new Set(source.illustratedOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
     sourceCompletionVersionId: text(source.sourceCompletionVersionId, 300) || null, handoffOperationId: text(source.handoffOperationId, 120) || null,
