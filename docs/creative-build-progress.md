@@ -209,3 +209,18 @@
 - GitHub程式驗證head `37288bcb571208959cc0d093b56c3967e5150ae8`、tree `dcb216f6757c1345ee7ad1c3c5f6f0f0b3926442`，對應Native `911c87e2ea8edba68dc407f5a8163c8ffd3e02fe`。完整交付head `38f771973a21f436ed5f24e2816c126eb2c30d8e`、tree `705c5fb351951560fd76e6168d5414ad37f9daa9`，對應Native `07751d868165cdaf1adadcdf4f6ba7f96b0c49c9`完全相同。
 - GitHub Git Data依序保存設計、domain、API、UI、集中修正與交付六個提交，每個提交核對Native tree，保留遠端parent；自`efac89e010701d4f65af66c2b425baadef8ad25a` expected_sha非force更新。fresh fetch確認兩邊tree相同、舊head仍為ancestor、工作樹乾淨；遠端feature對master19ccc891fb04af8ee6bef0d89f0076a299e8a33a的merge-tree通過。
 - 本節是其後文件提交，最新head以本檔所在commit／PR為準。第九包完成可審閱遠端交付；下一輪直接接第十包整合驗收／正式上線包，含三項保留Minor，不重做長影片、不重試取消的正式發布。本人內容／錄音、真機及正式持久環境驗收另接；其他獨立工作尚未全部完成，持續建置保留。
+
+## 2026-10-21 第十包：六形式整合與交付
+
+- 開始／程式驗證：2026-10-21；branch `codex/weaving-liaojie-creation-v2`，承接Native a022f8f／remote2708bc5相同tree955bcfd；確認單一writer後接續，沒有重做既有媒體。最新master `19ccc891fb04af8ee6bef0d89f0076a299e8a33a`，本輪merge-tree exit0。
+- Native程式驗證head `c1950f0aa54fb4f22f96bae5284735dc16f17d37`、tree `3bbf5e6996c0b16ded25841f44ad1e3fbb6bb3af`。本節、delivery／review／release-ready與最後截圖是其後文件提交，完整交付head以本檔commit及下方checkpoint為準。
+- 實際新增：owner私人發布紀錄model／source resolver／store/API、immutable來源版次與明選平台、待發布／已自行發布／撤下、日期／URL／交流及下一步、expectedRevision／global鎖／unknown marker找回。同版本同平台防重，沒有代發文。工作台新紀錄區、`/liaojie/releases`篩選回看與`/liaojie/release?id=…`指定紀錄獨立編輯；舊發布URL唯讀保留，沒有遷移。
+- 前包收尾：長片遠端換序reset／reapply對齊preview time並停音、共享generation防延遲A覆蓋B；兩真WAV不同SHA／長度／換序的prepare及HTML回歸；短漫配圖就地重試；Podcast接收區顯真正固定封面。既有原稿與媒體契約不變。
+- 真整合：讀取repo已保存的真PNG／MP4／WAV，由正式save/output/handoff stores重新接六形式到同一隔離企劃；沒有只植入代表資料，也沒有重呼叫AI生圖。文字原稿不變；音訊是非語音試音，不當本人錄製。五寬320／375／390／430／1024px各完整建立→保存→回看，另選第六形式及IG，完整production UI PASS，最後載全中文字型重截／目視。
+- 審查：唯一fresh gpt-6-astra high全包review，0 Critical／3 Important／0 Minor。一次集中RED→GREEN修正回看開錯／無法編封存紀錄、V2後V1不列picker、非文字舊completion誤標text。修正後真production UI驗active多紀錄、archived／missing parent仍可編、missing record、不fallback其他企劃、明選第1版；domain/API拒video／comic誤標。無第二次review。每項set-aside與裁定見creative-integration-review及plan Ledger。
+- 自查補漏：原loopback文字預覽proxy未接新API，先RED再補同一正式route，無Playwright API攔截的建立→保存→回看及foreign-origin拒絕PASS；沒有宣稱該文字示範已包含所有媒體。
+- 適當驗證：weaving完整、liaojie-text、reading-knowledge完整與API、proposals domain/API/recovery、illustrated／short-video／podcast／comic／long-video domain與真API、前包四mode修復及不同真音檔回歸PASS；集中修正後release/API/domain、精確導航、五寬完整production、無攔截預覽與liaojie-text重跑exit0。最後build／tsc PASS，全lint0errors／2既有warnings（plurk img、weekly test unused readdir），修正範圍0warnings；diff --check通過。
+- 未隱瞞限制：dev連續導航遇Next manifest `Unexpected end of JSON input`，未證明由本diff導致，未列完整dev PASS；正式編譯production流程通過。早期QA字型只套表單造成方塊字，已捨棄並全介面重截；產品實際依裝置字型。五寬紀錄流程不代表每種媒體在每寬都跑滿額創作，也不代替真機／輔具／正式持久環境／跨host驗收。
+- 交付：creative-integration-delivery.md、creative-integration-review.md、creative-release-ready.md、creative-integration-evidence（SHA manifest、截圖、完整適當logs），spec／plan2026-10-21。本輪將保Native相同tree與遠端parent，以expected_sha非force更新同一PR101。
+- 待本人／正式環境：當前整合版發布決定、目標持久磁碟及備份回復／重啟、本人真機與語氣／版面／權利隱私、首件本人作品和本人選定錄音。其他對話已有錄音不自動取用，不再聲稱本人完全沒提供錄音。受眾／外部搜尋範圍／工具預算／頻率保留可設定與未決，不虛構偏好。
+- 沒有正式Notion改寫、社群公開、購買／計費、merge／deploy或重試取消的Railway。十包可獨立程式與隔離驗收已完成；待本輪可審閱推送與checkpoint核對後停止本持續建置，後續接正式上線單與本人實際作品驗收，不再重做媒體或重複相同阻礙。

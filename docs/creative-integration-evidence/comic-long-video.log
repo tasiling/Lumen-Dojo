@@ -1,0 +1,23 @@
+
+RUN npm run test:comic
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:comic
+> node scripts/test-comic.mjs && node scripts/test-comic-api.mjs
+
+PASS comic strict limits/refs/confirmed panel and character guard/local replacement/sheets/overflow/escaped SVG
+PASS comic real API owner/dedupe/immutable/locked/stale/replay/partial withdrawal/no writes/unknown/handoff/fixed original
+
+RUN npm run test:long-video
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:long-video
+> node scripts/test-long-video.mjs && node scripts/test-long-video-api.mjs
+
+PASS long video domain/chapters/per-chapter audio/SRT/escaping and isolated media profile limits
+PASS long video real API owner/dedupe/immutable/chapter audio/stale/partial revocation/output/handoff/Range/unknown/original
+
+RUN node scripts/test-long-video-distinct-voices.mjs
+PASS distinct real WAV SHA/durations/order/HTML src-start/wrong audio rejection
+
+ALL PASS

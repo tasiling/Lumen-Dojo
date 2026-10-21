@@ -1,0 +1,72 @@
+READY isolated UI server 3072
+‹ 今天
+計時
+場域
+全零聊解室 · 作品之後
+作品發布回看
+
+看見作品去了哪裡、留下哪些交流，以及接下來想做的事。
+
+回到聊解室工作台
+
+這是你自行填寫的私人紀錄。連結與狀態不代表系統已替你發布。
+
+回看形式
+全部
+純文字
+圖文
+短影音
+Podcast
+短漫
+長影片
+回看平台
+全部
+噗浪
+Threads
+IG貼文
+回看狀態
+全部
+待發布
+已自行發布
+已撤下
+重新讀取發布紀錄
+純文字 · Threads
+原企劃A
+
+待發布
+
+預計發布
+未填
+實際發布
+未填
+交流與回看
+固定threads
+下一步
+尚未記錄
+核對固定來源與連結
+回原企劃編輯紀錄
+既有發布連結
+
+舊企劃與文字平台稿的原資料，保留在原處，僅在此彙整。上方篩選適用新版紀錄。
+
+目前沒有既有發布連結。
+
+今天
+行事曆
+新增
+週盤
+回看
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator('.release-history-card').getByRole('link', { name: '編輯這筆發布紀錄', exact: true })
+
+    at history (/workspace/scratch/ad1d9c2e7938/weaving-creation/scripts/test-creative-release-navigation.mjs:11:401)
+    at async file:///workspace/scratch/ad1d9c2e7938/weaving-creation/scripts/test-creative-release-navigation.mjs:12:1 {
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

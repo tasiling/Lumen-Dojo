@@ -1,0 +1,29 @@
+
+RUN npm run test:illustrated
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:illustrated
+> node scripts/test-illustrated.mjs && node scripts/test-illustrated-api.mjs
+
+PASS illustrated domain limits/identity/layout overflow + durable raster assets/dedupe/no paths
+PASS illustrated real API owner/create/dedupe/version/replay/stale/output/public gate/handoff/unknown recovery/fixed source
+
+RUN npm run test:short-video
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:short-video
+> node scripts/test-short-video.mjs && node scripts/test-short-video-api.mjs
+
+PASS short video domain, escaped deterministic frames/SRT, real WAV probe, durable media and limits
+PASS short video real API owner/version/replay/stale/partial revocation/output/handoff/Range/original
+
+RUN npm run test:podcast
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:podcast
+> node scripts/test-podcast.mjs && node scripts/test-podcast-api.mjs
+
+PASS podcast strict drafts/chapters/cover/real long audio/profile isolation/short-video unchanged
+PASS podcast actual API owner/dedupe/immutable/stale/edit gate/partial revocation/output/unknown handoff/Range/original
+
+ALL PASS
