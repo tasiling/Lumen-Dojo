@@ -36,9 +36,9 @@ export function parseDeckDraft(value: unknown): DeckDraft {
 export function wrapCardText(text: string, units: number): string[] {
   if (!text) return [];
   const lines: string[] = []; let line = '', used = 0;
-  for (const glyph of Array.from(text)) {
+  for (const glyph of Array.from(text.replace(/\r\n?/g,'\n').replace(/\t/g,'    '))) {
     if (glyph === '\n') { lines.push(line); line = ''; used = 0; continue; }
-    const width = /[ -~]/.test(glyph) ? (/[MW@#]/.test(glyph) ? 1 : .65) : 1;
+    const width = glyph.codePointAt(0)! > 0xffff ? 2 : /[mMW@]/.test(glyph) ? 1.25 : 1;
     if (used + width > units && line) { lines.push(line); line = ''; used = 0; }
     line += glyph; used += width;
   }

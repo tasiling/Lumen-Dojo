@@ -13,6 +13,8 @@ try {
   assert.throws(() => m.parseDeckDraft({ ...draft, pages: [{ ...page, image: { assetId: '../file', publicConfirmed: true } }] }), /圖片/);
   assert.throws(() => m.parseDeckDraft({ ...draft, pages: [{ ...page, body: '長'.repeat(601) }] }), /600/);
   assert(m.layoutPage({ ...page, title: '很長'.repeat(100) }).overflow, 'overflow must block output');
+  assert(m.wrapCardText('m'.repeat(23),15).length>=2,'wide Latin title must wrap');
+  assert.equal(m.wrapCardText('a\t  b',24)[0],'a      b','tabs have fixed shared whitespace semantics');
   const assets = f.load('lib/dojo/illustrated/assets.ts');
   const bytes = await readFile('docs/creative-illustrated-evidence/assets/rain-sprout.png');
   const a = await assets.saveAsset(bytes); const b = await assets.saveAsset(bytes);

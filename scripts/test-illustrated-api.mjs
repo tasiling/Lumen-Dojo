@@ -21,6 +21,15 @@ try {
  const rendered=await assets.saveAsset(await sharp({create:{width:1080,height:1350,channels:3,background:'#ffffff'}}).png().toBuffer());
  const output={action:'output',operationId:'illustrated-output-01',deckId:saved.deck.id,expectedRevision:saved.deck.revision,versionId:saved.version.id,publicationConfirmed:true,renders:[{pageId:draft.pages[0].id,assetId:rendered.id}]};
  const noConfirm=await api.PATCH(f.req('PATCH','/api/dojo/illustrated',{...output,operationId:'illustrated-output-no',publicationConfirmed:false})); assert.equal(noConfirm.status,400);
+ // Partial output exists, but the final index update has not been dispatched.
+ const originalUpdate=f.mutations.updateKnowledgeEntry;let interrupt=true;
+ f.mutations.updateKnowledgeEntry=async(...args)=>{if(interrupt&&args[0]===saved.deck.id){interrupt=false;throw Error('before dispatch');}return originalUpdate(...args);};
+ assert.equal((await api.PATCH(f.req('PATCH','/api/dojo/illustrated',output))).status,503);
+ f.mutations.updateKnowledgeEntry=originalUpdate;
+ const policies=f.load('lib/dojo/creativeSources/store.ts').sourcePolicies,originalPublication=policies.assertPublication;
+ let gateChecks=0;policies.assertPublication=async()=>{gateChecks++;throw new (f.load('lib/dojo/learningFoundation/model.ts').LearningError)('來源已撤回公開許可',403);};
+ const denied=await api.PATCH(f.req('PATCH','/api/dojo/illustrated',output));assert.equal(denied.status,403);assert(gateChecks>0);assert.equal((await f.load('lib/dojo/illustrated/store.ts').bundle(saved.deck.id)).outputs.length,0);
+ policies.assertPublication=originalPublication;
  const done=await (await api.PATCH(f.req('PATCH','/api/dojo/illustrated',output))).json(); assert(done.output?.id,JSON.stringify(done));
  const hand={action:'handoff',operationId:'illustrated-handoff-01',deckId:saved.deck.id,expectedRevision:done.deck.revision,outputId:done.output.id,publicationConfirmed:true};
  const handed=await (await api.PATCH(f.req('PATCH','/api/dojo/illustrated',hand))).json(); assert(handed.publication?.id,JSON.stringify(handed)); assert.deepEqual(handed.publication.illustratedOutputRefs,[done.output.id]);

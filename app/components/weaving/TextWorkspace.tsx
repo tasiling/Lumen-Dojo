@@ -187,6 +187,6 @@ export default function TextWorkspace({ work, shuttle, onSaved,onConverted }: {
  {step === 'review' && (preview ? <button className="primary" disabled={acting || draft.busy || draft.dirty || preview.sequence !== draft.state.editSequence} onClick={() => void complete()}>確認這件作品已織成</button> : justCompleted && !draft.dirty ? <button className="primary" onClick={() => selectStep('handoff')}>準備發布這個成品</button> : <button className="primary" disabled={acting || draft.busy} onClick={() => void previewSaved()}>保存並預覽目前版本</button>)}
  {step === 'handoff' && <button className="primary" disabled={!publicationConfirmed || acting || draft.busy || draft.dirty || (!completionId && !['completed', 'sent_to_liaojie'].includes(value.status))} onClick={() => void handoff()}>手動送往聊解室</button>}
  <button disabled={draft.busy || acting} onClick={() => void saveStep()}>保存進度</button></div></div>
- {(step === 'review' || step === 'handoff') && <CompletionHistory versions={versions} legacy={work.finalSnapshot} onSelect={id => { chooseCompletion(id); selectStep('handoff'); }}/>}
+ {(step === 'review' || step === 'handoff') && <><CompletionHistory versions={versions} legacy={work.finalSnapshot} onSelect={id => { chooseCompletion(id); selectStep('handoff'); }}/>{completionId&&<Link href={`/weaving/illustrated?completionId=${encodeURIComponent(completionId)}`}>以選定的固定成品製作圖文</Link>}</>}
  </>;
 }

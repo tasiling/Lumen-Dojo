@@ -1,6 +1,6 @@
 import 'server-only';
-import { createHash } from 'node:crypto';
-import { mkdir, open, readFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdir, open, readFile, rename, unlink } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import sharp from 'sharp';
 import { WeavingError } from '../weavingWorkflow/model';
@@ -18,8 +18,15 @@ async function inspect(bytes: Buffer): Promise<Omit<AssetInfo, 'id'>> {
 export async function saveAsset(bytes: Buffer): Promise<AssetInfo> {
   const dir = directory(), info = await inspect(bytes), id = createHash('sha256').update(bytes).digest('hex');
   await mkdir(dir, { recursive: true });
-  try { const handle = await open(join(dir, `${id}.bin`), 'wx', 0o600); try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); } }
-  catch (e) { if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e; const old = await readFile(join(dir, `${id}.bin`)); if (!old.equals(bytes)) throw new WeavingError('圖片保存內容不符', 409); }
+  const target=join(dir, `${id}.bin`), temporary=join(dir, `.${id}-${randomUUID()}.tmp`);
+  // Install only complete, fsynced bytes. Concurrent writers for this digest
+  // have identical content; an interrupted temporary write never poisons it.
+  try {
+    const handle=await open(temporary,'wx',0o600);
+    try {await handle.writeFile(bytes);await handle.sync();} finally {await handle.close();}
+    await rename(temporary,target);
+    const directoryHandle=await open(dir,'r');try {await directoryHandle.sync();} finally {await directoryHandle.close();}
+  } finally {await unlink(temporary).catch(()=>{});}
   return { id, ...info };
 }
 export async function readAsset(id: string) {
