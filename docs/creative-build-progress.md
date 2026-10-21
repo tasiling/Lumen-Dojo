@@ -168,3 +168,16 @@
 - GitHub程式驗證head `6bcbae3f2c415095935d64525df057f216f729af`、tree `611b43e8669352fa7933fc7305659415b09c0b87`；完整程式／證據head `4cc2ba8652f61894584f01f964abae1548e0699f`、tree `ecd621508add918dced039213ccef545928bee72`。Native完整head `69e3aa26add31dfd20f9022f1f580ff7c83e60c5`，tree完全相同。
 - 已連接GitHub Git Data逐次保存設計、domain、API、UI、集中修正及交付六個提交，各次核對Native tree；保留遠端parent，自 `90b30fec11d330e73f47f29e3c8adc4ccba4a663` expected_sha非force更新。fresh fetch證實遠端／Native tree相同，原遠端head仍為ancestor，未覆蓋其他寫入者；master仍 `680aca260e54e5fa38289012bd48c86553594cdb`，merge-tree通過。
 - 本節是其後文件提交，最新head以本檔所在commit／PR為準。第七包完成可審閱遠端交付，下一輪直接接第八包短漫，不重做Podcast，也不重試取消的正式發布。本人錄音與真機／正式環境驗收列為必要人工作業，繼續其他獨立製作。
+
+## 2026-10-21 第八包：短漫
+
+- Branch：`codex/weaving-liaojie-creation-v2`；從遠端`1031b4c79bc706869e3266e26f544fde901ceb68`恢復單一Native checkout，開始前確認沒有其他writer。最新master已是`19ccc891fb04af8ee6bef0d89f0076a299e8a33a`（道場地圖更新），不是舊680aca2；與本包Native merge-tree通過，不覆蓋其他工作區。
+- 本機程式驗證head `d0002ccaa5dd2163b3cc3c2c75d9d3e1d16f6cc4`、tree `3b2d6c63c70a4aba7663d498623322c948b97ccb`；本節與成品為其後文件／證據提交，最新head以本檔所在commit／PR為準。
+- 實際新增：`/weaving/comic`與織光／固定文字入口、同源五步、0–8角色與參考圖／來源、1–12格分鏡／說話者／對白／角色引用／圖片／裁切／格序、confirmed格及引用角色的server保護。先解除確認並保存才可修改，局部替換不重置其他格。不可覆寫版本、四格一頁1080×1350、逐頁真PNG、嵌原圖的可修改JSON下載／重匯，以及聊解室固定圖片／配文接收。
+- 外部實試：內建image_gen真正生成虛構白鳥雲豆角色與四張獨立圖；第三格提早出芽，實際局部修圖去除後重新匯入，其他1、2、4格全欄位與確認值deepEqual。原圖／修圖前後／完整提示／SHA／實際JSON／最終可閱讀PNG及五寬production截圖保留，不把提示或占位當作品。非本人經驗、未開帳號／計費或外送私人庫。
+- 可靠性：owner／8MiB raster／SHA沿用；新prefix與operation kind獨立。準備／固定成品／handoff最後副作用同鎖重核來源公開、資產與目前版；partial撤權零新增，unknown marker唯讀找回不解鎖。UI同步gate綁上傳目標ID、dirty匯入拒絕、失敗保留、完整bundle比較／重套、圖片延遲阻止舊圖輸出。silent格及換格欄位辨識問題已有RED→GREEN案例。
+- 審查：fresh gpt-6-astra全包0 Critical／0 Important／2 Minor，沒有產品fix pass或第二次review。獨立domain／API及額外partial handoff撤權、真正unresolved保存marker保鎖案例通過。保留Minor：圖片GET暫時失敗需刷新／重新開稿，沒有就地重試；尚未每個尺寸各完整跑所有互動。
+- 驗證：comic domain／實際API、dev及production流程，390px主要互動、375／390／430／320／1024排版無橫溢及截圖、1024px後段JSON／output／交接；涵蓋空白／非空、dirty、保存失敗／衝突、確認保護、局部改圖、JSON成功載入／失敗保留、圖片競態、unknown成品找回、真1080×1350PNG及聊解室圖片。illustrated／weaving／liaojie-text／reading-knowledge-api、build／tsc通過；lint0 errors／2既有warnings。不稱五寬各自完整流程驗收。
+- 交付：`docs/creative-comic-delivery.md`、`docs/creative-comic-evidence/`、spec／plan日期2026-10-21。原17MiB來源JSON遇connector16MiB單次限制，以gzip分段保存相同bytes及SHA-256；`scripts/restore-comic-evidence.mjs`已實際還原核對。產品仍直接下載單一JSON。將保留遠端parent、Native相同tree、expected_sha非force更新同一PR101。
+- 裁定／代價：固定四格頁與獨立對白區，任意畫布／自由氣泡／其他比例留後續。大型JSON仍受手機記憶體，256MiB／20張滿額圖與12格3頁browser未驗；實際4格1頁／約17MiB已驗。字型／Unicode全面矩陣、輔具、真機、正式Notion／持久磁碟／跨host與部署、本人審美／權利與像素語意不由fixture或review保證。全部裁定及保留Minor見delivery／plan Ledger。
+- 沒有正式Notion、社群、計費、merge／deploy或重試取消的Railway操作。下一包第九包長影片：章節、長腳本、分段素材／本人聲音與外部編輯接續、實際可播放測試長片及回收；再第十包整合驗收。第八包依賴滿足，既有持續建置保留，不重做短漫。
