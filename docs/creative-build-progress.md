@@ -100,3 +100,9 @@
 - 交付：`docs/creative-text-delivery.md`、`docs/creative-text-evidence/`、spec `docs/superpowers/specs/2026-10-21-text-platform-versions-design.md`、plan `docs/superpowers/plans/2026-10-21-text-platform-versions.md`。本包沒有正式資料寫入、社群發布、merge/deploy 或 iPhone 真機驗收。
 - 裁定／代價：IG 本包只交付配文，不宣稱圖卡完成；Threads／IG 採人工複製與連結回收，不處理帳號權限；舊資料預設 `sourceFormat=legacy`，避免錯判文字而奪走原編輯流程。代價是歷史文字企劃不自動升級，需之後明確遷移或沿用原發布整理。
 - 下一包：圖文實際製作。先以隔離素材選可用外部工具實際生成圖片，保存逐頁文案、提示、圖片、版次、輸出與回收結果；不把 prompt 或空白圖框算成已完成圖卡。
+
+### 第四包遠端交付 checkpoint
+
+- 同一 PR：[#101](https://github.com/tasiling/Lumen-Dojo/pull/101)，標題與說明已更新到第二至第四包；open，尚未 merge/deploy。
+- GitHub 程式與交付 tree：`a237593e11949ae3f8fcceac80e2810df2577888`，遠端程式 checkpoint `a15200a9551f02b09fe8803f25253b9d33d3e7f2`。CLI 缺少互動憑證後，改用已連接 GitHub Git Data：以上一個遠端 head `6c3a4ee666daa65684e464a4aadd50ab098ad7e4` 為 parent、核對完全相同 tree、`expected_sha` 且非 force 更新，未覆蓋其他寫入者。
+- 本節是其後的遠端身分紀錄提交；最終 branch head 以 PR／本檔所在提交為準。第四包已完成可審閱交付，排程繼續第五包圖文，不重做文字平台流程，也不自行 merge/deploy。
