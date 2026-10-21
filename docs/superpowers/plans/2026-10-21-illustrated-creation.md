@@ -29,3 +29,8 @@
 - Spec／plan已依使用者完整需求自查。Task1→2 Asset metadata signature；Task2→3 Deck/Version/Output共享type；Task3→4同一SVG與PNG；無共享介面矛盾。
 - Ruling: 首版採兩個可控版型與4:5，避免任意畫布帶來未驗收字體／溢出；代價是其他比例與自由排版留後續。
 - Ruling: 使用內建imagegen生成隔離圖並由UI匯入，不接計費API；代價是生成需外部步驟，本包清楚回收圖檔和prompt。
+- Tasks 1–4完成：domain／資產→實際API→同源UI→真實生成圖與三頁PNG／來源重匯，逐一消除依賴，沒有用文件代替程式。程式驗證head `1a84860e436120aabe4331760287740063bddd2b`。
+- 全包獨立審查 0 Critical／5 Important／1 Minor，一次集中修正：部分重試撤權、完整bundle衝突恢復、未知成品回應、寬字元溢出、空白語義及成品入口；回歸與未判定邊界見 `docs/creative-illustrated-delivery.md`。無延後Minor，未再次審查。
+- 最終production UI、圖文domain/API、weaving、liaojie-text、reading-knowledge-api、來源設定／提案domain、build、tsc、lint完成。375/390/430、320、1024px真實渲染；成品圖片、原圖、prompt與JSON保留在evidence。
+- Ruling: owner瀏覽器渲染為信任邊界，API不獨立證明PNG像素符合文字；可用實際共享SVG／PNG測試佐證產品行為，代價是其他渲染客戶端需另訂版本簽發機制。沒有正式磁碟／Notion／iPhone／社群發布驗收。
+- 下一個依賴滿足且未完成工作包是短影音；本包未merge/deploy，既有發布取消狀態不重試。

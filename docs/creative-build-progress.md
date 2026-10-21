@@ -106,3 +106,17 @@
 - 同一 PR：[#101](https://github.com/tasiling/Lumen-Dojo/pull/101)，標題與說明已更新到第二至第四包；open，尚未 merge/deploy。
 - GitHub 程式與交付 tree：`a237593e11949ae3f8fcceac80e2810df2577888`，遠端程式 checkpoint `a15200a9551f02b09fe8803f25253b9d33d3e7f2`。CLI 缺少互動憑證後，改用已連接 GitHub Git Data：以上一個遠端 head `6c3a4ee666daa65684e464a4aadd50ab098ad7e4` 為 parent、核對完全相同 tree、`expected_sha` 且非 force 更新，未覆蓋其他寫入者。
 - 本節是其後的遠端身分紀錄提交；最終 branch head 以 PR／本檔所在提交為準。第四包已完成可審閱交付，排程繼續第五包圖文，不重做文字平台流程，也不自行 merge/deploy。
+
+## 2026-10-21 第五包：圖文實際製作
+
+- 使用者最新已改為每一小時接續；既有任務身分與單一寫入者規則不變，沒有新增重複任務或重新啟用舊道場總排程。
+- Branch：`codex/weaving-liaojie-creation-v2`；起點遠端 `7b47180e6ae03755a6a4c587a07dd3cfbeb232b1`，master `680aca260e54e5fa38289012bd48c86553594cdb`。本機程式驗證 head `1a84860e436120aabe4331760287740063bddd2b`，tree `67ec24c8f15b43c24d8d8a94af5c33b8ec490b0f`。本節及成品／截圖是後續交付提交，最新head以本檔所在提交／PR為準。
+- 實際新增：`/weaving/illustrated` 與固定文字成品入口、五步圖示、1–12頁編輯／排序、兩種版型／配色、圖片匯入／裁切／來源／公開確認、不可覆寫版次與成品。從同一React SVG產生1080×1350 PNG；可下載包含原圖的JSON並重新匯入，聊解室能收圖文固定輸出，原文字／既有平台稿不改寫。
+- 外部工具實試：內建imagegen生成虛構雨後窗邊小芽配圖，產品實作三頁PNG與原稿回收；保存原圖、提示、工具、來源、頁序與輸出。未購買服務、未啟用計費API，不把prompt或空框當作成品。
+- 可靠性：owner raster API、8MiB／解碼／尺寸與SHA核對、持久檔案原子安裝；缺持久目錄拒絕。來源公開許可在副作用前重核，部分輸出操作重試也重核；完成的歷史回讀不改寫。
+- 審查：0 Critical／5 Important／1 Minor，全部一次集中修正，無延後Minor或第二次審查。集中處理部分輸出撤權、衝突後完整版本／成品同步、成功回應遺失找回、寬英文字元溢出、SVG／PNG空格及Tab一致、固定文字入口；具體重現與邊界見delivery。
+- 驗證：`test:illustrated`、dev與最終production `test:illustrated-ui`、`test:weaving`、`test:liaojie-text`、`test:reading-knowledge-api`、source-settings／proposals domain、build、tsc通過；lint 0 errors／2既有warnings。375／390／430／320／1024px實際渲染無橫溢，覆蓋空白／非空、未存離開、保存失敗／衝突、成品未知回應、JSON重匯、定稿／交接，1080px文字寬度與繁中字區像素比對。
+- 交付：`docs/creative-illustrated-delivery.md`、`docs/creative-illustrated-evidence/`，spec／plan日期2026-10-21。Native程式、審查修正與證據將以相同tree、保存遠端parent、expected_sha／非force更新同一PR101。
+- 裁定／代價：兩版型／4:5，其他比例與任意畫布留後續；生圖外部完成後回收，沒有站內自動生圖。PNG由可信owner瀏覽器渲染，API不獨立證明像素語意；字型依裝置，QA注入Noto不等於真機已驗收。沒有正式Notion／磁碟／iPhone／社群發布，沒有本包merge/deploy或重試取消的Railway套用。
+- 整合更正：此前把connector的mergeable=false解讀為master衝突並不充分。本輪native `git merge-tree --write-tree origin/master HEAD` 成功，最新connector也回傳mergeable=true；master未更新，不能再沿用「有衝突」的舊判斷。PR89仍只在開發分支整合，未正式單獨合併。
+- 下一包：短影音，先讀此checkpoint與最新遠端，新增不露臉腳本／分鏡、素材、本人配音匯入與字幕／外部剪輯試製，必須回收真正可播放短片。沒有本人錄音時先用明示隔離音訊驗證獨立部分，不冒充本人聲音。再接Podcast、短漫、長影片及整合交付。
