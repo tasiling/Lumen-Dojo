@@ -120,3 +120,11 @@
 - 裁定／代價：兩版型／4:5，其他比例與任意畫布留後續；生圖外部完成後回收，沒有站內自動生圖。PNG由可信owner瀏覽器渲染，API不獨立證明像素語意；字型依裝置，QA注入Noto不等於真機已驗收。沒有正式Notion／磁碟／iPhone／社群發布，沒有本包merge/deploy或重試取消的Railway套用。
 - 整合更正：此前把connector的mergeable=false解讀為master衝突並不充分。本輪native `git merge-tree --write-tree origin/master HEAD` 成功，最新connector也回傳mergeable=true；master未更新，不能再沿用「有衝突」的舊判斷。PR89仍只在開發分支整合，未正式單獨合併。
 - 下一包：短影音，先讀此checkpoint與最新遠端，新增不露臉腳本／分鏡、素材、本人配音匯入與字幕／外部剪輯試製，必須回收真正可播放短片。沒有本人錄音時先用明示隔離音訊驗證獨立部分，不冒充本人聲音。再接Podcast、短漫、長影片及整合交付。
+
+### 第五包遠端交付 checkpoint
+
+- 本輪開始／交付：2026-10-21 13:24–13:54 Australia/Melbourne；日期由本次實際執行記錄，不以roadmap目標日替代。
+- 同一 [PR101](https://github.com/tasiling/Lumen-Dojo/pull/101) 已更新圖文標題與說明，open，沒有merge/deploy。
+- GitHub程式驗證head `f9933d9b8350288e9f0b3e2f4c8d29125865b1c1`，tree `67ec24c8f15b43c24d8d8a94af5c33b8ec490b0f`；完整實作／證據checkpoint `20bd26ab137857f4cafd23f00a0413fb56d64448`，tree `b9d772dbebf2eb81158bae80fe726c7a1cd00ef9`。
+- 使用已連接GitHub Git Data依序保存設計、實作、審查修正、成品證據四個提交，各自核對Native tree；保留遠端parent鏈，自 `7b47180e6ae03755a6a4c587a07dd3cfbeb232b1` expected_sha、非force更新。fetch後遠端與Native完整tree相同、原遠端head仍為ancestor，沒有覆蓋其他寫入者。更新PR工具一度回傳舊head快照，以上述fresh native fetch核對為準。
+- 本節是其後的交付身分文件提交；最新branch/head以本檔所在commit為準。第五包完成遠端交付，下一輪直接接第六包短影音；不重做圖文、不重試取消的正式部署，也不因本人錄音尚缺而停止其他獨立工作。
