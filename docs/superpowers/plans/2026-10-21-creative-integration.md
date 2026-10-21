@@ -24,8 +24,8 @@
 ## Task 1: 前包可操作收尾
 Files: longVideo/LongVideoWorkspace.tsx、comic/ComicWorkspace.tsx、podcast/PodcastDelivery.tsx；scripts/test-creative-integration-repairs.mjs、test-long-video-distinct-voices.mjs。
 Interfaces: 長片reset/reapply對齊章節；projectGeneration guard與完成時leave；comic imageAttempt／imageError；Podcast固定封面img。
-- [ ] 寫真UI遠端換序恢復、延遲A後選B／dirty、漫畫GET503重試、接收封面；不同真WAV prepare／HTML換序與拒錯。Expected舊介面FAIL。
-- [ ] 最小實作，Expected兩script PASS及既有long-video／comic／podcast回歸，commit。
+- [x] 寫真UI遠端換序恢復、延遲A後選B／dirty、漫畫GET503重試、接收封面；不同真WAV prepare／HTML換序與拒錯。Expected舊介面FAIL。
+- [x] 最小實作，Expected兩script PASS及既有long-video／comic／podcast回歸，commit。
 
 ## Task 2: 私人發布紀錄model／來源／API
 Files: lib/dojo/creativeReleases/{model,sources,store}.ts；app/api/dojo/creative-releases/route.ts；formal／operations／store operation觀察；scripts/test-creative-releases.mjs。
@@ -51,3 +51,5 @@ Files: docs/creative-integration-delivery.md、release-ready.md、creative-integ
 - Ruling: 使用者已授權Native持續建置與常規選擇，不因技能一般確認節點停工；單一feature checkout與持久Ledger延續前包 — 避免重複同意／雙writer — 仍需正式版本發布決定。
 - Ruling: 新紀錄是私人手動收據，原output／handoff公開許可保留，收據可在素材撤權後保留歷史 — 不把記錄URL當外送資料 — 若未來加入publisher必須另加當下公開許可檢查。
 - Ruling: 保留既有文字／Legacy發布資料並唯讀彙整，不批次遷移 — 不改正式歷史語意 — 回看會區分既有與新紀錄。
+
+- Task1 complete: 真UI recovery／race／comic／cover四mode均RED→GREEN，前兩者重現錯章與晚A覆蓋B；comic測試需持續503至本人重試，避免dev StrictMode重讀偶然成功。不同真WAV／prepare／HTML換序及拒錯固定suite PASS（覆蓋既有正確行為，未改映射）；long-video／comic／podcast3套回歸PASS。
