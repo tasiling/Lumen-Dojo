@@ -1,5 +1,6 @@
 "use client";
 import LongVideoDelivery from './longVideo/LongVideoDelivery';
+import ReleaseWorkspace from './creativeReleases/ReleaseWorkspace';
 import ComicDelivery from './comic/ComicDelivery';
 import PodcastDelivery from './podcast/PodcastDelivery';
 import { useEffect, useState } from 'react';
@@ -40,6 +41,7 @@ function PublicationEditor({ project, onArchived, onUpdated }: { project: Liaoji
     {project.sourceFormat === 'text' && project.sourceCompletionVersionId && project.sourceDraftSnapshot
       ? <><TextPlatformWorkspace project={project}/><details className="legacy-publication-record"><summary>查看既有發布欄位</summary><LegacyPublicationEditor project={project} onUpdated={onUpdated}/></details></>
       : <LegacyPublicationEditor project={project} onUpdated={onUpdated}/>}
+    <ReleaseWorkspace key={project.id} publicationId={project.id}/>
     {error && <p className="form-error" role="alert">{error}</p>}<button className="danger-button archive-project-button" disabled={archiving} onClick={archive}>封存這張聊解企劃</button>
   </>;
 }

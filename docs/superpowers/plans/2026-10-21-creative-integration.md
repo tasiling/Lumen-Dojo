@@ -36,8 +36,8 @@ Interfaces: ReleaseSource／CreativeRelease／ReleasePatch；parseReleasePatch�
 ## Task 3: 工作台與回看同源UI
 Files: app/components/creativeReleases/{ReleaseWorkspace,ReleaseHistory,ReleaseEditor}.tsx及release.css；app/liaojie/releases/page.tsx；LiaojiePublicationWorkbench及liaojie入口；scripts/test-creative-release-ui.mjs。
 Interfaces: ReleaseEditor useWeavingDraft＋ConflictRecovery全欄位，ReleaseWorkspace明選來源／平台及同步gate，ReleaseHistory全覽篩選與既有唯讀links。
-- [ ] 寫空／非空、dirty／save503／完整衝突、unknown回應找回、六形式來源選擇、每寬完整建立→保存→回看與長字串；Expected missing UI FAIL。
-- [ ] 實作沿用視覺、手動不發文文案，Expected dev及production UI PASS，實際截圖目視，commit。
+- [x] 寫空／非空、dirty／save503／完整衝突、unknown回應找回、六形式來源選擇、每寬完整建立→保存→回看與長字串；Expected missing UI FAIL。
+- [x] 實作沿用視覺、手動不發文文案，Expected dev及production UI PASS，實際截圖目視，commit。
 
 ## Task 4: 整合交付
 Files: docs/creative-integration-delivery.md、release-ready.md、creative-integration-evidence、同一progress／roadmap。
@@ -55,3 +55,5 @@ Files: docs/creative-integration-delivery.md、release-ready.md、creative-integ
 - Task1 complete: 真UI recovery／race／comic／cover四mode均RED→GREEN，前兩者重現錯章與晚A覆蓋B；comic測試需持續503至本人重試，避免dev StrictMode重讀偶然成功。不同真WAV／prepare／HTML換序及拒錯固定suite PASS（覆蓋既有正確行為，未改映射）；long-video／comic／podcast3套回歸PASS。
 
 - Task2 complete: model/API suite RED missing module→GREEN；六形式代表固定資料的來源綁定（各媒體實際生成由既有suite驗證）、平台文字版本、跨parent／平台拒絕、日期URL、owner/CSRF/no-store、防重、stale及unknown create/save只讀找回均PASS；tsc與targeted lint PASS。資料夾無正式憑證。
+
+- Task3: production真React五寬各建立→保存→回看PASS；實際六形式真試製bytes由正式save/output/handoff stores接同企劃，非只代表metadata。涵蓋六形式與IG／Threads、unknown建立找回、invalid published／503 dirty離開、完整conflict六欄位、篩選與長中文URL。字型QA最初只套欄位，已改全介面重截。dev連續導航出現Next manifest JSON讀取競態，正式build及production沒有；不把早期局部dev結果稱完整通過，補dev重跑。
