@@ -1,3 +1,4 @@
+import {assertPackageBudget} from './package';
 import 'server-only';
 import {LIAOJIE_PROJECT_TITLE_PREFIX,parseJson} from '../formal';
 import {normalizeLiaojieProject} from '../liaojiePublication';
@@ -8,7 +9,7 @@ import {createStep,updateStep,readRecord,readWork,readShuttle,operationId,expect
 import {inspectWeavingOperation,operationDigest,runWeavingOperation,type OperationKind,type OperationReceipt} from '../weavingWorkflow/operations';
 import {WeavingError,stringValue} from '../weavingWorkflow/model';
 import {readAsset} from '../illustrated/assets';
-import {readMedia as sharedReadMedia} from '../shortVideo/media';
+import {readMedia as sharedReadMedia,mediaByteLength} from '../shortVideo/media';
 const readMedia=(id:string)=>sharedReadMedia(id,'long-video');
 import {LONG_VIDEO_PREFIX,LONG_VIDEO_VERSION_PREFIX,LONG_VIDEO_OUTPUT_PREFIX,newScene,parseLongVideoDraft,assertLongVideoReady,assertChapterAudio,duration,type LongVideoProject,type LongVideoVersion,type LongVideoOutput,type LongVideoBundle,type LongVideoDraft} from './model';
 async function raw(id:string,prefix:string):Promise<Body>{const v=parseJson((await readRecord(id,prefix)).內容) as Body;if(!v||v.owner!==WEAVING_OWNER)throw new WeavingError('長影片歸屬不符',403);return v;}
@@ -19,6 +20,7 @@ export async function listLongVideos(){const rows=await listJsonRecords(LONG_VID
 async function fixed(id:string){const c=await readCompletion(id),w=await readWork(c.workId);if(!w.completionVersionRefs.includes(c.id)||w.format!=='text'||!c.text.trim())throw new WeavingError('請選一份固定文字成品',409);return {c,w};}
 async function assets(d:LongVideoDraft,ready=false){const voiceDurations:Record<string,number>={};for(const s of d.scenes){if(s.image)await readAsset(s.image.assetId);if(s.voice){const a=await readMedia(s.voice.assetId);if(a.kind!=='audio')throw new WeavingError('章節原音必須是音訊');voiceDurations[a.id]=a.duration;}}if(ready)assertChapterAudio(d,voiceDurations);return voiceDurations;}
 export async function prepareLongVideo(body:Body){const id=stringValue(body.projectId,300,'長影片',false),b=await bundleLongVideo(id);expectRevision(b.project,body.expectedRevision);if(b.version.id!==body.versionId)throw new WeavingError('長影片已改版，請重新讀取目前版',409);assertLongVideoReady(b.version);return{voiceDurations:await assets(b.version,true)};}
+export async function prepareLongVideoPackage(body:Body){const b=await bundleLongVideo(stringValue(body.projectId,300,'長影片',false));expectRevision(b.project,body.expectedRevision);if(b.version.id!==body.versionId)throw new WeavingError('長影片已改版，請重新讀取目前版',409);const draft=parseLongVideoDraft({title:b.version.title,angle:b.version.angle,style:b.version.style,rawTranscript:b.version.rawTranscript,scenes:b.version.scenes}),draftBytes=new TextEncoder().encode(JSON.stringify({schema:1,completionId:b.project.completionId,sourceDigest:b.project.sourceDigest,versionId:b.version.id,draft,images:{},voices:{}},null,2)).byteLength,sizes:number[]=[];if(body.kind!==undefined&&!['json','html'].includes(String(body.kind)))throw new WeavingError('製作包格式不正確');const imageIds=draft.scenes.flatMap(s=>s.image?[s.image.assetId]:[]);for(const id of body.kind==='html'?imageIds:[...new Set(imageIds)]){sizes.push((await readAsset(id)).bytes.length);assertPackageBudget(sizes,draftBytes);}for(const id of [...new Set(draft.scenes.flatMap(s=>s.voice?[s.voice.assetId]:[]))]){sizes.push(await mediaByteLength(id,'long-video'));assertPackageBudget(sizes,draftBytes);}return assertPackageBudget(sizes,draftBytes);}
 async function publishable(b:LongVideoBundle,confirmed:unknown){const {c}=await fixed(b.project.completionId);if(operationDigest(c.text)!==b.project.sourceDigest)throw new WeavingError('固定來源不符',409);await sourcePolicies.assertPublication(c.sourceSelections??[],confirmed);assertLongVideoReady(b.version);await assets(b.version,true);}
 function marker(r:OperationReceipt,v:Body,key:string){const m=v._weavingMutation as Body|undefined;return m?.owner===r.owner&&m.operationId===r.operationId&&m.inputDigest===r.inputDigest&&m.key===key;}
 async function completed(body:Body,kind:OperationKind,id:string){const r=await inspectWeavingOperation(WEAVING_OWNER,operationId(body));if(!r)return null;if(r.kind!==kind||r.inputDigest!==operationDigest(body))throw new WeavingError('同一操作內容不同，請保留原操作',409);return marker(r,await raw(id,LONG_VIDEO_PREFIX),'project')?r:null;}

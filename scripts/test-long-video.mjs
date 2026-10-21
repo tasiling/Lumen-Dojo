@@ -6,6 +6,7 @@ import {fixture} from './weaving-fixture.mjs';
 const f=await fixture();
 try{
  const m=f.load('lib/dojo/longVideo/model.ts'),c=f.load('lib/dojo/longVideo/composition.ts');
+ const budget=f.load('lib/dojo/longVideo/package.ts');assert.throws(()=>budget.assertPackageBudget(Array(20).fill(180*48000*2*2),10000),/256MiB/);assert(budget.assertPackageBudget([8*1024*1024,960044],10000).encodedUpperBound<budget.LONG_VIDEO_PACKAGE_MAX_BYTES);
  const voice={assetId:'a'.repeat(64),kind:'test',sourceNote:'隔離測試音',publicConfirmed:true},image={assetId:'b'.repeat(64),kind:'generated',tool:'imagegen',prompt:'fictional',sourceNote:'虛構圖',publicConfirmed:true};
  const d={title:'雲豆的四章練習',angle:'慢慢生長',style:'mixed',rawTranscript:'00:00 原音',scenes:Array.from({length:4},(_,i)=>({...m.newScene('s'+i),title:'章節'+(i+1),duration:60,narration:'生活有自己的時間',caption:'先生活，再慢慢生長。',voice,image}))};
  assert.equal(m.parseLongVideoDraft(d).scenes.length,4);assert.equal(m.duration(d),240);assert.deepEqual(m.chapters(d).map(c=>c.start),[0,60,120,180]);assert.deepEqual(m.chapters({...d,scenes:[d.scenes[3],d.scenes[0]]}).map(c=>c.sceneId),['s3','s0']);

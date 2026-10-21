@@ -9,7 +9,7 @@ Crystal已授權Native持續建置，接續第九包：個人生活／洞察固�
 ## 資料契約
 LongVideoDraft={title,angle,style,rawTranscript,scenes}，Scene={id,title,narration,caption,duration,motion,image,voice}。1–40章節，每段5–300秒，草稿總長最多3600秒；ready需總長超過180秒且最多3600。章節title100字、narration4000、caption180、rawTranscript80000，style水彩／蠟筆／mixed，motion still／drift／paper。每段聲音VoiceUse={assetId,kind:self|test,sourceNote,publicConfirmed}，每段配圖ImageUse沿用。Ready要求title／angle、每章節名稱／圖片／來源及公開／聲音確認、字幕在同源畫面3行內、每段真原音與預定時間差<=0.5秒；不裁切或假冒配音。
 
-章節時間從固定版次的分段累加產生，排序／秒數一改就重新算；SRT、章節JSON／文字、長腳本與外部HTML都從同一版次生成，原逐字稿不改寫。每段可個別下載原音，JSON包按SHA包含所有原圖／音訊，驗同completionId及sourceDigest後重匯新版本。dirty時拒絕匯入；所有資產校驗完成前不套用。
+章節時間從固定版次的分段累加產生，排序／秒數一改就重新算；SRT、章節JSON／文字、長腳本與外部HTML都從同一版次生成，原逐字稿不改寫。每段可個別下載原音，JSON包按SHA包含所有原圖／音訊，驗同completionId及sourceDigest後重匯新版本。dirty時拒絕匯入；所有資產校驗完成前不套用。JSON／HTML整包上限256MiB（含base64與metadata），下載前先核總預算，JSON匯出／匯入同一門檻；超過可逐章下載素材／原音／稿或外部壓縮後另存，不改一小時專案與單檔256MiB保存上限。
 
 ## 媒體與持久化
 固定server profile long-video：256MiB、最多3600秒、獨立long-video-media目錄；短片64MiB／181秒與Podcast128MiB／音訊專用不變。H264／AAC MP4，圖像尺寸沿用限制，long解碼採有界300秒、其他60秒不變。每段WAV／MP3／M4A本人或測試音，真probe與SHA，完整解碼成功才原子安裝。回收成品需16:9、width>=640、總長與固定章節差<=0.5秒。最大容量／一小時正式環境效能需另驗，不據4分鐘樣本宣稱全上限流暢。

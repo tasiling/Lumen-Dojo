@@ -1,6 +1,6 @@
 import 'server-only';
 import {createHash,randomUUID} from 'node:crypto';
-import {mkdir,open,readFile,rename,unlink} from 'node:fs/promises';
+import {mkdir,open,readFile,rename,unlink,stat} from 'node:fs/promises';
 import {join,isAbsolute} from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -27,3 +27,6 @@ async function validatePayload(path:string,profile:MediaProfile){
 }
 export async function saveMedia(bytes:Buffer,profile:MediaProfile='short-video'):Promise<MediaInfo>{if(!bytes.length||bytes.length>limits[profile].bytes)throw new WeavingError(profile==='podcast'?'音訊需要在128MiB以內':profile==='long-video'?'媒體需要在256MiB以內':'媒體需要在64MiB以內',413);const dir=directory(profile);await mkdir(dir,{recursive:true});const id=createHash('sha256').update(bytes).digest('hex'),temp=join(dir,`.${randomUUID()}.tmp`),target=join(dir,id+'.bin');try{const h=await open(temp,'wx',0o600);try{await h.writeFile(bytes);await h.sync();}finally{await h.close();}const info=await inspect(temp,bytes,profile);await validatePayload(temp,profile);await rename(temp,target);const directoryHandle=await open(dir,'r');try{await directoryHandle.sync();}finally{await directoryHandle.close();}return{id,...info};}finally{await unlink(temp).catch(()=>{});}}
 export async function readMedia(id:string,profile:MediaProfile='short-video'){assetId(id);const path=join(directory(profile),id+'.bin');let bytes;try{bytes=await readFile(path);}catch{throw new WeavingError('找不到已保存媒體',404);}if(createHash('sha256').update(bytes).digest('hex')!==id)throw new WeavingError('媒體核對失敗',409);return{id,...await inspect(path,bytes,profile),bytes};}
+
+// A packaging preflight reads file lengths only; actual downloads still verify SHA.
+export async function mediaByteLength(id:string,profile:MediaProfile='short-video'){assetId(id);const path=join(directory(profile),id+'.bin');let info;try{info=await stat(path);}catch{throw new WeavingError('找不到已保存媒體',404);}if(!info.isFile()||info.size<=0||info.size>limits[profile].bytes)throw new WeavingError('媒體大小不符',413);return info.size;}

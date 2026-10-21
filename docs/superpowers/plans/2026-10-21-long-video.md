@@ -41,7 +41,7 @@ Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voice
 - [x] dev／production流程與五寬排版、相關回歸、build／tsc／lint，Expected PASS或記錄既有warning，commit。
 
 ## Task 4: Review與遠端交付
-- [ ] 一次fresh全包review，Important集中RED→GREEN修正，Minor記錄。
+- [x] 一次fresh全包review，Important集中RED→GREEN修正，Minor記錄。
 - [ ] delivery／evidence／同一progress與roadmap、checkpoint與Native同tree／expected_sha非force推送PR101，無merge/deploy。
 
 ## Ledger
@@ -56,3 +56,21 @@ Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voice
 - Task3 complete: UI missing entry RED→GREEN；同源SVG匯出因busy重繪斷開DOM的getBBox=0／isConnected=false已定位，memo保留預覽、快照文字並暫停聲音後四章PNG通過。換章順序預覽錯位RED→GREEN，換回原序不產生假dirty；同一file重匯不觸發onChange亦RED→GREEN清除input值。圖片失敗有就地重試及獨立可清除錯誤。
 - Task3 validation: dev及最終production完整流程PASS，375／390／430／320／1024選章與無橫溢截圖；空白／非空、dirty離開、save503、完整衝突比較、HTML／SRT／章節稿、JSON成功／dirty與失敗保留、回收刷新、unknown output找回及聊解接收。實際240.0秒16:9 H264-AAC與章節metadata通過；FFmpeg預設fade238.5秒已實際調整為none240秒，check0FAIL／1WARN（無獨立字幕軌，畫面字幕＋外部SRT），look六圖已目視。非人聲測試音，略過loudness，不聲稱本人錄音與真機播放。
 - Task3 regression: long-video／short-video／podcast／comic／illustrated／weaving／liaojie-text／reading-knowledge及reading-knowledge-api PASS；final build、tsc PASS，lint0errors／2既有warnings；各尺寸沒有各跑一遍完整流程。
+
+- Final review: 一次fresh gpt-6-astra，範圍d93bf26..90f5c05，0Critical／2Important／3Minor。按使用者影響維持評級；未再派reviewer。reviewer另用兩份不同SHA／時長真WAV及換序驗證映射正確。
+- Final: fixed 同檔圖片／原音／MP4無法重試與跨章同音檔 — inputValue C:fakepath RED→GREEN清除原生值，focused UI含同音檔兩章與三類input；suite3/3（long-video／short-video／podcast）及dev／最終production完整流程2/2 PASS。
+- Final: fixed 整包可能超過自身匯入門檻 — 20段180秒48kHz stereo PCM arithmetic、實際owner預算API與client preflight413不下載均RED→GREEN。新增256MiB encoded JSON／HTML預算（去重JSON、逐章HTML圖片），音訊stat估算後才由client讀完整原檔，最終Blob再核；JSON匯入同常數。budget focused UI1/1、suite3/3及dev／production2/2、build／tsc PASS；lint0新增error／warning。
+- Final: Ruling: 明確整包容量而不新增ZIP媒體封裝 — 保留一小時／40章與單檔上限，256MiB以下整包可重匯，超出可逐章下載或外部壓縮後另存 — 滿額無壓縮WAV需外部素材交付，產品已明示，手機滿額效能仍另驗。
+- Final: minor (deferred): 衝突讀入換序版本後需重點章節才能對齊預覽；PNG防錯拒絕，未靜默輸出錯章。
+- Final: minor (deferred): 延遲A企劃GET可能覆蓋B active選擇；同步session draft暫存可重開恢復，load generation guard列整合改善。
+- Final: minor (deferred): 不同真音檔／時長換序案例reviewer獨立通過，但尚未納入固定suite。
+
+- Final: Ruling: 每次GET完整解碼 — 安裝已完整解碼、讀取仍核SHA，正常使用不新增解碼負擔 — 若磁碟不符合immutable設計，應另查正式環境。
+- Final: Ruling: 已完成operation在撤權／改版後replay — 僅找回已確認結果，不增加引用，保留恢復價值 — 必須持續維持marker與零新增約束。
+- Final: Ruling: ±0.5秒時長誤差 — 採已確認規格，拒絕明顯錯章／裁音 — 本人仍要核對聽感及編碼尾端。
+- Final: Ruling: HTML一般瀏覽器播放器 — 明示外部renderer交付，下載不代表MP4 — 外部工具／字型仍須另驗。
+- Final: Ruling: 240秒試片使用靜態PNG — 只聲稱章節／音訊／回收驗證，未聲稱長動畫已渲染 — 作品藝術品質不由本片代表。
+- Final: Ruling: 滿額效能／本人聲音／真機 — 已在spec／delivery明示未驗，不用4分鐘fixture推論一小時流暢 — 上線與本人內容驗收仍需補。
+- Final: Ruling: 每尺寸完整流程 — 只聲稱每寬選章及排版，主要390／後段1024完整互動 — 特定裝置仍可能有未覆蓋差異。
+- Final: Ruling: 正式Notion／deploy／計費／社群 — 不屬本包執行範圍，沒有冒用舊發布同意 — 本包交付仍為PR開發成果。
+- Final: Ruling: 全檔排版重構 — 沿用同類模組結構，本輪以功能邊界與驗證為範圍 — 後續維護可另安排，未把可讀性重構混入本包。
