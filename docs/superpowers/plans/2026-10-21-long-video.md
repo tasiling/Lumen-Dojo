@@ -36,9 +36,9 @@ Interfaces: createLongVideo/saveLongVideo/prepareLongVideo/outputLongVideo/hando
 ## Task 3: 製作工具／實際4分鐘影片
 Files: app/components/longVideo/{LongVideoWorkspace,LongVideoFrame,LongVideoComparison,LongVideoDelivery}.tsx及long-video.css；app/weaving/long-video/page.tsx；織光與固定文字／聊解入口；scripts/test-long-video-ui.mjs、long-video-trial.mjs。
 Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voices；章節／稿／SRT與原音下載，candidate綁版本及刷新恢復。
-- [ ] 寫UI空白／dirty／save503／full conflict／JSON／圖片重試／candidate刷新／unknown／交接，Expected missing UI FAIL。
-- [ ] 實作並用FFmpeg skill probe→dry-run→實際四章節4分鐘MP4→check／look；保存原音、畫面、腳本與命令證據。Expected真正可解碼成品及章節對應，不當本人聲音。
-- [ ] dev／production流程與五寬排版、相關回歸、build／tsc／lint，Expected PASS或記錄既有warning，commit。
+- [x] 寫UI空白／dirty／save503／full conflict／JSON／圖片重試／candidate刷新／unknown／交接，Expected missing UI FAIL。
+- [x] 實作並用FFmpeg skill probe→dry-run→實際四章節4分鐘MP4→check／look；保存原音、畫面、腳本與命令證據。Expected真正可解碼成品及章節對應，不當本人聲音。
+- [x] dev／production流程與五寬排版、相關回歸、build／tsc／lint，Expected PASS或記錄既有warning，commit。
 
 ## Task 4: Review與遠端交付
 - [ ] 一次fresh全包review，Important集中RED→GREEN修正，Minor記錄。
@@ -52,3 +52,7 @@ Interfaces: 同一sceneSvg／React／外部HTML；JSON按SHA包含images／voice
 - Task1 complete: missing module RED→GREEN；strict／章節累加及排序／分段原音長／HTML escaping／SRT跨小時／240秒long profile與短片拒絕／跨目錄／256MiB界限通過；short-video及podcast原套件回歸通過。
 
 - Task2 complete: missing route RED→GREEN；真實API owner／防重／immutable／每章錄音時長拒絕／stale／partial撤權零新增／240秒16:9成品／Range／handoff及unknown保鎖marker恢復通過；固定原文不改。
+
+- Task3 complete: UI missing entry RED→GREEN；同源SVG匯出因busy重繪斷開DOM的getBBox=0／isConnected=false已定位，memo保留預覽、快照文字並暫停聲音後四章PNG通過。換章順序預覽錯位RED→GREEN，換回原序不產生假dirty；同一file重匯不觸發onChange亦RED→GREEN清除input值。圖片失敗有就地重試及獨立可清除錯誤。
+- Task3 validation: dev及最終production完整流程PASS，375／390／430／320／1024選章與無橫溢截圖；空白／非空、dirty離開、save503、完整衝突比較、HTML／SRT／章節稿、JSON成功／dirty與失敗保留、回收刷新、unknown output找回及聊解接收。實際240.0秒16:9 H264-AAC與章節metadata通過；FFmpeg預設fade238.5秒已實際調整為none240秒，check0FAIL／1WARN（無獨立字幕軌，畫面字幕＋外部SRT），look六圖已目視。非人聲測試音，略過loudness，不聲稱本人錄音與真機播放。
+- Task3 regression: long-video／short-video／podcast／comic／illustrated／weaving／liaojie-text／reading-knowledge及reading-knowledge-api PASS；final build、tsc PASS，lint0errors／2既有warnings；各尺寸沒有各跑一遍完整流程。

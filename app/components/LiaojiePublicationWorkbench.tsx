@@ -1,4 +1,5 @@
 "use client";
+import LongVideoDelivery from './longVideo/LongVideoDelivery';
 import ComicDelivery from './comic/ComicDelivery';
 import PodcastDelivery from './podcast/PodcastDelivery';
 import { useEffect, useState } from 'react';
@@ -34,7 +35,7 @@ function PublicationEditor({ project, onArchived, onUpdated }: { project: Liaoji
   }
   function archive() { leave.requestLeave(() => { void archiveNow(); }); }
   return <>
-    <IllustratedDelivery ids={project.illustratedOutputRefs}/><VideoDelivery ids={project.videoOutputRefs}/><PodcastDelivery ids={project.podcastOutputRefs}/><ComicDelivery ids={project.comicOutputRefs}/>
+    <IllustratedDelivery ids={project.illustratedOutputRefs}/><VideoDelivery ids={project.videoOutputRefs}/><PodcastDelivery ids={project.podcastOutputRefs}/><ComicDelivery ids={project.comicOutputRefs}/><LongVideoDelivery ids={project.longVideoOutputRefs}/>
     <section className="ritual-card publication-source-card"><div className="creative-section-heading"><CreativeIcon name="inbox"/><div><span className="eyebrow">織光堂交接 · 固定來源</span><h2>{project.sourceTitle}</h2></div></div><p className="wf-note">這是交接時固定保存的原稿。平台改寫、回復舊版或送到噗浪蓋樓，都不會改動它。</p><p><b>核心觀點</b></p><p>{project.sourceCoreStatement}</p>{project.sourceOutputUrl && <a href={project.sourceOutputUrl} target="_blank" rel="noreferrer">查看織光堂成品 ↗</a>}<details><summary>查看固定文字原稿</summary><div className="full-text-preview">{project.sourceDraftSnapshot || '這件作品以外部成品連結為主。'}</div></details></section>
     {project.sourceFormat === 'text' && project.sourceCompletionVersionId && project.sourceDraftSnapshot
       ? <><TextPlatformWorkspace project={project}/><details className="legacy-publication-record"><summary>查看既有發布欄位</summary><LegacyPublicationEditor project={project} onUpdated={onUpdated}/></details></>

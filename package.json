@@ -56,7 +56,9 @@
     "test:podcast": "node scripts/test-podcast.mjs && node scripts/test-podcast-api.mjs",
     "test:podcast-ui": "node scripts/test-podcast-ui.mjs",
     "test:comic": "node scripts/test-comic.mjs && node scripts/test-comic-api.mjs",
-    "test:comic-ui": "node scripts/test-comic-ui.mjs"
+    "test:comic-ui": "node scripts/test-comic-ui.mjs",
+    "test:long-video": "node scripts/test-long-video.mjs && node scripts/test-long-video-api.mjs",
+    "test:long-video-ui": "node scripts/test-long-video-ui.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",
