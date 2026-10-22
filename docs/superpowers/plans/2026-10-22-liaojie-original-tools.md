@@ -31,4 +31,4 @@
 
 ### Task 3: 交付
 - [x] tsc、受影響eslint、build，核對原檔SHA。
-- [ ] 審查diff與安全／功能邊界，更新進度並push PR。
+- [x] 審查diff與安全／功能邊界，更新進度並push PR105。Railway重新驗證前不宣告部署完成。

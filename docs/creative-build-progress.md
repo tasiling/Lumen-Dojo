@@ -10,6 +10,7 @@
 - 驗證：build、tsc、受影響eslint、snapshot單元、production兩套原工具UI、既有liaojie-text-domain通過。真下載兩工具1080×1350 PNG；五工具主要流程、知識鑽石候選節點／刷新、多視窗不覆蓋、損壞JSON、保存失敗仍可備份；320／375／390／430／1024截圖見 `docs/liaojie-original-tools-evidence`。正式iPhone尚待本人驗收。
 - 交付說明與原檔SHA：`docs/liaojie-original-tools-delivery.md`；spec／plan日期2026-10-22。CLI GitHub push缺憑證，改用已連接Git Data保留相同tree／父提交、expected_sha與非force分支更新。
 - 發布阻礙：Railway工具回覆UNAUTHORIZED／需重新驗證，沒有嘗試另建專案、購買或修改變數。此為程式交付，尚不能宣告正式部署成功；以後續PR／部署核對紀錄為準。
+- 遠端交付：[PR105](https://github.com/tasiling/Lumen-Dojo/pull/105)，實作head `d30a87c08fcb3f34c27a7a832798d9f76399322e`，與本機驗證tree `66e0881bd2d55e0f288eba41fcdfbf667d95abbb` 完全一致，父提交為最新master f808a4c。其後文件checkpoint的最終head以PR為準。
 
 ## 2026-10-20 排程建立
 
