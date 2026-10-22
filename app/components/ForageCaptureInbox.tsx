@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ForageTabs from "./ForageTabs";
+import ForageIcon from "./ForageIcon";
 import {CAPTURE_DETAIL_TABS} from "@/lib/dojo/forageUi";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -182,7 +183,7 @@ export default function ForageCaptureInbox({ initialCaptureId = "" }: { initialC
       {loading && <div className="empty">正在打開採集匣…</div>}
       {error && <p className="form-error">{error}<button className="text-link" onClick={() => void load()}>重新讀取</button></p>}
       {!loading && !error && visible.length === 0 && (
-        <div className="weaving-empty"><span>✦</span><b>{tab === "pending" ? "目前沒有等待處理的材料" : tab === "adopted" ? "還沒有採用素材" : "沒有淡出的材料"}</b><p>擷取後的原始內容會先安全留在這裡。</p></div>
+        <div className="weaving-empty"><ForageIcon name="i-leaf"/><b>{tab === "pending" ? "目前沒有等待處理的材料" : tab === "adopted" ? "還沒有採用素材" : "沒有淡出的材料"}</b><p>擷取後的原始內容會先安全留在這裡。</p></div>
       )}
 
       {detailId&&<button type="button" onClick={()=>{if(editingId&&!window.confirm("目前未儲存的整理仍會留在此頁；要先返回列表嗎？"))return;setDetailId(null);}}>返回採集匣</button>}

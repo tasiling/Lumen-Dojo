@@ -32,6 +32,24 @@ else result={};await route.fulfill({contentType:'application/json',body:JSON.str
 const page=await context.newPage();page.setDefaultTimeout(15000);page.setDefaultNavigationTimeout(30000);page.on('pageerror',e=>{errors.push(e.stack||e.message);console.log('BROWSER ERROR',e.stack||e.message);});page.on('dialog',d=>d.accept());
 async function noOverflow(label){const sizes=await page.evaluate(()=>({viewport:innerWidth,root:document.documentElement.scrollWidth}));assert(sizes.root<=sizes.viewport+1,`${label}: ${JSON.stringify(sizes)}`);}
 for(const width of [320,375,390,430,1024]){await page.setViewportSize({width,height:844});await page.goto(server.base+'/forage');await page.getByRole('link',{name:/前往英文影像匣/}).waitFor();await noOverflow('home '+width);if(width===390)await page.screenshot({path:output+'/home-390.png',fullPage:true});}
+// Nested pages must retain the same visual identity and a centered, touch-sized nav.
+for(const path of ['/forage/english','/forage/captures','/forage/new','/forage/records']){
+  for(const width of [320,390,1024]){
+    await page.setViewportSize({width,height:844});await page.goto(server.base+path);
+    const heading=page.locator('.forage-page-heading,.hero').first();await heading.waitFor();
+    const visual=await heading.evaluate(e=>({background:getComputedStyle(e).backgroundImage,color:getComputedStyle(e.querySelector('h1')) .color}));
+    assert(visual.background.includes('linear-gradient'),path+' retains honey gradient');assert.equal(visual.color,'rgb(37, 60, 92)',path+' readable heading');
+    assert.equal(await heading.locator('svg.forage-motif').count(),1,path+' contour motif');
+    await noOverflow(path+' '+width);
+    const nav=await page.locator('nav[aria-label="主要導覽"]').evaluate(e=>{const r=e.getBoundingClientRect();return {width:r.width,center:r.x+r.width/2};});
+    assert(nav.width<=Math.min(width,560)+1,path+' bounded nav');assert(Math.abs(nav.center-width/2)<1,path+' centered nav');
+    const add=await page.locator('[data-nav=add] .nav-icon').evaluate(e=>({background:getComputedStyle(e).backgroundImage,width:e.getBoundingClientRect().width}));
+    assert(add.background.includes('linear-gradient'),path+' honey add action');assert(add.width>=44,path+' touch size');
+    if(width===390)await page.screenshot({path:output+'/'+path.split('/').pop()+'-aligned-390.png',fullPage:true});
+  }
+}
+await page.goto(server.base+'/forage/new');await page.getByRole('button',{name:'返回野採',exact:true}).click();await page.waitForURL(server.base+'/forage');
+console.log('nested headings, palette, motif, navigation and parent route passed');
 console.log('home viewport checks passed');await page.setViewportSize({width:390,height:844});await page.goto(server.base+'/forage/english?englishImageId=english-one&dispatch=both');await page.getByRole('navigation',{name:'派送步驟'}).waitFor();console.log('dispatch opened');
 await page.getByRole('checkbox',{name:/日常啟動/}).check();await page.locator('label.english-image-context-choice').filter({has:page.getByText('notice',{exact:true})}).getByRole('checkbox').check();
 await page.getByRole('button',{name:'補上／修改例句'}).click();await page.getByLabel('英文例句',{exact:true}).fill('I notice a little bird outside.');await page.getByLabel('對應中文翻譯').fill('我注意到外面有一隻小鳥。');await page.getByRole('button',{name:'保存例句與翻譯'}).click();await page.getByText('已保存手動整理的例句與翻譯',{exact:false}).waitFor();
@@ -44,5 +62,5 @@ console.log('capture draft and status passed');await page.goto(server.base+'/for
 await page.goto(server.base+'/forage/english?englishImageId=english-one&dispatch=both');await page.getByRole('button',{name:'請 GPT 協助安排多份素材'}).click();await page.locator('.unit-arrangement-page').waitFor();assert.equal(await page.locator('[aria-modal=true]').count(),0);await page.getByRole('button',{name:'產生單元編排生成包'}).click();await page.getByLabel('貼回 GPT 的素材編排成果').fill('LOCAL RESULT');await page.getByRole('button',{name:'解析並預覽'}).click();await page.getByRole('button',{name:'確認這份編排'}).click();await page.getByRole('button',{name:'建立必要 Unit 並派送'}).click();await page.getByRole('heading',{name:'派送完成',exact:true}).waitFor();await noOverflow('arrangement');await page.screenshot({path:output+'/arrangement-390.png',fullPage:true});
 await page.goto(server.base+'/forage/captures?captureId=capture-faded');await page.getByRole('navigation',{name:'一般素材分區'}).waitFor().catch(async error=>{console.log('faded diagnostics',captures.map(c=>({id:c?.id,status:c?.status})),errors,await page.locator('body').innerText());throw error;});await page.getByRole('heading',{name:'暫時淡出的材料'}).waitFor();
 await page.goto(server.base+'/forage/records');await noOverflow('records');await page.getByRole('button',{name:/新增紀錄/}).click();await page.locator('[role=dialog],.modal').first().waitFor();await noOverflow('record modal');
-assert.equal(errors.length,0,errors.join('\n'));writeFileSync(output+'/browser-report.json',JSON.stringify({browser:'Chromium headless 141 / Playwright 1.56.1',isolatedTransport:true,productionWrites:0,widths:[320,375,390,430,1024],checks:['overview','per-material dispatch','manual usage persistence','tab draft preservation','failed-only retry','capture status return','create capture','arrangement lifecycle','faded deep link','records modal','overflow','no page errors'],requests:calls.length,errors},null,2));console.log('forage-mobile: browser flows passed; screenshots and report in '+output);
+assert.equal(errors.length,0,errors.join('\n'));writeFileSync(output+'/browser-report.json',JSON.stringify({browser:'Chromium headless 141 / Playwright 1.56.1',isolatedTransport:true,productionWrites:0,widths:[320,375,390,430,1024],checks:['nested honey headings and contour motifs','centered honey navigation','new material parent route','overview','per-material dispatch','manual usage persistence','tab draft preservation','failed-only retry','capture status return','create capture','arrangement lifecycle','faded deep link','records modal','overflow','no page errors'],requests:calls.length,errors},null,2));console.log('forage-mobile: browser flows passed; screenshots and report in '+output);
 }finally{await browser.close();server.stop();}

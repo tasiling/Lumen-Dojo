@@ -1,17 +1,10 @@
-import Link from "next/link";
+import ForagePageHeading from "../../components/ForagePageHeading";
 import EnglishImageInbox from "../../components/EnglishImageInbox";
 
 export default function ForageEnglishPage() {
   return (
     <section className="screen forage-inbox-screen">
-      <div className="forage-page-heading">
-        <div>
-          <span className="eyebrow">野採・學習素材</span>
-          <h1>英文影像匣</h1>
-          <p>從精簡清單選擇一組素材，再進入詳情理解、挑選與派送。</p>
-        </div>
-        <Link href="/forage">回到野採</Link>
-      </div>
+      <ForagePageHeading eyebrow="野採・學習素材" title="英文影像匣" description="從精簡清單選擇一組素材，再進入詳情理解、挑選與派送。" />
       <EnglishImageInbox />
     </section>
   );

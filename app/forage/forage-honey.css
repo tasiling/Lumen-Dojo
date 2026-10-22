@@ -38,3 +38,61 @@
 }
 .dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) :is(a,button,input,select,textarea,summary):focus-visible {outline-color:#48617E}
 @media(min-width:760px){.dojo.dojo-ui.forage-shell:has(.forage-ui.forage-honey) .forage-ui .forage-motif {width:520px;height:520px;right:0;top:-120px}}
+
+/* Complete the same visual language on nested pages and shared record UI. */
+.dojo.dojo-ui.forage-shell .forage-ui :is(.forage-page-heading,.hero) {
+  position:relative;isolation:isolate;overflow:hidden;
+  background:var(--v2-gradient);color:var(--v2-ink);
+  border:1px solid var(--v2-border);border-radius:18px;
+  padding:24px 22px;margin:0 0 24px;
+}
+.dojo.dojo-ui.forage-shell .forage-ui :is(.forage-page-heading,.hero)>:not(.forage-motif) {position:relative;z-index:1}
+.dojo.dojo-ui.forage-shell .forage-ui :is(.forage-page-heading,.hero) :is(h1,p,.eyebrow) {color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell .forage-ui :is(.forage-page-heading,.hero) p {max-width:50ch;margin-bottom:0}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-page-heading>a {background:#FFFFFFDD;color:var(--v2-ink);border-color:#FFFFFF99}
+.dojo.dojo-ui.forage-shell .forage-ui .english-image-detail-head {
+  background:var(--v2-gradient);border:1px solid var(--v2-border);
+  border-radius:15px;padding:20px;gap:16px;flex-wrap:wrap;
+}
+.dojo.dojo-ui.forage-shell .forage-ui .english-image-detail-head :is(h5,p,small) {color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell .forage-ui .english-image-detail-head>div {flex:1 1 200px}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-card>h1 {
+  background:var(--v2-tint);padding:18px;border-radius:12px;
+  border-left:4px solid var(--forage-honey-border);color:var(--v2-ink);
+}
+.dojo.dojo-ui.forage-shell .forage-ui :is(.empty,.weaving-empty) {
+  border:1px dashed var(--v2-border);border-radius:15px;
+  padding:24px 20px;margin:24px 0;background:var(--v2-surface);
+  color:var(--v2-muted);font-size:.9375rem;line-height:1.8;
+}
+.dojo.dojo-ui.forage-shell .forage-ui .weaving-empty>.forage-icon {width:28px;height:28px;color:var(--v2-ink);margin-bottom:12px}
+.dojo.dojo-ui.forage-shell .forage-ui .weaving-empty b {display:block;font-size:1rem;color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell .forage-ui .weaving-empty p {font-size:.875rem;margin:8px 0 0}
+.dojo.dojo-ui.forage-shell .forage-ui .item {
+  background:var(--v2-surface);border:1px solid var(--v2-border);
+  border-radius:15px;padding:20px;margin:14px 0;color:var(--v2-ink);
+}
+.dojo.dojo-ui.forage-shell .forage-ui .item>b {display:block;font-size:1.0625rem;line-height:1.6;margin:12px 0 8px}
+.dojo.dojo-ui.forage-shell .forage-ui .item :is(.status,.tag) {font-size:.8125rem;line-height:1.65}
+.dojo.dojo-ui.forage-shell .forage-ui .item .actions {display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.dojo.dojo-ui.forage-shell .forage-ui .item button.danger {color:var(--error);border-color:var(--error);background:var(--v2-surface)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-steps li[aria-current=step] {
+  background:var(--forage-honey);border-color:var(--forage-honey-border);color:var(--v2-ink);font-weight:600;
+}
+.dojo.dojo-ui.forage-shell .modal button.on {background:var(--v2-tint);border-color:var(--forage-honey-border);color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell .modal .toolbar {display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.dojo.dojo-ui.forage-shell .modal .toolbar h2 {font-size:1.25rem;margin:0}
+.dojo.dojo-ui.forage-shell .modal .sheet>.primary {width:100%;margin-top:24px}
+.dojo.dojo-ui.forage-shell .nav {
+  width:min(100%,560px);max-width:560px;left:50%;right:auto;transform:translateX(-50%);
+  background:#FFFFFFF5;padding:7px 8px calc(7px + env(safe-area-inset-bottom));
+}
+.dojo.dojo-ui.forage-shell .nav button {min-height:64px;padding:4px 2px}
+.dojo.dojo-ui.forage-shell .nav .nav-icon {width:44px;height:34px;margin:0 auto 3px;border-radius:12px}
+.dojo.dojo-ui.forage-shell .nav button[data-nav=add] .nav-icon {
+  height:38px;background:var(--forage-honey);color:var(--v2-ink);
+}
+@media(max-width:359px){
+  .dojo.dojo-ui.forage-shell .forage-ui :is(.forage-page-heading,.hero) {padding:20px 16px}
+  .dojo.dojo-ui.forage-shell .forage-ui :is(.english-image-detail-head,.item) {padding:16px}
+}

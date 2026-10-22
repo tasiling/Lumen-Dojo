@@ -1,0 +1,31 @@
+{
+  "browser": "Chromium headless 141 / Playwright 1.56.1",
+  "isolatedTransport": true,
+  "productionWrites": 0,
+  "widths": [
+    320,
+    375,
+    390,
+    430,
+    1024
+  ],
+  "checks": [
+    "nested honey headings and contour motifs",
+    "centered honey navigation",
+    "new material parent route",
+    "overview",
+    "per-material dispatch",
+    "manual usage persistence",
+    "tab draft preservation",
+    "failed-only retry",
+    "capture status return",
+    "create capture",
+    "arrangement lifecycle",
+    "faded deep link",
+    "records modal",
+    "overflow",
+    "no page errors"
+  ],
+  "requests": 83,
+  "errors": []
+}
