@@ -220,7 +220,7 @@ export default function LearningFoundationManager({
     );
   }
   return (
-    <section className="learning-foundation" aria-label="跨學科學習管理">
+    <section className="learning-foundation" aria-label="跨項目學習管理">
       <div className="subsection-title">
         <h3>我的學習項目</h3>
         <button disabled={busy || !snapshot} onClick={() => edit("item")}>
@@ -297,7 +297,7 @@ export default function LearningFoundationManager({
       </div>
       {snapshot && items.length === 0 && (
         <>
-          <p>尚未初始化跨學科項目；既有學習紀錄仍保留。</p>
+          <p>尚未初始化學習項目；既有學習紀錄仍保留。</p>
           <div className="learning-chip-row">
             {Object.entries(LEARNING_TRACKS).map(([key, config]) => (
               <button

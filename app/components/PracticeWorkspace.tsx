@@ -73,7 +73,7 @@ export default function PracticeWorkspace({
   return (
     <section className="screen practice-workspace">
       <Link href={parent}>
-        ‹ 返回{parent === "/practice" ? "修習所" : "學科工作空間"}
+        ‹ 返回{parent === "/practice" ? "修習所" : "學習項目"}
       </Link>
       {workspace !== "learning" && <h1>{names[workspace]}</h1>}
       {workspace === "learning" && <PracticeLearning />}

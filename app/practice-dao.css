@@ -1,0 +1,53 @@
+/* v34 realm presentation. Scoped to practice/dao; existing API/data remain authoritative. */
+.dojo .practice-workspace,.dojo .practice-record-sheet,.dojo .dao-workspace{--practice-accent:#248674;--practice-tint:#dff4ee;color:#18384d;font-family:var(--font-geist-sans),"PingFang TC","Noto Sans TC",sans-serif;font-size:16px;line-height:1.65}
+.dojo .dao-workspace{--practice-accent:#8c80b2;--practice-tint:#f0ebf7}
+.dojo .practice-workspace h1,.dojo .dao-workspace h1{font-family:inherit;line-height:1.25}
+.dojo .practice-workspace :is(h2,h3),.dojo .dao-workspace :is(h2,h3){font-family:inherit;line-height:1.4}
+.dojo .practice-workspace h2{margin:24px 0 12px;font-size:22px}
+.dojo .practice-workspace .card,.dojo .dao-workspace .card,.dojo .dao-workspace .knowledge-entry-link{background:white;border:1px solid #e0eae8;border-radius:18px;padding:20px;box-shadow:0 4px 20px #214b3d04}
+.dojo .practice-realm-hero{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;padding:28px 24px;margin:8px 0 20px;background:linear-gradient(115deg,#c6eee0 0%,#b9dcef 60%,#cfb9e9 100%);min-height:250px;text-align:left}
+.dojo .dao-workspace .practice-realm-hero{background:linear-gradient(115deg,#cec0e9,#edced4 60%,#f4dba9);min-height:280px}
+.dojo .practice-realm-hero h1{position:relative;margin:18px 0 12px;font-size:clamp(28px,5vw,40px);max-width:82%;letter-spacing:.01em;font-weight:750}
+.dojo .practice-realm-hero h2{position:relative;margin:0 0 18px;font-size:24px;font-weight:500}
+.dojo .practice-realm-hero p{position:relative;max-width:85%;margin:12px 0;font-size:15px;color:#18384d}
+.dojo .practice-realm-hero>.primary{position:relative;width:auto;min-height:48px;padding:10px 22px;border-radius:24px}
+.dojo .practice-realm-art{position:absolute;z-index:-1;right:-42px;top:0;width:260px;height:100%;color:#ffffffbb;pointer-events:none}
+.dojo .practice-workspace .primary,.dojo .dao-workspace .primary{background:var(--practice-accent);border-color:var(--practice-accent);color:white;min-height:48px;font-size:16px}
+.dojo .practice-workspace .practice-link{display:flex;flex-direction:row;gap:14px;align-items:center;min-height:80px;text-align:left;text-decoration:none;margin:10px 0}
+.dojo .practice-entry-copy{flex:1;min-width:0}
+.dojo .practice-entry-copy b{display:block;font-size:17px;color:#18384d}
+.dojo .practice-entry-copy small{display:block;font-size:14px;color:#66788a}
+.dojo .practice-entry-icon{display:grid;place-items:center;flex:0 0 44px;height:44px;border-radius:12px;background:var(--practice-tint);color:#18384d}
+.dojo .practice-entry-icon svg{width:26px;height:26px}
+.dojo .practice-workspace .practice-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.dojo .practice-workspace .practice-shortcuts .practice-link{margin:0}
+.dojo :is(.practice-workspace,.practice-record-sheet) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-width:0;max-width:100%;width:100%;box-sizing:border-box;border:1px solid #bccbd1;border-radius:12px;background:white;color:#18384d;padding:12px;font-family:inherit;font-size:16px;min-height:48px}
+.dojo .practice-workspace textarea{line-height:1.65;resize:vertical;scroll-margin-bottom:180px}
+.dojo .practice-field{margin:0 0 18px;min-width:0}
+.dojo .practice-field-heading{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:4px;align-items:center;min-height:44px;margin-bottom:4px}
+.dojo .practice-field-heading>:is(label,.practice-field-label){margin:0;line-height:1.5;font-size:14px;font-weight:700}
+.dojo .practice-help-toggle{display:grid;place-items:center;padding:0;width:44px;height:44px;min-height:44px;background:transparent;border:0;color:#5c7482}
+.dojo .practice-help-toggle span{display:grid;place-items:center;width:20px;height:20px;border:1px solid currentColor;border-radius:50%;font-size:13px;font-weight:700;line-height:1}
+.dojo .practice-help-toggle[aria-expanded=true]{color:var(--practice-accent)}
+.dojo .practice-help-toggle:focus-visible{outline:2px solid var(--practice-accent);outline-offset:1px}
+.dojo .practice-field-hint{padding:12px;border-radius:12px;background:var(--practice-tint);font-size:14px;line-height:1.7;color:#304e61;margin:8px 0 0;overflow-wrap:anywhere}
+.dojo .practice-field-hint[hidden]{display:none}
+.dojo .practice-field-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px}
+.dojo .practice-workspace details>summary{min-height:48px;display:flex;align-items:center;cursor:pointer;line-height:1.5}
+.dojo .practice-workspace details>summary+*{margin-top:12px}
+.dojo .practice-workspace .learning-records fieldset{margin:18px 0;padding:14px;border:1px solid #d6e4e0;border-radius:16px;display:flex;flex-wrap:wrap;gap:8px 16px}
+.dojo .practice-workspace .learning-records fieldset label{display:flex;align-items:center;gap:8px;min-height:44px;margin:0;font-size:14px}
+.dojo .practice-workspace .learning-records input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:var(--practice-accent)}
+.dojo .practice-workspace .record-actions{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 12px}
+.dojo .practice-workspace .record-actions button{min-height:48px;flex:1 1 130px;font-size:15px}
+.dojo .practice-record-status-note{background:var(--practice-tint);border-radius:12px;padding:14px;font-size:14px}
+.dojo .practice-workspace .practice-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}
+.dojo .practice-workspace .practice-tabs a{flex:1 1 110px;text-align:center;min-height:48px;padding:12px;border:1px solid #d6e4e0;background:white;border-radius:12px;font-size:14px}
+.dojo .practice-workspace .practice-tabs [aria-current=page]{background:var(--practice-tint);border-color:var(--practice-accent);color:#18384d}
+.dojo .practice-workspace :is(.card,p,small,h1,h2,h3),.dojo .dao-workspace :is(.card,p,small,h1,h2,h3){overflow-wrap:anywhere}
+@media(max-width:430px){.dojo .practice-workspace .practice-shortcuts{grid-template-columns:minmax(0,1fr)}.dojo .practice-realm-hero{padding:24px 20px}.dojo .practice-workspace .card{padding:18px}.dojo .practice-workspace .practice-tabs a{flex-basis:calc(50% - 10px)}}
+
+.dojo .practice-record-sheet .practice-field{margin-bottom:14px}.dojo .practice-record-sheet .row{gap:8px}.dojo .practice-record-sheet .row button{min-height:44px}
+
+.dojo.practice-dao-shell{--tc-accent:#248674;--tc-soft:#dff4ee;--paper:#f2fbf8;--ink:#18384d;background:#f2fbf8}.dojo.practice-dao-shell.dao-shell{--tc-accent:#8c80b2;--tc-soft:#f0ebf7;--paper:#f8f5fc;background:#f8f5fc}.dojo.practice-dao-shell .top{background:var(--paper)}.dojo.practice-dao-shell .brand{display:flex;align-items:center;gap:10px}.dojo.practice-dao-shell .brand svg{width:30px;height:30px}.dojo.practice-dao-shell .brand small{display:block;font-size:12px;letter-spacing:.12em}.dojo.practice-dao-shell .app{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.dojo.practice-dao-shell .top-actions .tc-icon{width:20px;height:20px;flex:none}.dojo.practice-dao-shell .top-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px}

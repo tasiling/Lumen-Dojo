@@ -1,4 +1,5 @@
 "use client";
+import { LearningItemIcon } from "./PracticeArt";
 import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import Link from "./PracticeRouteLink";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,7 +77,7 @@ export default function PracticeLearning() {
       <div className="learning-heading">
         <div>
           <h1>心・知</h1>
-          <p>本期專注與全部學科，依自己的步調探索。</p>
+          <p>本期專注與全部學習項目，依自己的步調探索。</p>
         </div>
         <Link
           href={`/practice/manage${item ? `?learningItem=${item.id}` : ""}`}
@@ -87,7 +88,7 @@ export default function PracticeLearning() {
       {error ? (
         <p role="alert">{error}</p>
       ) : !data ? (
-        <p>讀取學科中…</p>
+        <p>讀取學習項目中…</p>
       ) : (
         <>
           {!item && (
@@ -102,7 +103,7 @@ export default function PracticeLearning() {
                       key={e.id}
                       href={href(e.id)}
                     >
-                      {e.name}
+                      <span className="practice-entry-icon"><LearningItemIcon name={e.name}/></span><span className="practice-entry-copy"><b>{e.name}</b></span>
                     </Link>
                   ))}
               </div>
@@ -112,7 +113,7 @@ export default function PracticeLearning() {
             </>
           )}
           <details open={!item}>
-            <summary>全部學科（{items.length}）</summary>
+            <summary>全部學習項目（{items.length}）</summary>
             <div className="practice-shortcuts">
               {items.map((e) => (
                 <Link
@@ -120,19 +121,18 @@ export default function PracticeLearning() {
                   key={e.id}
                   href={href(e.id)}
                 >
-                  <b>{e.name}</b>
-                  <small>{STATUS_LABELS[e.status]}</small>
+                  <span className="practice-entry-icon"><LearningItemIcon name={e.name}/></span><span className="practice-entry-copy"><b>{e.name}</b><small>{STATUS_LABELS[e.status]}</small></span>
                 </Link>
               ))}
             </div>
           </details>
           {requested && !item && (
-            <p role="alert">此學科待確認或無法存取，沒有刪除歷史關聯。</p>
+            <p role="alert">此學習項目待確認或無法存取，沒有刪除歷史關聯。</p>
           )}
           {item && (
             <section>
               <h2>{item.name}</h2>
-              <nav className="practice-tabs" aria-label="學科分頁">
+              <nav className="practice-tabs" aria-label="學習項目分頁">
                 {[
                   ["overview", "總覽"],
                   ["path", "學習路徑"],

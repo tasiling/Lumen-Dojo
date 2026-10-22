@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+const require = createRequire(import.meta.url);
+const source = readFileSync('app/components/PracticeField.tsx','utf8');
+const code = ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const m={exports:{}};new Function('require','module','exports',code)(require,m,m.exports);
+const html=renderToStaticMarkup(React.createElement(m.exports.default,{id:'phase',label:'階段',help:'選擇位置 <來源>'},React.createElement('select',{id:'phase','aria-describedby':'phase-help'},React.createElement('option',null,'尚未指定'))));
+assert.match(html,/<button[^>]*type="button"/);
+assert.match(html,/aria-expanded="false"/);assert.match(html,/aria-controls="phase-help"/);
+assert.match(html,/<label[^>]*for="phase">階段<\/label>/);
+assert.match(html,/id="phase-help"[^>]*hidden/);assert.match(html,/&lt;來源&gt;/);
+assert.doesNotMatch(html,/<label[^>]*>[^<]*<button/);
+console.log('PASS real React SSR field help: label, independent non-submit button, closed state, description ID, escaped help');
+
+const group=renderToStaticMarkup(React.createElement(m.exports.default,{id:'method',label:'光法',help:'選填',group:true},React.createElement('div',{id:'method',role:'group','aria-label':'光法'},'選項')));
+assert.doesNotMatch(group,/<label/);assert.match(group,/role="group"/);
+console.log('PASS group headings never label non-labelable elements');
