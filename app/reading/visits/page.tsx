@@ -1,4 +1,5 @@
 "use client";
+import { ReadingHeaderArt, ReadingIcon } from "@/app/components/ReadingArt";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export default function ReadingVisitsPage() {
   return (
     <section className="screen reading-screen reading-visits-screen">
       <div className="reading-page-intro">
+        <ReadingHeaderArt kind="return" />
         <span className="eyebrow">閱讀萃取</span>
         <h1>今日回訪</h1>
         <p>現在回來看的，是「做了嗎、結果如何」，不測記憶，也不把延後算成失敗。</p>
@@ -56,7 +58,7 @@ export default function ReadingVisitsPage() {
       {loading && <div className="empty">正在找今天需要回來看的卡片…</div>}
       {error && <p className="form-error" role="alert">{error}<button className="text-link" onClick={() => void load()}>重新讀取</button></p>}
       {!loading && !error && cards.length === 0 && (
-        <div className="reading-complete-empty"><span>✓</span><h2>今天沒有到期卡片</h2><p>下次回訪日到了，它們會再回到這裡。</p></div>
+        <div className="reading-complete-empty"><span><ReadingIcon kind="check" /></span><h2>今天沒有到期卡片</h2><p>下次回訪日到了，它們會再回到這裡。</p></div>
       )}
       <div className="reading-visit-list">
         {cards.map((card) => (
