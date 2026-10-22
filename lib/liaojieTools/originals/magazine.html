@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>雜誌對話紀錄模板 v0.3</title>
+  <style>
+    :root{--bg:#eeeae2;--panel:#faf8f3;--card:#fffdf9;--line:#d8d0c4;--ink:#24231f;--muted:#7d776e;--green:#517b61;--green-dark:#315c43;--green-soft:#dce8dc;--cream:#f5efe4;--shadow:0 14px 35px rgba(58,48,36,.08)}
+    *{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.5}button,input,textarea,select{font:inherit}button{cursor:pointer}h1,h2,h3,p{margin:0}
+    .topbar{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;padding:22px 28px 16px;background:rgba(250,248,243,.95);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}h1{font-size:22px;letter-spacing:.04em}.topbar p{font-size:13px;color:var(--muted);margin-top:4px}.top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .app{display:grid;grid-template-columns:minmax(360px,445px) minmax(480px,1fr);min-height:calc(100vh - 80px)}.sidebar{padding:20px;border-right:1px solid var(--line);background:var(--panel);overflow:auto}.preview-area{min-width:0;padding:26px;display:flex;flex-direction:column;align-items:center;gap:15px}.section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:13px;box-shadow:0 5px 18px rgba(58,48,36,.035)}.section h2{font-size:15px;margin-bottom:5px}.hint{font-size:12px;color:var(--muted);margin-bottom:11px}label{display:block;font-size:12px;font-weight:700;margin:11px 0 5px}input[type=text],textarea,select{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fcfbf8;color:var(--ink);outline:0}textarea{min-height:76px;resize:vertical;line-height:1.55}input:focus,textarea:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(81,123,97,.12)}
+    .row{display:flex;gap:8px;align-items:center}.row.two>*{flex:1;min-width:0}.btn{border:1px solid var(--line);border-radius:9px;padding:8px 11px;background:#fff;color:var(--ink);font-size:13px;font-weight:700}.btn:hover{border-color:var(--green);color:var(--green-dark)}.btn.primary{background:var(--green);border-color:var(--green);color:#fff}.btn.primary:hover{background:var(--green-dark)}.btn.small{padding:6px 9px;font-size:12px}.btn.danger{color:#9c4e3f}.hidden{display:none!important}
+    .turns{display:grid;gap:8px}.turn{display:grid;grid-template-columns:95px 1fr 28px;gap:7px;align-items:start;padding:9px;background:#faf8f3;border:1px solid var(--line);border-radius:10px}.turn textarea{min-height:58px}.turn .speaker{padding:8px 6px;font-size:12px}.remove-turn{width:28px;height:28px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--muted)}.remove-turn:hover{color:#9c4e3f;border-color:#9c4e3f}.turn-tools{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+    .range-line{display:grid;grid-template-columns:75px 1fr 47px;gap:8px;align-items:center;margin:8px 0;font-size:12px}input[type=range]{width:100%;accent-color:var(--green)}.value{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.check-line{display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);margin-top:10px}.check-line input{accent-color:var(--green)}input[type=color]{width:40px;height:32px;padding:2px;border:1px solid var(--line);border-radius:7px;background:#fff}
+    .pages{display:grid;gap:7px;margin-top:9px}.page-item{display:grid;grid-template-columns:42px 1fr auto;gap:8px;align-items:center;padding:7px;border:1px solid var(--line);border-radius:9px;background:#fff}.page-item.active{border-color:var(--green);box-shadow:0 0 0 2px rgba(81,123,97,.12)}.thumb{width:42px;aspect-ratio:4/5;border-radius:5px;display:grid;place-items:center;text-align:center;font-size:9px;padding:4px;overflow:hidden}.page-title{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.page-meta{font-size:10px;color:var(--muted)}.page-actions{display:flex;gap:3px}.icon-btn{width:24px;height:24px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted)}.icon-btn:hover{color:var(--green);border-color:var(--green)}
+    .editor-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.editor-head h2{margin:0}.save-note{font-size:11px;color:var(--muted)}.preview-toolbar{width:min(100%,820px);display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted);font-size:12px}.preview-toolbar .row{flex-wrap:wrap}.canvas-frame{width:min(100%,600px);filter:drop-shadow(0 18px 30px rgba(58,48,36,.2))}.canvas-frame canvas{display:block;width:100%;height:auto;border-radius:5px;background:#fff}.preview-note{width:min(100%,820px);padding:12px 15px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.65);color:var(--muted);font-size:12px}
+    @media(max-width:930px){.topbar{position:static;flex-direction:column}.top-actions{justify-content:flex-start}.app{grid-template-columns:1fr}.sidebar{border-right:0;border-bottom:1px solid var(--line)}.preview-area{padding:20px 14px 38px}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div><h1>雜誌對話紀錄模板 v0.3</h1><p>把完整對話紀錄貼上來，自動整理成可以直接發佈的雜誌感輪播。</p></div>
+    <div class="top-actions"><button class="btn" id="saveProjectBtn">儲存專案</button><button class="btn" id="loadProjectBtn">載入專案</button><input class="hidden" type="file" id="projectFile" accept="application/json"><button class="btn primary" id="downloadCurrentBtn">下載目前頁</button></div>
+  </header>
+  <noscript><div style="padding:14px 22px;background:#fff0e8;color:#8d432f;font-size:13px">這個工具需要在啟用 JavaScript 的瀏覽器中開啟。若你是在檔案預覽器中觀看，請選擇「在 Safari／瀏覽器中開啟」。</div></noscript>
+  <div id="runtimeStatus" class="hidden" style="margin:12px 22px 0;padding:10px 13px;border:1px solid #e5b6a6;border-radius:9px;background:#fff0e8;color:#8d432f;font-size:12px"></div>
+  <div class="app">
+    <aside class="sidebar">
+      <section class="section">
+        <h2>① 系列設定</h2><p class="hint">這些欄位會套用到整組圖卡，不需要每頁重打。</p>
+        <div class="row two"><div><label for="seriesLabel">左上分類</label><select id="seriesLabel"><option>對話紀錄</option><option>感謝紀錄</option><option>觀點紀錄</option></select></div><div><label for="partnerName">夥伴名稱</label><input id="partnerName" type="text" placeholder="共振夥伴 A"></div></div>
+        <label for="topic">主題膠囊</label><input id="topic" type="text" placeholder="她想趕快找到正確的方法">
+        <div class="row two"><div><label for="partnerMark">夥伴頭像字</label><input id="partnerMark" type="text" maxlength="2" placeholder="夥"></div><div><label for="brandMark">你的頭像字</label><input id="brandMark" type="text" maxlength="2" placeholder="全"></div></div>
+        <label class="check-line"><input type="checkbox" id="showDisclaimer" checked> 顯示匿名／重建註記</label>
+        <label for="photoFile">觀點頁背景（選填）</label><input id="photoFile" type="file" accept="image/*">
+        <div class="row two" style="margin-top:9px"><div><span style="font-size:11px;color:var(--muted)">背景</span> <input id="bgColor" type="color" value="#f3ede2"></div><div><span style="font-size:11px;color:var(--muted)">墨綠</span> <input id="greenColor" type="color" value="#517b61"></div></div>
+      </section>
+      <section class="section">
+        <h2>② 貼上完整對話紀錄</h2><p class="hint">直接貼入長篇內容。工具會辨識 P1 分頁標記、共振夥伴與全零，並自動拆成輪播頁。</p>
+        <textarea id="rawSource" style="min-height:250px" placeholder="例如：\nP1｜開場\n\n「我是有能力的人。」\n\nP2｜她跑來分享一件事\n\n共振夥伴 B\n\n是說我也要來分享我的顯化🤣\n\n全零\n\n等等🤣"></textarea>
+        <div class="turn-tools"><button class="btn primary" id="parseRawBtn">分析完整對話</button><button class="btn small" id="rawDemoBtn">載入完整範例</button></div>
+        <details style="margin-top:11px"><summary style="font-size:12px;color:var(--muted);cursor:pointer">查看／微調辨識後的對話列</summary>
+        <div class="turns" id="turns"></div>
+        <div class="turn-tools"><button class="btn small" id="addPartnerBtn">＋夥伴一句</button><button class="btn small" id="addBrandBtn">＋全零一句</button><button class="btn small" id="demoBtn">載入短範例</button></div>
+        </details>
+      </section>
+      <section class="section">
+        <h2>③ 生成輪播</h2><p class="hint">先自動生成，再到下面的頁面編輯器做少量微調。</p>
+        <div class="row two"><div><label for="turnsPerPage">無 P 標記時，每頁</label><select id="turnsPerPage"><option value="2">2 句</option><option value="3" selected>3 句</option><option value="4">4 句</option></select></div><div><label for="includeCover">封面</label><select id="includeCover"><option value="yes" selected>包含</option><option value="no">不包含</option></select></div></div>
+        <label for="endingQuote">最後收束句（選填）</label><input id="endingQuote" type="text" placeholder="卡住，也是線索。">
+        <button class="btn primary" id="generateBtn" style="width:100%;margin-top:12px">生成雜誌輪播</button>
+      </section>
+      <section class="section"><div class="editor-head"><h2>④ 頁面順序</h2><button class="btn small" id="addPageBtn">＋新增頁</button></div><p class="hint">可拖拉前的簡化版：用 ↑ ↓ 調整順序。</p><div class="pages" id="pagesList"></div></section>
+      <section class="section">
+        <div class="editor-head"><h2>⑤ 微調目前頁</h2><span class="save-note" id="saveNote">即時預覽</span></div>
+        <label for="pageType">頁面用途</label><select id="pageType"><option value="cover">封面</option><option value="dialogue">對話</option><option value="feedback">回饋</option><option value="quote">收束金句</option></select>
+        <label for="pageTitle">頁面標題／小標</label><textarea id="pageTitle" style="min-height:58px" placeholder="這一頁的主句"></textarea>
+        <label for="pageBody">補充文字</label><textarea id="pageBody" placeholder="這一頁要補充的文字"></textarea>
+        <label for="pageFooter">頁尾小字（選填）</label><input id="pageFooter" type="text" placeholder="全零聊解室／Instagram">
+        <div class="range-line"><span>文字大小</span><input id="titleSize" type="range" min="30" max="82" step="1"><span class="value" id="titleSizeVal"></span></div>
+        <div class="range-line"><span>泡泡字級</span><input id="bodySize" type="range" min="20" max="48" step="1"><span class="value" id="bodySizeVal"></span></div>
+        <div class="range-line"><span>泡泡間距</span><input id="bubbleGap" type="range" min="10" max="80" step="1"><span class="value" id="bubbleGapVal"></span></div>
+        <div class="range-line"><span>上下位置</span><input id="topOffset" type="range" min="-120" max="220" step="1"><span class="value" id="topOffsetVal"></span></div>
+        <label class="check-line"><input type="checkbox" id="showGuide"> 顯示安全區輔助線（不會出現在下載圖）</label>
+        <div class="row" style="margin-top:12px"><button class="btn" id="duplicateBtn">複製本頁</button><button class="btn danger" id="deleteBtn">刪除本頁</button></div>
+      </section>
+    </aside>
+    <main class="preview-area">
+      <div class="preview-toolbar"><div><strong id="pageCounter">第 1 / 1 頁</strong>　<span id="dimensionLabel">1080 × 1350</span></div><div class="row"><button class="btn small" id="prevBtn">上一頁</button><button class="btn small" id="nextBtn">下一頁</button><button class="btn small" id="downloadAllBtn">下載全部</button></div></div>
+      <div class="canvas-frame"><canvas id="previewCanvas" width="1080" height="1350"></canvas></div>
+      <div class="preview-note">現在可以直接貼完整對話。若原文含有 P1～P11，工具會優先保留你的敘事節奏；生成後仍可在頁面編輯器中修改文字與間距。</div>
+    </main>
+  </div>
+  <script>
+    'use strict';
+    const STORAGE_KEY='xingguang-magazine-dialogue-v0-3';
+    const W=1080,H=1350;
+    const fonts='-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif';
+    const demoTurns=[
+      {speaker:'partner',text:'我覺得我自己個性比較急。'},
+      {speaker:'partner',text:'有時候會想趕快知道，怎麼做才是對的。'},
+      {speaker:'brand',text:'所以你會比較希望，找到一個比較正確的方法，快一點到自己想去的地方？'},
+      {speaker:'partner',text:'對，我常常覺得只要方法對了，我就應該可以馬上變好。'},
+      {speaker:'brand',text:'那如果目標大到現在的你還接不住，會不會連開始都變得很有壓力？'},
+      {speaker:'partner',text:'好像真的會。我一想到做不到，就會開始想逃避。'},
+      {speaker:'brand',text:'我們可以先把目標縮小，找到今天的你能承接、也能留下來的一步。'}
+    ];
+    const rawDemo=`P1｜開場
+
+「我是有能力的人。」
+
+這是其中一位共振夥伴
+當時每天練習的肯定句。
+
+後來有一天，她突然跑來跟我們分享：
+
+「我好像真的有哪裡不一樣了。」
+
+但那一天發生的事情，其實一點都不順利。
+
+⸻
+
+P2｜她跑來分享一件事
+
+共振夥伴 B
+
+是說我也要來分享我的顯化🤣
+
+我目前的顯化句是：
+
+「我是有能力的人。」
+
+之前都是睡前唸，
+但最近一直在休息，
+所以我改成洗澡的時候
+一邊洗一邊唸🤣
+
+⸻
+
+P3｜結果工作直接出包
+
+共振夥伴 B
+
+雖然我沒有特別紀錄次數，
+但昨天剛好發生一件事情。
+
+我要緊急匯兩間銀行的款項，
+結果因為太趕了——
+兩間資料都有誤🙂
+
+全零
+
+等等🤣
+
+所以你是在練習
+「我是有能力的人」的期間，
+然後現實直接丟給你：
+好，那現在兩間一起出問題。
+
+⸻
+
+P4｜如果是以前的她
+
+共振夥伴 B
+
+對🤣
+
+第一間很明確跟我說：
+今天不能作業。
+
+如果是以前的我，
+我應該會很慌張，
+然後當下腦袋一片空白。
+不知道怎麼辦。
+
+⸻
+
+P5｜可是這一次，她的反應不一樣了
+
+共振夥伴 B
+
+但現在的我變成：
+收到訊息。
+先確定真的沒辦法今天處理。
+那我馬上想一個備案。
+再去請示主管。
+主管同意之後，
+我就決定今天早上馬上處理。
+
+全零
+
+喔——
+所以問題其實還是在。
+你也不是突然完全不緊張。
+是你遇到問題之後，開始有下一步了。
+
+⸻
+
+P6｜然後第二間也出包🤣
+
+共振夥伴 B
+
+對。
+結果後來第二間也出包🤣
+但我馬上想到：
+我們跟這間銀行本來就有業務往來，
+比較熟悉一點。
+所以我就直接去問：
+「可不可以通融？」
+
+⸻
+
+P7｜她開始使用自己手上的資源
+
+共振夥伴 B
+
+銀行行員就去幫我問主管。
+後來主管也願意通融，
+所以我今天再補件就好了。
+
+全零
+
+欸，這個差別其實滿明顯的。
+以前遇到問題：
+「完了，怎麼辦？」
+現在遇到問題：
+「好，現在這條路不行。
+那我還有什麼可以用？」
+你不是沒有遇到問題。
+是你開始會處理問題了。
+
+⸻
+
+P8｜她自己也發現了
+
+共振夥伴 B
+
+對！
+其實發現問題的當下，
+我也還是會緊張。
+可是比起以前會慌到
+完全不知道怎麼辦，
+我現在會開始想：
+「我手上還有哪些手牌？」
+「有哪些資源可以利用？」
+然後看看怎麼達到我的目的。
+
+⸻
+
+P9｜全零的反應
+
+全零
+
+我覺得這個超有意思。
+因為你每天唸的是：
+「我是有能力的人。」
+結果它最後呈現出來的樣子，
+居然不是——
+「我從此工作都不出錯了。」🤣🤣🤣
+反而是：
+事情真的出錯了，
+我開始知道自己可以怎麼辦。
+
+⸻
+
+P10｜這才是我想觀察的地方
+
+全零
+
+所以我反而會很好奇：
+如果我們只用「事情有沒有順利」
+來判斷這句肯定句有沒有成真，
+那昨天可能還會被判定成：
+兩間銀行都出錯，失敗。❌
+可是如果看的是「你」呢？
+同樣遇到突發狀況，
+以前的你：慌張 → 空白 → 不知道怎麼辦
+現在的你：緊張 → 確認現況 → 找備案 → 找資源 → 處理
+事情沒有變得完美。
+可是面對事情的你，已經開始不一樣了。
+
+⸻
+
+P11｜收束
+
+所以我現在很喜歡問共振夥伴一件事：
+你最近有沒有哪一個瞬間，
+突然發現自己跟以前不一樣了？
+它可能不是什麼巨大的「願望成真」。
+有時候只是：
+以前會慌的事情，現在能處理了。
+以前會逃的地方，現在願意碰了。
+以前第一個冒出來的是「我不行」，
+現在開始變成：
+「好，那我手上還有什麼牌？」
+也許有些相信，
+就是這樣一點一點進入生活裡的。`;
+    let state={seriesLabel:'對話紀錄',partnerName:'共振夥伴 A',topic:'我是有能力的人',partnerMark:'夥',brandMark:'全',bg:'#f3ede2',green:'#517b61',photo:'',rawSource:'',disclaimer:'過往共振會對話整理｜已匿名、刪減與順稿；全零回應依原對話脈絡重建',showDisclaimer:true,turns:[],pages:[],current:0};
+    function page(type,title='',body='',bubbles=[]){return{type,title,body,bubbles,titleSize:type==='cover'?65:type==='quote'?74:31,bodySize:type==='dialogue'?29:31,bubbleGap:28,topOffset:0,footer:''}}
+    function speakerLabel(s){return s==='brand'?'全零':state.partnerName||'共振夥伴'}
+    function typeLabel(t){return{cover:'封面',dialogue:'對話',feedback:'回饋',quote:'收束金句'}[t]||'內容'}
+    function escapeHtml(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+    function currentPage(){return state.pages[state.current]||state.pages[0]}
+    function showStatus(message){const el=document.getElementById('runtimeStatus');if(el){el.textContent=message;el.classList.remove('hidden')}console.error(message)}
+    function saveLocal(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));document.getElementById('saveNote').textContent='已自動儲存'}catch(e){showStatus('瀏覽器不允許本機儲存，但主要編排功能仍可使用。')}}
+    function setValue(id,v){const el=document.getElementById(id);if(el)el.value=v??''}
+    function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v??''}
+    function renderTurns(){
+      const box=document.getElementById('turns');
+      box.innerHTML=state.turns.map((t,i)=>`<div class="turn" data-index="${i}"><select class="speaker"><option value="partner" ${t.speaker==='partner'?'selected':''}>夥伴</option><option value="brand" ${t.speaker==='brand'?'selected':''}>全零</option></select><textarea class="turn-text" placeholder="輸入一句對話……">${escapeHtml(t.text)}</textarea><button class="remove-turn" title="刪除">×</button></div>`).join('');
+      box.querySelectorAll('.turn').forEach(row=>{const i=Number(row.dataset.index);row.querySelector('.speaker').addEventListener('change',e=>{state.turns[i].speaker=e.target.value;saveLocal()});row.querySelector('.turn-text').addEventListener('input',e=>{state.turns[i].text=e.target.value;saveLocal()});row.querySelector('.remove-turn').addEventListener('click',()=>{state.turns.splice(i,1);renderTurns();saveLocal()})});
+    }
+    function parseSpeakerBlocks(text){
+      const blocks=[];let current=null;const loose=[];
+      String(text||'').split(/\r?\n/).forEach(raw=>{
+        const line=raw.trim();if(!line||/^[-—⸻_]{2,}$/.test(line))return;
+        if(/^共振夥伴(?:\s*[^：:]+)?$/.test(line)||line==='全零'){
+          if(current&&current.text.trim())blocks.push(current);
+          current={speaker:line==='全零'?'brand':'partner',label:line,text:''};
+        }else if(current){current.text+=(current.text?'\n':'')+line}else loose.push(line);
+      });
+      if(current&&current.text.trim())blocks.push(current);
+      return {blocks,loose};
+    }
+    function pageFromChunk(title,chunk,index,total){
+      const parsed=parseSpeakerBlocks(chunk);const heading=title||`第 ${index+1} 頁`;
+      const lower=heading.toLowerCase();let type=index===0?'cover':'dialogue';
+      if(index===total-1&&(!parsed.blocks.length||/收束|結語|最後/.test(heading)))type='quote';
+      if(!parsed.blocks.length&&index>0)type='feedback';
+      const p=page(type,heading,parsed.loose.join('\n'),parsed.blocks.map(b=>({speaker:b.speaker,text:b.text})));
+      if(type==='quote')p.body=parsed.loose.join('\n')||chunk.trim();
+      if(type==='feedback')p.body=parsed.loose.join('\n')||chunk.trim();
+      return p;
+    }
+    function parseRawDialogue(){
+      try{
+        const raw=document.getElementById('rawSource').value.trim();state.rawSource=raw;
+        if(!raw){alert('請先貼上完整對話紀錄。');return}
+        const marker=/^\s*P\s*(\d+)\s*[｜|:：]\s*(.+?)\s*$/gim;const matches=[...raw.matchAll(marker)];
+        if(matches.length){
+          state.pages=matches.map((m,i)=>{const start=m.index+m[0].length;const end=i+1<matches.length?matches[i+1].index:raw.length;return pageFromChunk(m[2].trim(),raw.slice(start,end),i,matches.length)});
+          const firstSpeaker=raw.match(/^\s*(共振夥伴\s*[^\n]*)\s*$/im);if(firstSpeaker)state.partnerName=firstSpeaker[1].trim();
+          state.turns=state.pages.flatMap(p=>p.bubbles||[]);state.current=0;renderAll();saveLocal();return;
+        }
+        const parsed=parseSpeakerBlocks(raw);state.turns=parsed.blocks.map(b=>({speaker:b.speaker,text:b.text}));state.pages=[];state.current=0;renderTurns();saveLocal();makePages();
+      }catch(error){showStatus(`分析對話時發生問題：${error.message}`)}
+    }
+    function renderPageList(){const box=document.getElementById('pagesList');box.innerHTML=state.pages.map((p,i)=>`<div class="page-item ${i===state.current?'active':''}" data-index="${i}"><div class="thumb" style="background:${i===0?'#e7dccb':state.green};color:${i===0?'#2d3b30':'#fff'}">${escapeHtml((p.title||typeLabel(p.type)).slice(0,12))}</div><div><div class="page-title">${i+1}. ${escapeHtml(p.title||'未命名頁面')}</div><div class="page-meta">${typeLabel(p.type)}</div></div><div class="page-actions"><button class="icon-btn" data-move="up">↑</button><button class="icon-btn" data-move="down">↓</button></div></div>`).join('');box.querySelectorAll('.page-item').forEach(el=>{const i=Number(el.dataset.index);el.addEventListener('click',e=>{if(!e.target.dataset.move){state.current=i;renderAll()}});el.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();movePage(i,b.dataset.move==='up'?-1:1)}))})}
+    function renderEditor(){const p=currentPage();if(!p)return;setValue('pageType',p.type);setValue('pageTitle',p.title);setValue('pageBody',p.body);setValue('pageFooter',p.footer);['titleSize','bodySize','bubbleGap','topOffset'].forEach(k=>{setValue(k,p[k]);setText(k+'Val',k==='topOffset'?(Number(p[k])>0?'+':'')+p[k]+'px':p[k]+'px')});setText('pageCounter',`第 ${state.current+1} / ${state.pages.length} 頁`)}
+    function renderAll(){setValue('seriesLabel',state.seriesLabel);setValue('partnerName',state.partnerName);setValue('topic',state.topic);setValue('partnerMark',state.partnerMark);setValue('brandMark',state.brandMark);setValue('bgColor',state.bg);setValue('greenColor',state.green);setValue('rawSource',state.rawSource);const disclaimer=document.getElementById('showDisclaimer');if(disclaimer)disclaimer.checked=state.showDisclaimer!==false;renderTurns();renderPageList();renderEditor();renderCanvas()}
+    function wrap(ctx,text,maxWidth,size){ctx.font=`400 ${size}px ${fonts}`;const lines=[];String(text||'').split('\n').forEach(part=>{if(!part){lines.push('');return}let line='';[...part].forEach(ch=>{const test=line+ch;if(line&&ctx.measureText(test).width>maxWidth){lines.push(line);line=ch}else line=test});lines.push(line)});return lines.length?lines:['']}
+    function drawText(ctx,text,x,y,maxWidth,size,lineH,color,weight='400',align='left'){ctx.font=`${weight} ${size}px ${fonts}`;ctx.fillStyle=color;ctx.textAlign=align;ctx.textBaseline='top';const lines=wrap(ctx,text,maxWidth,size);const lh=size*lineH;lines.forEach((line,i)=>ctx.fillText(line,x,y+i*lh));return lines.length*lh}
+    function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+    function drawHeader(ctx,p,index){ctx.fillStyle=state.ink||'#26231f';ctx.font=`700 22px ${fonts}`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(state.seriesLabel,86,67);ctx.strokeStyle=state.green;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(86,108);ctx.lineTo(994,108);ctx.stroke();ctx.font=`600 20px ${fonts}`;ctx.fillStyle=state.green;ctx.textAlign='right';ctx.fillText(String(index+1).padStart(2,'0'),994,67)}
+    function drawBubble(ctx,bubble,x,y,w,maxH,size=29){const isBrand=bubble.speaker==='brand';const color=isBrand?state.green:'#fffdf8';const ink=isBrand?'#fff':(state.ink||'#26231f');ctx.fillStyle=color;ctx.strokeStyle=isBrand?state.green:'#d9d1c4';ctx.lineWidth=2;roundRect(ctx,x,y,w,maxH,22);ctx.fill();ctx.stroke();ctx.fillStyle=isBrand?'rgba(255,255,255,.78)':'#827b71';ctx.font=`600 18px ${fonts}`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(speakerLabel(bubble.speaker),x+25,y+20);const textY=y+54;const textH=drawText(ctx,bubble.text,x+25,textY,w-50,size,1.5,ink,'400','left');return Math.max(maxH,textH+76)}
+    function drawPhoto(ctx){if(!state.photo)return false;const img=new Image();img.src=state.photo;return img}
+    function drawPage(ctx,p,index){ctx.clearRect(0,0,W,H);ctx.fillStyle=state.bg;ctx.fillRect(0,0,W,H);drawHeader(ctx,p,index);const ink=state.ink||'#26231f';const green=state.green;
+      if(p.type==='cover'){ctx.fillStyle=green;ctx.globalAlpha=.12;ctx.beginPath();ctx.arc(900,260,220,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=green;ctx.font=`700 20px ${fonts}`;ctx.textAlign='left';ctx.fillText('共振會・心得紀錄',86,190);drawText(ctx,p.title,86,300,850,p.titleSize,1.18,ink,'700','left');drawText(ctx,p.body,86,590,760,30,1.65,ink,'400','left');ctx.fillStyle=green;ctx.font=`600 21px ${fonts}`;ctx.fillText(state.partnerName||'共振夥伴',86,990);ctx.fillStyle=ink;ctx.font=`400 21px ${fonts}`;ctx.fillText('與全零的對話紀錄',86,1030)}
+      else if(p.type==='quote'){if(state.photo){const img=drawPhoto(ctx);try{ctx.save();ctx.globalAlpha=.24;ctx.drawImage(img,0,0,W,H);ctx.restore()}catch(e){}}ctx.fillStyle='rgba(243,237,226,.72)';ctx.fillRect(0,0,W,H);ctx.fillStyle=green;ctx.font=`700 20px ${fonts}`;ctx.textAlign='left';ctx.fillText('回看這段對話',86,220);drawText(ctx,p.title,86,390,850,p.titleSize,1.2,ink,'700','left');drawText(ctx,p.body,86,820,770,29,1.55,ink,'400','left')}
+      else if(p.type==='feedback'){ctx.fillStyle=green;ctx.font=`700 20px ${fonts}`;ctx.textAlign='left';ctx.fillText('完成之後，她這樣說',86,190);const h=330;ctx.fillStyle='#fffdf8';ctx.strokeStyle='#d9d1c4';ctx.lineWidth=2;roundRect(ctx,86,290,908,h,25);ctx.fill();ctx.stroke();drawText(ctx,p.body||p.title,125,350,830,p.bodySize,1.55,ink,'400','left');if(p.title&&p.body){drawText(ctx,p.title,86,760,850,p.titleSize,1.18,green,'700','left')}}
+      else {ctx.fillStyle=green;ctx.font=`700 20px ${fonts}`;ctx.textAlign='left';ctx.fillText(p.title||'對話紀錄',86,160);if(state.topic){ctx.fillStyle='#e1eadf';roundRect(ctx,86,205,Math.min(760,Math.max(310,state.topic.length*29+60)),52,26);ctx.fill();ctx.fillStyle=green;ctx.font=`600 21px ${fonts}`;ctx.fillText(state.topic,112,220)}let y=330+Number(p.topOffset||0);if(p.body){y+=drawText(ctx,p.body,86,y,850,24,1.45,ink,'400','left')+28}const x=86;const maxW=908;(p.bubbles||[]).forEach((b,i)=>{const height=drawBubble(ctx,b,x,y,maxW,126,p.bodySize);y+=height+Number(p.bubbleGap||28)})}
+      if(state.showDisclaimer&&state.disclaimer)drawText(ctx,state.disclaimer,86,1160,900,14,1.25,'#827b71','400','left');if(p.footer||state.partnerName){ctx.fillStyle='#80796f';ctx.font=`500 18px ${fonts}`;ctx.textAlign='left';ctx.fillText(p.footer||state.partnerName,86,1264)}ctx.strokeStyle=green;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(86,1215);ctx.lineTo(994,1215);ctx.stroke();ctx.fillStyle=ink;ctx.font=`600 18px ${fonts}`;ctx.textAlign='right';ctx.fillText('全零聊解室',994,1264);if(document.getElementById('showGuide')?.checked){ctx.save();ctx.strokeStyle='rgba(81,123,97,.55)';ctx.setLineDash([10,10]);ctx.strokeRect(86,145,908,1050);ctx.restore()}}
+    function renderCanvas(){const c=document.getElementById('previewCanvas');if(!c||typeof c.getContext!=='function'){showStatus('目前開啟方式不支援畫布預覽，請改用 Safari／Chrome 開啟這個 HTML 檔案。');return}const ctx=c.getContext('2d');if(!ctx){showStatus('目前瀏覽器無法建立畫布預覽，請改用 Safari／Chrome 開啟。');return}c.width=W;c.height=H;drawPage(ctx,currentPage()||page('cover','請先生成輪播',''),state.current);setText('dimensionLabel','1080 × 1350')}
+    function makePages(){if(state.rawSource&&/^\s*P\s*\d+\s*[｜|:：]/im.test(state.rawSource)){parseRawDialogue();return}const per=Number(document.getElementById('turnsPerPage').value);const pages=[];if(document.getElementById('includeCover').value==='yes')pages.push(page('cover',state.topic||'一段對話，如何讓人重新看見自己？',`這是 ${state.partnerName||'共振夥伴'} 在對話裡慢慢整理出來的變化。`));for(let i=0;i<state.turns.length;i+=per){pages.push(page('dialogue',i===0?'她先說出了自己的狀態':'對話裡，開始看見另一層脈絡','',state.turns.slice(i,i+per)))}const quote=document.getElementById('endingQuote').value.trim();if(quote)pages.push(page('quote',quote,'當我們回頭看見卡住以前發生了什麼，下一步就會變得比較清楚。'));state.pages=pages.length?pages:[page('cover','先填入對話內容','再按下生成雜誌輪播。')];state.current=0;renderAll();saveLocal()}
+    function addTurn(s){state.turns.push({speaker:s,text:''});renderTurns();saveLocal();const rows=document.querySelectorAll('.turn-text');rows[rows.length-1]?.focus()}
+    function updatePage(k,v){const p=currentPage();if(!p)return;p[k]=v;renderPageList();renderCanvas();saveLocal()}
+    function movePage(i,d){const j=i+d;if(j<0||j>=state.pages.length)return;[state.pages[i],state.pages[j]]=[state.pages[j],state.pages[i]];state.current=j;renderAll();saveLocal()}
+    function addPage(){state.pages.splice(state.current+1,0,page('dialogue','新的對話頁','',[]));state.current++;renderAll();saveLocal()}
+    function deletePage(){if(state.pages.length<=1){alert('至少保留一頁。');return}state.pages.splice(state.current,1);state.current=Math.max(0,state.current-1);renderAll();saveLocal()}
+    function duplicatePage(){const copy=JSON.parse(JSON.stringify(currentPage()));state.pages.splice(state.current+1,0,copy);state.current++;renderAll();saveLocal()}
+    function downloadCanvas(c,name){const a=document.createElement('a');a.download=name;a.href=c.toDataURL('image/png');a.click()}
+    function downloadCurrent(){downloadCanvas(document.getElementById('previewCanvas'),`magazine-dialogue-${String(state.current+1).padStart(2,'0')}.png`)}
+    function downloadAll(){const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');state.pages.forEach((p,i)=>setTimeout(()=>{drawPage(ctx,p,i);downloadCanvas(c,`magazine-dialogue-${String(i+1).padStart(2,'0')}.png`)},i*220))}
+    function saveProject(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.download='magazine-dialogue-project.json';a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+    function loadProject(file){const r=new FileReader();r.onload=()=>{try{const incoming=JSON.parse(r.result);if(!incoming.pages?.length)throw Error();state={...state,...incoming};renderAll();saveLocal()}catch(e){alert('這個檔案不是有效的雜誌對話專案。')}};r.readAsText(file)}
+    document.getElementById('parseRawBtn').addEventListener('click',parseRawDialogue);document.getElementById('rawDemoBtn').addEventListener('click',()=>{document.getElementById('rawSource').value=rawDemo;parseRawDialogue()});document.getElementById('rawSource').addEventListener('input',e=>{state.rawSource=e.target.value;saveLocal()});document.getElementById('showDisclaimer').addEventListener('change',e=>{state.showDisclaimer=e.target.checked;renderCanvas();saveLocal()});document.getElementById('addPartnerBtn').addEventListener('click',()=>addTurn('partner'));document.getElementById('addBrandBtn').addEventListener('click',()=>addTurn('brand'));document.getElementById('demoBtn').addEventListener('click',()=>{state.rawSource='';state.turns=JSON.parse(JSON.stringify(demoTurns));state.topic='她想趕快找到正確的方法';renderAll();saveLocal()});document.getElementById('generateBtn').addEventListener('click',makePages);document.getElementById('addPageBtn').addEventListener('click',addPage);document.getElementById('deleteBtn').addEventListener('click',deletePage);document.getElementById('duplicateBtn').addEventListener('click',duplicatePage);document.getElementById('prevBtn').addEventListener('click',()=>{if(state.current>0){state.current--;renderAll()}});document.getElementById('nextBtn').addEventListener('click',()=>{if(state.current<state.pages.length-1){state.current++;renderAll()}});document.getElementById('downloadCurrentBtn').addEventListener('click',downloadCurrent);document.getElementById('downloadAllBtn').addEventListener('click',downloadAll);document.getElementById('saveProjectBtn').addEventListener('click',saveProject);document.getElementById('loadProjectBtn').addEventListener('click',()=>document.getElementById('projectFile').click());document.getElementById('projectFile').addEventListener('change',e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''})
+    ;[['seriesLabel','seriesLabel'],['partnerName','partnerName'],['topic','topic'],['partnerMark','partnerMark'],['brandMark','brandMark']].forEach(([id,k])=>document.getElementById(id).addEventListener('input',e=>{state[k]=e.target.value;renderPageList();renderCanvas();saveLocal()}));document.getElementById('bgColor').addEventListener('input',e=>{state.bg=e.target.value;renderCanvas();saveLocal()});document.getElementById('greenColor').addEventListener('input',e=>{state.green=e.target.value;renderAll();saveLocal()});document.getElementById('photoFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{state.photo=r.result;renderCanvas();saveLocal()};r.readAsDataURL(f)});document.getElementById('showGuide').addEventListener('change',renderCanvas);[['pageType','type'],['pageTitle','title'],['pageBody','body'],['pageFooter','footer'],['titleSize','titleSize'],['bodySize','bodySize'],['bubbleGap','bubbleGap'],['topOffset','topOffset']].forEach(([id,k])=>document.getElementById(id).addEventListener('input',e=>updatePage(k,['titleSize','bodySize','bubbleGap','topOffset'].includes(k)?Number(e.target.value):e.target.value)));window.addEventListener('beforeunload',saveLocal);window.addEventListener('error',e=>showStatus(`互動錯誤：${e.message}`))
+    try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved?.pages?.length)state={...state,...saved}}catch(e){}if(!state.turns.length)state.turns=JSON.parse(JSON.stringify(demoTurns));if(!state.pages.length)state.pages=[page('cover','先填入一段對話','按左側「生成雜誌輪播」開始。')];renderAll();
+  </script>
+</body>
+</html>

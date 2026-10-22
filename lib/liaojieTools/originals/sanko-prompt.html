@@ -1,0 +1,249 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>日上三更｜指令產生器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f1e6;--paper:#fdfaf3;--ink:#2f2a22;--muted:#8a8070;--line:#e4d9c0;--gold:#c99a4b;--green:#4d6557;--seal:#a95543}
+*{box-sizing:border-box}
+body{margin:0;background:#ece4d1;color:var(--ink);font:15px/1.65 'Noto Sans TC',system-ui,sans-serif}
+.app{max-width:560px;margin:auto;min-height:100dvh;background:var(--bg);padding-bottom:40px}
+.top{position:sticky;top:0;z-index:5;background:#fdfaf3ec;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 18px}
+.brand{font:700 19px 'Noto Serif TC',serif;letter-spacing:.12em}
+.brand small{display:block;font:400 12px 'Noto Sans TC';letter-spacing:0;color:var(--muted);margin-top:2px}
+.screen{padding:16px}
+.step{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:12px}
+.step h2{font:600 16px 'Noto Serif TC',serif;margin:0 0 3px}
+.step .hint{font-size:12.5px;color:var(--muted);margin-bottom:11px}
+.row{display:flex;gap:7px;flex-wrap:wrap}
+button{font:inherit;color:var(--ink);border:1px solid var(--line);background:var(--paper);border-radius:10px;min-height:40px;padding:7px 12px;cursor:pointer}
+.row button{font-size:13.5px;min-height:38px}
+.row button.on{background:#eee1c8;border-color:var(--gold);font-weight:600}
+.row button small{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.row button.on small{color:var(--ink)}
+input,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;background:var(--paper);font:inherit;margin-top:6px}
+textarea{min-height:70px;resize:vertical}
+.primary{width:100%;background:var(--green);color:#fffaf0;border-color:var(--green);font-weight:600;min-height:48px;margin-top:4px}
+.ghost{background:transparent;border-style:dashed;color:var(--muted)}
+.out{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;font:13px/1.7 ui-monospace,'Noto Sans TC',monospace;white-space:pre-wrap;word-break:break-word;max-height:340px;overflow:auto;margin-top:10px}
+.meta{font-size:12px;color:var(--muted);margin-top:8px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border:1px solid var(--gold);color:var(--gold);border-radius:999px;margin:0 4px 4px 0}
+.tag.sub{border-color:var(--line);color:var(--muted)}
+.warn{background:#f7e6e0;border-left:3px solid var(--seal);padding:9px 11px;border-radius:0 9px 9px 0;font-size:12.5px;margin-top:10px}
+.hidden{display:none}
+.stationgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:6px}
+.stationgrid button{text-align:left;font-size:12.5px;min-height:36px;padding:6px 9px}
+.quad{font-size:11.5px;color:var(--gold);letter-spacing:.06em;margin:9px 0 3px}
+</style></head>
+<body><main class="app">
+
+<header class="top">
+  <div class="brand">日上三更 · 指令產生器<small>語氣指引 v0.2 已內建 · 選完直接複製</small></div>
+</header>
+
+<div class="screen">
+
+<div class="step">
+  <h2>一 · 這篇用哪個方法</h2>
+  <div class="hint">選定後自動帶入三段命名、傘段型態與版型規格</div>
+  <div class="row" id="methods"></div>
+  <div id="methodInfo" class="meta"></div>
+</div>
+
+<div class="step">
+  <h2>二 · 這次抽到什麼牌</h2>
+  <div class="hint">牌名、牌義關鍵字，或直接貼你的抽牌筆記</div>
+  <textarea id="cards" placeholder="例如：MP-15 月相顯化牌．蛻變／或直接貼牌義"></textarea>
+</div>
+
+<div class="step">
+  <h2>三 · 這篇對應哪一站</h2>
+  <div class="hint">選填。建構期用；一般日更可留空</div>
+  <button class="ghost" id="toggleStations" onclick="toggleStations()" style="width:100%">展開 25 光站</button>
+  <div id="stations" class="hidden"></div>
+  <input id="stationFree" placeholder="或自行輸入主題">
+</div>
+
+<div class="step">
+  <h2>四 · 補充（選填）</h2>
+  <div class="hint">這次想強調的角度、避開的方向、季節或活動脈絡</div>
+  <textarea id="extra" placeholder="例如：這週想扣共振會報名／避免提到工作壓力"></textarea>
+</div>
+
+<button class="primary" onclick="build()">產生指令</button>
+
+<div id="result" class="hidden">
+  <div class="step" style="margin-top:14px">
+    <h2>指令已產生</h2>
+    <div class="hint" id="resultMeta"></div>
+    <button class="primary" onclick="copyOut()" id="copyBtn">複製全部指令</button>
+    <div class="out" id="out"></div>
+    <div class="warn">貼進任何 AI 對話即可。產出後請自行讀三秒做語感確認——AI 可以生成，但不能驗收。</div>
+  </div>
+</div>
+
+</div>
+</main>
+
+<script>
+const METHODS={
+ shixiang:{name:'實相觀測站',method:'情境選擇法',kong:'實相對照',yu:'簾後心跡',san:'隨手一動',type:'行動',spec:'4 選 1',
+   note:'空段多寫第一反應；雨段多寫這反應在保護什麼；傘段寫下次如何調整一點點。'},
+ yinian:{name:'一念拾物',method:'直覺選圖法',kong:'落目觸心',yu:'物影回響',san:'隨身儀式',type:'行動',spec:'固定 5 選 1',
+   note:'每個選項是一個象徵物（門、藥水、礦石、場景）＋其背後綁定的一個提問。空段寫選這個代表想打開什麼。'},
+ zhuse:{name:'燭色漸行計',method:'程度量表法',kong:'燭影初現',yu:'芯火洞察',san:'餘溫安放',type:'行動',spec:'固定 6 題，每題 1–5 分，總分 6–30 對應三區間',
+   note:'題目為陳述句讓讀者自評共鳴度，非問句。三個區間各走一輪完整空雨傘。'},
+ touse:{name:'投射語句填空',method:'投射書寫法',kong:'筆尖浮生',yu:'紙背餘音',san:'寫入日常',type:'行動',spec:'固定 6 選項，無自由填寫',
+   note:'一句主題句＋6 個可代入的填空選項。空段照見這句話為何跳出來；雨段翻它底下的需求、害怕或渴望。'},
+ huanwei:{name:'換位傾聽·真心話',method:'角色代入法',kong:'異位入座',yu:'心聲對流',san:'換句真話',type:'替換句',spec:'4 選 1',
+   note:'選項為關係中的角色姿態。雨段固定用「如果你心裡的這個角色能說話，它其實很想對你說……」'},
+ wuqi:{name:'霧氣抹除',method:'霧氣抹除',kong:'霧中一句',yu:'霧後真心',san:'新內在句',type:'替換句',spec:'5 選 1',
+   note:'選項是第一人稱的舊規則自我命令句（例：我不能麻煩別人），非情境或感受。抹去的是舊規則，不是情緒或過去。'},
+ qianshi:{name:'命運籤詩',method:'命運籤詩法',kong:'二字詞組＋七言對句',yu:'解析段',san:'金句',type:'行動',spec:'一週 10 支',
+   note:'七言對句要文言節奏但白話意思，讀者不需查典。每支：二字詞組→七言對句→解析→一句金句。'},
+ bianli:{name:'直覺便利貼',method:'晨光占卜',kong:'便利貼寄語（空雨合併）',yu:'—',san:'貼上便利貼',type:'行動',spec:'4 選 1',
+   note:'卦名／牌名放在選項標題，寄語裡只用翻譯後的白話。晨光語感，開場可帶「先別急著刷手機喔」這類日常引導。'}
+};
+
+const STATIONS={
+ 'Ⅰ 尋光點燈':['01 七脈輪光譜檢測','02 情緒檢測聚焦','03 限制性信念辨識','04 選擇順逆測頻','05 阿卡西紀錄一問一答'],
+ 'Ⅱ 釋光淨障':['06 能量結節釋放','07 重複模式根源整合','08 單一關係結構解析','09 信念鬆動能量工作','10 單一情緒釋放儀式'],
+ 'Ⅲ 聚能擴光':['11 行動力能量點燃','12 內在場景探索漫遊','13 內在小孩會談','14 能量急救舒壓','15 大地扎根連結'],
+ 'Ⅳ 築塔聚光':['16 願景澄清定義','17 願景阻力盤點','18 願景啟動儀式','19 願景階段路線規劃','20 顯化承諾契約'],
+ 'Ⅴ 深耕織光':['21 高壓情境應對流程','22 光習快照','23 自我測頻入門','24 月度主題回顧','25 織光共作坊']
+};
+
+const TONE=`【語氣規範｜語氣指引 v0.2】
+
+一、核心語氣特徵
+1. 否定→翻轉→金句：先戳破一個常見誤解，翻轉成力量，再用一句話收束。這是最重要的簽名動作。
+   例：「這不是懶惰，是警訊」→「休息不是暫停人生，是替下一段路加滿油」
+2. 時間框定在近期：「這陣子的你」「最近」「此時」。不做永久性斷言，狀態是暫時的，不是人格判定。
+3. 建議不命令：力道收在「可以」。最強的肯定到「最終也不會有錯」為止，不出現絕對化預言。
+4. 條件句把選擇權交回讀者：「如果願意的話」「如果還有點心力」。不預設讀者有力氣。
+5. 稱謂：直接稱「你」。不用親愛的、寶貝、天使、光的工作者。尾字偶用「喔」「呢」「吧」壓親近感，不撒嬌不賣萌。
+6. 「比起 X，不如 Y」句式是雨段的翻轉引擎。
+7. 牌卡／卦象是翻譯器不是判決書：卦名爻辭放標題或選項名，解析內文只用翻譯後的白話，不逐字訓詁、不掉書袋。
+8. 微行動公式：「今天」＋具體場景＋小到不需要勇氣的動作。
+
+二、空雨傘三段
+空（現狀共振）——讓讀者覺得「這是在說我」。寫當下的反應、慣性、位置。禁止診斷、定罪、貼標籤。
+雨（牌卡訊息／深層洞察）——從「發生了什麼」翻到「這在提醒什麼」。禁止絕對化預言、命令式訓話、神秘權威壓人。
+傘（微光行動／新內在句）——把解析拉回生活。禁止過大承諾、要求立刻翻轉人生、空泛鼓勵。
+
+三、傘段兩種型態
+行動型：「今天可以試試看……」＋具體小動作。
+替換句型：第一人稱宣言，句式「我可以……，而這不代表……」。
+（凡是「拿掉／換掉某個東西」的方法，傘必須是替換句，因為留下的空位需要新的內在句填補。）
+
+四、禁區
+禁用句式：你就是…／你一定會…／這表示你有某種問題…／如果不這樣做就會…／宇宙要你立刻…
+禁用詞彙：親愛的、寶貝、天使、光的工作者｜命定、注定、劫數｜療癒你的創傷、治好
+禁用結構：恐嚇式導流、無鋪墊的銷售、每則尾端硬塞報名文案
+
+五、emoji
+極克制，僅功能性（標示段落、區間、收尾）。每篇不超過 5 種。禁止每句話後面加 emoji、堆滿愛心。
+
+六、輸出格式（IG 平台硬限制）
+IG 內文超過約 500 字會截斷。請輸出兩份：
+【主文】500 字以內：引導語＋選項，能獨立成立。
+【解析包】分段結構化，供留言樓層或私訊自動回覆使用。
+
+七、版型檢查
+選項類版型：每個選項旁必須有 A–E／F 標示。
+圖片題目與內文解析的選項必須一致。
+主文字數確認 500 以內。`;
+
+let picked=null, pickedStation=null;
+
+function renderMethods(){
+  document.getElementById('methods').innerHTML=Object.entries(METHODS).map(([k,v])=>
+    `<button onclick="pickMethod('${k}',this)">${v.name}<small>${v.method}</small></button>`).join('');
+}
+function pickMethod(k,el){
+  picked=k;
+  document.querySelectorAll('#methods button').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const v=METHODS[k];
+  document.getElementById('methodInfo').innerHTML=
+    `<span class="tag">空 ${v.kong}</span><span class="tag">雨 ${v.yu}</span><span class="tag">傘 ${v.san}</span>`+
+    `<span class="tag sub">傘＝${v.type}型</span><span class="tag sub">${v.spec}</span>`;
+}
+function renderStations(){
+  document.getElementById('stations').innerHTML=Object.entries(STATIONS).map(([q,list])=>
+    `<div class="quad">${q}</div><div class="stationgrid">`+
+    list.map(s=>`<button onclick="pickStation('${s}',this)">${s}</button>`).join('')+`</div>`).join('');
+}
+function pickStation(s,el){
+  if(pickedStation===s){pickedStation=null;el.classList.remove('on');return}
+  pickedStation=s;
+  document.querySelectorAll('#stations button').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+function toggleStations(){
+  const el=document.getElementById('stations');
+  const btn=document.getElementById('toggleStations');
+  el.classList.toggle('hidden');
+  btn.textContent=el.classList.contains('hidden')?'展開 25 光站':'收合光站清單';
+}
+
+function build(){
+  if(!picked){alert('請先選一個方法。');return}
+  const v=METHODS[picked];
+  const cards=document.getElementById('cards').value.trim();
+  const station=pickedStation||document.getElementById('stationFree').value.trim();
+  const extra=document.getElementById('extra').value.trim();
+
+  let p=TONE+`
+
+────────────────
+
+【本篇規格】
+版型名稱：${v.name}
+使用方法：${v.method}
+三段命名：空＝${v.kong}／雨＝${v.yu}／傘＝${v.san}
+傘段型態：${v.type}型${v.type==='替換句'?'（傘必須是第一人稱宣言，不是行動指示）':'（傘為「今天」＋具體場景＋小動作）'}
+版型規格：${v.spec}
+方法要點：${v.note}
+`;
+  if(station) p+=`對應光站：${station}\n`;
+  if(cards) p+=`\n【這次抽到的牌】\n${cards}\n`;
+  if(extra) p+=`\n【補充脈絡】\n${extra}\n`;
+
+  p+=`
+────────────────
+
+【任務】
+請依上述語氣規範與本篇規格，產出一則完整的「${v.name}」內容。
+
+必須遵守：
+1. 嚴格依三段命名撰寫，段落標題就用「${v.kong}」「${v.yu}」「${v.san}」。
+2. 傘段必須是${v.type}型。
+3. 選項數量依版型規格，每個選項標上 A、B、C…
+4. 分兩份輸出：先給【主文】（500 字內），再給【解析包】。
+5. 語氣規範中的禁區一項都不能違反。
+
+請直接開始，不需要說明你要怎麼做。`;
+
+  document.getElementById('out').textContent=p;
+  document.getElementById('resultMeta').textContent=
+    `${v.name}｜${v.type}型傘段｜${v.spec}${station?'｜'+station:''}｜約 ${p.length} 字`;
+  document.getElementById('result').classList.remove('hidden');
+  document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function copyOut(){
+  const t=document.getElementById('out').textContent;
+  const btn=document.getElementById('copyBtn');
+  navigator.clipboard.writeText(t).then(()=>{
+    btn.textContent='已複製，貼到 AI 對話即可';
+    setTimeout(()=>btn.textContent='複製全部指令',2400);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);
+    ta.select();document.execCommand('copy');ta.remove();
+    btn.textContent='已複製';setTimeout(()=>btn.textContent='複製全部指令',2400);
+  });
+}
+
+renderMethods();renderStations();
+</script>
+</body></html>
