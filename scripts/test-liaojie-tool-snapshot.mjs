@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {validSnapshot} from '../lib/liaojieTools/snapshot.ts';
+const base={version:1,tool:'diamond',storage:{},fields:{},outputs:{},state:{nodes:[],stage:'A',sub:'expand'}};
+assert(validSnapshot(base,'diamond'));
+assert(!validSnapshot({...base,tool:'carousel'},'diamond'));
+assert(!validSnapshot({...base,fields:[]},'diamond'));
+assert(!validSnapshot({...base,state:{nodes:'broken'}},'diamond'),'invalid node data must not replace working draft');
+assert(!validSnapshot({...base,state:{nodes:[{desc:5}]}},'diamond'),'invalid node shape rejected');
+assert(!validSnapshot({...base,tool:'carousel',state:{project:{pages:'broken'}}},'carousel'),'invalid canvas project rejected');
+assert(!validSnapshot({...base,tool:'carousel',state:{project:{pages:[{type:'chat',msgs:[null]}]},fonts:[]}},'carousel'),'null chat message rejected');
+assert(!validSnapshot({...base,tool:'carousel',state:{project:{pages:[{type:'mag',title:{}}]},fonts:[]}},'carousel'),'object title rejected');
+assert(!validSnapshot({...base,tool:'magazine',state:null,storage:{'xingguang-magazine-dialogue-v0-3':'{"pages":[null]}' }},'magazine'),'corrupt saved magazine rejected');
+assert(!validSnapshot({...base,tool:'sanko-batch',state:null,storage:{'qgen_state_v13':'{"days":"bad"}' }},'sanko-batch'),'corrupt saved batch rejected');
+console.log('PASS portable snapshot shape and tool isolation');

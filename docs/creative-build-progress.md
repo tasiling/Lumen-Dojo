@@ -1,5 +1,16 @@
 # 織光堂與聊解室建置進度
 
+## 2026-10-22 原工具接入 checkpoint
+
+- Branch：`codex/liaojie-original-tools`，基底／核對最新master `f808a4c93ba6582e4afaad18bdb0dded74f8e681`；實作head以本節所在提交／PR為準。此前PR101、PR89已合併，下面的歷史未合併說明保留為當時紀錄。
+- 使用者明確要求把實測好用的五工具全部建到網頁，正式名稱「知識鑽石框架」。已找回原附件，不再用泛用段落／現有兩版型替代。
+- 實際新增：`/liaojie/tools`、五個原工具工作區；聊解室／發布台與織光堂輪播入口連接；原方法、知識鑽石2.0與A/B/C/D、雜誌／對話／拱門版型、原生PNG／TXT／JSON功能保留。
+- React外殼提供本裝置IndexedDB保存、通用JSON備份、即時擷取最新輸入、錯工具／損壞備份拒絕、多視窗revision衝突、失敗保留。沒有雲端同步、沒有直接把五種原專案轉成固定成品，沒有寫正式Notion。
+- 獨立審查0 Critical／3 Important／0 Minor；節點HTML插入、壞備份驗證、雜誌還原錯頁三項RED→GREEN。另修正相同內容／備份與保存並發時dirty提示未清除，重現回歸通過。原HTML SHA256全部不變，runtime適配不放寬sandbox same-origin。
+- 驗證：build、tsc、受影響eslint、snapshot單元、production兩套原工具UI、既有liaojie-text-domain通過。真下載兩工具1080×1350 PNG；五工具主要流程、知識鑽石候選節點／刷新、多視窗不覆蓋、損壞JSON、保存失敗仍可備份；320／375／390／430／1024截圖見 `docs/liaojie-original-tools-evidence`。正式iPhone尚待本人驗收。
+- 交付說明與原檔SHA：`docs/liaojie-original-tools-delivery.md`；spec／plan日期2026-10-22。CLI GitHub push缺憑證，改用已連接Git Data保留相同tree／父提交、expected_sha與非force分支更新。
+- 發布阻礙：Railway工具回覆UNAUTHORIZED／需重新驗證，沒有嘗試另建專案、購買或修改變數。此為程式交付，尚不能宣告正式部署成功；以後續PR／部署核對紀錄為準。
+
 ## 2026-10-20 排程建立
 
 使用者已授權自行安排並持續完成，先交付排程。本輪準備排程、第一包設計及計畫；尚未實作新介面、尚未部署。開發接續任務「織光聊解持續建置」已建立並啟用，Australia/Melbourne 每四小時喚起；這不是自動製作或發布私人內容的排程。

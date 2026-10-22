@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>日上三更｜批次出題產生器 v1.3</title>
+<style>
+  :root{
+    --bg:#faf7f2; --panel:#fff; --ink:#2b2620; --sub:#7a7266;
+    --line:#e6dfd3; --accent:#8a6d3b; --warn:#b5432c; --ok:#3b7a57; --info:#4b6a8a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: rgba(138,109,59,0.2);}
+  html{-webkit-text-size-adjust:100%;}
+  body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:16px 14px 90px;line-height:1.65;font-size:16px;}
+  h1{font-size:19px;margin:4px 0 2px;}
+  .sub{color:var(--sub);font-size:13px;margin-bottom:16px;}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;}
+  .panel h2{font-size:15px;margin:0 0 10px 0;border-left:4px solid var(--accent);padding-left:8px;}
+  .panel.highlight{border:2px solid var(--accent);background:#fffaf0;}
+  label{display:block;font-size:13px;color:var(--sub);margin:10px 0 5px;font-weight:600;}
+  input[type=text], input[type=date], input[type=number], select, textarea{
+    width:100%;padding:12px 10px;border:1px solid var(--line);border-radius:8px;font-size:16px;
+    font-family:inherit;background:#fff;color:var(--ink);min-height:44px;
+  }
+  textarea{resize:vertical;}
+  .row{display:flex;flex-direction:column;gap:10px;}
+  .day-card{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;background:#fffdfa;overflow:hidden;}
+  .day-head{display:flex;justify-content:space-between;align-items:center;padding:14px;cursor:pointer;background:#fbf5ea;}
+  .day-head-left{display:flex;align-items:center;gap:8px;}
+  .day-num{font-weight:700;font-size:15px;color:var(--accent);}
+  .day-meta{font-size:12px;color:var(--sub);}
+  .chevron{font-size:14px;color:var(--accent);transition:transform .15s;}
+  .day-body{padding:0 14px 14px;display:none;}
+  .day-body.open{display:block;}
+  .simple-day{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#fffdfa;}
+  .simple-day .day-num{margin-bottom:6px;display:block;}
+  .branch{border:1px dashed var(--line);border-radius:8px;padding:10px;margin-top:10px;background:#fff;}
+  .branch-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub);margin-bottom:4px;}
+  .subhead{font-size:13px;font-weight:700;color:var(--accent);margin-top:14px;margin-bottom:4px;}
+  button{cursor:pointer;border:none;border-radius:9px;padding:12px 16px;font-size:14px;font-weight:600;background:var(--accent);color:#fff;min-height:44px;}
+  button.secondary{background:#efe8db;color:var(--ink);}
+  button.small{padding:9px 12px;font-size:13px;min-height:40px;}
+  button.danger{background:var(--warn);}
+  button.toggle{background:#e8dfc8;color:#5c4a26;width:100%;text-align:left;font-weight:700;margin-top:10px;}
+  button.block{width:100%;margin-top:8px;}
+  button.fill{background:#3b7a57;}
+  button:disabled{background:#ddd5c4;color:#a89d8a;cursor:not-allowed;}
+  .counter{font-size:12px;color:var(--sub);text-align:right;margin-top:2px;}
+  .counter.bad{color:var(--warn);font-weight:700;}
+  .warn-box{background:#fff4ef;border:1px solid #f0c9b8;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--warn);margin-bottom:14px;}
+  .warn-box ul{margin:6px 0 0 18px;padding:0;}
+  .ok-box{background:#f0f7f2;border:1px solid #bfe0ca;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--ok);margin-bottom:14px;}
+  .ok-box ul{margin:6px 0 0 18px;padding:0;}
+  .note-box{background:#fdf8ee;border:1px solid #ecdcb0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8a6d3b;margin-top:8px;}
+  .checklist{background:#f6f4ee;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--sub);margin-top:8px;}
+  .checklist ul{margin:4px 0 0 16px;padding:0;}
+  pre{white-space:pre-wrap;font-size:12.5px;background:#fbfaf7;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:360px;overflow:auto;}
+  .tag{display:inline-block;font-size:11px;background:#efe8db;border-radius:5px;padding:2px 7px;color:var(--sub);}
+  .method-fixed{color:var(--sub);font-size:12.5px;margin-top:4px;}
+  .promptPanel{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px;background:#fffefb;}
+  .stepnum{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;background:var(--accent);color:#fff;border-radius:50%;font-size:11px;margin-right:6px;}
+  .steplabel{font-weight:700;font-size:13px;color:var(--accent);margin-top:10px;}
+  .jumpbar{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0;margin:-16px -14px 12px;padding-left:14px;padding-right:14px;overflow-x:auto;white-space:nowrap;border-bottom:1px solid var(--line);}
+  .jumpchip{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:13px;margin-right:6px;color:var(--accent);font-weight:600;}
+  .bottombar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:30;display:flex;gap:8px;}
+  .bottombar button{flex:1;margin:0;}
+  .collapseall{font-size:12px;color:var(--accent);background:none;border:none;padding:0;min-height:auto;text-decoration:underline;}
+  .cardtable{width:100%;border-collapse:collapse;font-size:13px;}
+  .cardtable th,.cardtable td{border:1px solid var(--line);padding:6px;text-align:left;vertical-align:top;}
+  .cardtable th{background:#f3ede1;font-size:12px;}
+  .cardtable input{min-height:38px;padding:6px 8px;font-size:14px;}
+  .cardtable td.small-col{font-size:12px;color:var(--sub);white-space:nowrap;}
+  .tagpicker{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .tagchip{display:inline-block;padding:7px 12px;border:1px solid var(--line);border-radius:20px;font-size:13px;color:var(--sub);background:#fff;cursor:pointer;}
+  .tagchip.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}
+  code{background:#efe8db;padding:1px 5px;border-radius:4px;font-size:12px;}
+</style>
+</head>
+<body>
+
+<h1>日上三更｜出題產生器 v1.3</h1>
+<div class="sub">修正：晨光改為「直覺選圖」結構，預設4個視覺意象選項（而非一句提問+抽1張卡）；禁止嗅覺／聽覺／味覺等非視覺描述。光站改下拉選單、七方法則改標籤方塊、抽牌新增批量固定格式回填。</div>
+
+<div class="panel">
+  <h2>一、批次設定</h2>
+  <div class="row">
+    <div>
+      <label>批次天數</label>
+      <select id="batchDays">
+        <option value="3">3</option>
+        <option value="7">7</option>
+        <option value="14">14</option>
+        <option value="21">21</option>
+        <option value="30">30</option>
+      </select>
+    </div>
+    <div>
+      <label>起始日期</label>
+      <input type="date" id="startDate">
+    </div>
+    <button class="block" onclick="buildDays()">建立 / 重建逐日排程</button>
+  </div>
+  <div class="note-box">目前尚未與任何後台或資料庫連結，「建立排程」只會在這個頁面本機記憶。</div>
+</div>
+
+<div class="panel">
+  <h2>二、逐日方法設定</h2>
+  <div class="note-box">請先幫每一天選好光站與方法，全部選完後按「確認方法設定」，才會解鎖出題指令工具。</div>
+  <div id="simpleDaysContainer"></div>
+  <button class="block" onclick="confirmMethods()">確認方法設定，解鎖出題指令</button>
+  <div id="confirmStatus"></div>
+</div>
+
+<div class="panel">
+  <h2>三、設計自檢清單</h2>
+  <div class="checklist">
+    <ul>
+      <li>晨光選項是否為純視覺意象（圖像／物件／畫面），沒有混入氣味、聲音、味道、觸感等其他感官描述？</li>
+      <li>題幹本身是否中立？有沒有預設讀者已經有某種問題或傾向？</li>
+      <li>同一題的所有選項是否落在同一個比較維度上？</li>
+      <li>倒著讀一次選項：有沒有哪一個選項明顯比其他選項更好、更值得？</li>
+      <li>選項數是否符合預設（晨光4／實相觀測站4／一念拾物5／投射語句填空6／換位傾聽4／霧氣抹除5）？</li>
+      <li>燭色漸行計自評題能否通過「觀察者測試」？</li>
+    </ul>
+  </div>
+</div>
+
+<div class="panel highlight" id="batchPanel">
+  <h2>四、批量出題</h2>
+  <div id="batchLockNote"></div>
+  <div id="batchContent"></div>
+</div>
+
+<div class="panel" style="padding-bottom:6px;">
+  <h2>五、逐日題目內容</h2>
+  <div class="note-box">確認方法後，這裡會列出每天可編輯的晨光選項與日光題目內容，也可以在這裡單獨重跑某一天。</div>
+  <button class="collapseall" onclick="toggleAllOpen()">全部展開／收合</button>
+</div>
+
+<div class="jumpbar" id="jumpbar"></div>
+<div id="daysContainer"></div>
+
+<div class="bottombar">
+  <button class="secondary" onclick="downloadOutput()">下載 .txt</button>
+  <button onclick="generateAll()">產生題目卡＋清單</button>
+</div>
+
+<div class="panel" style="margin-top:12px;">
+  <h2>六、產出結果</h2>
+  <div id="warnArea"></div>
+  <label>題目卡</label>
+  <pre id="cardsOutput">（尚未產生，請點下方固定列的「產生」按鈕）</pre>
+  <label>抽牌清單（純文字版，供你列印或另存）</label>
+  <pre id="listOutput">（尚未產生）</pre>
+</div>
+
+<div class="panel">
+  <h2>七、抽牌記錄（人工抽牌後，回填實際抽到的牌名）</h2>
+  <div class="note-box">先完成「六、產出結果」，這裡會依你目前的題目結構自動列出每一張要抽的牌的位置。人工抽完牌後，把牌名打進對應欄位，或用下方的批量文字方塊一次貼入。</div>
+  <div id="cardRecordArea">（請先產生題目卡＋清單）</div>
+</div>
+
+<div class="panel">
+  <h2>八、解析回填（抽牌記錄完成後再做這一步）</h2>
+  <div class="note-box">解析指令會自動帶入第七節你記錄的牌名，讓AI依照實際抽到的牌來寫空／雨／傘解析。</div>
+  <div class="steplabel"><span class="stepnum">1</span>複製解析指令</div>
+  <button class="block" onclick="copyAnalysisPrompt()">複製解析指令</button>
+  <span id="analysisToast" style="display:none;font-size:12px;color:var(--ok);"></span>
+  <textarea id="analysisPromptOut" rows="8" readonly></textarea>
+
+  <div class="steplabel"><span class="stepnum">2</span>貼到 Claude／其他 AI，把整段回覆複製回來</div>
+  <label>把AI給的解析內容貼在這裡</label>
+  <textarea id="analysisReplyIn" rows="8" placeholder="需保留每天的 ===Day01=== 標記，以及每篇的「空：」「雨：」「傘：」標記"></textarea>
+
+  <div class="steplabel"><span class="stepnum">3</span>回填解析</div>
+  <button class="fill block" onclick="parseAnalysisReply()">回填解析內容</button>
+  <div id="analysisResult"></div>
+</div>
+
+<script>
+const METHOD_INFO = {
+  '實相觀測站':   {kong:'實相對照', yu:'簾後心跡', umbrella:'隨手一動', umbrellaType:'行動句', hasBranches:true, defaultCount:4, hint:'情境題，聚焦在讀者的「第一反應」而非最終行為'},
+  '一念拾物':     {kong:'落目觸心', yu:'物影回響', umbrella:'隨身儀式', umbrellaType:'行動句', hasBranches:true, defaultCount:5, hint:'憑直覺選擇象徵物，需涵蓋不同心理映照方向，不可暗示物件本身有靈性'},
+  '燭色漸行計':   {kong:'燭影初現', yu:'芯火洞察', umbrella:'餘溫安放', umbrellaType:'行動句', hasBranches:false, hint:'單題自評，須是可觀察的具體行為或感受，不用抽象大詞'},
+  '投射語句填空': {kong:'筆尖浮生', yu:'紙背餘音', umbrella:'寫入日常', umbrellaType:'行動句', hasBranches:true, defaultCount:6, hint:'未完成句子填空，引出潛意識渴望或害怕'},
+  '換位傾聽':     {kong:'異位入座', yu:'心聲對流', umbrella:'換句真話', umbrellaType:'第一人稱替換句', hasBranches:true, defaultCount:4, hint:'角色代入題，聚焦角色位置與保護姿態'},
+  '霧氣抹除':     {kong:'霧中一句', yu:'霧後真心', umbrella:'新內在句', umbrellaType:'第一人稱替換句', hasBranches:true, defaultCount:5, hint:'選出最想抹去的內在舊話，語氣貼近日常內心對話'},
+  '命運籤詩法':   {kong:'當下映照', yu:'籤詩提醒', umbrella:'籤詩行動', umbrellaType:'行動句（尚無實跑案例）', hasBranches:false, noSpec:true, hint:'尚無實跑案例，五層結構需收束為空雨傘三層，選項規格未定'}
+};
+const METHODS = Object.keys(METHOD_INFO);
+const STATIONS = [
+  "01 七脈輪光譜檢測",
+  "02 情緒檢測聚焦（潮動解讀）",
+  "03 限制性信念辨識（根源映照）",
+  "04 選擇順逆測頻（單星測頻）",
+  "05 阿卡西紀錄・一問一答",
+  "06 能量結節釋放",
+  "07 重複模式根源整合（印記星塵）",
+  "08 單一關係結構解析（關係軌道剖圖）",
+  "09 信念鬆動能量工作（陰影舒展）",
+  "10 單一情緒釋放儀式",
+  "11 行動力能量點燃（心焰動能）",
+  "12 內在場景探索漫遊（內景星庭）",
+  "13 內在小孩會談（童心光室）",
+  "14 能量急救舒壓（靈肌補能）",
+  "15 大地扎根連結（大地脈動錨定）",
+  "16 願景澄清定義（願塔藍圖）",
+  "17 願景阻力盤點（願路剖析）",
+  "18 願景啟動儀式（願星儀典）",
+  "19 願景階段路線規劃（願程時序）",
+  "20 顯化承諾契約（顯化盟約）",
+  "21 高壓情境應對流程（場域調律）",
+  "22 光習快照（能量快照與微習慣落地）",
+  "23 自我測頻入門（頻率聆聽）— 課程",
+  "24 月度主題回顧（月光回望）— 加值訂閱",
+  "25 織光共作坊 — 群體場域"
+  // 站號從 DB-11 服務原子庫同步；日後 DB-11 增刪項目時，回來把對應項目加進這個陣列即可
+];
+const FORBIDDEN = ["DB-11","光站","心乘光","課程","服務"];
+const ABSTRACT_WORDS = ["能量","覺醒","靈性","高我","頻率","次元","業力"];
+const SENSORY_WORDS = ["氣味","香氣","聞到","聲音","聽到","味道","嚐","觸感","摸起來","溫度"];
+const DEFAULT_DRAW_COUNT = 3;
+const MORNING_DEFAULT_COUNT = 4;
+
+let days = [];
+let openMap = {};
+let promptOpen = {};
+let methodsConfirmed = false;
+let generated = false;
+
+function loadState(){
+  const saved = localStorage.getItem('qgen_state_v13');
+  if(saved){ try{
+    const s = JSON.parse(saved);
+    days = s.days||[];
+    document.getElementById('batchDays').value = s.batchDays||'3';
+    document.getElementById('startDate').value = s.startDate||'';
+    methodsConfirmed = !!s.methodsConfirmed;
+    generated = !!s.generated;
+  }catch(e){} }
+}
+function saveState(){
+  localStorage.setItem('qgen_state_v13', JSON.stringify({
+    days, batchDays: document.getElementById('batchDays').value, startDate: document.getElementById('startDate').value, methodsConfirmed, generated
+  }));
+}
+function methodOptions(selected){ return METHODS.map(m=>`<option value="${m}" ${selected===m?'selected':''}>${m}</option>`).join(''); }
+function stationOptions(selected){
+  let html = `<option value="" ${!selected?'selected':''}>（尚未選擇光站）</option>`;
+  html += STATIONS.map(s=>`<option value="${escapeHtml(s)}" ${selected===s?'selected':''}>${escapeHtml(s)}</option>`).join('');
+  return html;
+}
+function addDaysDate(startStr, offset){
+  if(!startStr) return '';
+  const d = new Date(startStr+'T00:00:00');
+  d.setDate(d.getDate()+offset);
+  return d.toISOString().slice(0,10);
+}
+function branchLabel(idx){ return String.fromCharCode(65+idx); }
+
+function freshMorning(){
+  const branches = [];
+  for(let i=0;i<MORNING_DEFAULT_COUNT;i++){ branches.push({label:branchLabel(i), text:'', count:DEFAULT_DRAW_COUNT, card:''}); }
+  return { intro:'', branches };
+}
+
+function freshDaylight(method){
+  const info = METHOD_INFO[method];
+  const dl = { method, question:'', tiers:null, branches:null, analysis:null };
+  if(method==='燭色漸行計'){
+    dl.tiers = [
+      {label:'A 輕盈', range:'6–12 分', count:DEFAULT_DRAW_COUNT, card:''},
+      {label:'B 起伏', range:'13–21 分', count:DEFAULT_DRAW_COUNT, card:''},
+      {label:'C 滿載', range:'22–30 分', count:DEFAULT_DRAW_COUNT, card:''}
+    ];
+  } else if(info.hasBranches){
+    const n = info.defaultCount || 4;
+    dl.branches = [];
+    for(let i=0;i<n;i++){ dl.branches.push({label:branchLabel(i), text:'', count:DEFAULT_DRAW_COUNT, card:''}); }
+  }
+  return dl;
+}
+
+function buildDays(){
+  const n = parseInt(document.getElementById('batchDays').value,10);
+  const start = document.getElementById('startDate').value;
+  const old = {};
+  days.forEach(d=>old[d.day]=d);
+  const newDays = [];
+  for(let i=1;i<=n;i++){
+    if(old[i]){ newDays.push(old[i]); continue; }
+    newDays.push({
+      day:i, date: addDaysDate(start,i-1), station:'',
+      method: METHODS[0],
+      morning: freshMorning(),
+      daylight: freshDaylight(METHODS[0])
+    });
+  }
+  days = newDays;
+  if(days.length>0) openMap[0]=true;
+  methodsConfirmed = false;
+  generated = false;
+  renderSimpleDays();
+  renderDays();
+  renderBatchPanel();
+  saveState();
+}
+
+function addMorningBranch(dayIdx){
+  const d = days[dayIdx];
+  const idx = d.morning.branches.length;
+  d.morning.branches.push({label:branchLabel(idx), text:'', count:DEFAULT_DRAW_COUNT, card:''});
+  renderDays(); saveState();
+}
+function removeMorningBranch(dayIdx, bIdx){
+  const d = days[dayIdx];
+  d.morning.branches.splice(bIdx,1);
+  d.morning.branches.forEach((b,i)=>b.label=branchLabel(i));
+  renderDays(); saveState();
+}
+
+function addBranch(dayIdx){
+  const d = days[dayIdx];
+  const idx = d.daylight.branches.length;
+  d.daylight.branches.push({label:branchLabel(idx), text:'', count:DEFAULT_DRAW_COUNT, card:''});
+  renderDays(); saveState();
+}
+function removeBranch(dayIdx, bIdx){
+  const d = days[dayIdx];
+  d.daylight.branches.splice(bIdx,1);
+  d.daylight.branches.forEach((b,i)=>b.label=branchLabel(i));
+  renderDays(); saveState();
+}
+
+function toggleDay(dayIdx){ openMap[dayIdx] = !openMap[dayIdx]; renderDays(); }
+function toggleAllOpen(){
+  const anyOpen = days.some((d,i)=>openMap[i]);
+  days.forEach((d,i)=> openMap[i] = !anyOpen);
+  renderDays();
+}
+function jumpToDay(dayIdx){
+  openMap[dayIdx] = true;
+  renderDays();
+  const el = document.getElementById('daycard_'+dayIdx);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function togglePrompt(dayIdx){ promptOpen[dayIdx] = !promptOpen[dayIdx]; renderDays(); }
+
+function renderSimpleDays(){
+  const container = document.getElementById('simpleDaysContainer');
+  container.innerHTML = days.map((d, i)=>`
+    <div class="simple-day">
+      <span class="day-num">Day ${String(d.day).padStart(2,'0')}　<span class="tag">${d.date||'未填日期'}</span></span>
+      <label>光站</label>
+      <select onchange="updateDayField(${i},'station',this.value)">${stationOptions(d.station)}</select>
+      <label>日光方法</label>
+      <div class="tagpicker">
+        ${METHODS.map(m=>`<span class="tagchip ${d.method===m?'active':''}" onclick="changeMethod(${i}, '${m}')">${m}</span>`).join('')}
+      </div>
+      <div class="method-fixed">晨光固定4個視覺意象選項。${d.method==='燭色漸行計' ? '日光固定3個分數區間。' : (METHOD_INFO[d.method].noSpec ? '日光尚無正式規格，僅能記錄草稿。' : `日光預設 ${METHOD_INFO[d.method].defaultCount} 個選項（A–${branchLabel(METHOD_INFO[d.method].defaultCount-1)}）。`)}</div>
+    </div>
+  `).join('');
+}
+
+function confirmMethods(){
+  methodsConfirmed = true;
+  renderBatchPanel();
+  renderDays();
+  saveState();
+  document.getElementById('confirmStatus').innerHTML = `<div class="ok-box">已確認 ${days.length} 天的方法設定，出題指令已解鎖，請往下滑到「四、批量出題」。</div>`;
+  document.getElementById('batchPanel').scrollIntoView({behavior:'smooth'});
+}
+
+const SHARED_HEADER = `你是「日上三更」批次出題器，只負責出題，不解析，不預設答案傾向，不評價選項優劣。
+
+【晨光規則（所有Day通用）】
+- 晨光是「直覺選圖」形式：先給一句邀請語（10–25字，邀請讀者憑直覺選一個畫面／物件），再給4個選項，每個選項是一個純視覺意象（圖像、物件、畫面、場景），標示為選項A–選項D。
+- 晨光選項絕對不能包含嗅覺（氣味、香氣）、聽覺（聲音）、味覺（味道）、觸覺（溫度、觸感）等描述，只能是「看到」「畫面」層次的視覺意象。
+- 晨光的4個選項需涵蓋不同的心理映照方向，不能有明顯優劣、不能暗示某個選項比較好。
+
+【全批通用硬性紅線】
+- 題目不得暗示哪一個選項比較好、比較健康、比較進階。
+- 題目不出現「服務」「課程」「光站」「DB-11」「心乘光」等字眼。
+- 晨光與同日日光不得是同一個問題的換句話說。
+- 燭色漸行計自評題須是可觀察的具體行為或感受，不用抽象大詞（能量、覺醒、靈性、高我、頻率、次元、業力等）。
+- 同一批內題目句型不得重複套用，每5天檢查一次開頭句式是否雷同。
+
+【全批通用設計自檢原則（自行套用，不用在輸出中說明）】
+- 題幹本身保持中立，不預設讀者已經有某種問題或傾向。
+- 所有選項必須落在同一個比較維度上（不要一個比行為、一個比情緒）。
+- 倒著讀一次選項，確認沒有任何一個選項聽起來明顯比其他選項更好、更值得。
+
+以下是本批次每一天的出題需求，請針對每一天分別產出。每一天的輸出前後都要用 ===DayXX=== 這種標記獨立分隔（XX為兩位數字，例如 ===Day01===），不要合併、不要省略任何一天，也不要加任何額外解析或說明文字。`;
+
+function dayConditionBlock(dayIdx){
+  const d = days[dayIdx];
+  const info = METHOD_INFO[d.method];
+  let branchInstruction, outputFormat = `晨光邀請語：\n選項A：\n選項B：\n選項C：\n選項D：\n日光題目：\n`;
+  if(d.method==='燭色漸行計'){
+    branchInstruction = '固定3個分數區間（輕盈6–12分／起伏13–21分／滿載22–30分），不需要個別選項文字，只需要一句自評題目。';
+  } else if(info.noSpec){
+    branchInstruction = '此方法尚無正式規格，僅需給出空雨傘三層濃縮後的單一草稿構想文字，不需要選項。';
+  } else {
+    const n = d.daylight.branches.length;
+    branchInstruction = `本次需要 ${n} 個選項（選項${branchLabel(0)}–選項${branchLabel(n-1)}），數量已固定，請勿自行增減。`;
+    for(let i=0;i<n;i++){ outputFormat += `日光選項${branchLabel(i)}：\n`; }
+  }
+  const umbrellaNote = info.umbrellaType==='第一人稱替換句'
+    ? '每個日光選項須是以「我」開頭的第一人稱替換句。'
+    : (info.hasBranches ? '日光選項為情境／行動選項，不需要以「我」開頭。' : '');
+
+  return `===Day${String(d.day).padStart(2,'0')}===
+方法：${d.method}（空：${info.kong}／雨：${info.yu}／傘：${info.umbrella}，傘段型態：${info.umbrellaType}）
+光站：${d.station || '（尚未填寫，請用中性主題示範）'}
+日期：${d.date || '（未填）'}
+出題重點：${info.hint}
+日光選項要求：${branchInstruction}
+${umbrellaNote}
+請按以下格式輸出這一天的內容（晨光4個選項固定，日光依上面要求）：
+${outputFormat}`;
+}
+
+function buildBatchPrompt(){
+  const blocks = days.map((d,i)=> dayConditionBlock(i)).join('\n\n');
+  return SHARED_HEADER + '\n\n' + blocks;
+}
+
+function buildPrompt(dayIdx){
+  return SHARED_HEADER.split('\n\n以下是')[0] + '\n\n' + dayConditionBlock(dayIdx).replace(/^===Day\d+===\n/, '');
+}
+
+function copyToTextarea(taId, text, toastId, okMsg){
+  const ta = document.getElementById(taId);
+  ta.value = text;
+  ta.focus(); ta.select();
+  let ok=false;
+  try{ ok = document.execCommand('copy'); }catch(e){ ok=false; }
+  showToastGeneric(toastId, ok ? okMsg : '複製可能失敗，請長按框內文字手動複製');
+}
+function showToastGeneric(id, msg){
+  const el = document.getElementById(id);
+  if(el){ el.textContent = msg; el.style.display='block'; setTimeout(()=>{el.style.display='none';},4500); }
+}
+
+function copyBatchPrompt(){
+  copyToTextarea('batchPromptOut', buildBatchPrompt(), 'batchToast', '已複製整批指令，去問AI吧');
+}
+
+function parseDayChunk(d, text){
+  const info = METHOD_INFO[d.method];
+  let hit = 0;
+  const introMatch = text.match(/晨光邀請語[:：]\s*(.+)/);
+  if(introMatch){ d.morning.intro = introMatch[1].trim(); hit++; }
+  d.morning.branches.forEach((b)=>{
+    const re = new RegExp('選項'+b.label+'[:：]\\s*(.+)');
+    const m = text.match(re);
+    if(m){ b.text = m[1].trim(); hit++; }
+  });
+  const daylightMatch = text.match(/日光題目[:：]\s*(.+)/);
+  if(daylightMatch){ d.daylight.question = daylightMatch[1].trim(); hit++; }
+  if(!info.noSpec && d.method!=='燭色漸行計' && d.daylight.branches){
+    d.daylight.branches.forEach((b)=>{
+      const re = new RegExp('日光選項'+b.label+'[:：]\\s*(.+)');
+      const m = text.match(re);
+      if(m){ b.text = m[1].trim(); hit++; }
+    });
+  }
+  return hit;
+}
+
+function parseBatchReply(){
+  const text = document.getElementById('batchReplyIn').value;
+  const resultEl = document.getElementById('batchResult');
+  if(!text.trim()){
+    resultEl.innerHTML = `<div class="warn-box">欄位是空的，請先貼上AI的整批回覆再按這顆按鈕。</div>`;
+    return;
+  }
+  const re = /===\s*Day\s*(\d{1,2})\s*===/gi;
+  let matches = [...text.matchAll(re)];
+  if(matches.length===0){
+    resultEl.innerHTML = `<div class="warn-box">沒有找到 ===DayXX=== 分隔標記，無法對應到各天，請確認AI回覆有沒有保留這個格式。</div>`;
+    return;
+  }
+  const results = [];
+  for(let i=0;i<matches.length;i++){
+    const dayNum = parseInt(matches[i][1],10);
+    const start = matches[i].index + matches[i][0].length;
+    const end = i+1<matches.length ? matches[i+1].index : text.length;
+    const chunk = text.slice(start, end);
+    const dayIdx = days.findIndex(d=>d.day===dayNum);
+    if(dayIdx===-1){ results.push(`Day${String(dayNum).padStart(2,'0')}：目前排程沒有這一天，已略過`); continue; }
+    const hit = parseDayChunk(days[dayIdx], chunk);
+    results.push(`Day${String(dayNum).padStart(2,'0')}：填入 ${hit} 個欄位${hit===0?'（可能格式不符，請檢查）':''}`);
+  }
+  renderDays(); saveState();
+  resultEl.innerHTML = `<div class="ok-box"><strong>批量回填完成：</strong><ul>${results.map(r=>`<li>${r}</li>`).join('')}</ul></div>`;
+}
+
+function copyPrompt(dayIdx){
+  copyToTextarea('promptOut_'+dayIdx, buildPrompt(dayIdx), 'toast_'+dayIdx, '已複製到剪貼簿，去問AI吧');
+}
+function parseReply(dayIdx){
+  const ta = document.getElementById('replyIn_'+dayIdx);
+  const text = ta.value;
+  if(!text.trim()){
+    showToastGeneric('toast_'+dayIdx, '欄位還是空的喔，先把AI給的答案貼上來再按這顆按鈕');
+    return;
+  }
+  const hit = parseDayChunk(days[dayIdx], text);
+  renderDays(); saveState();
+  showToastGeneric('toast_'+dayIdx, hit>0 ? `已填入 ${hit} 個欄位，請往下確認內容` : '沒有抓到符合格式的內容，請確認AI回覆格式');
+}
+
+function renderJumpbar(){
+  const bar = document.getElementById('jumpbar');
+  bar.innerHTML = days.map((d,i)=>`<span class="jumpchip" onclick="jumpToDay(${i})">Day ${String(d.day).padStart(2,'0')}</span>`).join('');
+}
+
+function renderBatchPanel(){
+  const lockNote = document.getElementById('batchLockNote');
+  const content = document.getElementById('batchContent');
+  if(!methodsConfirmed){
+    lockNote.innerHTML = `<div class="warn-box">請先完成「二、逐日方法設定」並按下「確認方法設定」，才能使用批量出題指令。</div>`;
+    content.innerHTML = '';
+    content.style.display = 'none';
+    return;
+  }
+  lockNote.innerHTML = `<div class="ok-box">方法設定已確認，可以開始批量出題。</div>`;
+  content.style.display = 'block';
+  content.innerHTML = `
+    <div class="note-box">跟單日工具一樣是「複製指令→貼到AI→貼回來→回填」，只是一次處理所有Day。</div>
+    <div class="steplabel"><span class="stepnum">1</span>複製批量出題指令（涵蓋所有Day）</div>
+    <button class="block" onclick="copyBatchPrompt()">複製批量出題指令</button>
+    <span id="batchToast" style="display:none;font-size:12px;color:var(--ok);"></span>
+    <textarea id="batchPromptOut" rows="8" readonly></textarea>
+
+    <div class="steplabel"><span class="stepnum">2</span>貼到 Claude／其他 AI，把整段回覆複製回來</div>
+    <label>把AI給的整批答案貼在這裡</label>
+    <textarea id="batchReplyIn" rows="8" placeholder="AI回覆需保留每天的 ===Day01=== 這種分隔標記，否則無法自動對應到正確的Day"></textarea>
+
+    <div class="steplabel"><span class="stepnum">3</span>一次回填所有Day</div>
+    <button class="fill block" onclick="parseBatchReply()">批量回填全部Day</button>
+    <div id="batchResult"></div>
+  `;
+}
+
+function renderDays(){
+  renderJumpbar();
+  const container = document.getElementById('daysContainer');
+  container.innerHTML = days.map((d, dayIdx)=>{
+    const info = METHOD_INFO[d.method];
+    const introLen = d.morning.intro.trim().length;
+    const introBad = introLen>0 && (introLen<10 || introLen>25);
+    const isOpen = !!openMap[dayIdx];
+    const isPromptOpen = !!promptOpen[dayIdx];
+
+    const morningHtml = `
+      <label>晨光邀請語（10–25字，邀請讀者憑直覺選一個畫面／物件）</label>
+      <input type="text" value="${escapeHtml(d.morning.intro)}" oninput="updateMorningIntro(${dayIdx}, this.value)">
+      <div class="counter ${introBad?'bad':''}">${introLen} 字${introBad?'（超出建議範圍）':''}</div>
+      <div class="method-fixed">4個選項（選項A–選項D），僅限視覺意象，不可有氣味／聲音／味道／觸感描述。</div>
+      ${d.morning.branches.map((b,bIdx)=>`
+        <div class="branch">
+          <div class="branch-head">
+            <span>選項 ${b.label}</span>
+            <button class="small danger" onclick="removeMorningBranch(${dayIdx},${bIdx})">移除</button>
+          </div>
+          <label>視覺意象描述（例：一片剛落下的乾燥葉子）</label>
+          <input type="text" value="${escapeHtml(b.text)}" oninput="updateMorningBranchField(${dayIdx},${bIdx},'text',this.value)">
+          <label>張數</label><input type="number" min="1" value="${b.count}" oninput="updateMorningBranchField(${dayIdx},${bIdx},'count',parseInt(this.value||1))">
+        </div>
+      `).join('')}
+      <button class="small secondary block" onclick="addMorningBranch(${dayIdx})">新增晨光選項</button>
+    `;
+
+    let daylightBody = '';
+    if(info.noSpec){
+      daylightBody = `
+        <div class="note-box">此方法尚無正式規格，暫不產生選項與抽牌清單列。</div>
+        <label>設計草稿</label>
+        <textarea rows="3" oninput="updateDaylightQuestion(${dayIdx}, this.value)">${escapeHtml(d.daylight.question)}</textarea>
+      `;
+    } else if(d.method==='燭色漸行計'){
+      daylightBody = `
+        <label>日光題目（單題，可觀察的具體行為／感受）</label>
+        <input type="text" value="${escapeHtml(d.daylight.question)}" oninput="updateDaylightQuestion(${dayIdx}, this.value)">
+        <div class="method-fixed">固定3個分數區間（輕盈6–12／起伏13–21／滿載22–30）。</div>
+        ${d.daylight.tiers.map((t,ti)=>`
+          <div class="branch">
+            <div class="branch-head"><span>${t.label}｜${t.range}</span></div>
+            <label>張數</label><input type="number" min="1" value="${t.count}" oninput="updateTierField(${dayIdx},${ti},'count',parseInt(this.value||1))">
+          </div>
+        `).join('')}
+      `;
+    } else {
+      const n = d.daylight.branches.length;
+      daylightBody = `
+        <label>日光題目主文</label>
+        <input type="text" value="${escapeHtml(d.daylight.question)}" oninput="updateDaylightQuestion(${dayIdx}, this.value)">
+        <div class="method-fixed">${n} 個選項（選項${branchLabel(0)}–選項${branchLabel(n-1)}），傘段型態：${info.umbrellaType}。</div>
+        ${d.daylight.branches.map((b,bIdx)=>`
+          <div class="branch">
+            <div class="branch-head">
+              <span>選項 ${b.label}（${info.umbrella}）</span>
+              <button class="small danger" onclick="removeBranch(${dayIdx},${bIdx})">移除</button>
+            </div>
+            <label>選項內容${info.umbrellaType==='第一人稱替換句'?'（建議以「我」開頭）':''}</label>
+            <input type="text" value="${escapeHtml(b.text)}" oninput="updateBranchField(${dayIdx},${bIdx},'text',this.value)">
+            <label>張數</label><input type="number" min="1" value="${b.count}" oninput="updateBranchField(${dayIdx},${bIdx},'count',parseInt(this.value||1))">
+          </div>
+        `).join('')}
+        <button class="small secondary block" onclick="addBranch(${dayIdx})">新增選項</button>
+      `;
+    }
+
+    const promptPanelHtml = (isPromptOpen && methodsConfirmed) ? `
+      <div class="promptPanel">
+        <div class="steplabel"><span class="stepnum">1</span>複製這段指令（單日重跑用）</div>
+        <button class="small block" onclick="copyPrompt(${dayIdx})">複製出題指令</button>
+        <span id="toast_${dayIdx}" style="display:none;font-size:12px;color:var(--ok);"></span>
+        <textarea id="promptOut_${dayIdx}" rows="8" readonly>${escapeHtml(buildPrompt(dayIdx))}</textarea>
+
+        <div class="steplabel"><span class="stepnum">2</span>貼到 Claude／其他 AI，把它的回覆整段複製回來</div>
+        <label>把AI給的答案貼在這裡</label>
+        <textarea id="replyIn_${dayIdx}" rows="5" placeholder="貼上AI回覆的整段文字，格式需含「晨光邀請語：」「選項A：」「日光題目：」「日光選項A：」等"></textarea>
+
+        <div class="steplabel"><span class="stepnum">3</span>按這顆按鈕</div>
+        <button class="fill block" onclick="parseReply(${dayIdx})">回填欄位</button>
+      </div>
+    ` : '';
+
+    const toggleBtn = methodsConfirmed
+      ? `<button class="toggle" onclick="togglePrompt(${dayIdx})">${isPromptOpen?'▾':'▸'} 單日出題指令工具（覺得批量結果不好時，這裡單獨重跑）</button>`
+      : `<div class="note-box">請先在「二、逐日方法設定」按下確認，才能使用此工具。</div>`;
+
+    return `
+    <div class="day-card" id="daycard_${dayIdx}">
+      <div class="day-head" onclick="toggleDay(${dayIdx})">
+        <div class="day-head-left">
+          <span class="day-num">Day ${String(d.day).padStart(2,'0')}</span>
+          <span class="tag">${d.method}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="day-meta">${d.date||'未填日期'}</span>
+          <span class="chevron">${isOpen?'▾':'▸'}</span>
+        </div>
+      </div>
+      <div class="day-body ${isOpen?'open':''}">
+        ${toggleBtn}
+        ${promptPanelHtml}
+
+        <div class="subhead">晨光｜直覺選圖</div>
+        ${morningHtml}
+
+        <hr style="border:none;border-top:1px solid var(--line);margin:12px 0;">
+        <div class="subhead">日光｜${d.method}</div>
+        ${daylightBody}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function updateDayField(i,field,val){ days[i][field]=val; renderJumpbar(); saveState(); }
+function updateMorningIntro(i,val){ days[i].morning.intro=val; renderDays(); saveState(); }
+function updateMorningBranchField(i,bi,field,val){ days[i].morning.branches[bi][field]=val; saveState(); }
+function updateDaylightQuestion(i,val){ days[i].daylight.question=val; saveState(); }
+function updateTierField(i,ti,field,val){ days[i].daylight.tiers[ti][field]=val; saveState(); }
+function updateBranchField(i,bi,field,val){ days[i].daylight.branches[bi][field]=val; saveState(); }
+function changeMethod(i,val){
+  days[i].method = val;
+  days[i].daylight = freshDaylight(val);
+  renderSimpleDays(); renderDays(); saveState();
+}
+
+function bigrams(s){ const set=new Set(); for(let i=0;i<s.length-1;i++) set.add(s.substr(i,2)); return set; }
+function jaccard(a,b){ const A=bigrams(a),B=bigrams(b); if(A.size===0||B.size===0) return 0; let inter=0; A.forEach(x=>{if(B.has(x))inter++;}); return inter/(new Set([...A,...B]).size); }
+
+function runChecks(){
+  const warnings = [];
+  days.forEach(d=>{
+    const info = METHOD_INFO[d.method];
+    const intro = d.morning.intro.trim(); const len = intro.length;
+    if(intro && (len<10||len>25)) warnings.push(`Day ${d.day}：晨光邀請語字數為 ${len}，不在 10–25 字建議範圍。`);
+    FORBIDDEN.forEach(w=>{ if(intro.includes(w)) warnings.push(`Day ${d.day}：晨光邀請語出現禁用詞「${w}」。`); });
+    d.morning.branches.forEach(b=>{
+      const t = b.text.trim();
+      SENSORY_WORDS.forEach(w=>{ if(t.includes(w)) warnings.push(`Day ${d.day}：晨光選項${b.label}出現非視覺感官詞「${w}」，晨光只能是視覺意象。`); });
+    });
+    if(d.morning.branches.length !== MORNING_DEFAULT_COUNT){
+      warnings.push(`Day ${d.day}：晨光目前選項數為 ${d.morning.branches.length}，與預設 ${MORNING_DEFAULT_COUNT} 不同，請確認是否為刻意調整。`);
+    }
+    const dq = d.daylight.question.trim();
+    FORBIDDEN.forEach(w=>{ if(dq.includes(w)) warnings.push(`Day ${d.day}：日光題出現禁用詞「${w}」。`); });
+    if(d.method==='燭色漸行計'){
+      ABSTRACT_WORDS.forEach(w=>{ if(dq.includes(w)) warnings.push(`Day ${d.day}：燭色漸行計出現抽象詞「${w}」。`); });
+    }
+    if(intro && dq){
+      const sim = jaccard(intro,dq);
+      if(sim>0.45) warnings.push(`Day ${d.day}：晨光邀請語與日光題相似度偏高（${(sim*100).toFixed(0)}%）。`);
+    }
+    if(info.umbrellaType==='第一人稱替換句' && d.daylight.branches){
+      d.daylight.branches.forEach(b=>{
+        const t=b.text.trim();
+        if(t && !/^我/.test(t)) warnings.push(`Day ${d.day}：${d.method} 選項 ${b.label} 非第一人稱替換句。`);
+      });
+    }
+    if(info.hasBranches && d.daylight.branches && info.defaultCount && d.daylight.branches.length !== info.defaultCount){
+      warnings.push(`Day ${d.day}：${d.method} 目前選項數為 ${d.daylight.branches.length}，與預設 ${info.defaultCount} 不同，請確認是否為刻意調整。`);
+    }
+    if(info.noSpec && dq) warnings.push(`Day ${d.day}：命運籤詩法尚無正式規格，此篇僅為草稿。`);
+  });
+  for(let i=0;i<days.length;i++){
+    for(let j=i+1;j<days.length && j<i+5;j++){
+      const a=days[i].daylight.question.trim().slice(0,4), b=days[j].daylight.question.trim().slice(0,4);
+      if(a && b && a===b) warnings.push(`Day ${days[i].day} 與 Day ${days[j].day}：日光題開頭句式相同。`);
+    }
+  }
+  return warnings;
+}
+
+function generateCards(){
+  return days.map(d=>{
+    const info = METHOD_INFO[d.method];
+    let block = `━━━ Day ${String(d.day).padStart(2,'0')}｜${d.date||'（未填日期）'}｜${d.station||'（未填光站）'} ━━━\n\n`;
+    block += `【晨光】直覺選圖\n邀請語：${d.morning.intro||'（未填）'}\n`;
+    d.morning.branches.forEach(b=> block += `  選項 ${b.label}｜${b.text||'（未填）'}｜抽 ${b.count} 張${b.card?`｜牌卡：${b.card}`:''}\n`);
+    block += `\n【日光】方法：${d.method}\n題目：\n  1. ${d.daylight.question||'（未填）'}\n`;
+    if(info.noSpec){ block += `（此方法尚無正式規格，本篇為草稿）\n`; }
+    else if(d.method==='燭色漸行計'){
+      block += `分數結構：\n`; d.daylight.tiers.forEach(t=> block += `  ${t.label}｜${t.range}${t.card?`｜牌卡：${t.card}`:''}\n`);
+      block += `（固定3個分數區間）\n`;
+    } else {
+      const n = d.daylight.branches.length;
+      block += `選項結構（傘｜${info.umbrella}）：\n`; d.daylight.branches.forEach(b=> block += `  選項 ${b.label}｜${b.text||'（未填）'}${b.card?`｜牌卡：${b.card}`:''}\n`);
+      block += `（本題${n}個選項：選項${branchLabel(0)}–選項${branchLabel(n-1)}）\n`;
+    }
+    if(d.daylight.analysis){
+      block += `\n【解析】\n空｜${info.kong}：${d.daylight.analysis.kong||'（未填）'}\n雨｜${info.yu}：${d.daylight.analysis.yu||'（未填）'}\n傘｜${info.umbrella}：${d.daylight.analysis.umbrella||'（未填）'}\n`;
+    }
+    return block;
+  }).join('\n');
+}
+
+function generateList(){
+  let rows=[], morningTotal=0, daylightTotal=0;
+  days.forEach(d=>{
+    const info = METHOD_INFO[d.method];
+    d.morning.branches.forEach(b=>{
+      rows.push([String(d.day).padStart(2,'0'), d.date, '晨光','直覺選圖',b.label,b.count,b.card||'']);
+      morningTotal += b.count;
+    });
+    if(info.noSpec) return;
+    if(d.method==='燭色漸行計'){
+      d.daylight.tiers.forEach(t=>{ rows.push([String(d.day).padStart(2,'0'),d.date,'日光',d.method,t.label,t.count,t.card||'']); daylightTotal+=t.count; });
+    } else {
+      d.daylight.branches.forEach(b=>{ rows.push([String(d.day).padStart(2,'0'),d.date,'日光',d.method,b.label,b.count,b.card||'']); daylightTotal+=b.count; });
+    }
+  });
+  let table='| Day | 日期 | 篇別 | 方法 | 選項 | 張數 | 牌卡 |\n|---|---|---|---|---|---|---|\n';
+  rows.forEach(r=> table += `| ${r[0]} | ${r[1]||''} | ${r[2]} | ${r[3]} | ${r[4]} | ${r[5]} | ${r[6]||''} |\n`);
+  const total = morningTotal+daylightTotal;
+  let summary = `\n本批共 ${days.length} 天｜晨光 ${morningTotal} 張｜日光 ${daylightTotal} 張｜總計 ${total} 張`;
+  return table + '\n```\n' + summary + '\n```';
+}
+
+function generateAll(){
+  const warnings = runChecks();
+  const warnArea = document.getElementById('warnArea');
+  warnArea.innerHTML = warnings.length
+    ? `<div class="warn-box"><strong>紅線檢查發現 ${warnings.length} 項提醒：</strong><ul>${warnings.map(w=>`<li>${w}</li>`).join('')}</ul></div>`
+    : `<div class="ok-box">紅線檢查通過，未發現明顯問題。</div>`;
+  document.getElementById('cardsOutput').textContent = generateCards();
+  document.getElementById('listOutput').textContent = generateList();
+  generated = true;
+  renderCardRecording();
+  saveState();
+  document.getElementById('cardRecordArea').scrollIntoView({behavior:'smooth'});
+}
+
+function buildCardBatchTemplate(){
+  let lines = [];
+  days.forEach(d=>{
+    const info = METHOD_INFO[d.method];
+    d.morning.branches.forEach(b=>{
+      lines.push(`Day${String(d.day).padStart(2,'0')}｜晨光｜${b.label}｜`);
+    });
+    if(info.noSpec) return;
+    if(d.method==='燭色漸行計'){
+      d.daylight.tiers.forEach(t=> lines.push(`Day${String(d.day).padStart(2,'0')}｜日光｜${t.label}｜`));
+    } else {
+      d.daylight.branches.forEach(b=> lines.push(`Day${String(d.day).padStart(2,'0')}｜日光｜${b.label}｜`));
+    }
+  });
+  return lines.join('\n');
+}
+function fillCardBatchTemplate(){
+  const ta = document.getElementById('cardBatchIn');
+  if(ta) ta.value = buildCardBatchTemplate();
+}
+function parseCardBatch(){
+  const ta = document.getElementById('cardBatchIn');
+  const resultEl = document.getElementById('cardBatchResult');
+  const raw = ta ? ta.value : '';
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  if(lines.length===0){
+    resultEl.innerHTML = `<div class="warn-box">文字框是空的，請先按「產生空白範本」或自行貼上批量牌卡內容。</div>`;
+    return;
+  }
+  let okCount=0; const errors=[];
+  lines.forEach((line, li)=>{
+    const parts = line.split('｜').map(p=>p.trim());
+    if(parts.length!==4){
+      errors.push(`第 ${li+1} 行格式錯誤，需為「DayXX｜晨光或日光｜位置標籤｜牌名」共4段，用「｜」分隔：${line}`);
+      return;
+    }
+    const [dayStr, session, label, card] = parts;
+    const dm = dayStr.match(/Day\s*(\d{1,2})/i);
+    if(!dm){ errors.push(`第 ${li+1} 行看不出是哪一天：${line}`); return; }
+    const dayNum = parseInt(dm[1],10);
+    const dayIdx = days.findIndex(d=>d.day===dayNum);
+    if(dayIdx===-1){ errors.push(`第 ${li+1} 行 ${dayStr} 不在目前排程內：${line}`); return; }
+    if(!card){ errors.push(`第 ${li+1} 行沒有填牌名：${line}`); return; }
+    const d = days[dayIdx];
+    const info = METHOD_INFO[d.method];
+    if(session==='晨光'){
+      const b = d.morning.branches.find(b=>b.label===label);
+      if(!b){ errors.push(`第 ${li+1} 行找不到 ${dayStr} 晨光「${label}」這個位置：${line}`); return; }
+      b.card = card; okCount++;
+    } else if(session==='日光'){
+      if(info.noSpec){ errors.push(`第 ${li+1} 行：命運籤詩法尚無正式規格，不需回填牌卡：${line}`); return; }
+      if(d.method==='燭色漸行計'){
+        const t = d.daylight.tiers.find(t=>t.label===label);
+        if(!t){ errors.push(`第 ${li+1} 行找不到 ${dayStr} 日光「${label}」這個分數區間：${line}`); return; }
+        t.card = card; okCount++;
+      } else {
+        const b = d.daylight.branches.find(b=>b.label===label);
+        if(!b){ errors.push(`第 ${li+1} 行找不到 ${dayStr} 日光「${label}」這個位置：${line}`); return; }
+        b.card = card; okCount++;
+      }
+    } else {
+      errors.push(`第 ${li+1} 行篇別必須是「晨光」或「日光」：${line}`);
+    }
+  });
+  renderCardRecording();
+  reSyncOutputWithCards();
+  const resultAgain = document.getElementById('cardBatchResult');
+  resultAgain.innerHTML = `<div class="${errors.length?'warn-box':'ok-box'}"><strong>已成功回填 ${okCount} 筆${errors.length? '，'+errors.length+' 筆格式有問題':''}：</strong>${errors.length? '<ul>'+errors.map(e=>`<li>${e}</li>`).join('')+'</ul>' : ''}</div>`;
+}
+
+function renderCardRecording(){
+  const area = document.getElementById('cardRecordArea');
+  if(!generated){ area.innerHTML = '（請先產生題目卡＋清單）'; return; }
+  const prevBatchVal = document.getElementById('cardBatchIn') ? document.getElementById('cardBatchIn').value : '';
+  let rowsHtml = '';
+  days.forEach((d, dayIdx)=>{
+    const info = METHOD_INFO[d.method];
+    d.morning.branches.forEach((b,bi)=>{
+      rowsHtml += `<tr>
+        <td class="small-col">Day${String(d.day).padStart(2,'0')}</td>
+        <td class="small-col">晨光</td>
+        <td class="small-col">直覺選圖</td>
+        <td class="small-col">選項${b.label}</td>
+        <td><input type="text" value="${escapeHtml(b.card)}" placeholder="輸入抽到的牌名" oninput="updateMorningBranchField(${dayIdx},${bi},'card',this.value)"></td>
+      </tr>`;
+    });
+    if(info.noSpec) return;
+    if(d.method==='燭色漸行計'){
+      d.daylight.tiers.forEach((t,ti)=>{
+        rowsHtml += `<tr>
+          <td class="small-col">Day${String(d.day).padStart(2,'0')}</td>
+          <td class="small-col">日光</td>
+          <td class="small-col">${d.method}</td>
+          <td class="small-col">${t.label}</td>
+          <td><input type="text" value="${escapeHtml(t.card)}" placeholder="輸入抽到的牌名" oninput="updateTierField(${dayIdx},${ti},'card',this.value)"></td>
+        </tr>`;
+      });
+    } else {
+      d.daylight.branches.forEach((b,bi)=>{
+        rowsHtml += `<tr>
+          <td class="small-col">Day${String(d.day).padStart(2,'0')}</td>
+          <td class="small-col">日光</td>
+          <td class="small-col">${d.method}</td>
+          <td class="small-col">選項${b.label}</td>
+          <td><input type="text" value="${escapeHtml(b.card)}" placeholder="輸入抽到的牌名" oninput="updateBranchField(${dayIdx},${bi},'card',this.value)"></td>
+        </tr>`;
+      });
+    }
+  });
+  area.innerHTML = `
+    <div class="note-box">批量回填抽到的牌，固定格式：<code>DayXX｜晨光或日光｜位置標籤｜牌名</code>，每行一張、用「｜」分成4段，行的順序不限。建議先按「產生空白範本」，再照著每行末端補牌名，最不容易搞混。</div>
+    <button class="small secondary block" onclick="fillCardBatchTemplate()">產生空白範本到下方文字框</button>
+    <textarea id="cardBatchIn" rows="10" placeholder="Day01｜晨光｜A｜起風之心">${escapeHtml(prevBatchVal)}</textarea>
+    <button class="fill block" onclick="parseCardBatch()">批量回填抽到的牌</button>
+    <div id="cardBatchResult"></div>
+    <table class="cardtable">
+      <tr><th>Day</th><th>篇別</th><th>方法</th><th>位置</th><th>抽到的牌（回填）</th></tr>
+      ${rowsHtml}
+    </table>
+    <button class="small secondary block" onclick="reSyncOutputWithCards()">已填好牌名，更新到題目卡＋清單</button>
+  `;
+}
+function reSyncOutputWithCards(){
+  document.getElementById('cardsOutput').textContent = generateCards();
+  document.getElementById('listOutput').textContent = generateList();
+  saveState();
+}
+
+function downloadOutput(){
+  const content = "===== 題目卡 =====\n\n" + document.getElementById('cardsOutput').textContent + "\n\n===== 抽牌清單 =====\n\n" + document.getElementById('listOutput').textContent;
+  const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `出題產出_${document.getElementById('startDate').value||'batch'}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildAnalysisPrompt(){
+  const blocks = days.map(d=>{
+    const info = METHOD_INFO[d.method];
+    const morningLines = d.morning.branches.map(b=>`晨光選項${b.label}：${b.text||'（未填）'}｜抽到的牌：${b.card||'（未記錄）'}`).join('\n');
+    const cardLines = d.daylight.branches
+      ? d.daylight.branches.map(b=>`日光選項${b.label}：${b.text||'（未填）'}｜抽到的牌：${b.card||'（未記錄）'}`).join('\n')
+      : (d.daylight.tiers ? d.daylight.tiers.map(t=>`${t.label}｜抽到的牌：${t.card||'（未記錄）'}`).join('\n') : '');
+    return `===Day${String(d.day).padStart(2,'0')}===
+方法：${d.method}（空：${info.kong}／雨：${info.yu}／傘：${info.umbrella}）
+晨光邀請語：${d.morning.intro||'（未填）'}
+${morningLines}
+日光題目：${d.daylight.question||'（未填）'}
+${cardLines}
+請針對這一篇的空／雨／傘三層各寫一段解析文字（空＝現象觀察、雨＝內心感受、傘＝${info.umbrella}），解析內容需呼應上面實際抽到的牌名意象，輸出格式：
+空：
+雨：
+傘：`;
+  }).join('\n\n');
+  return `你是「日上三更」批次出題器的解析助手。以下每一天的題目、選項與實際抽到的牌名都已經確定，請針對每一天，依照空／雨／傘三層架構，並結合抽到的牌名意象，分別寫出對應的解析文字。不要評價選項優劣，不要暗示哪個選項比較好。每天請用 ===DayXX=== 標記分隔。\n\n` + blocks;
+}
+
+function copyAnalysisPrompt(){
+  copyToTextarea('analysisPromptOut', buildAnalysisPrompt(), 'analysisToast', '已複製解析指令，去問AI吧');
+}
+
+function parseAnalysisReply(){
+  const text = document.getElementById('analysisReplyIn').value;
+  const resultEl = document.getElementById('analysisResult');
+  if(!text.trim()){
+    resultEl.innerHTML = `<div class="warn-box">欄位是空的，請先貼上AI的解析回覆再按這顆按鈕。</div>`;
+    return;
+  }
+  const re = /===\s*Day\s*(\d{1,2})\s*===/gi;
+  let matches = [...text.matchAll(re)];
+  if(matches.length===0){
+    resultEl.innerHTML = `<div class="warn-box">沒有找到 ===DayXX=== 分隔標記，無法對應到各天。</div>`;
+    return;
+  }
+  const results = [];
+  for(let i=0;i<matches.length;i++){
+    const dayNum = parseInt(matches[i][1],10);
+    const start = matches[i].index + matches[i][0].length;
+    const end = i+1<matches.length ? matches[i+1].index : text.length;
+    const chunk = text.slice(start, end);
+    const dayIdx = days.findIndex(d=>d.day===dayNum);
+    if(dayIdx===-1){ results.push(`Day${String(dayNum).padStart(2,'0')}：目前排程沒有這一天，已略過`); continue; }
+    const kongM = chunk.match(/空[:：]\s*([\s\S]*?)(?=\n雨[:：]|$)/);
+    const yuM = chunk.match(/雨[:：]\s*([\s\S]*?)(?=\n傘[:：]|$)/);
+    const umbrellaM = chunk.match(/傘[:：]\s*([\s\S]*)/);
+    days[dayIdx].daylight.analysis = {
+      kong: kongM ? kongM[1].trim() : '',
+      yu: yuM ? yuM[1].trim() : '',
+      umbrella: umbrellaM ? umbrellaM[1].trim() : ''
+    };
+    results.push(`Day${String(dayNum).padStart(2,'0')}：解析已回填`);
+  }
+  saveState();
+  document.getElementById('cardsOutput').textContent = generateCards();
+  resultEl.innerHTML = `<div class="ok-box"><strong>解析回填完成，並已更新題目卡：</strong><ul>${results.map(r=>`<li>${r}</li>`).join('')}</ul></div>`;
+}
+
+loadState();
+if(days.length===0){ buildDays(); } else { renderSimpleDays(); renderDays(); renderBatchPanel(); renderCardRecording(); }
+</script>
+</body>
+</html>
