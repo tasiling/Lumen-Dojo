@@ -1,7 +1,9 @@
 "use client";
+import { newRecordItemId } from "@/lib/dojo/contextualAdd";
+import PracticeRecentRecords from "./PracticeRecentRecords";
 import PracticeField from "./PracticeField";
 import PracticeEventHistory from "./PracticeEventHistory";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "./PracticeRouteLink";
 import { usePracticeLeaveGuard } from "@/lib/dojo/usePracticeLeaveGuard";
@@ -9,32 +11,42 @@ import type { LearningRecord } from "@/lib/dojo/learningRecords/model";
 import type { LearningEntity } from "@/lib/dojo/learningFoundation/model";
 import { taipeiTodayISO } from "@/lib/dojo/formal";
 const labels = { title: "標題（選填）", whatIDid: "這次學了什麼？", myUnderstanding: "我目前怎麼理解？", questions: "還有哪些問題？", worthKeeping: "有什麼值得留下？", difficulties: "困難", discoveries: "發現", selectedExcerpt: "選摘", sourceSnapshot: "來源摘要（選填）", practiceKind: "練習種類" };
-export default function LearningRecordWorkspace({ learningItemId, recent = false }: { learningItemId?: string; recent?: boolean }) {
+export default function LearningRecordWorkspace({ learningItemId, recent = false, children }: { learningItemId?: string; recent?: boolean; children?:ReactNode }) {
   const createRequestId = useRef("");
   const q = useSearchParams(); const recordId = q.get("record");
-  const itemId = learningItemId ?? q.get("learningItem") ?? "";
+  const requestedItemId = learningItemId ?? q.get("learningItem") ?? "";
   const editing = !recent && (Boolean(recordId) || q.get("new") === "1");
   const [items, setItems] = useState<LearningEntity[]>([]);
+  const [itemsReady,setItemsReady]=useState(false);
+  const newItemsReady=Boolean(recordId)||itemsReady;
+  const resolvedItemId=editing&&!recordId?newRecordItemId(items,requestedItemId):requestedItemId;
+  const itemId=resolvedItemId??requestedItemId;
+  const editorContext=JSON.stringify([recordId||'',itemId]);
   const [records, setRecords] = useState<LearningRecord[]>([]);
   const [draft, setDraft] = useState<Partial<LearningRecord>>({ practicedOn: taipeiTodayISO(), recordedOn: taipeiTodayISO(), learningItemIds: itemId ? [itemId] : [], primaryLearningItemId: itemId, whatIDid: "", status: "draft" });
   const [saved, setSaved] = useState(""); const [ready, setReady] = useState(false);
+  const [loadedEditorContext,setLoadedEditorContext]=useState('');
+  const editorReady=ready && loadedEditorContext===editorContext && resolvedItemId!==null;
   const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(""); const [cursor, setCursor] = useState<string | null>(null);
   const [stage, setStage] = useState(""); const [topic, setTopic] = useState("");
-  usePracticeLeaveGuard(editing && ready && JSON.stringify(draft) !== saved);
+  usePracticeLeaveGuard(editing && editorReady && JSON.stringify(draft) !== saved);
   async function read(url: string) { const r = await fetch(url, { cache: "no-store" }); const j = await r.json(); if (!r.ok) throw Error(j.error ?? "紀錄不可用"); return j; }
-  useEffect(() => { let live = true; read("/api/dojo/learning/foundation").then(j => { if(live) setItems(j.entities); }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, []);
-  useEffect(() => { if(!editing) return; let live = true;
+  useEffect(() => { let live = true; read("/api/dojo/learning/foundation").then(j => { if(live) {setItems(j.entities);setItemsReady(true);} }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, []);
+  useEffect(() => { if(!editing || !newItemsReady) return;
+    setReady(false);setLoadedEditorContext('');setError('');
+    if(!recordId && resolvedItemId===null){setError('找不到可新增紀錄的學習項目，請返回重新選擇。');return}
+    let live = true;
     createRequestId.current = crypto.randomUUID();
     const initial = { practicedOn: taipeiTodayISO(), recordedOn: taipeiTodayISO(), learningItemIds: itemId ? [itemId] : [], primaryLearningItemId: itemId, whatIDid: "", status: "draft" as const };
-    (recordId ? read(`/api/dojo/learning/records?id=${recordId}`).then(j => j.record) : Promise.resolve(initial)).then(r => { if(live) { setDraft(r); setSaved(JSON.stringify(r)); setReady(true); } }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, [recordId, itemId, editing]);
+    (recordId ? read(`/api/dojo/learning/records?id=${recordId}`).then(j => j.record) : Promise.resolve(initial)).then(r => { if(live) { setDraft(r); setSaved(JSON.stringify(r)); setLoadedEditorContext(editorContext);setReady(true); } }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, [recordId, itemId, editing, newItemsReady, resolvedItemId, editorContext]);
   useEffect(() => { if(editing) return; let live = true; const params = new URLSearchParams({ limit: recent ? "5" : "20" }); if(itemId) params.set("learningItemId", itemId); if(status) params.set("status", status); if(stage) params.set("stageId", stage); if(topic) params.set("topicId", topic);
     read(`/api/dojo/learning/records?${params}`).then(j => { if(live) { setRecords(j.records); setCursor(j.cursor); setReady(true); } }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, [itemId, status, stage, topic, editing, recent]);
   async function more() { setBusy(true); try { const p = new URLSearchParams({ cursor: cursor!, limit: "20" }); if(itemId) p.set("learningItemId", itemId); if(status) p.set("status", status); if(stage) p.set("stageId", stage); if(topic) p.set("topicId", topic); const j = await read(`/api/dojo/learning/records?${p}`); setRecords(r => [...r, ...j.records]); setCursor(j.cursor); } catch(e) { setError(String(e)); } finally { setBusy(false); } }
   function change(key: string, value: unknown) { setDraft(d => ({ ...d, [key]: value,
     ...(key === "primaryLearningItemId" ? {learningStageId:null,learningTopicId:null} : {}),
     ...(key === "learningStageId" ? {learningTopicId:null} : {}) })); }
-  async function save(next: LearningRecord["status"]) { setBusy(true); setError(""); try {
+  async function save(next: LearningRecord["status"]) { if(!editorReady){setError('請等待這份紀錄載入完成後再儲存。');return}setBusy(true); setError(""); try {
     const r = await fetch("/api/dojo/learning/records", { method: draft.id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: draft.id, revision: draft.revision, input: { ...draft, createRequestId: createRequestId.current, status: next } }) }); const j = await r.json(); if(!r.ok) throw Error(j.error);
     setDraft(j.record); setSaved(JSON.stringify(j.record)); window.history.replaceState(window.history.state, "", `/practice/records?record=${j.record.id}${itemId ? `&learningItem=${itemId}` : ""}`);
   } catch(e) { setError(String(e)); } finally { setBusy(false); } }
@@ -44,8 +56,9 @@ export default function LearningRecordWorkspace({ learningItemId, recent = false
     difficulties:"哪個步驟卡住、容易出錯，或需要協助？",discoveries:"記下新注意到的現象、連結或收穫；推測請註明待驗證。",selectedExcerpt:"摘錄想留下的短句，並記下出處；分清原文與自己的理解。",sourceSnapshot:"選填。記下來源名稱、作者、章節／頁碼或影片時間及使用重點，方便追溯；不必貼整份教材。",practiceKind:"填練習方式，例如朗讀、摘要、解牌或觀察速寫。"
   };
   const disciplines = items.filter(i => i.kind === "item");
+  if(recent) return <PracticeRecentRecords records={records} ready={ready} error={error} itemId={itemId} events={<PracticeEventHistory learningItemId={itemId || undefined} recent />}>{children}</PracticeRecentRecords>;
   return <section className="learning-records"><h2>{editing ? "留下學習紀錄" : "最近修習歷程"}</h2><p>紀錄完成代表正文寫完，不表示能力已掌握。</p>{error && <p role="alert">{error}</p>}
-    {editing ? <>{ready && <form onSubmit={e => { e.preventDefault(); void save("draft"); }}>
+    {editing ? <>{!editorReady && !error && <p role="status">正在準備這份學習紀錄…</p>}{editorReady && <form onSubmit={e => { e.preventDefault(); void save("draft"); }}>
       <fieldset><legend>關聯學習項目（正文只有一份）</legend>{disciplines.map(i => <label key={i.id}><input type="checkbox" checked={draft.learningItemIds?.includes(i.id) ?? false} onChange={e => { const ids = e.target.checked ? [...(draft.learningItemIds ?? []), i.id] : (draft.learningItemIds ?? []).filter(id => id !== i.id); setDraft(d => ({ ...d, learningItemIds: ids, primaryLearningItemId: ids.includes(d.primaryLearningItemId ?? "") ? d.primaryLearningItemId : ids[0] ?? "", learningStageId: null, learningTopicId: null })); }} />{i.name}</label>)}</fieldset>
       <PracticeField id="record-primary" label="主要學習項目" help="先勾選關聯項目，再選其中一個作為這份紀錄的主要位置；更換後會清除原階段與主題。"><select id="record-primary" aria-describedby="record-primary-help" value={draft.primaryLearningItemId ?? ""} onChange={e => change("primaryLearningItemId", e.target.value)}><option value="">請選擇</option>{disciplines.filter(i => draft.learningItemIds?.includes(i.id)).map(i => <option key={i.id} value={i.id}>{i.name}</option>)}</select></PracticeField>
       <div className="practice-field-pair"><PracticeField id="record-date" label="實際修習日期" help="選實際修習發生的日期；補記舊練習時，請改成當天日期。"><input id="record-date" aria-describedby="record-date-help" type="date" required value={draft.practicedOn ?? ""} onChange={e => change("practicedOn", e.target.value)} /></PracticeField><PracticeField id="record-created" label="記錄日期" help="建立紀錄的日期，編輯不會改變；更新時間會另外保存。"><input id="record-created" aria-describedby="record-created-help" type="date" readOnly value={draft.recordedOn ?? ""} /></PracticeField></div>

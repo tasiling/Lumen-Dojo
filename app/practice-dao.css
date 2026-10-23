@@ -51,3 +51,80 @@
 
 .dojo.practice-dao-shell{--tc-accent:#248674;--tc-soft:#dff4ee;--paper:#f2fbf8;--ink:#18384d;background:#f2fbf8}.dojo.practice-dao-shell.dao-shell{--tc-accent:#8c80b2;--tc-soft:#f0ebf7;--paper:#f8f5fc;background:#f8f5fc}.dojo.practice-dao-shell .top{background:var(--paper)}.dojo.practice-dao-shell .brand{display:flex;align-items:center;gap:10px}.dojo.practice-dao-shell .brand svg{width:30px;height:30px}.dojo.practice-dao-shell .brand small{display:block;font-size:12px;letter-spacing:.12em}.dojo.practice-dao-shell .app{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .dojo.practice-dao-shell .top-actions .tc-icon{width:20px;height:20px;flex:none}.dojo.practice-dao-shell .top-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px}
+
+/* Mobile polish: content surface must use the same tokens as its realm shell. */
+.dojo.practice-dao-shell{--bg:#f2fbf8;--paper:#f2fbf8;--muted:#607488;--line:#dce9e5}
+.dojo.practice-dao-shell.dao-shell{--bg:#f8f5fc;--paper:#f8f5fc;--line:#e7e0ef}
+.dojo.add-shell{--bg:#fefbf9;--paper:#fff;--ink:#253c5c;--muted:#58677c;--line:#f0e6de;--tc-accent:#f2bf78;--tc-soft:#fceddc;background:var(--bg);font-size:16px;line-height:1.65}
+.dojo.reading-shell{--tc-accent:#f2bf78;--tc-soft:#fceddc}
+.dojo.add-shell .app,.dojo.practice-dao-shell .app{max-width:560px;background:var(--bg)}
+.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .app{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .top{margin:0;padding:14px 16px;min-height:76px;gap:10px;background:var(--bg);border-color:var(--line)}
+.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .top-actions{display:flex;gap:8px;margin-left:auto;flex:none}
+.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .top button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 12px;font-size:14px;border-color:var(--line);background:white}
+.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .top-actions svg{width:20px;height:20px;flex:none}
+.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .nav.consistent-nav{background:#fff;backdrop-filter:none;border-top:1px solid var(--line);box-shadow:0 -5px 18px #18384d06}
+.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .nav.consistent-nav button[data-nav=add] .nav-icon{background:var(--tc-accent);border-radius:12px}
+.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) :is(a,button,input,textarea,select,summary){scroll-margin-bottom:calc(110px + env(safe-area-inset-bottom))}
+.dojo :is(.practice-workspace,.dao-workspace) a.primary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border:1px solid var(--practice-accent);border-radius:12px;padding:12px 18px;text-align:center;text-decoration:none;line-height:1.5;white-space:normal}
+.dojo .practice-home{display:grid;gap:16px}
+.dojo .practice-home>.practice-realm-hero{margin:0;min-height:220px;padding:24px 22px}
+.dojo .practice-home .practice-realm-hero h1{font-size:clamp(28px,5vw,36px);margin:12px 0;line-height:1.3}
+.dojo .practice-home .practice-realm-hero>.primary{width:auto;padding:10px 22px;margin-top:4px}
+.dojo .practice-home .practice-realm-art{width:225px;right:-48px}
+.dojo .practice-workspace .practice-panel{padding:18px;background:#fff;border:1px solid var(--line);border-radius:18px;min-width:0;overflow-wrap:anywhere}
+.dojo .practice-workspace .practice-panel h2{margin:0;font-size:21px}
+.dojo .practice-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.dojo .practice-panel-caption{margin:4px 0 10px;color:var(--muted);font-size:14px}
+.dojo .practice-workspace .practice-row{margin:0;padding:12px 0;min-height:74px;border-top:1px solid #edf1f1;border-radius:0;background:transparent;box-shadow:none}
+.dojo .practice-workspace .practice-row:first-child{border-top:0}
+.dojo .practice-more-tools,.dojo .practice-event-details{border-top:1px solid #edf1f1;margin-top:6px}
+.dojo .practice-workspace .practice-more-tools>summary,.dojo .practice-workspace .practice-event-details>summary{font-size:14px;color:var(--muted);min-height:48px}
+.dojo .practice-text-link{display:inline-flex;align-items:center;min-height:44px;font-size:14px;color:var(--muted);text-decoration:none;gap:6px}
+.dojo .practice-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:26px 16px;min-height:140px;text-align:center;background:white;border:1px solid var(--line);border-radius:18px;font-size:15px;color:#607488}
+.dojo .practice-empty p{margin:0;font-size:14px;line-height:1.7}
+.dojo .practice-empty b{font-weight:500}
+.dojo .practice-recent-records .practice-empty{border:0;padding:20px 10px}
+.dojo .practice-history-entry{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:14px 0;border:0;border-bottom:1px solid #edf1f1;background:white;text-align:left;min-width:0}
+.dojo .practice-history-entry a{display:block;text-decoration:none;color:inherit;width:100%;min-width:0}
+.dojo .practice-history-entry b,.dojo .practice-history-entry small{display:block;overflow-wrap:anywhere}
+.dojo .practice-history-entry b{font-size:16px;color:#18384d}.dojo .practice-history-entry small{font-size:13px;color:#607488;margin-top:4px}
+.dojo .practice-record-preview{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:8px 0 0;font-size:14px;white-space:pre-wrap}
+.dojo .practice-record-create{margin:12px 0}
+.dojo .practice-legacy-recent h3{margin:20px 0 0;font-size:16px}
+.dojo .dao-workspace{display:grid;gap:16px}
+.dojo .dao-workspace>.practice-realm-hero{margin:0;min-height:240px}
+.dojo .dao-workspace .dao-entry{display:flex;flex-direction:row;align-items:center;gap:14px;margin:0;padding:20px;min-height:96px;color:#18384d;text-decoration:none}
+.dojo .dao-workspace .dao-entry .practice-entry-copy{display:block;min-width:0}
+.dojo .dao-workspace .dao-entry .practice-entry-copy>*{display:block}
+.dojo .dao-workspace .dao-entry .practice-entry-copy small{font-size:14px;font-weight:400;letter-spacing:0;color:#607488;line-height:1.65}
+.dojo .dao-workspace .dao-entry .practice-entry-copy b{font-family:inherit;font-size:18px;margin:3px 0}
+.dojo .dao-workspace .dao-content-heading{margin:12px 0 0;font-size:22px}
+.dojo .dao-empty{min-height:220px;border-style:solid}
+.dojo .practice-empty-icon{display:grid;place-items:center;width:48px;height:48px;color:#aaa0bf;margin-bottom:4px}
+.dojo .practice-empty-icon svg{width:42px;height:42px}
+.dojo .add-screen{display:grid;gap:16px;padding:18px 16px}
+.dojo .add-screen .capture-hero{margin:0;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:none;background:linear-gradient(120deg,#fce7d2,#f7edcf,#def0e9)}
+.dojo .add-screen .capture-hero h1{font-family:inherit;color:#253c5c;font-size:28px;margin:8px 0}
+.dojo .add-screen .capture-hero p{font-size:14px;line-height:1.7;color:#58677c}
+.dojo .add-screen .capture-spark{display:grid;place-items:center;width:48px;height:48px;flex:none;border-radius:12px;background:#ffffff80;border:1px solid #ffffffa0;padding:10px}
+.dojo .add-screen .capture-spark svg{width:28px;height:28px}
+.dojo .add-screen .add-mode-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;border:0;background:transparent;overflow:visible}
+.dojo .add-screen .add-mode-tabs button{min-height:48px;padding:10px 6px;border:1px solid var(--line);border-radius:12px;background:white;font-size:14px;white-space:normal;line-height:1.5}
+.dojo .add-screen .add-mode-tabs button.on{background:#fceddc;border-color:#d3b987;color:#624b2c}
+.dojo .add-screen .capture-form-card{margin:0;padding:20px;border:1px solid var(--line);border-radius:18px;background:white;box-shadow:none}
+.dojo .add-screen :is(input:not([type=checkbox]),select,textarea){font-size:16px;min-height:48px;border-radius:12px}
+@media(max-width:430px){.dojo .practice-workspace .practice-panel{padding:16px}.dojo .practice-panel-head{gap:4px 12px}.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .top{padding:12px 16px}.dojo.dojo:is(.practice-dao-shell,.reading-shell,.add-shell) .top button{padding:8px 10px}}
+.dojo .dao-workspace .dao-entry>.practice-entry-icon{color:#18384d}.dojo .dao-workspace .dao-entry>span:last-child{font-size:24px;line-height:1;color:#607488;letter-spacing:0}
+.dojo.dojo:is(.reading-shell,.add-shell) .nav.consistent-nav button[data-nav=add] .nav-icon{color:#253c5c}
+.dojo .add-screen :is(label,legend){font-size:14px;line-height:1.5}
+.dojo .add-screen .capture-card-heading h2{font-family:inherit;font-size:22px;line-height:1.4}
+.dojo.add-shell .reading-add .reading-quick-capture{margin:0;padding:20px;border:1px solid var(--line);border-radius:18px;background:white;box-shadow:none}
+.dojo.add-shell .reading-add .reading-capture-heading h2{font-size:22px;font-family:inherit;line-height:1.4}
+.dojo.add-shell .reading-add .reading-capture-heading a{font-size:14px;min-height:44px;display:inline-flex;align-items:center}
+.dojo.add-shell .reading-add .reading-quick-capture label{font-size:14px;line-height:1.5;margin:16px 0 8px}
+.dojo.add-shell .reading-add .reading-quick-capture :is(input,select,textarea){font-size:16px;min-height:48px;width:100%;min-width:0}
+.dojo.add-shell .reading-add .reading-quick-capture :is(p,small){font-size:14px;line-height:1.7}
+.dojo.add-shell .reading-add .reading-capture-modes{display:flex;flex-wrap:wrap;gap:8px;background:transparent;border:0;margin:16px 0}
+.dojo.add-shell .reading-add .reading-capture-modes button{min-height:44px;padding:10px 12px;border-radius:12px;font-size:14px;border:1px solid var(--line)}
+.dojo.add-shell .reading-add .reading-quick-capture .two{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
