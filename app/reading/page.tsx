@@ -1,4 +1,5 @@
 "use client";
+import { ReadingHeaderArt } from "@/app/components/ReadingArt";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -54,6 +55,7 @@ export default function ReadingShelfPage() {
   return (
     <section className="screen reading-screen">
       <div className="reading-hero">
+        <ReadingHeaderArt kind="book" />
         <span className="eyebrow">修習所・心知</span>
         <h1>閱讀筆記</h1>
         <p>讀前帶著問題預習，閱讀中分開保存原文與想法，讀後再收束成自己的理解。</p>
@@ -61,7 +63,8 @@ export default function ReadingShelfPage() {
           <button className="primary" onClick={() => setForm({ mode: "start" })}>開始一本書</button>
           <button onClick={() => setForm({ mode: "wait" })}>先放入待讀</button>
         </div>
-        <button className="reading-capture-entry" onClick={() => router.push("/add?mode=reading")}>
+      </div>
+      <button className="reading-capture-entry" onClick={() => router.push("/add?mode=reading")}>
           <span>正在 Readmoo 閱讀？</span>
           <b>貼上摘錄／記下想法 <i>→</i></b>
         </button>
@@ -71,7 +74,6 @@ export default function ReadingShelfPage() {
           <button onClick={() => router.push("/reading/visits")}>今日回訪</button>
           <button onClick={() => router.push("/reading/cards")}>洞察卡片庫</button>
         </div>
-      </div>
 
       {loading && <div className="empty">正在打開書架…</div>}
       {error && <p className="form-error" role="alert">{error}<button className="text-link" onClick={() => void load()}>重新讀取</button></p>}

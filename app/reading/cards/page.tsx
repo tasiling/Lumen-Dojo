@@ -1,4 +1,5 @@
 "use client";
+import { ReadingHeaderArt } from "@/app/components/ReadingArt";
 import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
 import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
 import {mutate} from "@/app/components/weaving/client";
@@ -106,6 +107,7 @@ export default function ReadingCardsPage() {
   return (
     <section className="screen reading-screen reading-library-screen">
       <div className="reading-page-intro">
+        <ReadingHeaderArt kind="cards" />
         <span className="eyebrow">閱讀萃取</span>
         <h1>洞察卡片庫</h1>
         <p>看見現在需要回訪、可成為內容線索，以及已經卡住的洞察。</p>

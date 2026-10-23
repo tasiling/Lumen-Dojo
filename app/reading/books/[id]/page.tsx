@@ -1,4 +1,5 @@
 "use client";
+import { ReadingHeaderArt, ReadingIcon } from "@/app/components/ReadingArt";
 
 import {readingNoteContent} from "@/lib/reading/content";
 import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
@@ -150,6 +151,7 @@ export default function ReadingBookPage() {
   return (
     <section className="screen reading-screen reading-session-screen">
       <div className="reading-session-head">
+        <ReadingHeaderArt kind="book" />
         <div className="reading-book-meta">
           {book.subject && <span>{book.subject}</span>}
           {book.readCount > 1 && <span>第 {book.readCount} 讀</span>}
@@ -224,7 +226,7 @@ export default function ReadingBookPage() {
                 /></LocatedContent>
               ))}
             </div>
-            <button className="reading-add-note" onClick={() => setNotes((current) => [...current, newNote()])}>＋ 新增自由筆記</button>
+            <button className="reading-add-note" onClick={() => setNotes((current) => [...current, newNote()])}><ReadingIcon kind="plus" /> 新增自由筆記</button>
           </section>
 
           <button className="primary reading-go-review" onClick={() => setStage("after")}>前往讀後復盤</button>
