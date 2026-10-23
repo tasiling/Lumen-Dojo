@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useDojo } from "@/lib/dojo/store";
+import { RealmArt } from "../components/PracticeArt";
 import EntryCard from "../components/EntryCard";
 
 export default function DaoPage() {
@@ -11,10 +12,10 @@ export default function DaoPage() {
   );
 
   return (
-    <section className="screen">
-      <div className="hero da">
-        <span className="eyebrow">六個場域</span>
-        <h1>道藏</h1>
+    <section className="screen dao-workspace">
+      <div className="hero da practice-realm-hero"><RealmArt dao />
+        <span className="eyebrow">道藏</span>
+        <h1>道藏</h1><h2>珍藏、回望</h2>
         <p>主動選擇值得長久留下的作品、洞見與生活痕跡。</p>
       </div>
       <Link href="/dao/explore" className="knowledge-entry-link"><b>閱讀與知識總覽</b><small>跨筆記、洞察與知識查找內容</small></Link>

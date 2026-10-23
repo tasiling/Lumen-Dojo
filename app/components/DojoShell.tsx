@@ -1,5 +1,6 @@
 "use client";
 
+import PracticeField from "./PracticeField";
 import CreativeIcon from './creative/CreativeIcon';
 import { TodayCalendarIcon } from "./TodayCalendarArt";
 import ForageIcon from "./ForageIcon";
@@ -120,8 +121,9 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   const creativeHome = pathname === '/weaving' || pathname === '/liaojie';
   const todayCalendarRoute = pathname === "/" || pathname === "/calendar";
   const mapRoute = pathname === "/map";
+  const practiceRealmRoute = /^\/(practice|dao)(\/|$)/.test(pathname);
   const readingRoute = /^\/reading(\/|$)/.test(pathname);
-  const sharedUiRoute = todayCalendarRoute || mapRoute;
+  const sharedUiRoute = todayCalendarRoute || mapRoute || practiceRealmRoute;
   const {
     entries,
     addEntry,
@@ -146,10 +148,10 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={`dojo${creativeRoute ? ` creative-shell creative-${pathname.startsWith('/weaving') ? 'weaving' : 'liaojie'}` : ''}${readingRoute ? " reading-shell" : pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : mapRoute ? " tc-shell tc-map-theme" : todayCalendarRoute ? ` tc-shell${pathname === "/" ? " tc-today-theme" : " tc-calendar-theme"}` : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
+    <div className={`dojo${practiceRealmRoute ? ` practice-dao-shell ${pathname.startsWith("/dao") ? "dao-shell" : "practice-shell"}` : ""}${creativeRoute ? ` creative-shell creative-${pathname.startsWith('/weaving') ? 'weaving' : 'liaojie'}` : ''}${readingRoute ? " reading-shell" : pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : mapRoute ? " tc-shell tc-map-theme" : todayCalendarRoute ? ` tc-shell${pathname === "/" ? " tc-today-theme" : " tc-calendar-theme"}` : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
       <main className="app">
         <header className="top">
-          {creativeHome ? <button className="creative-brand" onClick={() => {if(canLeavePractice()) router.push('/');}} aria-label="行光道場，返回今天"><CreativeIcon name="sun"/><span><b>行光道場</b><small>Lumen Dojo</small></span></button> : pathname === "/bingo" ? <button className="weekly-brand" onClick={() => router.push("/")} aria-label="行光道場，返回今天"><WeeklyIcon name="compass"/><span>行光道場</span></button> : todayCalendarRoute ? <div className="brand"><TodayCalendarIcon name="i-sun" /><div><b>行光道場</b><small>Lumen Dojo</small></div></div> : <BackButton pathname={pathname} />}
+          {creativeHome ? <button className="creative-brand" onClick={() => {if(canLeavePractice()) router.push('/');}} aria-label="行光道場，返回今天"><CreativeIcon name="sun"/><span><b>行光道場</b><small>Lumen Dojo</small></span></button> : pathname === "/bingo" ? <button className="weekly-brand" onClick={() => router.push("/")} aria-label="行光道場，返回今天"><WeeklyIcon name="compass"/><span>行光道場</span></button> : todayCalendarRoute || pathname === "/practice" || pathname === "/dao" ? <div className="brand"><TodayCalendarIcon name="i-sun" /><div><b>行光道場</b><small>Lumen Dojo</small></div></div> : <BackButton pathname={pathname} />}
           <div className="top-actions">
             <button onClick={openTimerFromHere} aria-label="計時">{creativeRoute ? <CreativeIcon name="clock"/> : sharedUiRoute ? <TodayCalendarIcon name="i-clock" /> : pathname === "/bingo" ? <WeeklyIcon name="clock"/> : (/^\/(forage|reading)(\/|$)/.test(pathname)) ? <ForageIcon name="i-clock" /> : "◷"}<span> 計時</span></button>
             <button onClick={() => { if(canLeavePractice()) router.push("/map"); }} aria-label="場域">{creativeRoute ? <CreativeIcon name="grid"/> : sharedUiRoute ? <TodayCalendarIcon name="i-grid" /> : pathname === "/bingo" ? <WeeklyIcon name="grid"/> : (/^\/(forage|reading)(\/|$)/.test(pathname)) ? <ForageIcon name="i-grid" /> : "⌘"}<span> 場域</span></button>
@@ -287,7 +289,7 @@ function QuickAddModal({
 
   return (
     <div className="modal show" onClick={(event) => event.target === event.currentTarget && !saving && onClose()}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="quick-add-title">
+      <div className="sheet practice-record-sheet" role="dialog" aria-modal="true" aria-labelledby="quick-add-title">
         <div className="toolbar">
           <h2 id="quick-add-title">{entry ? "編輯紀錄" : "新增"}</h2>
           <button onClick={onClose} disabled={saving}>關閉</button>
@@ -356,34 +358,34 @@ function QuickAddModal({
 
         {mode === "record" && (
           <>
-            <label>光行（選填）</label>
-            <div className="row">
+            <PracticeField group id="quick-guangxing" label="光行（選填）" help="選這次活動的方式：凝光（聚焦）、煉光（練習）、流光（投入）、顯光（分享）、藏光（恢復）。可不標記，不計分。">
+            <div className="row" id="quick-guangxing" role="group" aria-label="光行（選填）" aria-describedby="quick-guangxing-help">
               <button className={guangxing === null ? "on" : ""} onClick={() => setGuangxing(null)}>不標記</button>
               {Object.entries(GUANGXING).map(([key, value]) => (
                 <button key={key} className={guangxing === key ? "on" : ""} onClick={() => setGuangxing(key as GuangxingKey)}>
                   {value[0]}
                 </button>
               ))}
-            </div>
+            </div></PracticeField>
 
-            <label>光法（選填）</label>
-            <div className="row">
+            <PracticeField group id="quick-guangfa" label="光法（選填）" help="選你想採取的方式：聚光（集中目標）、守光（穩定投入）、隱光（醞釀）、祝光（感謝祝福）、映光（雙向回應）。可不標記。">
+            <div className="row" id="quick-guangfa" role="group" aria-label="光法（選填）" aria-describedby="quick-guangfa-help">
               <button className={guangfa === null ? "on" : ""} onClick={() => setGuangfa(null)}>不標記</button>
               {Object.entries(GUANGFA).map(([key, value]) => (
                 <button key={key} className={guangfa === key ? "on" : ""} onClick={() => setGuangfa(key as GuangfaKey)}>
                   {value[0]}
                 </button>
               ))}
-            </div>
+            </div></PracticeField>
 
-            <label>隱私</label>
-            <div className="row">
+            <PracticeField group id="quick-privacy" label="隱私" help="標記這份紀錄預期的閱讀範圍；公開標記不等於發布到社群。請確認內容適合這個範圍。">
+            <div className="row" id="quick-privacy" role="group" aria-label="隱私" aria-describedby="quick-privacy-help">
               {PRIVACY_OPTIONS.map((option) => (
                 <button key={option} className={privacy === option ? "on" : ""} onClick={() => setPrivacy(option)}>
                   {option}
                 </button>
               ))}
-            </div>
+            </div></PracticeField>
           </>
         )}
 

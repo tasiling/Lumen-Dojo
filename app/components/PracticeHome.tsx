@@ -1,4 +1,5 @@
 "use client";
+import { RealmArt, PracticeIcon } from "./PracticeArt";
 import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import Link from "./PracticeRouteLink";
 import { useEffect, useState } from "react";
@@ -15,8 +16,8 @@ export function PracticeLink({
 }) {
   return (
     <Link className="practice-link card" href={href}>
-      <b>{title}</b>
-      {detail && <small>{detail}</small>}
+      <span className="practice-entry-icon"><PracticeIcon name={href.split("/").pop()?.split("?")[0] || "default"} /></span><span className="practice-entry-copy"><b>{title}</b>
+      {detail && <small>{detail}</small>}</span><span aria-hidden="true">›</span>
     </Link>
   );
 }
@@ -51,10 +52,8 @@ export default function PracticeHome() {
     };
   }, []);
   return (
-    <section className="screen practice-workspace">
-      <span className="eyebrow">身・心・靈</span>
-      <h1>修習所</h1>
-      <p className="lead">選一個真實的下一步，回到自己的修習。</p>
+    <section className="screen practice-workspace practice-home">
+      <div className="practice-realm-hero"><RealmArt /><span>修習所</span><h1>給此刻的自己，<br />一點照顧。</h1><p>一段練習、一個理解，或此刻的感受。</p><button className="primary" onClick={()=>openQuickAdd({presetSpace:"practice",presetKind:"修習"})}>留下修習紀錄</button></div>
       <h2>繼續上次</h2>
       {loading ? (
         <p>正在讀取已保存的自譯…</p>
@@ -74,7 +73,7 @@ export default function PracticeHome() {
       <div className="practice-shortcuts">
         {[
           ["journal", "日記自譯"],
-          ["learning", "學科與本期專注"],
+          ["learning", "學習項目與本期專注"],
           ["context", "語境修習室"],
           ["vocabulary", "VocabForge"],
           ["grammar", "句型與語法"],
@@ -90,7 +89,7 @@ export default function PracticeHome() {
       <h2>身心靈入口</h2>
       {[
         ["body", "身", "活動、睡眠、飲食與恢復紀錄"],
-        ["learning", "心・知", "跨學科學習"],
+        ["learning", "心・知", "跨項目學習"],
         ["emotion", "心・情", "情緒覺察、感恩與心裡小語"],
         ["intention", "心・意", "創現角色、里程碑與狂A肯定句"],
         ["spirit", "靈", "Vision、冥想與祈願"],
