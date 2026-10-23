@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>封閉知識煉金 - 寫作流程工具 v9</title>
+<style>
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface-2: #fbfbf9;
+  --border: #d4d1ca;
+  --text: #28251d;
+  --text-muted: #7a7974;
+  --primary: #01696f;
+  --primary-hover: #0c4e54;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding-bottom: 80px;
+}
+header {
+  padding: 32px 24px 8px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+h1 { font-size: 24px; margin-bottom: 8px; }
+.subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 8px; }
+
+.shared-panel {
+  max-width: 960px;
+  margin: 16px auto 24px;
+  padding: 0 24px;
+}
+.shared-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.shared-card h3 {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.shared-card .hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.stage-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 960px;
+  margin: 0 auto 24px;
+  padding: 0 24px;
+}
+.stage-btn {
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+.stage-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.stage-btn:hover:not(.active) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+main { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+.stage-panel { display: none; }
+.stage-panel.active { display: block; }
+
+.stage-desc {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.role-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.role-card h2 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.role-card .role-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  margin-top: 12px;
+  color: var(--text);
+}
+label:first-of-type { margin-top: 0; }
+textarea, select, input[type="text"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface-2);
+  color: var(--text);
+  resize: vertical;
+}
+textarea { min-height: 100px; }
+.shared-card textarea { min-height: 120px; }
+select { cursor: pointer; height: 40px; }
+input[type="text"] { margin-top: 6px; }
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+button.action {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+button.action:hover { background: var(--primary-hover); }
+button.copy-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.copy-btn:hover { border-color: var(--primary); color: var(--primary); }
+button.copy-btn.copied { background: var(--primary); color: #fff; border-color: var(--primary); }
+button.secondary {
+  background: #fff;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+  margin-right: 8px;
+}
+button.secondary:hover { background: #cedcd8; }
+
+.output-box {
+  margin-top: 16px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  max-height: 420px;
+  overflow-y: auto;
+  color: var(--text);
+}
+.output-box.empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.badge.axis {
+  margin-left: 0;
+  margin-bottom: 6px;
+}
+
+.axis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+.axis-box { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.axis-box h4 { color: var(--primary); font-size: 14px; margin: 6px 0 4px; }
+.axis-box p { font-size: 13px; color: var(--text-muted); }
+
+.note {
+  font-size: 13px;
+  color: #964219;
+  background: #ddcfc6;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 14px;
+}
+
+#node-list .axis-box {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+#node-list .axis-box input[type="checkbox"] { width: auto; margin-top: 4px; }
+
+.c-subnav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.c-sub-btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+.c-sub-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.c-sub-btn:hover:not(.active) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.c-subpanel { display: none; }
+.c-subpanel.active { display: block; }
+
+@media (max-width: 768px) {
+  header { padding: 20px 16px 8px; }
+  h1 { font-size: 20px; }
+  .shared-panel, .stage-nav, main { padding-left: 16px; padding-right: 16px; }
+  .role-card { padding: 18px; }
+  .axis-grid { grid-template-columns: 1fr; }
+  button.action, button.secondary, button.copy-btn { width: 100%; margin-right: 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>封閉知識煉金・寫作流程工具 v9</h1>
+  <p class="subtitle">A：結構分析＋意圖確認（合併一次生成） → B：資料研究＋主文調整（合併一次生成，含延伸地圖） → C：IG限動轉譯 → D：心智脈絡網架構器</p>
+  <p class="subtitle">草稿與確定版主文只需貼上一次，會自動帶入各階段。</p>
+</header>
+
+<div class="shared-panel">
+  <div class="shared-card">
+    <h3>共用欄位：原始草稿<span class="badge">A、B 共用</span></h3>
+    <div class="hint">只需貼一次，A模組與B模組都會自動使用這裡的內容。</div>
+    <textarea id="global-draft" placeholder="貼上你的草稿內容..."></textarea>
+  </div>
+  <div class="shared-card">
+    <h3>共用欄位：確定版主文<span class="badge">C 共用</span></h3>
+    <div class="hint">B模組完成、你確認滿意後，把最終版本貼在這裡，C模組會自動使用。</div>
+    <textarea id="global-final" placeholder="貼上已確定的主文..."></textarea>
+  </div>
+</div>
+
+<nav class="stage-nav">
+  <button class="stage-btn active" data-stage="A">A 結構＋意圖</button>
+  <button class="stage-btn" data-stage="B">B 研究＋主文</button>
+  <button class="stage-btn" data-stage="C">C 限動轉譯</button>
+  <button class="stage-btn" data-stage="D">D 心智脈絡網</button>
+</nav>
+
+<main>
+
+<!-- STAGE A -->
+<section class="stage-panel active" id="stage-A">
+  <div class="stage-desc">一次生成合併指令：AI會先扮演結構分析師診斷問題並給改良方向，接著扮演意圖確認師，只挑2-3個最關鍵的問題向你提問。你只需要複製這一份指令貼給AI，等AI回覆問題後再親自回答即可。</div>
+
+  <div class="role-card">
+    <h2>A模組：結構分析師 + 意圖確認師</h2>
+    <div class="role-hint">合併輸出：先診斷結構，再提出2-3個關鍵問題，等你回答後才進入B模組</div>
+    <div class="btn-row">
+      <button class="action" onclick="genAMerged()">生成A模組指令</button>
+      <button class="copy-btn" id="a-copy" onclick="copyBox('a-output','a-copy')">複製</button>
+    </div>
+    <div class="output-box empty" id="a-output">尚未生成（請先在上方貼上草稿）</div>
+  </div>
+</section>
+
+<!-- STAGE B -->
+<section class="stage-panel" id="stage-B">
+  <div class="stage-desc">一次生成合併指令：AI會先扮演資料研究員找出理論候選，並自行選出最合適的1-2個（除非你已指定），接著扮演主文調整師，依你確認的意圖與選定的理論，直接輸出結構安排與主文調整版。</div>
+
+  <div class="role-card">
+    <h2>B模組：資料研究員 + 主文調整師</h2>
+    <div class="role-hint">合併輸出：先列理論候選並選定，再直接產出結構安排與主文調整版</div>
+
+    <label>模式</label>
+    <select id="b-mode">
+      <option value="保守修整版：最大限度保留原句，能不改就不改，主要做刪減與重排">保守修整版</option>
+      <option value="標準收斂版：允許適度重寫銜接句，重點是讓整篇更清楚" selected>標準收斂版</option>
+      <option value="大幅收束版：為了讓主線清楚，可以大幅刪減旁支，但仍要保留核心觀點與語氣">大幅收束版</option>
+    </select>
+
+    <label>已確認的意圖（貼上你在A模組回答問題後的內容）</label>
+    <textarea id="b-intent" placeholder="貼上你回答意圖確認師問題的內容..."></textarea>
+
+    <label>長文框架（若不確定，選「自動判斷」，AI會依你在A模組回答的任務類型自行選框架）</label>
+    <select id="b-framework">
+      <option value="auto" selected>自動判斷（依任務類型自動選框架）</option>
+      <option value="diamond">知識鑽石2.0（綜合型，預設核心框架）</option>
+      <option value="sb7">StoryBrand SB7（信任問題／服務頁招生文）</option>
+      <option value="qcz">起承轉合（觀點深度／反思型）</option>
+      <option value="scqa">SCQA金字塔原理（機制說明／系統原理）</option>
+      <option value="pain">痛點→轉折→新可能（真實共鳴／案例分享）</option>
+      <option value="onebig">單一想法核心法（單一主張的說服力）</option>
+    </select>
+
+    <label>已指定的理論（選填，若留空由AI自行從候選中挑選）</label>
+    <textarea id="b-theory" placeholder="若你已有偏好的理論可貼在這裡，否則可留空..."></textarea>
+
+    <div class="btn-row">
+      <button class="action" onclick="genBMerged()">生成B模組指令</button>
+      <button class="copy-btn" id="b-copy" onclick="copyBox('b-output','b-copy')">複製</button>
+    </div>
+    <div class="output-box empty" id="b-output">尚未生成（請確認上方已貼草稿與意圖）</div>
+  </div>
+</section>
+
+<!-- STAGE C -->
+<section class="stage-panel" id="stage-C">
+  <div class="stage-desc">轉譯擴寫中心：針對確定版主文，可以切換「長文擴寫」（逐段補充敘述、過程細節與案例鋪陳，讓內容更扎實）或「限動金句濃縮」（拆成IG限動短句＋導流鉤子）。使用上方共用欄位「確定版主文」。</div>
+
+  <div class="c-subnav">
+    <button class="c-sub-btn active" data-csub="expand">長文擴寫</button>
+    <button class="c-sub-btn" data-csub="condense">限動金句濃縮</button>
+  </div>
+
+  <div class="c-subpanel active" id="csub-expand">
+    <div class="role-card">
+      <h2>長文擴寫師（節奏雕刻）</h2>
+      <div class="role-hint">針對已定稿的主文架構，逐段補充敘述、過程細節與案例鋪陳，並在4-6個關鍵節點做節奏雕刻（放慢轉折、心理停頓、留白、一段一情緒），不改動結構與立場。請先選擇這篇主文用的框架，系統會依框架自動比對每段的功能屬性再決定加厚方向。</div>
+
+      <label>這篇主文用的框架</label>
+      <select id="expand-framework">
+        <option value="diamond">知識鑽石2.0</option>
+        <option value="sb7">StoryBrand SB7</option>
+        <option value="qcz">起承轉合</option>
+        <option value="scqa">SCQA金字塔原理</option>
+        <option value="pain">痛點→轉折→新可能</option>
+        <option value="onebig">單一想法核心法</option>
+      </select>
+
+      <label>擴寫強度</label>
+      <select id="expand-level">
+        <option value="輕度擴寫：每段補1-2句過程細節或畫面描述，維持原有節奏">輕度擴寫</option>
+        <option value="標準擴寫：每段補2-3句敘述、過程細節或案例鋪陳，讓每段更有層次" selected>標準擴寫</option>
+        <option value="深度擴寫：每段大幅補充敘述過程、具體案例與細節畫面，容許段落明顯變長">深度擴寫</option>
+      </select>
+
+      <div class="btn-row">
+        <button class="action" onclick="genExpand()">生成擴寫指令</button>
+        <button class="copy-btn" id="expand-copy" onclick="copyBox('expand-output','expand-copy')">複製</button>
+      </div>
+      <div class="output-box empty" id="expand-output">尚未生成（請先在上方貼上確定版主文）</div>
+    </div>
+  </div>
+
+  <div class="c-subpanel" id="csub-condense">
+    <div class="role-card">
+      <h2>IG限動轉譯師</h2>
+      <div class="role-hint">把確定版主文濃縮成金句型IG限動（預設1頁，必要時最多2頁），強調與主文的具體連結度，不做輪播式重點拆解。可選擇讓AI自動判斷最適合的文案框架，或一次測試五種框架比較效果。</div>
+      <div class="btn-row">
+        <button class="action" onclick="genC1Auto()">自動最佳框架</button>
+        <button class="secondary" onclick="genC1AllFrameworks()">五框全部測試</button>
+        <button class="copy-btn" id="c1-copy" onclick="copyBox('c1-output','c1-copy')">複製</button>
+      </div>
+      <div class="output-box empty" id="c1-output">尚未生成（請先在上方貼上確定版主文）</div>
+    </div>
+  </div>
+</section>
+
+<!-- STAGE D -->
+<section class="stage-panel" id="stage-D">
+  <div class="stage-desc">丟進一篇已完成的文章（或一個母節點主題），自動用「四軸擴展法」跑出候選延伸節點，並抓出跨主題的隱藏連接，同時直接生成這篇文章專屬的延伸地圖（三分類、篇名＋副標），取代單靠直覺硬想延伸方向。</div>
+
+  <div class="role-card">
+    <h2>心智脈絡網架構器</h2>
+    <div class="role-hint">四軸擴展法：垂直深挖／水平平移／反面驗證／跨系統嫁接</div>
+
+    <div class="axis-grid">
+      <div class="axis-box">
+        <span class="badge axis">垂直深挖</span>
+        <h4>挑一句話帶過的詞單獨展開</h4>
+        <p>找文中出現但沒細講的專有名詞、理論或案例，建議獨立成篇。</p>
+      </div>
+      <div class="axis-box">
+        <span class="badge axis">水平平移</span>
+        <h4>同機制換情境重講</h4>
+        <p>把文章最濃縮的核心機制句，套進不同情境（人際、消費、其他系統）重新演繹一次。</p>
+      </div>
+      <div class="axis-box">
+        <span class="badge axis">反面驗證</span>
+        <h4>抓讓步句作為預留反例</h4>
+        <p>掃描「我不是反對」「不同情況下」「也可以」這類讓步語氣句，各自延伸成一篇反面觀點文章。</p>
+      </div>
+      <div class="axis-box">
+        <span class="badge axis">跨系統嫁接</span>
+        <h4>套用到你的其他系統</h4>
+        <p>比對這篇的決策邏輯，能不能直接套進你既有的其他專案或系統設計。</p>
+      </div>
+    </div>
+
+    <label>貼上已完成的文章全文</label>
+    <textarea id="d-article" placeholder="貼上文章全文，包含主問題、主閉合、個人立場、延伸地圖……"></textarea>
+
+    <label>列出你目前的其他系統／專案（供跨系統嫁接比對，一行一個）</label>
+    <textarea id="d-systems" style="min-height:70px;" placeholder="例如：行光道場、五光行旅、知識鑽石地圖……"></textarea>
+
+    <div class="btn-row">
+      <button class="action" onclick="genArchitect()">生成架構器指令</button>
+      <button class="copy-btn" id="d-copy" onclick="copyBox('d-output','d-copy')">複製</button>
+    </div>
+    <div class="output-box empty" id="d-output">尚未生成（請先在上方貼上草稿）</div>
+
+    <div class="note">產出邏輯：第一層列出12個候選節點（母節點＋四軸標籤＋一句話描述）→ 第二層抓出跨主題連接（不同母節點節點之間語意呼應的配對）→ 第三層：這篇文章目前沒有延伸地圖，請直接從候選節點裡挑出三個最適合的方向，生成延伸地圖三分類（想更深入這個主題／想探索其他方向／準備好行動了，每類一個），格式為「篇名（不超過12字）」＋「副標（30-50字，機制／反差／疑問三選一，不可寫成摘要或介紹）」，完成後請自行剪貼到主文結尾。</div>
+  </div>
+
+  <div class="role-card">
+    <h2>選點與紀錄</h2>
+    <div class="role-hint">把AI回覆的候選節點貼回下方，逐條登記，勾選你真正想寫的節點，最後產出可直接貼進 Evernote「知識鑽石地圖_結構筆記」待寫節點池的固定格式。</div>
+
+    <div id="node-list"></div>
+
+    <label>貼上AI回覆的候選節點清單（自動分段）</label>
+    <textarea id="node-raw" style="min-height:140px;" placeholder="直接貼上架構器回覆的【第一層：候選節點清單】內容，例如：&#10;垂直深挖｜為什麼內在要拆成靈心身三層｜來源：這篇裡的xxx句&#10;水平平移｜把同一機制套進人際關係情境｜來源：xxx&#10;工具會自動抓出軸線、描述、來源三個欄位"></textarea>
+    <button class="secondary" onclick="autoParseNodes()">自動解析並加入清單</button>
+    <div class="note" id="parse-feedback" style="display:none;"></div>
+
+    <label>或手動新增一個候選節點</label>
+    <input type="text" id="node-desc" placeholder="節點描述，例如：習得性無助與適應力的心理學觀察">
+    <select id="node-axis">
+      <option value="垂直深挖">垂直深挖</option>
+      <option value="水平平移">水平平移</option>
+      <option value="反面驗證">反面驗證</option>
+      <option value="跨系統嫁接">跨系統嫁接</option>
+    </select>
+    <input type="text" id="node-source" placeholder="來源文章／母節點名稱">
+    <button class="secondary" onclick="addNode()">加入清單</button>
+
+    <div class="btn-row">
+      <button class="action" onclick="genNodeList()">產出待寫清單（勾選項目）</button>
+      <button class="copy-btn" id="node-output-copy" onclick="copyBox('node-output','node-output-copy')">複製</button>
+    </div>
+    <div class="output-box empty" id="node-output">尚未生成（請先新增並勾選候選節點）</div>
+  </div>
+</section>
+
+</main>
+
+<script>
+function switchStage(stage) {
+  var btns = document.querySelectorAll('.stage-btn');
+  var panels = document.querySelectorAll('.stage-panel');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', btns[i].getAttribute('data-stage') === stage);
+  }
+  for (var j = 0; j < panels.length; j++) {
+    panels[j].classList.toggle('active', panels[j].id === 'stage-' + stage);
+  }
+}
+
+function setupNav() {
+  var btns = document.querySelectorAll('.stage-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function () {
+      switchStage(this.getAttribute('data-stage'));
+    });
+  }
+}
+
+function switchCSub(sub) {
+  var btns = document.querySelectorAll('.c-sub-btn');
+  var panels = document.querySelectorAll('.c-subpanel');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', btns[i].getAttribute('data-csub') === sub);
+  }
+  for (var j = 0; j < panels.length; j++) {
+    panels[j].classList.toggle('active', panels[j].id === 'csub-' + sub);
+  }
+}
+
+function setupCSubNav() {
+  var btns = document.querySelectorAll('.c-sub-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function () {
+      switchCSub(this.getAttribute('data-csub'));
+    });
+  }
+}
+
+function setOutput(id, text) {
+  var el = document.getElementById(id);
+  el.textContent = text;
+  el.classList.remove('empty');
+}
+
+function requireField(value, message) {
+  if (!value || value.trim() === '') {
+    alert(message);
+    return false;
+  }
+  return true;
+}
+
+function genAMerged() {
+  var draft = document.getElementById('global-draft').value;
+  if (!requireField(draft, '請先在上方共用欄位貼上草稿')) return;
+  var text = [
+    '你現在要依序扮演兩個角色，處理同一份草稿，但每個角色只能做自己的工作，並用清楚標題分開。',
+    '',
+    '===== 封閉知識煉金／知識鑽石2.0 完整架構規格（雙方都要嚴格對照此規格） =====',
+    '',
+    '【六段骨架，順序不可打亂】',
+    '1. 主問題與主閉合設定：定義這篇最想幫讀者解開的核心問題；並在「認知閉合／情感閉合／意圖閉合」三種裡選一種當主閉合（要最飽滿），另外兩種維持輕量支援（約4-5分基礎），不是只能有一種，而是刻意讓其中一種拉滿。',
+    '2. 情境觸發：從具體生活場景、對話或觀察切入，禁止用抽象論述開場，要有畫面感。對應「認知閉合」的鋪陳。',
+    '3. 概念建立：把情境觸發裡的個人經驗嫁接到外部理論或研究框架，清楚說明機制在解釋什麼，不能只是泛泛佐證。對應「認知閉合」的核心。',
+    '4. 操作步驟：把概念轉成讀者今天就能做的2-3個具體行動；每一步只放一個抽象概念，其餘用具體行為描述。對應「意圖閉合」的一半。',
+    '5. 個人立場：作者清楚表態站在哪個位置，同時不否定其他立場；以感受與故事為主，不能在這段塞新理論（新理論要放回概念建立段）。對應「情感閉合」的核心。',
+    '6. 延伸地圖：固定三類收尾——想更深入這個主題／想探索其他方向／準備好行動了；每一類只能有一個方向，禁止同一類放多個項目；每個方向只給「篇名（不超過12字）」＋「副標」；副標規格（最高優先）：長度30-50字，不是摘要不是內容介紹，而是未來那篇文章真正要回答的核心問題，寫法必須符合三種之一——用一句話點出核心機制／用一句話點出最大的認知反差／用一句話點出讀者最大的疑問；即使覺得單薄也絕對不要多寫解釋，這是刻意的設計。對應「意圖閉合」的另一半。',
+    '',
+    '【閉合對應關係，必須逐條檢查】',
+    '- 認知閉合 → 情境觸發＋概念建立：讀者要能說出「原來X是這樣運作」。',
+    '- 情感閉合 → 個人立場：讀者要覺得被看見、不孤單。',
+    '- 意圖閉合 → 操作步驟＋延伸地圖：讀者要知道下一步能做什麼，且覺得自己做得到。',
+    '',
+    '【信息塊負荷規則，容易被忽略但必須檢查】',
+    '- 一句話裡如果塞進2-3個以上抽象詞加多條因果，就算是超載的複雜信息塊，必須拆成兩三句。',
+    '- 一個段落盡量只處理一條機制，最多引入2-3個新概念。',
+    '- 字數不是判準，閉合有沒有真正發生、信息塊有沒有超載才是判準。',
+    '',
+    '===== 角色一：結構分析師 =====',
+    '請對照上方完整規格，逐條檢查草稿。',
+    '',
+    '請分成兩層輸出：',
+    '第一層：問題診斷 — 逐一對照六段骨架，指出哪些區塊缺漏、順序錯置、或違反該段的專屬規則（例如個人立場段混入新理論、延伸地圖段展開新機制）；明確指出主閉合是否清楚、是否只飽滿一種；指出是否有段落信息塊超載。',
+    '第二層：改良方向 — 針對每個問題說明應該怎麼調整，只給方向、搬移建議、補充方向、骨架示意，絕對不要直接重寫我的句子。',
+    '',
+    '===== 角色二：意圖確認師 =====',
+    '你不是要重新分析整篇，而是根據你剛剛在角色一得出的診斷與改良方向，只挑出2-3個最關鍵、最會影響主文走向的分歧點，向我提問，幫我鎖定真正想表達的意思。',
+    '',
+    '優先從這幾類挑選最重要的問題：',
+    '- 這篇真正要回答的主問題是哪一題。',
+    '- 這篇主閉合要以認知、情感、還是意圖為主（要選出唯一一個最飽滿的）。',
+    '- 草稿裡哪些支線很有價值，但不該留在這一篇（該放到延伸地圖或未來篇）。',
+    '- 我真正想保留的語氣、立場或讀者位置是什麼。',
+    '- 這篇文章最需要解決的是哪一種任務：信任問題（讀者需要先相信你/這個方法）、觀點深度（讀者需要被說服或看見更高層次的對照）、機制說明（讀者需要先搞懂原理才會安心）、真實共鳴（讀者需要先感覺「這也是我」才願意繼續看）、還是單一主張的說服力（讀者只需要被一個核心觀點打中，不需要複雜鋪陳）。這題答案會決定B模組要用哪一種長文框架，請務必提問，且不要幫我預設答案。',
+    '',
+    '規則：',
+    '- 先完整輸出角色一的兩層診斷，再輸出角色二的2-3個問題，用標題清楚分隔。',
+    '- 角色二只能提問，不能開始改稿或替我作答。',
+    '- 全程用繁體中文、條列呈現。',
+    '- 輸出角色二的問題後，請等待我回答，不要自行往下發展。',
+    '',
+    '草稿內容：',
+    draft
+  ].join('\n');
+  setOutput('a-output', text);
+}
+
+function getGenericFormatRules() {
+  return [
+    '【信息塊負荷規則，主文調整師必須遵守】',
+    '- 每句話最多容許1-2個抽象詞加一條因果，超過就拆成兩三句。',
+    '- 每段最多引入2-3個新概念，不可在同一段堆疊多個機制。',
+    '',
+    '【段內換行規則，主文調整師必須遵守】',
+    '- 每段內部只要出現語氣、焦點或案例的轉換，就要強制換行分段，不能整段黏在一起。',
+    '- 判準不是字數多寡，而是轉折點——例如「破題疑問→對比說明→問題重新定義」算三個轉折，就該拆成三個小段。',
+    '- 每引入一個新理論／案例就換一段，不要把兩個理論擠在同一段。',
+    '- 帶有詩意或總結語氣的獨立短句式收尾，可以單獨成一小段，不用勉強併入前一段。',
+    '',
+    '【排版格式規則，主文調整師必須遵守】',
+    '- H1（文章標題）：不用任何符號裝飾。',
+    '- H2（架構段落標題）：只靠字級大小做區分，不加Emoji、不加◆等符號。',
+    '- H3（段內小節）：使用①②③或一、二、三標示，方便讀者掃讀。',
+    '- 金句：獨立成一行，不加任何符號或粗體之外的裝飾。',
+    '- 每段控制在2-4句，超過就強制換段。'
+  ];
+}
+
+function getFrameworkSpec(key) {
+  var specs = {
+    diamond: {
+      name: '知識鑽石2.0',
+      skeleton: [
+        '【五段骨架，順序固定，缺一不可（延伸地圖不在此框架內生成，統一由D模組事後產出，此處不需處理）】',
+        '1. 主問題與主閉合設定：明確寫出這篇最想幫讀者解開的核心問題，以及三種閉合（認知／情感／意圖）中選定的主閉合是哪一種，另外兩種維持4-5分輕量支援。此段可作為文首的簡短說明或內化在情境觸發開頭，但主問題與主閉合的選擇必須清楚可辨識。',
+        '2. 情境觸發：具體生活場景、對話或觀察開場，禁止抽象論述開場。',
+        '3. 概念建立：把情境觸發的個人經驗嫁接到外部理論／研究框架，說明機制如何解釋這個現象。此段必須置入角色一選定的理論。',
+        '4. 操作步驟：轉成讀者今天就能做的2-3個具體行動，每步只放一個抽象概念。',
+        '5. 個人立場：作者清楚表態站在哪個位置，同時不否定其他立場；只能用感受與故事，禁止在此段引入新理論或新研究（新理論一律放回概念建立段）。',
+        '',
+        '【閉合對應，主文必須體現】',
+        '- 認知閉合落在情境觸發＋概念建立，讀者要能說出「原來X是這樣運作」。',
+        '- 情感閉合落在個人立場，讀者要覺得被看見、不孤單。',
+        '- 意圖閉合落在操作步驟，讀者要知道下一步能做什麼且覺得做得到。',
+        '- 主閉合類型必須對應到最飽滿、篇幅與細節最多的那一段，不可三段閉合平均分配。'
+      ],
+      extraOutputParts: [
+        '第一部分：主閉合宣告 — 明確寫出這篇的主問題、選定的主閉合類型（認知／情感／意圖三選一，且要說明為何是這篇最飽滿的那一種）、以及另外兩種閉合會如何以輕量支援出現。',
+        '第二部分：結構安排 — 逐段（五段都要列）說明這篇文章的排序與配置，指出哪些內容保留、哪些弱化、哪些要移到延伸篇；並標明每段對應哪一種閉合。',
+        '第三部分：主文調整版 — 依照前兩部分的安排生成完整主文，必須包含全部五段（可用小標題或自然段落呈現，但五段內容缺一不可）；盡量保留我原本的用字、觀點與語氣；只做必要的刪減、重排、補銜接與局部改寫；把角色一選定的理論嫁接進概念建立段；個人立場段不可含新理論；不要加入原稿沒有的新故事、新立場、新例子；注意信息塊負荷，避免同一句塞進過多抽象詞與因果。不需要生成延伸地圖，這篇主文寫完即結束。'
+      ],
+      extraNote: [],
+      selfCheck: '主文調整版前，務必自我檢查是否五段皆備、主閉合是否唯一且飽滿、個人立場段是否違反禁止新理論的規則、每段是否已依轉折點做段內換行分段、標題與金句是否符合排版格式規則。延伸地圖不需要在此輸出，之後會用其他工具單獨處理。'
+    },
+    sb7: {
+      name: 'StoryBrand SB7',
+      skeleton: [
+        '【七個環節，順序固定，缺一不可】',
+        '1. 角色：明確定位讀者是故事主角，作者／品牌只是嚮導，不是主角，全文視角要從讀者的渴望與目標出發。',
+        '2. 問題：分三層寫出讀者的問題——外在問題（表面具體困境）、內在問題（因外在問題產生的情緒或自我懷疑）、哲學問題（為什麼這件事本來就不該發生，賦予正當性）。三層都要出現，不可只停留在外在問題。',
+        '3. 嚮導：作者展現同理心（我理解這種感覺）與權威感（我有能力或經驗幫你），但語氣不能高高在上，要讓讀者感覺被陪伴。',
+        '4. 計畫：給出3步以內的清楚計畫，步驟要具體到讀者知道下一步做什麼，不可抽象空泛。',
+        '5. 行動呼籲：分直接CTA（明確要讀者做的動作，例如預約、購買、加入）與過渡CTA（風險更低的下一步，例如追蹤、閱讀更多），至少要有一種清楚呼籲。',
+        '6. 避免失敗：簡短點出如果不採取行動，讀者會持續面對的損失或風險，製造適度但不過度的緊迫感。',
+        '7. 成功結局：具體描繪讀者採取行動後的理想畫面，要能讓讀者想像自己抵達那個結果。'
+      ],
+      extraOutputParts: [
+        '第一部分：角色與問題定位 — 明確寫出讀者是誰、外在／內在／哲學三層問題各是什麼。',
+        '第二部分：結構安排 — 逐一（七個環節都要列）說明原始草稿裡哪些內容對應哪個環節、哪些要補強、哪些要移除。',
+        '第三部分：主文調整版 — 依照前兩部分的安排生成完整主文，七個環節缺一不可；盡量保留我原本的用字與語氣；計畫段落是全文最強、最具體的段落，務必給到位；不要加入原稿沒有的新故事、新立場、新例子。'
+      ],
+      extraNote: [],
+      selfCheck: '主文調整版前，務必自我檢查讀者是否全程被定位為主角而非作者、問題是否確實有外在／內在／哲學三層、計畫是否在3步以內且具體可執行、行動呼籲是否清楚、避免失敗與成功結局是否都有出現。'
+    },
+    qcz: {
+      name: '起承轉合',
+      skeleton: [
+        '【四段結構，順序固定，缺一不可】',
+        '1. 起（破題）：直接點出這篇要談的核心想法或現象，開場要有具體畫面或明確立場，不可用「今天想跟大家聊聊」這類鬆散開場。',
+        '2. 承（敘事）：只服務「起」段提出的想法，用具體經驗、案例或觀察去鋪陳、佐證，不可在此段岔出新的主張。',
+        '3. 轉（對比或觀點提升）：這是全文最關鍵、最需要用力的一段，必須提出一個對照、反差、或把「起」段的想法拉到更高層次的觀點，讓讀者感覺「原來還可以這樣看」。',
+        '4. 合（收束）：回扣「起」段的核心想法，可以視情況加入延伸思考或行動建議，但不可在此段引入新的主張，只做收束與回扣。'
+      ],
+      extraOutputParts: [
+        '第一部分：核心想法定位 — 明確寫出「起」段要破的題是什麼，以及「轉」段打算提出的對比或觀點提升方向。',
+        '第二部分：結構安排 — 逐段（起承轉合四段都要列）說明原始草稿裡哪些內容對應哪一段、哪些要補強、哪些要移除。',
+        '第三部分：主文調整版 — 依照前兩部分的安排生成完整主文，四段缺一不可；盡量保留我原本的用字與語氣；「轉」段是全文重心，必須有明確的層次拉開，不能只是重複「承」段的內容；「合」段不可引入新主張。'
+      ],
+      extraNote: [],
+      selfCheck: '主文調整版前，務必自我檢查「承」段是否只服務「起」段的想法而沒有岔題、「轉」段是否真的把層次拉開而不只是換句話重複、「合」段是否只做收束回扣而沒有偷偷塞入新主張。'
+    },
+    scqa: {
+      name: 'SCQA金字塔原理',
+      skeleton: [
+        '【四要素，可依下方變體調整順序，內容缺一不可】',
+        '- 情境（Situation）：讀者目前熟悉、沒有爭議的背景現況。',
+        '- 衝突（Complication）：這個現況裡出現的變化、矛盾或困難，導致原本的平衡被打破。',
+        '- 問題（Question）：由衝突自然引發、讀者會想問的核心問題。',
+        '- 答案（Answer）：這篇文章要給出的核心解答或機制說明。',
+        '',
+        '【四種排序變體，請根據內容性質選擇一種，並在結構安排段落中說明選擇理由】',
+        '- 標準式 S→C→Q→A：適合正式說明、系列文開頭。',
+        '- 開門見山式 A→S→C→Q：適合短內容需要先給結論，之後再補脈絡。',
+        '- 突出衝突式 C→S→Q→A：適合讀者已經很痛、需要立即被說中共鳴。',
+        '- 疑問引導式 Q→S→C→A：適合教學型、靠好奇心驅動的內容。'
+      ],
+      extraOutputParts: [
+        '第一部分：SCQA內容定位 — 明確寫出情境、衝突、問題、答案各自的內容是什麼，並說明選擇哪一種排序變體、為什麼。',
+        '第二部分：結構安排 — 說明原始草稿裡哪些內容對應S／C／Q／A，哪些要補強、哪些要移除。',
+        '第三部分：主文調整版 — 依照選定的排序變體生成完整主文，四個要素缺一不可；盡量保留我原本的用字與語氣；答案段落必須把機制說清楚，不能只是重複問題。'
+      ],
+      extraNote: [],
+      selfCheck: '主文調整版前，務必自我檢查是否確實依照選定的排序變體呈現、衝突段是否有製造出足夠的張力讓問題自然浮現、答案段是否真的解釋了機制而不是空泛重申立場。'
+    },
+    pain: {
+      name: '痛點→轉折→新可能',
+      skeleton: [
+        '【三段結構，順序固定，缺一不可】',
+        '1. 痛點：用讀者自己會用的話（不是專業術語）講出困境，要讓讀者覺得「這說的就是我」，真實性優先於戲劇性，不可誇大渲染。',
+        '2. 轉折：用「我也走過這段路」的陪伴語氣呈現轉變的過程，不可寫成「我拯救了你」式的英雄敘事，重點是過程的真實感，不是戲劇化的救贖。',
+        '3. 新可能：描繪具體、可想像的畫面，並附帶至少一個可驗證的細節（例如具體做法、可觀察到的變化），不可只是空泛的美好想像。'
+      ],
+      extraOutputParts: [
+        '第一部分：痛點與轉折定位 — 明確寫出讀者的痛點是什麼、作者的轉折經歷是什麼、新可能的具體畫面是什麼。',
+        '第二部分：結構安排 — 說明原始草稿裡哪些內容對應痛點／轉折／新可能三段，哪些要補強、哪些要移除。',
+        '第三部分：主文調整版 — 依照前兩部分的安排生成完整主文，三段缺一不可；盡量保留我原本的用字與語氣；轉折段必須是陪伴語氣而非英雄拯救語氣；新可能段必須包含至少一個可驗證的具體細節。'
+      ],
+      extraNote: [],
+      selfCheck: '主文調整版前，務必自我檢查痛點段是否用讀者的話而非專業術語、轉折段是否是陪伴語氣而非英雄敘事、新可能段是否有具體可驗證的細節而不是空泛美好想像。'
+    },
+    onebig: {
+      name: '單一想法核心法',
+      skeleton: [
+        '【核心結構，順序固定，缺一不可】',
+        '1. 核心主張：用一句話講出這篇文章最想讓讀者記住的主張，這句話必須精煉到即使脫離全文也依然清楚有力。',
+        '2. 支撐點一：用案例、數據或比喻其中一種方式，展開支持核心主張的第一個理由。',
+        '3. 支撐點二：用另一種方式（不與支撐點一重複類型），展開支持核心主張的第二個理由。',
+        '4. 支撐點三：用第三種方式，展開支持核心主張的第三個理由。',
+        '5. 回扣：文末再次呼應核心主張，用不同措辭重申，讓讀者對這句話產生「重複強化」的印象，而不是靠敘事轉折或製造衝突取勝。'
+      ],
+      extraOutputParts: [
+        '第一部分：核心主張定位 — 明確寫出這篇的一句話核心主張，並自我測試：蓋住三個支撐點只讀這句主張，是否依然清楚有力；若不夠精煉，請先重寫這句主張。',
+        '第二部分：結構安排 — 說明三個支撐點分別要用案例、數據、比喻中的哪一種呈現，並說明原始草稿裡哪些內容可以對應。',
+        '第三部分：主文調整版 — 依照前兩部分的安排生成完整主文，核心主張＋三個支撐點＋回扣缺一不可；盡量保留我原本的用字與語氣；三個支撐點務必使用三種不同的呈現方式，不可重複；不要加入原稿沒有的新主張，全文只服務這一個核心主張。'
+      ],
+      extraNote: [],
+      selfCheck: '主文調整版前，務必自我檢查核心主張是否蓋住支撐點後依然清楚有力、三個支撐點是否確實使用三種不同呈現方式（案例／數據／比喻）而非重複、全文是否只圍繞這一個主張而沒有偷偷長出第二個主張。'
+    }
+  };
+  return specs[key];
+}
+
+function genBMerged() {
+  var draft = document.getElementById('global-draft').value;
+  var mode = document.getElementById('b-mode').value;
+  var intent = document.getElementById('b-intent').value;
+  var theory = document.getElementById('b-theory').value;
+  var frameworkChoice = document.getElementById('b-framework').value;
+  if (!requireField(draft, '請先在上方共用欄位貼上草稿')) return;
+  if (!requireField(intent, '請先貼上已確認的意圖（你在A模組回答問題後的內容）')) return;
+  var theoryText = theory && theory.trim() !== ''
+    ? '我已指定要使用的理論如下，請直接採用：\n' + theory
+    : '我尚未指定理論，請你從候選中自行判斷並選出最合適的1-2個，並說明選擇理由。';
+
+  var frameworkChooserBlock = [];
+  var chosenSpecText = '';
+
+  if (frameworkChoice === 'auto') {
+    frameworkChooserBlock = [
+      '===== 框架自動判斷，角色二開始改寫前必須先做這一步 =====',
+      '',
+      '請先閱讀下方「已確認的意圖」，裡面應該包含我對「這篇文章最需要解決的是哪一種任務」這一題的回答。',
+      '請依照下面的對應表，判斷這篇最適合用哪一種長文框架：',
+      '- 若答案偏向「信任問題」（讀者需要先信任你或方法才會行動）→ 選 StoryBrand SB7。',
+      '- 若答案偏向「觀點深度」（需要對比或把觀點拉到更高層次）→ 選 起承轉合。',
+      '- 若答案偏向「機制說明」（需要把系統性原理講清楚）→ 選 SCQA金字塔原理。',
+      '- 若答案偏向「真實共鳴」（讀者需要先感覺「這也是我」）→ 選 痛點→轉折→新可能。',
+      '- 若答案偏向「單一主張的說服力」（只需要一個核心觀點打中讀者）→ 選 單一想法核心法。',
+      '- 若這篇文章需要同時兼顧「讓讀者懂機制」「讓讀者有共鳴」「讓讀者知道下一步」三者缺一不可，不能只強化其中一段而犧牲其他段 → 選 知識鑽石2.0。',
+      '',
+      '請在角色二輸出的第一行明確寫出：「本篇選用框架：（框架名稱），原因：（一句話說明）」，再依照該框架的規格繼續輸出。',
+      ''
+    ];
+    // Provide all specs briefly so AI can apply whichever it picks
+    var allKeys = ['diamond','sb7','qcz','scqa','pain','onebig'];
+    var allSpecsText = ['===== 六種框架規格，請依上方判斷結果選用其中一種 ====='];
+    allKeys.forEach(function(k){
+      var s = getFrameworkSpec(k);
+      allSpecsText.push('');
+      allSpecsText.push('【框架：' + s.name + '】');
+      allSpecsText = allSpecsText.concat(s.skeleton);
+    });
+    chosenSpecText = allSpecsText.join('\n');
+  } else {
+    var spec = getFrameworkSpec(frameworkChoice);
+    frameworkChooserBlock = [
+      '===== 本次已指定使用框架：' + spec.name + '，不需自動判斷，直接依此框架規格輸出 =====',
+      ''
+    ];
+    chosenSpecText = spec.skeleton.join('\n');
+  }
+
+  var outputPartsText, extraNoteText, selfCheckText;
+  if (frameworkChoice === 'auto') {
+    outputPartsText = [
+      '第一部分：框架選用宣告 — 依上方判斷邏輯，明確寫出選用的框架名稱與選用原因。',
+      '第二部分：結構安排 — 依選用框架的骨架逐段列出，說明原始草稿裡哪些內容對應哪一段、哪些要補強、哪些要移除。',
+      '第三部分：主文調整版 — 依照前兩部分的安排生成完整主文，選用框架的所有段落缺一不可；盡量保留我原本的用字、觀點與語氣；不要加入原稿沒有的新故事、新立場、新例子；注意信息塊負荷，避免同一句塞進過多抽象詞與因果。'
+    ].join('\n');
+    extraNoteText = '';
+    selfCheckText = '主文調整版前，務必自我檢查選用的框架是否真的符合已確認意圖裡的任務類型、該框架的所有段落是否齊備、是否有依框架特性做好對應的重點段落（例如SB7的計畫段、起承轉合的轉段、單一想法核心法的核心主張精煉度）。';
+  } else {
+    var spec2 = getFrameworkSpec(frameworkChoice);
+    outputPartsText = spec2.extraOutputParts.join('\n');
+    extraNoteText = spec2.extraNote && spec2.extraNote.length ? '\n\n' + spec2.extraNote.join('\n') : '';
+    selfCheckText = spec2.selfCheck;
+  }
+
+  var text = [
+    '你現在要依序扮演兩個角色，處理同一篇文章，請依順序完整輸出，並用清楚標題分開。',
+    '',
+    '===== 完整架構規格（角色二必須逐段對照此規格輸出，不可自行簡化或跳過任何一段） ====='
+  ]
+  .concat(frameworkChooserBlock)
+  .concat([chosenSpecText, ''])
+  .concat(getGenericFormatRules())
+  .concat([
+    '',
+    '===== 角色一：資料研究員 =====',
+    '這是主文核心論述段落專用的理論佐證搜集任務。',
+    '請根據下方已確認的意圖與原始草稿，找出3-5個可用於主文的理論候選，優先順序如下：',
+    '1. 有明確理論名稱、研究者或概念名詞。',
+    '2. 有可解釋機制的研究或理論。',
+    '3. 能直接嫁接到草稿內容，而不是泛泛而談。',
+    '',
+    '每一項請用固定格式輸出：',
+    '- 概念/研究名稱：',
+    '- 一句話機制說明：',
+    '- 跟主線的關聯性：',
+    '- 適合嫁接的位置：',
+    '',
+    theoryText,
+    '',
+    '===== 角色二：主文調整師 =====',
+    '我的草稿常常會發散、跳躍，所以你不能憑空重寫一篇新的，而是要根據原始草稿、已確認的意圖、角色一選定的理論，並嚴格對照上方架構規格，調整成一篇結構清楚、主線聚焦、仍保留我原本語氣的主文版本。',
+    '',
+    '本次模式：' + mode,
+    '',
+    '請依序輸出三部分：',
+    outputPartsText,
+    extraNoteText,
+    '',
+    '規則：',
+    '- 先完整輸出角色一，再輸出角色二的三個部分，依序排列，用標題清楚分隔。',
+    '- 角色二只能使用角色一選定的理論，不可另外編造新理論。',
+    '- ' + selfCheckText,
+    '- 全程用繁體中文回答，不要把語氣改得太像制式AI文章。',
+    '',
+    '【原始草稿】',
+    draft,
+    '',
+    '【已確認的意圖】',
+    intent
+  ]).join('\n');
+  setOutput('b-output', text);
+}
+
+function getExpandFrameworkMap(key) {
+  var maps = {
+    diamond: {
+      segLabel: '五段骨架',
+      segments: [
+        { name: '主問題與主閉合設定', label: '情境引入' },
+        { name: '情境觸發', label: '情境引入' },
+        { name: '概念建立', label: '機制解釋' },
+        { name: '操作步驟', label: '行動指引' },
+        { name: '個人立場', label: '情感立場' }
+      ]
+    },
+    sb7: {
+      segLabel: '七個環節',
+      segments: [
+        { name: '角色', label: '情境引入' },
+        { name: '問題', label: '情感立場' },
+        { name: '嚮導', label: '情感立場' },
+        { name: '計畫', label: '行動指引' },
+        { name: '行動呼籲', label: '行動指引' },
+        { name: '避免失敗', label: '警示收束' },
+        { name: '成功結局', label: '收束回扣' }
+      ]
+    },
+    qcz: {
+      segLabel: '起承轉合四段',
+      segments: [
+        { name: '起', label: '情境引入' },
+        { name: '承', label: '機制解釋' },
+        { name: '轉', label: '機制解釋' },
+        { name: '合', label: '收束回扣' }
+      ]
+    },
+    scqa: {
+      segLabel: 'SCQA四要素',
+      segments: [
+        { name: '情境', label: '情境引入' },
+        { name: '衝突', label: '警示收束' },
+        { name: '問題', label: '情感立場' },
+        { name: '答案', label: '機制解釋' }
+      ]
+    },
+    pain: {
+      segLabel: '痛點轉折新可能三段',
+      segments: [
+        { name: '痛點', label: '情感立場' },
+        { name: '轉折', label: '機制解釋' },
+        { name: '新可能', label: '收束回扣' }
+      ]
+    },
+    onebig: {
+      segLabel: '核心主張三支撐一回扣',
+      segments: [
+        { name: '核心主張', label: '情境引入' },
+        { name: '支撐點一', label: '機制解釋' },
+        { name: '支撐點二', label: '機制解釋' },
+        { name: '支撐點三', label: '機制解釋' },
+        { name: '回扣', label: '收束回扣' }
+      ]
+    }
+  };
+  return maps[key];
+}
+
+function getThickenGuide(label) {
+  var guides = {
+    '情境引入': '補具體畫面與當下細節，不是抽象情緒詞。',
+    '機制解釋': '把已有理論或機制「演一次」的具體小案例，不新增原稿沒有的新理論。',
+    '情感立場': '用具體行為反應取代情緒標籤，不加新理論。',
+    '行動指引': '補可能遇到的實際情況或判斷細節，讓步驟更可執行。',
+    '警示收束': '具體描繪不行動的後果畫面，避免空泛恐嚇語氣。',
+    '收束回扣': '用不同措辭再次強化核心，避免直接重複同一句。'
+  };
+  return guides[label];
+}
+
+function genExpand() {
+  var final = document.getElementById('global-final').value;
+  if (!requireField(final, '請先在上方共用欄位貼上確定版主文')) return;
+  var level = document.getElementById('expand-level').value;
+  var fw = document.getElementById('expand-framework').value;
+  var map = getExpandFrameworkMap(fw);
+
+  var segLines = map.segments.map(function(s){
+    return '- ' + s.name + '（功能標籤：' + s.label + '）→ 加厚方向：' + getThickenGuide(s.label);
+  });
+
+  var text = [
+    '你現在的角色是「長文擴寫師」，同時套用「節奏雕刻」技法，不是重新撰稿人。',
+    '',
+    '===== 最優先規則：排版格式（輸出全文時第一個檢查項，比任何內容規則都優先） =====',
+    '- H1標題：獨立一行，純文字，不加符號。',
+    '- H2段落標題（依下方「' + map.segLabel + '」逐段呈現，若原文延伸地圖已被移除，不需補回）：每段開頭獨立一行純文字標題，不加Emoji、不加◆。',
+    '- H3小節（只在段內需要拆小節時用）：①②③或一、二、三，不混用。',
+    '- 金句：獨立一行，前後各空一行，不加引號不加粗體。',
+    '- 一般段落（非標題非金句）：每段最多4句，第5句起強制換段。',
+    '這五條格式規則請在輸出前逐條核對，輸出時直接呈現排版後的成品本身，不要用程式碼框、不要额外解釋「這是H2」之類的後設標籤。',
+    '',
+    '===== 這篇主文用的框架與段落功能對照 =====',
+    '這篇主文採用「' + map.segLabel + '」框架。請先逐段比對下方對照表，確認每一段對應哪一種「功能標籤」，再依功能標籤決定加厚方向，不要自己另外臨場判斷功能：',
+    ''
+  ].concat(segLines).concat([
+    '',
+    '===== 內容任務：加厚與節奏雕刻 =====',
+    '本次擴寫強度：' + level,
+    '主文骨架、順序、立場與觀點已經定稿，不能更動結構、順序、立場或觀點。',
+    '',
+    '核心判準：只加厚關鍵節點（不是逐句都補），用具體畫面／行為取代抽象情緒詞，禁止只是換句話重複同一個結論。',
+    '',
+    '節奏雕刻技法（4-6個關鍵節點適用：第一次衝突、最大疑問、關鍵領悟、情感收束、金句前、結尾，其餘保持乾淨不擴寫）：',
+    '- 心理停頓取代情緒描述：不寫「我很震驚」，寫「我停了很久」。',
+    '- 適度加入自問句（「真的嗎？」「那又代表什麼？」）還原真實思考節奏。',
+    '- 最大領悟不要一句話講完，用「原本以為→後來發現→那一刻突然想到」帶讀者走過去。',
+    '- 關鍵收束句前後可用空行製造停頓，留白也是內容。',
+    '- 一段只推進一種閱讀感受，不要把多種情緒轉折塞進同一段。',
+    '',
+    '若這篇主文結尾包含延伸地圖（想更深入這個主題／想探索其他方向／準備好行動了），該段維持原樣不擴寫，篇名與副標都不要更動。若沒有這一段，不需要補上。',
+    '',
+    '不可更動：主文段落順序與數量、主閉合或核心主張類型、立場與結論。',
+    '全程用繁體中文，貼近原文語氣，不要寫成制式AI擴寫的樣子。',
+    '',
+    '===== 最後提醒：輸出前再次核對排版格式（跟開頭同一組規則） =====',
+    'H1不加符號／各段H2標題獨立成行不加符號／H3用①②③或一二三／金句獨立一行前後空行不加裝飾／一般段落最多4句超過強制換段。這五條請在你即將輸出的成品裡逐一確認已經真正落實，而不是只在腦中想過一次。',
+    '',
+    '已定稿主文（以下開始擴寫，並套用上方格式規則輸出）：',
+    final
+  ]).join('\n');
+  setOutput('expand-output', text);
+}
+
+
+function getC1CoreRules() {
+  return [
+    '===== 核心定位，最高優先 =====',
+    '',
+    'IG限動不是IG輪播貼文，不要依照文章段落逐頁拆解，不要把每個重點各做成一張卡片，',
+    '不要產出知識整理、步驟教學或條列式資訊。',
+    '',
+    '限動應該是整篇文章濃縮後的金句本身，不是留白到幾乎沒有內容的短語堆疊。',
+    '字數不是重點，內容跟主文的連結度、以及金句本身有沒有力度才是重點。',
+    '',
+    '===== 與主文的連結度，最容易失敗的一條 =====',
+    '',
+    '金句必須大量使用主文裡最具體、最獨特、最少見的詞彙、比喻或畫面，',
+    '禁止把這些具體說法替換成「能量場」「面對未知」「穩定自己」「內在成長」這類',
+    '任何身心靈或心靈成長文章都能套用的萬用詞。',
+    '',
+    '判斷標準：如果你寫出的句子拿去套在完全不同主題的另一篇文章後面，讀者也不會發現異樣，',
+    '就代表這句話跟主文的連結度不夠，必須重寫，換回主文裡真正出現過的說法或意象。',
+    '',
+    '如果主文裡有幾個核心概念存在遞進、對照或因果關係（例如A是B的前提、B會導向C），',
+    '金句應該保留這種順序感，讓讀者讀完之後感覺是一條完整的思路，不是幾個並列的重點。',
+    '',
+    '===== 建議句式（可參考，不強制） =====',
+    '',
+    '可以使用「A，是B」這種定義句式，把主文裡的核心概念逐個點出來，例如：',
+    '「NPC，是意識還沒甦醒的狀態。」「覺醒，是第一次看清那套操控你的程式碼。」',
+    '這種句式適合概念層次分明、有遞進關係的主文。',
+    '',
+    '如果主文比較偏向單一情緒或立場，也可以用一段完整的陳述句或反差句直接點出核心，',
+    '不一定要每句都套用「A是B」的格式，格式服務內容，不是內容服務格式。',
+    '',
+    '===== 換行規則 =====',
+    '',
+    '換行是為了呼吸感，不是為了製造留白假象。',
+    '每一行必須是語意完整、可以獨立閱讀的一句話或一個完整短句，',
+    '禁止把一句完整的話拆成三四個不成句的碎片（例如把「真正需要保護的，也許不是你的能量場」',
+    '拆成「真正需要保護的」換行「也許不是」換行「你的能量場」這種破碎寫法）。',
+    '',
+    '===== 字數與頁數 =====',
+    '',
+    '單頁字數建議落在150-200字之間，這是用來確保金句有足夠的內容密度與主文連結度，',
+    '不是硬性上限，如果金句本身已經寫得夠精準有力，字數可以略低於這個區間；',
+    '但如果目前寫出來的內容明顯低於150字、且讀起來空泛、抽象、缺乏具體畫面，',
+    '代表濃縮過度、留白過頭，必須把主文裡更具體的內容或意象補回來，不能只靠短句堆疊留白。',
+    '',
+    '預設只產出1頁。只有在下列情況才能拆到第2頁：',
+    '- 一頁塞進所有內容會嚴重超過200字，導致畫面過度擁擠。',
+    '- 主文有兩個都很重要、但語氣或情緒轉折明顯、無法在同一頁自然銜接的核心觀點。',
+    '',
+    '禁止超過2頁。如果產出2頁，兩頁必須像同一條思路的前後兩段呼吸，',
+    '不能是「第一頁講重點、第二頁講另一個重點」的輪播式拆解。',
+    '',
+    '===== 禁止事項 =====',
+    '',
+    '- 不可以加入主文沒有的新論點、新故事、新例子或新結論。',
+    '- 不要使用項目符號、編號、破折號、分隔線或過多標點。',
+    '- 不要替限動加標題、小標、文章摘要或背景解釋。',
+    '- 不要每一句都做成問句，也不要每一句都對讀者說「你」，語氣自然交錯即可。',
+    '',
+    '===== 導流規則 =====',
+    '',
+    '如果主文適合導流，最後一行可以加入一句引導，但這句話必須跟前面金句用到的',
+    '具體詞彙或意象直接呼應，不能是可以套用在任何文章後面的通用萬用句。',
+    '',
+    '判斷標準：如果這句導流句拿掉「主文的內容」也完全通順，就代表不夠貼題，需要重寫，',
+    '讓它繼續延伸前面金句裡出現過的比喻或說法。',
+    '',
+    '不要使用：點連結看完整版／快去看全文／歡迎留言分享／記得按讚追蹤／',
+    '今天想和你聊聊／這篇文章告訴你／以下是重點整理／有些事情不是一句話就能說完。'
+  ];
+}
+
+function getFrameworkGuide() {
+  return [
+    '===== 五種文案框架說明 =====',
+    '',
+    'AIDA（注意→興趣→渴望→行動）：適合主文最需要先抓住陌生讀者注意力、',
+    '建立好奇心再導向閱讀的內容。',
+    '',
+    'PAS（問題→放大痛點→解方）：適合主文核心是痛點、困擾、誤解、恐懼，',
+    '或讀者已經感受到某種不舒服的內容。',
+    '',
+    'BAB（之前→之後→橋樑）：適合主文最強的是轉變前後的對比、狀態改變、',
+    '心境轉折的內容。',
+    '',
+    'FAB（特徵→優勢→好處）：適合主文重點在介紹工具、方法、產品、練習，',
+    '或某種具體做法帶來的價值。',
+    '',
+    'QUEST（資格→理解→教育→刺激→過渡）：適合主文需要先辨識讀者、',
+    '建立理解，再慢慢教育並自然引導閱讀的內容，通常適合稍長的引導文。'
+  ];
+}
+
+function genC1Auto() {
+  var final = document.getElementById('global-final').value;
+  if (!requireField(final, '請先在上方共用欄位貼上確定版主文')) return;
+  var text = [
+    '你現在的角色是「IG限動轉譯師」。',
+    '',
+    '你的任務不是把文章拆成輪播，也不是條列重點摘要，',
+    '而是把以下已確定的主文，濃縮成一則「金句型」的IG限時動態。',
+    '這則限動要讓讀者在短時間內感受到文章最核心的觀點、情緒或認知反差，',
+    '產生「這幾句話講的就是我」或「這個說法很有意思」的感覺，再自然導流到完整貼文。',
+    '',
+    '===== 第一步：框架判斷，先做但不要在輸出中展開分析 =====',
+    ''
+  ].concat(getFrameworkGuide()).concat([
+    '',
+    '請先根據主文內容，在 AIDA、PAS、BAB、FAB、QUEST 五個框架中，',
+    '判斷哪一個最適合這篇IG限動轉譯，只能選一個主框架。',
+    '',
+    '若主文同時符合兩種框架的特徵，選一個主框架，最多再借用另一個框架的一小段節奏，',
+    '不要把五種框架混成拼盤。',
+    '',
+    '===== 第二步：依上方核心規則產出限動 =====',
+    ''
+  ]).concat(getC1CoreRules()).concat([
+    '',
+    '===== 輸出格式 =====',
+    '',
+    '請先判斷最適合產出1頁或2頁。',
+    '',
+    '若1頁足夠，輸出：',
+    '【選用框架：（框架名稱）】',
+    '【限動第1頁】',
+    '（直接給限動文字，語意完整的句子換行呈現）',
+    '',
+    '若確實需要2頁，輸出：',
+    '【選用框架：（框架名稱）】',
+    '【限動第1頁】',
+    '（直接給限動文字）',
+    '',
+    '【限動第2頁】',
+    '（直接給限動文字）',
+    '',
+    '輸出後不要補充選框分析過程、寫作說明、設計建議或替代版本，只需標明選用框架名稱與最終限動文字。',
+    '',
+    '===== 最後自我檢查，輸出前務必逐條確認 =====',
+    '',
+    '- 我選的主框架是否真的符合這篇主文的內容任務，是否應該重選。',
+    '- 這不是輪播式的資訊拆解，也不是把段落逐一濃縮的摘要。',
+    '- 金句裡是否大量使用了主文的具體詞彙或意象，而不是替換成萬用心靈詞彙。',
+    '- 是否沒有把一句完整的話拆成不成句的碎片。',
+    '- 是否優先只用了1頁；若用了2頁，是否真的有必要。',
+    '- 字數是否落在合理區間，如果明顯偏少，是否是因為內容不夠具體、需要補回主文的畫面。',
+    '- 導流句是否跟主文的具體內容有呼應，而不是通用萬用句。',
+    '',
+    '【已確定版主文】',
+    final
+  ]).join('\n');
+  setOutput('c1-output', text);
+}
+
+function genC1AllFrameworks() {
+  var final = document.getElementById('global-final').value;
+  if (!requireField(final, '請先在上方共用欄位貼上確定版主文')) return;
+  var text = [
+    '你現在的角色是「IG限動轉譯師」，這次是「五框全部測試模式」。',
+    '',
+    '請把以下已確定的主文，分別套用 AIDA、PAS、BAB、FAB、QUEST 五種文案框架，',
+    '各產出一版金句型IG限動，方便使用者互相比較，挑出最適合的版本。',
+    ''
+  ].concat(getFrameworkGuide()).concat([
+    '',
+    '===== 每一版都必須遵守下方核心規則 =====',
+    ''
+  ]).concat(getC1CoreRules()).concat([
+    '',
+    '===== 輸出格式 =====',
+    '',
+    '請依序輸出五個框架版本，每個版本格式如下：',
+    '',
+    '【框架：AIDA】',
+    '【限動第1頁】',
+    '（直接給限動文字，若確實需要可加限動第2頁，最多2頁）',
+    '',
+    '【框架：PAS】',
+    '（同上格式）',
+    '',
+    '【框架：BAB】',
+    '（同上格式）',
+    '',
+    '【框架：FAB】',
+    '（同上格式）',
+    '',
+    '【框架：QUEST】',
+    '（同上格式）',
+    '',
+    '五個版本彼此獨立，不要互相參照或比較評論，也不要在最後加總結、推薦或排名，',
+    '讓使用者自己判斷哪一版最適合。',
+    '',
+    '===== 每一版輸出前都要自我檢查 =====',
+    '',
+    '- 這一版是否真的呈現出該框架的節奏，而不是五版都寫得很像。',
+    '- 金句裡是否大量使用了主文的具體詞彙或意象，而不是替換成萬用心靈詞彙。',
+    '- 是否沒有把一句完整的話拆成不成句的碎片。',
+    '- 導流句是否跟主文的具體內容有呼應，而不是通用萬用句。',
+    '',
+    '【已確定版主文】',
+    final
+  ]).join('\n');
+  setOutput('c1-output', text);
+}
+
+function genArchitect() {
+  var article = document.getElementById('d-article').value;
+  if (!requireField(article, '請先在上方貼上文章全文')) return;
+  var systems = document.getElementById('d-systems').value || '（尚未列出其他系統）';
+  var text = '你現在扮演「心智脈絡網架構器」。任務是讀入一篇已完成的文章，用四軸擴展法產出候選延伸節點，並找出跨主題的隱藏連接。請嚴格依照以下三層輸出，不要跳步：\n\n' +
+    '【第一層：候選節點清單】\n在這一層裡，依照垂直深挖、水平平移、反面驗證、跨系統嫁接四個軸線分別列出候選節點，每個軸線列1-2個。每個節點的呈現格式是「篇名」換行「一句話說明」換行「來源：引用文中哪句話」，格式如下：\n\n垂直深挖\n\n（篇名）\n（一句話說明）\n來源：「……」\n\n水平平移\n\n（篇名）\n（一句話說明）\n來源：「……」\n\n反面驗證\n\n（篇名）\n（一句話說明）\n來源：「……」\n\n跨系統嫁接\n\n（篇名）\n（一句話說明）\n來源：「……」（若使用者沒有填其他系統，這裡直接寫「這裡先留空，等你之後告訴我有哪些系統，我再幫你比對」）\n\n' +
+    '四軸的挖掘邏輯：\n- 垂直深挖：挑文中一句話帶過但沒展開的詞、理論或案例，找出可以獨立成篇的主題\n- 水平平移：找出文章最濃縮的核心機制句，思考如何套進不同情境（人際、消費、其他系統）重新演繹\n- 反面驗證：掃描文中任何讓步語氣句（例如「我不是反對」「不同情況下」），找出可以預留的反例或不同情境探討\n- 跨系統嫁接：比對下方列出的使用者其他系統，判斷這篇的決策邏輯能否套用\n\n' +
+    '篇名寫法：可以是問句，也可以是「A不是B，而是C」這種反差短句，也可以直接點出一個主張，形式不限，但要能引發好奇心或認知反差，例如「同頻共振可以如何理解？」「高互動，不一定代表高價值」。\n\n' +
+    '說明句寫法，這是最重要的一條：不強制用第一人稱，可以用第三人稱或泛稱寫，重點是要有具體內容密度，把候選主題裡的具體角度、對比、機制或方法直接寫進句子裡，讓讀者一看就知道這篇具體會談什麼，例如「用心理學與神經科學的角度，重新拆解『同頻』背後的運作機制」這種寫法。絕對避免「了解我如何整理」「分享我對這個主題的想法」這類空泛句子，也避免「是否能成為」「具有可移植性」這類生硬學術詞。\n\n' +
+    '===== 【說明句規格，最高優先，第三層輸出前必看】 =====\n' +
+    '第三層（想更深入這個主題／想探索其他方向／準備好行動了）裡每個篇名下面只能接一行副標，不是摘要、不是內容介紹，而是那篇未來文章真正要回答的核心問題。\n' +
+    '長度限制：30-50字。目的是讓讀者一眼知道下一篇會得到什麼。\n' +
+    '寫法必須符合下面其中一種：\n' +
+    '- 用一句話點出核心機制\n' +
+    '- 用一句話點出最大的認知反差\n' +
+    '- 用一句話點出讀者最大的疑問\n' +
+    '不要寫成摘要或介紹式的說明句，即使覺得只有一句話會顯得單薄，也絕對不要多寫解釋，這是刻意的設計。第一層的候選節點清單仍可用原本較有內容密度的說明句，只有第三層的副標需要套用這條30-50字規格。\n\n' +
+    '【第二層：跨主題連接】\n比對第一層裡四個軸線的節點之間，是否有語意重複或邏輯呼應的配對，用一句話說出「這兩個其實在講同一件事」的感覺。若沒有明顯連接，就老實說「這幾個節點目前看起來還沒有明顯關聯」。\n\n' +
+    '【第三層：優先順序建議】\n這一層必須用以下三個固定標題當作分類容器，每個標題下只放一個篇名（不可放多個），把第一層裡最適合的一個篇名歸類進去。每個節點的呈現格式是「篇名」單獨一行，換行接「副標」（套用上方【說明句規格】：30-50字，機制／反差／疑問三選一），不要用括號包篇名，也不要用冒號把篇名和副標接在同一行，也不要用⸻等分隔線。格式如下：\n\n想更深入這個主題\n\n篇名\n副標（30-50字，機制／反差／疑問三選一）\n\n想探索其他方向\n\n篇名\n副標（30-50字，機制／反差／疑問三選一）\n\n準備好行動了\n\n篇名\n副標（30-50字，機制／反差／疑問三選一）\n\n三個標題都要出現，不能省略任何一個，且每個標題下只能有一個篇名。如果某個分類目前沒有第一層裡適合的篇名，就在該標題下直接寫「這裡目前還沒有明顯對應的篇名」，不要硬塞不相關的內容進去，也不要跳過這個標題不寫。\n\n' +
+    '絕對不要寫成「第一優先、第二優先、第三優先」這種依重要性排序的清單，三個分類名稱必須是清楚的標題本身，不能只是被順口提到當作解釋用的輔助詞彙。\n\n' +
+    '說明句裡絕對不要出現「這篇」兩個字，不要寫「這篇來聊聊」「這篇想分享給大家」「這篇再探索看看」這種帶轉場詞的寫法。改成直接用動詞開頭描述內容本身，例如「用心理學與神經科學的角度，重新拆解『同頻』背後的運作機制」「討論流量、演算法與長期品牌經營之間的取捨」「學會分辨情緒的功能，而不是急著壓抑或放大它」「分享目前使用的狀態檢測流程與實際應用方式」這種寫法，直接切入內容，不需要任何開場白。也不要寫成「對應想更深入這個主題」這種公文標籤句，或「建立決策模型」「擴張應用場景」這類學術詞總結。\n\n' +
+    '【輸出前最後提醒】第三層的每一個副標，請再檢查一次：字數是否在30-50字之間，是否為機制／反差／疑問三選一其中一種，是否完全沒有「說明」「討論」「分析」「拆解」這類摘要感字眼；如果不符合，必須重寫成一句真正的核心機制句、反差句或疑問句。\n\n' +
+    '使用者的其他系統／專案：\n"""\n' + systems + '\n"""\n\n' +
+    '文章全文：\n"""\n' + article + '\n"""';
+  setOutput('d-output', text);
+}
+
+var nodePool = [];
+
+function renderNodeList() {
+  var container = document.getElementById('node-list');
+  if (nodePool.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">尚未新增任何候選節點。</p>';
+    return;
+  }
+  container.innerHTML = nodePool.map(function (n, i) {
+    return '<div class="axis-box">' +
+      '<input type="checkbox" id="chk-' + i + '" ' + (n.checked ? 'checked' : '') + ' onchange="toggleNode(' + i + ')">' +
+      '<div style="flex:1;">' +
+      (n.axis !== '未分類' ? '<span class="badge axis">' + n.axis + '</span>' : '') +
+      '<div style="font-size:14px; font-weight:700; margin:4px 0;">' + n.desc + '</div>' +
+      (n.source ? '<div style="font-size:12px; color:var(--text-muted);">來源：' + n.source + '</div>' : '') +
+      '</div>' +
+      '<button class="copy-btn" style="padding:4px 10px; margin:0;" onclick="removeNode(' + i + ')">刪除</button>' +
+      '</div>';
+  }).join('');
+}
+
+function addNode() {
+  var desc = document.getElementById('node-desc').value.trim();
+  var axis = document.getElementById('node-axis').value;
+  var source = document.getElementById('node-source').value.trim();
+  if (!desc) { alert('請先填寫節點描述'); return; }
+  nodePool.push({ desc: desc, axis: axis, source: source, checked: true });
+  document.getElementById('node-desc').value = '';
+  document.getElementById('node-source').value = '';
+  renderNodeList();
+}
+
+function toggleNode(i) {
+  nodePool[i].checked = !nodePool[i].checked;
+}
+
+function removeNode(i) {
+  nodePool.splice(i, 1);
+  renderNodeList();
+}
+
+function genNodeList() {
+  var selected = nodePool.filter(function (n) { return n.checked; });
+  if (selected.length === 0) {
+    setOutput('node-output', '尚未勾選任何節點，請先新增並勾選要收錄的候選節點。');
+    return;
+  }
+  var today = new Date().toISOString().slice(0, 10);
+  var text = '【待寫節點池｜更新日期：' + today + '】\n（貼入「知識鑽石地圖_結構筆記」母卡下方）\n\n';
+  selected.forEach(function (n, idx) {
+    text += (idx + 1) + '. 節點描述：' + n.desc + '\n';
+    if (n.axis !== '未分類') { text += '   來源軸線：' + n.axis + '\n'; }
+    if (n.source) { text += '   來源文章／母節點：' + n.source + '\n'; }
+    text += '   狀態：待寫\n\n';
+  });
+  setOutput('node-output', text);
+}
+
+var AXIS_KEYWORDS = ['垂直深挖', '水平平移', '反面驗證', '跨系統嫁接'];
+
+function cleanSourceText(s) {
+  return s.replace(/^來源依據|^來源[:：]?/, '').replace(/[（(]|[）)]/g, '').trim();
+}
+
+function parseNodeLine(rawLine) {
+  var line = rawLine.trim();
+  if (!line) return null;
+  line = line.replace(/^[-•●▪]\s*/, '').replace(/^\d+[\.\)、]\s*/, '');
+  if (/^【.*】$/.test(line) || line.length < 2) return null;
+  if (/^(第[一二三四五]層|候選節點清單|跨主題連接|優先順序建議)/.test(line)) return null;
+
+  var parts = line.split(/[｜\|]/).map(function (p) { return p.trim(); }).filter(function (p) { return p.length > 0; });
+
+  if (parts.length >= 2) {
+    var axis = '';
+    var rest = parts;
+    if (AXIS_KEYWORDS.indexOf(parts[0]) !== -1) {
+      axis = parts[0];
+      rest = parts.slice(1);
+    }
+    var desc = rest[0] || '';
+    var source = rest.length > 1 ? cleanSourceText(rest.slice(1).join('｜')) : '';
+    if (!desc) return null;
+    return { desc: desc, axis: axis || '未分類', source: source };
+  }
+
+  var colonMatch = line.match(/^(垂直深挖|水平平移|反面驗證|跨系統嫁接)[:：]\s*(.+)$/);
+  if (colonMatch) {
+    return { desc: colonMatch[2].trim(), axis: colonMatch[1], source: '' };
+  }
+
+  return null;
+}
+
+function isDividerLine(line) {
+  return /^[⸻\-—_=]{2,}$/.test(line.trim());
+}
+
+function isCategoryHeader(line) {
+  var t = line.trim();
+  return ['想更深入這個主題', '想探索其他方向', '準備好行動了', '垂直深挖', '水平平移', '反面驗證', '跨系統嫁接'].indexOf(t) !== -1;
+}
+
+function isSourceSectionHeader(line) {
+  return /^來源對照/.test(line.trim());
+}
+
+function isConnectionSectionHeader(line) {
+  return /^(第二層|隱藏連接|跨主題連接)/.test(line.trim());
+}
+
+function isPrioritySectionHeader(line) {
+  return /^(第三層|優先順序建議)/.test(line.trim());
+}
+
+function cleanBullet(line) {
+  return line.trim().replace(/^[-•●▪]\s*/, '');
+}
+
+function parseMagazineFormat(raw) {
+  var rawLines = raw.split(/\n/).map(function (l) { return l.trim(); });
+  var lines = rawLines.filter(function (l) { return l.length > 0 && !isDividerLine(l); });
+
+  var nodes = [];
+  var currentCategory = '';
+  var mode = 'nodes';
+  var pendingTitle = null;
+  var pendingDetail = null;
+  var pastPriorityHeader = false;
+  var sourceMap = {};
+
+  function isSourceLine(line) {
+    return /^來源[:：]/.test(line.trim());
+  }
+
+  function flushPending() {
+    if (pendingTitle !== null && pendingDetail !== null) {
+      nodes.push({ desc: pendingTitle, axis: currentCategory, source: '', detail: pendingDetail });
+    }
+    pendingTitle = null;
+    pendingDetail = null;
+  }
+
+  lines.forEach(function (rawLine) {
+    var line = cleanBullet(rawLine);
+
+    if (isPrioritySectionHeader(line)) {
+      flushPending();
+      mode = 'priority';
+      pastPriorityHeader = true;
+      return;
+    }
+    if (isConnectionSectionHeader(line)) {
+      flushPending();
+      mode = 'connection';
+      return;
+    }
+    if (isSourceSectionHeader(line)) {
+      flushPending();
+      mode = 'source';
+      return;
+    }
+    if (isCategoryHeader(line)) {
+      flushPending();
+      if (pastPriorityHeader) {
+        mode = 'priority';
+        return;
+      }
+      currentCategory = line;
+      mode = 'nodes';
+      return;
+    }
+
+    if (mode === 'source') {
+      var m = line.match(/^(.+?)\s*(?:→|->)\s*引用[:：]\s*(.+)$/);
+      if (m) {
+        sourceMap[m[1].trim()] = cleanSourceText(m[2].trim());
+      }
+      return;
+    }
+
+    if (mode === 'connection' || mode === 'priority') {
+      return;
+    }
+
+    if (mode === 'nodes' && currentCategory) {
+      if (isSourceLine(line)) {
+        if (pendingTitle !== null && pendingDetail !== null) {
+          nodes.push({ desc: pendingTitle, axis: currentCategory, source: cleanSourceText(line), detail: pendingDetail });
+        }
+        pendingTitle = null;
+        pendingDetail = null;
+        return;
+      }
+      if (pendingTitle === null) {
+        pendingTitle = line;
+      } else if (pendingDetail === null) {
+        pendingDetail = line;
+      } else {
+        nodes.push({ desc: pendingTitle, axis: currentCategory, source: '', detail: pendingDetail });
+        pendingTitle = line;
+        pendingDetail = null;
+      }
+    }
+  });
+  flushPending();
+
+  nodes.forEach(function (n) {
+    if (!n.source && sourceMap[n.desc]) {
+      n.source = sourceMap[n.desc];
+    }
+    if (n.detail) {
+      n.desc = n.desc + '：' + n.detail;
+      delete n.detail;
+    }
+  });
+
+  return nodes;
+}
+
+function autoParseNodes() {
+  var raw = document.getElementById('node-raw').value;
+  var added = 0;
+
+  var magazineNodes = parseMagazineFormat(raw);
+  if (magazineNodes.length > 0) {
+    magazineNodes.forEach(function (n) {
+      nodePool.push({ desc: n.desc, axis: n.axis, source: n.source, checked: true });
+      added++;
+    });
+  } else {
+    var lines = raw.split(/\n+/);
+    lines.forEach(function (line) {
+      var parsed = parseNodeLine(line);
+      if (parsed) {
+        nodePool.push({ desc: parsed.desc, axis: parsed.axis, source: parsed.source, checked: true });
+        added++;
+      }
+    });
+  }
+
+  renderNodeList();
+  var feedback = document.getElementById('parse-feedback');
+  feedback.style.display = 'block';
+  feedback.textContent = added > 0
+    ? '已自動解析並加入 ' + added + ' 個候選節點，請檢查下方清單是否正確，可手動修正分類或刪除誤判的項目。'
+    : '沒有偵測到可解析的節點，請確認貼上的內容格式（可用「篇名＋說明」的延伸地圖格式，或「軸線｜描述｜來源」格式）。';
+}
+
+function fallbackCopy(text, callback) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    callback();
+  } catch (e) {
+    alert('自動複製失敗，請手動選取文字後按 Ctrl+C / Cmd+C 複製');
+  }
+  document.body.removeChild(ta);
+}
+
+function copyBox(outputId, btnId) {
+  var el = document.getElementById(outputId);
+  var btn = document.getElementById(btnId);
+  var text = el.textContent;
+  if (!text || el.classList.contains('empty')) return;
+
+  function showCopied() {
+    var original = btn.textContent;
+    btn.textContent = '已複製 ✓';
+    btn.classList.add('copied');
+    setTimeout(function () {
+      btn.textContent = original;
+      btn.classList.remove('copied');
+    }, 1500);
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(showCopied).catch(function () {
+      fallbackCopy(text, showCopied);
+    });
+  } else {
+    fallbackCopy(text, showCopied);
+  }
+}
+
+setupNav();
+setupCSubNav();
+renderNodeList();
+</script>
+
+</body>
+</html>

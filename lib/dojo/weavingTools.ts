@@ -5,7 +5,7 @@ export type WeavingTool = { key: string; label: string; note: string; href: stri
 export const WEAVING_TEXT_TOOLS: Record<string, WeavingTool> = {
   article: { key: "copy_prompt_article", label: "長文寫作指令", note: "複製完整指令後，在慣用的 AI 對話完成。", href: null },
   plurk: { key: "plurk_tower", label: "噗浪蓋樓台", note: "可建立主噗、樓層、排程與發布狀態。", href: "/plurk" },
-  instagram_carousel: { key: "copy_prompt_carousel", label: "IG 輪播指令", note: "輪播工具正式位置尚未登錄，先複製指令完成文案。", href: null },
+  instagram_carousel: { key: "original_carousel", label: "IG 輪播圖文產生器", note: "開啟原輪播工具，編輯對話、雜誌與拱門頁並匯出圖片。", href: "/liaojie/tools/carousel" },
   instagram_story: { key: "copy_prompt_story", label: "IG 限動文字指令", note: "先完成一組限動文字，再貼回預覽。", href: null },
   spoken_script: { key: "copy_prompt_spoken", label: "口播初稿指令", note: "只處理文字腳本，不建立影片任務。", href: null },
   lesson_legacy: { key: "copy_prompt_lesson", label: "既有教學內容指令", note: "保留舊企劃，不新增為第一階段預設形式。", href: null },

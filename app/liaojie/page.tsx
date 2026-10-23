@@ -13,6 +13,7 @@ export default function LiaojiePage() {
         <section className="ritual-card liaojie-workbench-entry">
           <CreativeIcon name="chat" className="creative-section-icon"/><span className="eyebrow">品牌編排與發布</span>
           <h2>聊解室工作台</h2>
+          <Link href="/liaojie/tools" className="button-link">創作工具：知識鑽石、日上三更、雜誌與輪播 <CreativeIcon name="chevron"/></Link>
           <p className="lead">接收織光堂已完成作品，整理首發平台、標題、封面文案與 CTA。</p>
           <Link href="/liaojie/workbench" className="button-link">進入工作台 <CreativeIcon name="chevron"/></Link>
           <Link href="/liaojie/releases" className="backstage-inline-link">作品發布回看 <CreativeIcon name="eye"/></Link>

@@ -23,3 +23,18 @@
 - 沒有修改正式資料、沒有資料清理／遷移、沒有合併或部署；未從「建置」推定未完成整合版已獲發布授權。
 
 最終驗證：`npm run build` 成功（Next16.2.10），最終產出的 CSS 已含 header icon 尺寸修正。`npm run test:r2-3-api` 成功：實際 journal/records/events route handlers + persistence adapter，隔離 IO 驗證 auth、read failure unlock、event-first、stale refusal、projection retry、GET 無寫入、create request 去重、未知已提交回應保留 lock/intent。沒有真實 Notion 寫入，不能宣稱 production persistence 驗收完成。
+
+## 2026-10-23 合併驗證
+
+使用者明確要求合併 PR104；原工作已完成且閒置，head 為 `66e9614dac13f44628d059db52785eecc785bb38`。在隔離工作樹整合 master `a632d1bd4c64e5480500a900e41d66d1bd528888`，只需解決 DojoShell 路由樣式兩處衝突，同時保留閱讀 shell、修習所／道藏 shell 與創作工具。閱讀及聊解工具檔案與該 master 一致。
+
+本輪新執行且通過：
+
+- `npm run build`（包含 TypeScript）；欄位 SSR；learning-records、learning-foundation、practice-events、r2-3-api、reading-knowledge。
+- `UI_PRODUCTION=1 node scripts/test-practice-v34-ui.mjs`：375／390／430／1024px；兩個場域、問號 Enter／Space 操作、未保存內容保留、記錄日期唯讀、主要項目／階段／主題連動、844／430px 高度的儲存按鈕不被底導遮擋、快速新增提示。零 API 寫入及頁面錯誤。
+- `UI_PRODUCTION=1 npm run test:r2-3-ui`：375／390／430px 的草稿／完成／編輯／封存／恢復、重開、未保存離開保護、181 筆分頁及投影重試。資料皆為瀏覽器攔截的隔離 fixtures，沒有正式寫入。舊測試改為精確欄位名稱，並更新「正文完成」及「返回學習項目」用字。
+- production reading-visual、reading-knowledge-ui：閱讀四頁、來源定位、搜尋及分類衝突均通過。
+- production test-liaojie-original-tools-ui：五個原創作工具入口、知識鑽石保存／重開／多視窗保護、原始指令與節點、雜誌／輪播實際1080×1350 PNG、日上三更單次／批次操作及320–1024px通過。
+- 修改的共用 shell、欄位元件及新增／更新測試 ESLint，git diff whitespace 檢查通過。
+
+限制：縮短 Chromium viewport 不能等同 iPhone Safari 實體鍵盤與安全區驗收；正式資料寫入、完整舊 R2 能力／道藏／回流未納入。本次只批准合併，不手動部署或修改 Auto deploy、憑證、資料庫及 `/data`。合併可能由現有 Auto deploy 自動發布；需獨立讀取部署結果才能聲稱上線。
