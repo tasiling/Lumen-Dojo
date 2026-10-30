@@ -21,7 +21,7 @@ import './illustrated.css';
 type Editor=DeckDraft&{id:string;revision:number};
 function editor(b:DeckBundle):Editor{return {id:b.deck.id,revision:b.deck.revision,title:b.version.title,caption:b.version.caption,pages:b.version.pages};}
 const draftValue=(e:Editor):DeckDraft=>({title:e.title,caption:e.caption,pages:e.pages});
-function DeckEditor({initial,onBundle}:{initial:DeckBundle;onBundle:(b:DeckBundle)=>void}){
+export function DeckEditor({initial,onBundle}:{initial:DeckBundle;onBundle:(b:DeckBundle)=>void}){
  const [bundle,setBundle]=useState(initial),[selected,setSelected]=useState(initial.version.pages[0].id),[images,setImages]=useState<Record<string,string>>({}),[notice,setNotice]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[preview,setPreview]=useState<number|null>(null),[confirmed,setConfirmed]=useState(false),[output,setOutput]=useState<DeckOutput|null>(initial.outputs.find(o=>o.versionId===initial.version.id)??null),[source,setSource]=useState<CompletionVersion|null>(null);
  const svgRefs=useRef(new Map<string,SVGSVGElement>()),recoveryBundle=useRef<DeckBundle|null>(null),router=useRouter(),leave=useLeave();
  function replace(b:DeckBundle){setBundle(b);onBundle(b);}

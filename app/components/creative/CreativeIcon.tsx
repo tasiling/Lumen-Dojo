@@ -10,6 +10,8 @@ export default function CreativeIcon({name,className=''}:{name:CreativeIconName;
     {name==='sprout'&&<><path d="M12 22V11M12 15C4 15 3 10 3 7c6 0 9 3 9 8Zm0-3c0-7 4-9 9-9 0 6-3 10-9 10"/></>}
     {name==='inbox'&&<><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M3 6h18V3H3Zm5 5h8m-4 0v3"/></>}
     {name==='chat'&&<><path d="M12 4a8 8 0 0 0-8 8l-1 7 5-2a8 8 0 1 0 4-13Z"/><path d="M15 14a6 6 0 0 1 6 6l1 3-5-1a6 6 0 0 1-5-3"/></>}
+    {name==='diamond'&&<><path d="m3 8 4-5h10l4 5-9 13ZM3 8h18M7 3l3 5 2 13 2-13 3-5"/></>}
+    {name==='calendar'&&<><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h2M13 14h2M7 18h2"/></>}
     {name==='clock'&&<><circle cx="12" cy="14" r="8"/><path d="M12 14l3-4M10 2h4M17 4l2 2"/></>}
     {name==='grid'&&<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>}
     {name==='sun'&&<><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l1.5 1.5m13 13L20 20M20 4l-1.5 1.5m-13 13L4 20"/></>}

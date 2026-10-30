@@ -1,6 +1,6 @@
 import type { WorkflowStep } from './weavingWorkflow/model';
 
-export type CreativeIconName = 'document'|'compass'|'pen'|'eye'|'handoff'|'layers'|'sprout'|'inbox'|'chat'|'clock'|'grid'|'sun'|'add'|'chevron'|'back'|'tools';
+export type CreativeIconName = 'document'|'compass'|'pen'|'eye'|'handoff'|'layers'|'sprout'|'inbox'|'chat'|'clock'|'grid'|'sun'|'add'|'chevron'|'back'|'tools'|'calendar'|'diamond';
 export const CREATIVE_STEPS: ReadonlyArray<{key:WorkflowStep;label:string;icon:CreativeIconName}> = [
   {key:'sources',label:'選素材',icon:'document'},
   {key:'concept',label:'定觀點',icon:'compass'},
