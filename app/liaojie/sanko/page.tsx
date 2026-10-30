@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function Page() { return <section className="screen"><h1>日上三更</h1><p>依本次想做的主題使用。第三更方向、發布頻率與行銷用途仍由本人調整。</p><div className="ritual-card"><Link className="button-link" href="/liaojie/tools/sanko-prompt">單篇指令與抽牌</Link><Link className="button-link" href="/liaojie/tools/sanko-batch">批次題目與解析</Link><Link className="button-link" href="/weaving/works">接續文字與圖文作品</Link></div></section>; }

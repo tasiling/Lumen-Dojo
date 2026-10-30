@@ -1,5 +1,17 @@
 # 織光堂與聊解室建置進度
 
+## 2026-10-30 第一輪正式原生整合 checkpoint
+
+- Branch：`codex/weaving-liaojie-native-integration`，基底／最新核對 master `70db289d8d4499a6c91a7b4a3d4e395eed4d06e1`。本節隨本輪程式提交，實際推送 head／PR 於遠端交付核對補記；舊下方歷史狀態不取代此節。
+- 使用者已審閱兩場域整合提案並要求「做一次完整的建置流程」。沿用 Native、隔離測試、推送／建立 PR 授權；本版本不因較早版本的部署同意自行 merge/deploy。
+- 實際新增：獨立織光堂／聊解入口；正式 ID 共用的來源、校訂、A/B/C/D／正文、可未歸杼探索、方向理解版本；固定定稿／D 選版／聊解交接與來源返回；五筆分頁管理；HTML／原生文字備份預覽與恢復。原型主檔第 10 版未改動，其他視窗成果保留。
+- 圖文新增標題／正文位置與字級等控制、1080×1920；沿用 Deck→Version→Output→Asset。Canva 最小固定交接／成品連結回收、實際發表文字的語氣樣本。本人服務管理端含名額、私人解讀、三個行事曆節點／時區／改期取消；非外部自助服務。
+- 審查：固定全分支快照 `1e1fc10`，0 Critical／5 Important／1 備份缺口；備份依驗收要求升級 Important。六項重現 RED→GREEN，修正後 6/6，無延後 Minor。沒有把修正測試冒稱第二次獨立審查。
+- 驗證：`test:creative-studio` 11 組全過；相關 28 組（8 新＋20 既有）全過。精確 320／375／390／430／1024px 原生 React＋產品 CSS 的 15 次渲染、截圖無橫溢。雲端實際操作完成文字→定稿→D→交接，以及圖文編修→保存→真 PNG 1080×1920→同一企劃交接。最後 build／typecheck／affected ESLint 均 exit 0（0 error／0 warning），diff whitespace 檢查通過。另以 RED→GREEN 修正 D 指令混入今日方向的自查問題，改用所選固定版本理解／標題。
+- 驗收限制：完整 Playwright 互動腳本因程序／預覽連線限制未通過；不能聲稱手機 UI 的未保存、失敗／衝突皆已走完，雖然領域／收據／緩衝回歸通過。未讀寫正式 Notion、未改本人裝置資料、未正式部署，未驗 iPhone Safari 真機。
+- 逐項對照、證據、裁定／代價與剩餘串接：[docs/creative-studio-acceptance.md](creative-studio-acceptance.md)。下一輪先做同源可連線環境的全套互動與正式使用者備份試遷移，再逐工具 adapter；外部自助預約／安全交付、影片工具實測、本人錄音與正式部署各自追蹤，不能把本輪當全部完成。
+
+
 ## 2026-10-22 原工具接入 checkpoint
 
 - Branch：`codex/liaojie-original-tools`，基底／核對最新master `f808a4c93ba6582e4afaad18bdb0dded74f8e681`；實作head以本節所在提交／PR為準。此前PR101、PR89已合併，下面的歷史未合併說明保留為當時紀錄。

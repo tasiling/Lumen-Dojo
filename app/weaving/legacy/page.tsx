@@ -1,0 +1,1 @@
+import Link from 'next/link';import WeavingProjectHub from '@/app/components/WeavingProjectHub';export default function Page(){return <section className="screen"><h1>舊正式作品與相容入口</h1><p>原來的織光案、杼與作品仍可從這裡開啟或升級。新作品請使用新版工作台。</p><Link href="/weaving/works">前往新版作品管理</Link><WeavingProjectHub/></section>;}

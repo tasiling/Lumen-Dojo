@@ -1,0 +1,87 @@
+{
+  "cssPaths": [
+    "static/chunks/0n4jmp3vpi9da.css",
+    "static/chunks/1ph2k0j29lmz0.css",
+    "static/chunks/3uh_q-rgw5pp2.css",
+    "static/chunks/3ab_xyqcvqqpx.css",
+    "static/chunks/0oh6d4gq91l9b.css"
+  ],
+  "results": [
+    {
+      "name": "weaving-empty",
+      "width": 320,
+      "scroll": 320
+    },
+    {
+      "name": "weaving-empty",
+      "width": 375,
+      "scroll": 375
+    },
+    {
+      "name": "weaving-empty",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "weaving-empty",
+      "width": 430,
+      "scroll": 430
+    },
+    {
+      "name": "weaving-empty",
+      "width": 1024,
+      "scroll": 1024
+    },
+    {
+      "name": "weaving-source",
+      "width": 320,
+      "scroll": 320
+    },
+    {
+      "name": "weaving-source",
+      "width": 375,
+      "scroll": 375
+    },
+    {
+      "name": "weaving-source",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "weaving-source",
+      "width": 430,
+      "scroll": 430
+    },
+    {
+      "name": "weaving-source",
+      "width": 1024,
+      "scroll": 1024
+    },
+    {
+      "name": "liaojie-home",
+      "width": 320,
+      "scroll": 320
+    },
+    {
+      "name": "liaojie-home",
+      "width": 375,
+      "scroll": 375
+    },
+    {
+      "name": "liaojie-home",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "liaojie-home",
+      "width": 430,
+      "scroll": 430
+    },
+    {
+      "name": "liaojie-home",
+      "width": 1024,
+      "scroll": 1024
+    }
+  ],
+  "note": "Native React/production CSS layout render; live interactions verified separately in cloud browser."
+}

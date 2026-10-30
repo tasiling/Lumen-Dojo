@@ -1,0 +1,60 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> liiy2111@0.1.0 test:creative-studio
+> node scripts/test-creative-studio-domain.mjs && node scripts/test-creative-studio-api.mjs && node scripts/test-studio-boundaries.mjs && node scripts/test-studio-import-versions.mjs && node scripts/test-creative-graphics-v2.mjs && node scripts/test-studio-services.mjs && node scripts/test-studio-voice.mjs && node scripts/test-studio-canva.mjs && node scripts/test-studio-client-identity.mjs && node scripts/test-studio-review-fixes.mjs && node scripts/test-studio-source-return.mjs
+
+PASS standalone exploration survives native work normalization
+PASS raw source and independent modules/research roundtrip without trimming
+PASS oversized or forged source correction and publication permission rejected
+PASS 14 independent directions and V1 snapshot survive V2
+PASS only same work completion can seed D analysis
+PASS draft catalog bounded independently of saved data count
+PASS HTML migration retains IDs, raw corrections, separate modules and fixed versions
+PASS same import resumes identities; same title with changed text is never deleted
+PASS original-tool backup stays explicitly unconverted with byte-equivalent payload
+PASS creative studio domain 9/9
+PASS same create operation reopens exact work without new records
+PASS save and fresh store read preserve independent modules and source
+PASS stale window rejected without overwriting persisted text
+PASS raw original immutable; corrections appended separately
+PASS completion rejects unreviewed closing checks
+PASS standalone work uses existing immutable completion and selected source
+PASS fixed handoff works without fabricated shuttle and survives new draft
+PASS all source context uses fixed adoption even if current work direction changes
+PASS topic holds 14 independently versioned directions
+PASS reimport with new operation preserves canonical native ID
+PASS actual API enforces owner auth and returns cache-private response
+PASS oversized import is rejected as HTTP failure before storage writes
+PASS studio integration 12/12
+PASS completed operation can replay through studio wrapper after revision advances
+PASS direct existing handoff API cannot bypass fixed studio public permission
+PASS legacy completion context is never read from newer studio draft
+PASS private reading setting rejects contradictory public/external grants
+PASS story PNG output matches saved 1080x1920 layout
+PASS D external context uses selected fixed understanding, never current draft angle
+Boundary results 6/6
+PASS HTML topic/direction/fixed-text migration, immutable adoption and exact reimport
+PASS native graphic layout accepts independent title/body controls and story dimensions
+PASS legacy deck retains original layout before explicit adjustment
+PASS overlapping title/body blocks and off-canvas text are blocked
+PASS invalid numeric settings and unknown control properties fail without truncation
+PASS graphic v2 4/4
+PASS Melbourne wall time uses correct date and UTC offset
+PASS blank question accepted; capacity enforced before write
+PASS sync creates three distinct milestones and retries same event IDs
+PASS reschedule moves same calendar record into new month without duplicate
+PASS private delivery contains collective and exactly one recipient
+PASS activity work resumes same native draft without customer question leakage
+PASS service API blocks unauthenticated recipient reads
+PASS service integration 7/7
+PASS voice samples require actual published text and preserve exact version; planned/private excluded
+PASS Canva: separate external permission, fixed minimal snapshot, canonical source version, replay, exact-domain and result URL validation
+PASS browser operation identity: known SHA256 vectors, Unicode/long payload, UUID
+PASS first native save preserves exact original multi-source IDs/versions/kinds
+PASS different variants sharing old ID both survive partial reimport
+PASS stable pending create/direction identity survives retry then rotates after ack
+PASS service work reopens after brief update with original UI operation
+PASS D requires selected fixed text grant instead of newer draft permission
+PASS native backup reopens existing canonical work and can restore missing work
+Review fixes 6/6
+PASS native source return: canonical work ID, new fixed version/draft distinction, legacy access

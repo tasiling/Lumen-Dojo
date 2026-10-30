@@ -45,3 +45,6 @@ next-env.d.ts
 /docs/creative-comic-evidence/ui-source.json
 
 /docs/creative-long-video-evidence/ui-source.json
+
+# Per-plan execution scratch
+/.superpowers/

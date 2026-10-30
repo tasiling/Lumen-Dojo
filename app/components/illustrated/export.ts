@@ -1,8 +1,8 @@
 'use client';
 export function downloadBlob(blob:Blob,name:string){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
-export async function rasterize(svg:SVGSVGElement,height:1080|1350=1350):Promise<Blob>{
+export async function rasterize(svg:SVGSVGElement,height:1080|1350|1920=Number(svg.getAttribute('height')) as 1080|1350|1920):Promise<Blob>{
  await document.fonts.ready;
- for(const node of svg.querySelectorAll('text')){const box=node.getBBox();if(box.x<70||box.x+box.width>1010||box.y+box.height>height-45)throw Error('目前字型的文字超出版面，請縮短文字或拆頁後重新預覽');}
+ for(const node of svg.querySelectorAll('text')){const box=node.getBBox();if(box.x<36||box.x+box.width>1044||box.y+box.height>height-45)throw Error('目前字型的文字超出版面，請縮短文字或拆頁後重新預覽');}
  const clone=svg.cloneNode(true) as SVGSVGElement;clone.setAttribute('width','1080');clone.setAttribute('height',String(height));clone.removeAttribute('class');
  // SVG-as-image cannot use the page's loaded web fonts. Paint its actual text
  // nodes at their SVG coordinates with the same computed font on the canvas.

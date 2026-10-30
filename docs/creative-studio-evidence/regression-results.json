@@ -1,0 +1,198 @@
+[
+  {
+    "suite": "test-creative-studio-domain",
+    "exit": 0,
+    "last": [
+      "PASS creative studio domain 9/9"
+    ]
+  },
+  {
+    "suite": "test-creative-studio-api",
+    "exit": 0,
+    "last": [
+      "PASS studio integration 11/11"
+    ]
+  },
+  {
+    "suite": "test-studio-boundaries",
+    "exit": 0,
+    "last": [
+      "Boundary results 5/5"
+    ]
+  },
+  {
+    "suite": "test-studio-import-versions",
+    "exit": 0,
+    "last": [
+      "PASS HTML topic/direction/fixed-text migration, immutable adoption and exact reimport"
+    ]
+  },
+  {
+    "suite": "test-studio-canva",
+    "exit": 0,
+    "last": [
+      "PASS Canva: separate external permission, fixed minimal snapshot, canonical source version, replay, exact-domain and result URL validation"
+    ]
+  },
+  {
+    "suite": "test-studio-services",
+    "exit": 0,
+    "last": [
+      "PASS service integration 7/7"
+    ]
+  },
+  {
+    "suite": "test-studio-voice",
+    "exit": 0,
+    "last": [
+      "PASS voice samples require actual published text and preserve exact version; planned/private excluded"
+    ]
+  },
+  {
+    "suite": "test-creative-graphics-v2",
+    "exit": 0,
+    "last": [
+      "PASS graphic v2 4/4"
+    ]
+  },
+  {
+    "suite": "test-weaving-domain",
+    "exit": 0,
+    "last": [
+      "PASS weaving domain 9/9"
+    ]
+  },
+  {
+    "suite": "test-weaving-api",
+    "exit": 0,
+    "last": [
+      "PASS actual weaving handlers: auth, create/replay, patch, stale/missing revision, protected identity, GET read-only, concurrent writers"
+    ]
+  },
+  {
+    "suite": "test-weaving-lock",
+    "exit": 0,
+    "last": [
+      "PASS cross-process writer exclusion and confirmed retry, shared durable filesystem"
+    ]
+  },
+  {
+    "suite": "test-weaving-sources",
+    "exit": 0,
+    "last": [
+      "PASS adopted Claim version + K4 allowed-use filter + unadopted exclusion + experiential provenance"
+    ]
+  },
+  {
+    "suite": "test-weaving-draft",
+    "exit": 0,
+    "last": [
+      "PASS nested draft three-way merge: confirmed selections + newer blocks + only unsubmitted requests remain"
+    ]
+  },
+  {
+    "suite": "test-weaving-completion",
+    "exit": 0,
+    "last": [
+      "PASS immutable completion + handoff + reflection: empty/stale/replay/A→B/read-only/duplicate/new-version/protected source/schedule/core lineage"
+    ]
+  },
+  {
+    "suite": "test-weaving-edgecases",
+    "exit": 0,
+    "last": [
+      "PASS legacy upgrade ID mapping + full snapshot + soft archive + existing publication reused unchanged + revision0 first save"
+    ]
+  },
+  {
+    "suite": "test-weaving-review",
+    "exit": 0,
+    "last": [
+      "PASS confirmed historical creation stays confirmed after normal later edits"
+    ]
+  },
+  {
+    "suite": "test-liaojie-text-domain",
+    "exit": 0,
+    "last": [
+      "PASS single-platform adaptation, per-platform bounds/long-source rejection, protected patch, immutable history pointer and status validation"
+    ]
+  },
+  {
+    "suite": "test-liaojie-text-api",
+    "exit": 0,
+    "last": [
+      "PASS actual API single-platform create/replay/deduplicate/save/stale/immutable restore/status/list"
+    ]
+  },
+  {
+    "suite": "test-illustrated",
+    "exit": 0,
+    "last": [
+      "PASS illustrated domain limits/identity/layout overflow + durable raster assets/dedupe/no paths"
+    ]
+  },
+  {
+    "suite": "test-illustrated-api",
+    "exit": 0,
+    "last": [
+      "PASS illustrated real API owner/create/dedupe/version/replay/stale/output/public gate/handoff/unknown recovery/fixed source"
+    ]
+  },
+  {
+    "suite": "test-short-video",
+    "exit": 0,
+    "last": [
+      "PASS short video domain, escaped deterministic frames/SRT, real WAV probe, durable media and limits"
+    ]
+  },
+  {
+    "suite": "test-short-video-api",
+    "exit": 0,
+    "last": [
+      "PASS short video real API owner/version/replay/stale/partial revocation/output/handoff/Range/original"
+    ]
+  },
+  {
+    "suite": "test-podcast",
+    "exit": 0,
+    "last": [
+      "PASS podcast strict drafts/chapters/cover/real long audio/profile isolation/short-video unchanged"
+    ]
+  },
+  {
+    "suite": "test-podcast-api",
+    "exit": 0,
+    "last": [
+      "PASS podcast actual API owner/dedupe/immutable/stale/edit gate/partial revocation/output/unknown handoff/Range/original"
+    ]
+  },
+  {
+    "suite": "test-comic",
+    "exit": 0,
+    "last": [
+      "PASS comic strict limits/refs/confirmed panel and character guard/local replacement/sheets/overflow/escaped SVG"
+    ]
+  },
+  {
+    "suite": "test-comic-api",
+    "exit": 0,
+    "last": [
+      "PASS comic real API owner/dedupe/immutable/locked/stale/replay/partial withdrawal/no writes/unknown/handoff/fixed original"
+    ]
+  },
+  {
+    "suite": "test-long-video",
+    "exit": 0,
+    "last": [
+      "PASS long video domain/chapters/per-chapter audio/SRT/escaping and isolated media profile limits"
+    ]
+  },
+  {
+    "suite": "test-long-video-api",
+    "exit": 0,
+    "last": [
+      "PASS long video real API owner/dedupe/immutable/chapter audio/stale/partial revocation/output/handoff/Range/unknown/original"
+    ]
+  }
+]
