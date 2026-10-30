@@ -2,6 +2,8 @@
 
 ## 2026-10-30 第一輪正式原生整合 checkpoint
 
+- 遠端交付：[PR107](https://github.com/tasiling/Lumen-Dojo/pull/107)，open／draft，尚未 merge/deploy。程式 checkpoint `28800b6d1a0ae3d2c2714dfad539b884f2e2e621`，tree `1e2b58b28779b78d6ff0c7308c6707cf464c83c1`；已 fetch 核對與本機驗證 tree 完全一致，父提交為上述 master。CLI 無推送憑證，使用已連接 Git Data 建立相同 tree、保留父提交、expected_sha 與非 force 更新。此行是其後文件提交，最終 head 以 PR／本文件所在 commit 為準。
+
 - Branch：`codex/weaving-liaojie-native-integration`，基底／最新核對 master `70db289d8d4499a6c91a7b4a3d4e395eed4d06e1`。本節隨本輪程式提交，實際推送 head／PR 於遠端交付核對補記；舊下方歷史狀態不取代此節。
 - 使用者已審閱兩場域整合提案並要求「做一次完整的建置流程」。沿用 Native、隔離測試、推送／建立 PR 授權；本版本不因較早版本的部署同意自行 merge/deploy。
 - 實際新增：獨立織光堂／聊解入口；正式 ID 共用的來源、校訂、A/B/C/D／正文、可未歸杼探索、方向理解版本；固定定稿／D 選版／聊解交接與來源返回；五筆分頁管理；HTML／原生文字備份預覽與恢復。原型主檔第 10 版未改動，其他視窗成果保留。

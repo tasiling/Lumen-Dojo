@@ -67,4 +67,6 @@
 **Interfaces:** Same native React/CSS preview and production; commit-pinned reviewable branch and PR.
 - [x] Run 320/375/390/430/1024px actual rendering and complete isolated journey. Verify all new/affected tests, typecheck and production build.
 - [x] Fresh whole-branch reviewer; reproduce important findings RED then GREEN; retain evidence and limitations.
-- [ ] Push branch, create reviewable PR, record actual results and outstanding deployment/customer-side work. No production data mutation.
+- [x] Push branch, create reviewable PR, record actual results and outstanding deployment/customer-side work. No production data mutation.
+
+**Delivery:** PR107 is open as draft; code checkpoint 28800b6d1a0ae3d2c2714dfad539b884f2e2e621, identical tested tree 1e2b58b28779b78d6ff0c7308c6707cf464c83c1. Remaining UI/production/customer acceptance is listed in docs/creative-studio-acceptance.md; this is not a full-roadmap completion claim.
