@@ -1,5 +1,16 @@
 # 織光堂與聊解室建置進度
 
+## 2026-10-31 UI 對齊 checkpoint
+
+- 同一 branch／[PR107](https://github.com/tasiling/Lumen-Dojo/pull/107)；程式 head `1f808c3246b02c54bad1ff319ac9a2ac0201ab2c`，驗證 tree `877069d51d849b471b57cf7c55ac8522fea8e747`，父提交 `7e64cc92c780f4496cc51248ba9d58b4e26d3a38`。Git Data 建立相同 tree、expected_sha／非 force 更新成功；本節是後續文件提交，最終 head 以 PR 為準。
+- 使用者指出正式介面細節混亂並要求 UI skills 視覺對齊；沿用既定品牌及 Native 直接修正，沒有新設計訪談。UI/UX Pro Max、frontend-design、Awesome Design Skills 已套用。
+- 共用場域色彩／中文字型／表單、1080px 擴充、圖示入口與五步、紅線提示、雙欄與控制高度、低高度保存列及導覽安全區；保留所有資料 ID、A/B/C/D 文字與版本機制。原工具入口改同系列 SVG，內部原 HTML 保留。
+- 獨立審查 0 Critical／2 Important／1 Minor；圖文欄位錯位升級 Important。來源卡排列、舊保存列遮擋、圖文雙欄均 RED→GREEN，沒有延後 Minor；未跑第二次審查。
+- 最後 **105/105** 同源渲染（15 畫面 × 7 設定）及真實按鈕 reduced-motion 檢查通過；包含 A/C 與非空舊素材／模板。build、typecheck、affected lint、11 組原生 domain/API、diff check 通過。
+- 未完成：本輪雲端預覽無法載入，Railway 讀取需重新驗證；沒有完成新 UI 的水合互動／真機驗收，沒有 merge/deploy／正式 Notion 寫入。不可沿用前輪瀏覽器結果冒稱本輪新 UI 已線上驗收。
+- 詳細修正／裁定／代價／圖片及量測：[creative-ui-alignment-delivery.md](creative-ui-alignment-delivery.md)。接下來先可連線環境的互動及本人 iPhone 驗收，再正式發布；既有原工具轉換器與外部客戶入口等工作包不因本次 UI 修正而視為完成。
+
+
 ## 2026-10-30 第一輪正式原生整合 checkpoint
 
 - 遠端交付：[PR107](https://github.com/tasiling/Lumen-Dojo/pull/107)，open／draft，尚未 merge/deploy。程式 checkpoint `28800b6d1a0ae3d2c2714dfad539b884f2e2e621`，tree `1e2b58b28779b78d6ff0c7308c6707cf464c83c1`；已 fetch 核對與本機驗證 tree 完全一致，父提交為上述 master。CLI 無推送憑證，使用已連接 Git Data 建立相同 tree、保留父提交、expected_sha 與非 force 更新。此行是其後文件提交，最終 head 以 PR／本文件所在 commit 為準。

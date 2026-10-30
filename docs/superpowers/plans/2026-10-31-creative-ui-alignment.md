@@ -21,12 +21,14 @@
 
 ### Task 1: Shared visual and native workspace corrections
 **Files:** creative/creative-interface.css; creativeStudio/studio.css and StudioHome/StudioWorkspace; illustrated/TypographyControls; targeted legacy step styles.
-- [ ] Render baseline and record concrete geometry/style defects.
-- [ ] Consolidate realm primitives, spacing, responsive shell and action/field/icon rules; improve home signposting and graphic controls.
-- [ ] Run exact-width, low-height and enlarged-text native render checks, typecheck and production build; commit.
+- [x] Render baseline and record concrete geometry/style defects.
+- [x] Consolidate realm primitives, spacing, responsive shell and action/field/icon rules; improve home signposting and graphic controls.
+- [x] Run exact-width, low-height and enlarged-text native render checks, typecheck and production build; commit.
 
 ### Task 2: Verify complete views and deliver
 **Files:** scripts/test-creative-ui-alignment.mjs; docs/creative-ui-alignment-delivery.md; docs/creative-build-progress.md.
-- [ ] Inspect actual native screenshots and same-source managed preview; test save/step/navigation controls without production writes.
-- [ ] Fresh whole-branch review of this UI delta; correct material findings and rerun affected checks.
-- [ ] Push to existing PR107 with expected_sha/nonforce, record evidence, pending real-device/production checks and self-improving correction.
+- [x] Inspect actual native screenshots; attempt same-source managed preview and record interaction limit when the permitted browser cannot load it. No production writes.
+- [x] Fresh whole-branch review of this UI delta; correct material findings and rerun affected checks.
+- [x] Push to existing PR107 with expected_sha/nonforce, record evidence, pending real-device/production checks and self-improving correction.
+
+Verification ruling: preview browser could not load after one reload despite CLI readiness; hydrated interactions and physical Safari remain release checks. Product code delivery and 105 native render cases complete, not deployed.
