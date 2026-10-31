@@ -9,7 +9,7 @@ export default function CreativeIcon({name,className=''}:{name:CreativeIconName;
     {name==='layers'&&<><path d="m3 7 9-5 9 5-9 5Zm0 5 9 5 9-5M3 17l9 5 9-5"/></>}
     {name==='sprout'&&<><path d="M12 22V11M12 15C4 15 3 10 3 7c6 0 9 3 9 8Zm0-3c0-7 4-9 9-9 0 6-3 10-9 10"/></>}
     {name==='inbox'&&<><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M3 6h18V3H3Zm5 5h8m-4 0v3"/></>}
-    {name==='chat'&&<><path d="M12 4a8 8 0 0 0-8 8l-1 7 5-2a8 8 0 1 0 4-13Z"/><path d="M15 14a6 6 0 0 1 6 6l1 3-5-1a6 6 0 0 1-5-3"/></>}
+    {name==='chat'&&<><path d="M9.5 3a7.5 7.5 0 0 1 0 15H7l-5 3V10.5A7.5 7.5 0 0 1 9.5 3Z"/><path d="M19 9a6.5 6.5 0 0 1 3 5.5V22l-4.5-2H16a6.5 6.5 0 0 1-3.5-1"/></>}
     {name==='diamond'&&<><path d="m3 8 4-5h10l4 5-9 13ZM3 8h18M7 3l3 5 2 13 2-13 3-5"/></>}
     {name==='calendar'&&<><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h2M13 14h2M7 18h2"/></>}
     {name==='clock'&&<><circle cx="12" cy="14" r="8"/><path d="M12 14l3-4M10 2h4M17 4l2 2"/></>}
