@@ -1,3 +1,4 @@
+import { normalizeStudio, normalizeDirections, type StudioData, type StudioDirection } from './creativeStudio/model';
 import { normalizeWorkflow, type WorkflowSelection, type TextWorkflow } from "./weavingWorkflow/model";
 import { serializeWorkflow } from "./weavingWorkflow/serialize";
 import { WEAVING_SHUTTLE_TITLE_PREFIX, WEAVING_WORK_TITLE_PREFIX } from "./formal";
@@ -25,6 +26,9 @@ export type WeavingReflection = {
 };
 
 export type WeavingShuttle = {
+  studioDirections?: StudioDirection[];
+  studioImportIdentity?: string;
+  studioLegacy?: Record<string,unknown>;
   version: 3;
   recordType: "weaving-shuttle";
   revision: number;
@@ -47,6 +51,7 @@ export type WeavingShuttle = {
 };
 
 export type WeavingWork = {
+  studio?: StudioData;
   version: 1;
   recordType: "weaving-work";
   revision: number;
@@ -140,6 +145,9 @@ export function normalizeWeavingShuttle(value: unknown, options: { id: string; t
   return {
     revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
     version: 3, recordType: "weaving-shuttle", id: options.id, title,
+    studioDirections:source.studioDirections ? normalizeDirections(source.studioDirections) : [{id:'legacy-'+options.id,title:'舊核心方向（保留原版本關聯）',versions:versions.map(v=>({id:v.id,statement:v.statement,note:v.changeNote,createdAt:v.createdAt}))}],
+    ...(typeof source.studioImportIdentity==='string'?{studioImportIdentity:source.studioImportIdentity}:{}),
+    ...(source.studioLegacy&&typeof source.studioLegacy==='object'?{studioLegacy:source.studioLegacy as Record<string,unknown>}:{}),
     sourceSelections: normalizeWorkflow({ schemaVersion: 1, templateKey: 'legacy', currentStep: 'sources', outputKind: 'article', blocks: [], sourceSelections: source.sourceSelections ?? [], audience: '', outline: '' })!.sourceSelections,
     sourceType, sourceId, sourceRefs: refs, sourceSnapshot: text(source.sourceSnapshot, 30000),
     audience: text(source.audience, 1000), direction: text(source.direction, 3000),
@@ -172,13 +180,14 @@ export function normalizeWeavingWork(value: unknown, options: { id: string; touc
   const title = text(source.title, 200);
   const coreVersionId = text(source.coreVersionId, 100);
   const format = source.format === "text" || source.format === "comic" || source.format === "video" ? source.format : null;
-  if (!shuttleId || !title || !coreVersionId || !format) return null;
+  if ((!shuttleId && !source.studio) || !title || !coreVersionId || !format) return null;
   const now = new Date().toISOString();
   const createdAt = iso(source.createdAt) || now;
   const workflow = normalizeWorkflow(source.textWorkflow);
   return {
     revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
     ...(workflow ? { textWorkflow: workflow } : {}),
+    ...(source.studio ? {studio:normalizeStudio(source.studio)} : {}),
     legacyProjectId: nullableText(source.legacyProjectId,300),
     completionVersionRefs: Array.isArray(source.completionVersionRefs) ? [...new Set(source.completionVersionRefs.filter((id): id is string => typeof id === "string"))] : [],
     currentCompletionVersionId: nullableText(source.currentCompletionVersionId, 300),
@@ -217,12 +226,13 @@ export function createShuttleDraft(input: {
 }
 
 export function createWorkDraft(input: {
-  id?: string; shuttleId: string; title: string; coreVersionId: string; format: WeavingFormat;
+  id?: string; shuttleId: string; title: string; coreVersionId: string; format: WeavingFormat; studio?: StudioData;
   formatSubtype?: string; derivedFromWorkId?: string | null; draftText?: string; outputUrl?: string;
 }): WeavingWork {
   const now = new Date().toISOString();
   return normalizeWeavingWork({
     version: 1, recordType: "weaving-work", shuttleId: input.shuttleId, title: input.title,
+    ...(input.studio ? {studio:input.studio} : {}),
     coreVersionId: input.coreVersionId, format: input.format, formatSubtype: input.formatSubtype ?? "unselected",
     status: "selecting", nextAction: input.format === "text" ? "選擇本次文字形式" : input.format === "comic" ? "整理漫畫的觀點核心" : "整理影片的核心觀點與口播方向",
     draftText: input.draftText ?? "", finalSnapshot: "", outputUrl: input.outputUrl ?? "", toolKey: null,

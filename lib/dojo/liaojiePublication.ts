@@ -26,7 +26,7 @@ export function normalizeLiaojieProject(value: unknown, options: { id: string; t
   const weavingProjectId = text(source.weavingProjectId, 300);
   const weavingShuttleId = text(source.weavingShuttleId, 300);
   const weavingWorkId = text(source.weavingWorkId, 300);
-  if (!weavingProjectId && (!weavingShuttleId || !weavingWorkId)) return null;
+  if (!weavingProjectId && !weavingWorkId) return null;
   const now = new Date().toISOString(); const createdAt = text(source.createdAt, 50) || now;
   const platform = typeof source.platform === "string" && source.platform in LIAOJIE_PLATFORMS ? source.platform as LiaojiePlatform : "instagram_post";
   return {

@@ -1,14 +1,16 @@
+import {assertStudioPublication} from '../weavingWorkflow/completions';
+import {readWorkContext} from '../weavingWorkflow/store';
 import 'server-only';
 import { LIAOJIE_PROJECT_TITLE_PREFIX, parseJson } from '../formal';
 import { normalizeLiaojieProject } from '../liaojiePublication';
 import { listJsonRecords } from '../notionStore';
 import { sourcePolicies } from '../creativeSources/store';
 import { readCompletion } from '../weavingWorkflow/completions';
-import { createStep, updateStep, readRecord, readWork, readShuttle, operationId, expectRevision, WEAVING_OWNER, type Body } from '../weavingWorkflow/store';
+import { createStep, updateStep, readRecord, readWork, operationId, expectRevision, WEAVING_OWNER, type Body } from '../weavingWorkflow/store';
 import { inspectWeavingOperation, operationDigest, runWeavingOperation, type OperationKind, type OperationReceipt } from '../weavingWorkflow/operations';
 import { WeavingError, stringValue } from '../weavingWorkflow/model';
 import { readAsset } from './assets';
-import { DECK_PREFIX, DECK_VERSION_PREFIX, DECK_OUTPUT_PREFIX, newPage, parseDeckDraft, assertReady, assetId, type Deck, type DeckVersion, type DeckOutput, type DeckBundle, type RenderRef } from './model';
+import { DECK_PREFIX, DECK_VERSION_PREFIX, DECK_OUTPUT_PREFIX, newPage, parseDeckDraft, assertReady, layoutPage, assetId, type Deck, type DeckVersion, type DeckOutput, type DeckBundle, type RenderRef } from './model';
 async function raw(id: string, prefix: string): Promise<Body> { const value = parseJson((await readRecord(id,prefix)).內容) as Body; if (!value || value.owner !== WEAVING_OWNER) throw new WeavingError('圖文來源歸屬不符',403); return value; }
 export async function readDeck(id: string): Promise<Deck> { const value=await raw(id,DECK_PREFIX); if(!Array.isArray(value.versionRefs)||!value.versionRefs.includes(value.currentVersionId))throw new WeavingError('圖文稿建立尚未完成，請以原操作接續',409);return {...value,id} as Deck; }
 async function version(id: string): Promise<DeckVersion> { const value=await raw(id,DECK_VERSION_PREFIX);return {...value,...parseDeckDraft({title:value.title,caption:value.caption,pages:value.pages}),id} as DeckVersion; }
@@ -21,7 +23,7 @@ export async function bundle(id: string): Promise<DeckBundle> {
 }
 export async function listDecks() { const rows=await listJsonRecords(DECK_PREFIX);return Promise.all(rows.filter(r=>(r.value as Deck)?.owner===WEAVING_OWNER&&Boolean((r.value as Deck).currentVersionId)).map(r=>bundle(r.id))); }
 async function fixed(completionId: string) { const c=await readCompletion(completionId),w=await readWork(c.workId);if(!w.completionVersionRefs.includes(c.id)||w.format!=='text'||!c.text.trim())throw new WeavingError('請先選擇已固定的文字成品',409);return {c,w}; }
-async function publishable(d: Deck, confirmed: unknown) {const {c}=await fixed(d.completionId);if(operationDigest(c.text)!==d.sourceDigest)throw new WeavingError('圖文固定來源不符',409);await sourcePolicies.assertPublication(c.sourceSelections??[],confirmed);return c;}
+async function publishable(d: Deck, confirmed: unknown) {const {c}=await fixed(d.completionId);if(operationDigest(c.text)!==d.sourceDigest)throw new WeavingError('圖文固定來源不符',409);assertStudioPublication(c);await sourcePolicies.assertPublication(c.sourceSelections??[],confirmed);return c;}
 function replayStep(receipt: OperationReceipt, value: Body, key: string) {const m=value._weavingMutation as Body|undefined;return m?.owner===receipt.owner&&m.operationId===receipt.operationId&&m.inputDigest===receipt.inputDigest&&m.key===key;}
 async function completedMutation(body:Body,kind:OperationKind,id:string,prefix:string,key:string){const receipt=await inspectWeavingOperation(WEAVING_OWNER,operationId(body));if(!receipt)return null;if(receipt.kind!==kind||receipt.inputDigest!==operationDigest(body))throw new WeavingError('同一操作識別的內容不同，請保留原操作',409);const value=await raw(id,prefix);return replayStep(receipt,value,key)?receipt:null;}
 async function checkImages(pages: DeckVersion['pages']) {for(const p of pages)if(p.image)await readAsset(p.image.assetId);}
@@ -50,7 +52,7 @@ export async function outputDeck(body: Body) {
  const previous=await completedMutation(body,'illustrated_output',id,DECK_PREFIX,'deck');if(previous?.result.output)return {...await bundle(id),output:await readOutput(previous.result.output.id)};
  async function validate() {const b=await bundle(id);expectRevision(b.deck,body.expectedRevision);if(b.version.id!==body.versionId)throw new WeavingError('圖文已修改，請重新預覽並匯出',409);assertReady(b.version);await checkImages(b.version.pages);await publishable(b.deck,body.publicationConfirmed);
  if(renders.length!==b.version.pages.length||renders.some((r,i)=>r.pageId!==b.version.pages[i].id))throw new WeavingError('輸出圖片頁序與目前稿件不一致',409);
- for(const r of renders){const a=await readAsset(r.assetId);if(a.mime!=='image/png'||a.width!==1080||a.height!==1350)throw new WeavingError('成品圖片必須是 1080×1350 PNG');}return b;}
+ for(const [i,r] of renders.entries()){const a=await readAsset(r.assetId),height=layoutPage(b.version.pages[i]).height;if(a.mime!=='image/png'||a.width!==1080||a.height!==height)throw new WeavingError('成品圖片尺寸須符合該頁已保存的版型');}return b;}
  const output=createStep(DECK_OUTPUT_PREFIX,'output',async receipt=>{const b=await validate();return {owner:WEAVING_OWNER,deckId:id,versionId:b.version.id,title:b.version.title,caption:b.version.caption,pages:b.version.pages,renders,createdAt:receipt.createdAt};});
  const r=await runWeavingOperation(WEAVING_OWNER,op,'illustrated_output',body,[{...output,async findConfirmed(receipt){const found=await output.findConfirmed(receipt);if(found)return found;const b=await validate();const previous=b.outputs.find(o=>o.versionId===b.version.id);if(previous){if(operationDigest(previous.renders)!==operationDigest(renders))throw new WeavingError('這版已有不同輸出，請另存新版本後重做',409);return {id:previous.id};}return null;}},updateStep(id,DECK_PREFIX,'deck',async(_row,receipt)=>{const {deck:d}=await validate();return {...d,revision:d.revision+1,outputRefs:[...new Set([...d.outputRefs,receipt.result.output.id])],updatedAt:receipt.updatedAt};})]);
  return {...await bundle(id),output:await readOutput(r.result.output.id)};
@@ -58,7 +60,7 @@ export async function outputDeck(body: Body) {
 export async function handoffDeck(body: Body) {
  const id=stringValue(body.deckId,300,'圖文稿',false),outputId=stringValue(body.outputId,300,'圖文成品',false),op=operationId(body);
  async function validate(){const b=await bundle(id);expectRevision(b.deck,body.expectedRevision);const output=b.outputs.find(o=>o.id===outputId&&o.versionId===b.deck.currentVersionId);if(!output)throw new WeavingError('請先匯出目前保存版本',409);await publishable(b.deck,body.publicationConfirmed);assertReady({title:output.title,caption:output.caption,pages:output.pages});for(const ref of output.renders)await readAsset(ref.assetId);return b;}
- const publicationStep=createStep(LIAOJIE_PROJECT_TITLE_PREFIX,'publication',async receipt=>{const b=await validate(),{c,w}=await fixed(b.deck.completionId),s=await readShuttle(w.shuttleId),core=s.coreVersions.find(v=>v.id===c.coreVersionId);if(!core)throw new WeavingError('核心來源不符',409);return normalizeLiaojieProject({weavingShuttleId:s.id,weavingWorkId:w.id,sourceCompletionVersionId:c.id,sourceCoreVersionId:c.coreVersionId,sourceFormat:'text',sourceTitle:c.title,sourceCoreStatement:core.statement,sourceDraftSnapshot:c.text,sourceOutputUrl:c.outputUrl,title:c.title,audience:s.audience,status:'received',revision:1,illustratedOutputRefs:[],createdAt:receipt.createdAt},{id:'pending'});});
+ const publicationStep=createStep(LIAOJIE_PROJECT_TITLE_PREFIX,'publication',async receipt=>{const b=await validate(),{c,w}=await fixed(b.deck.completionId),s=await readWorkContext(w,c),core=s.coreVersions.find(v=>v.id===c.coreVersionId);if(!core)throw new WeavingError('核心來源不符',409);return normalizeLiaojieProject({weavingShuttleId:s.id,weavingWorkId:w.id,sourceCompletionVersionId:c.id,sourceCoreVersionId:c.coreVersionId,sourceFormat:'text',sourceTitle:c.title,sourceCoreStatement:core.statement,sourceDraftSnapshot:c.text,sourceOutputUrl:c.outputUrl,title:c.title,audience:s.audience,status:'received',revision:1,illustratedOutputRefs:[],createdAt:receipt.createdAt},{id:'pending'});});
  const r=await runWeavingOperation(WEAVING_OWNER,op,'illustrated_handoff',body,[{...publicationStep,async findConfirmed(receipt){const b=await validate();
  // Match the immutable completion directly; never the title or a different revision.
  const all=(await listJsonRecords(LIAOJIE_PROJECT_TITLE_PREFIX)).filter(row=>(row.value as Body).sourceCompletionVersionId===b.deck.completionId&&(row.value as Body).weavingWorkId===b.deck.workId);

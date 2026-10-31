@@ -59,7 +59,9 @@
     "test:comic-ui": "node scripts/test-comic-ui.mjs",
     "test:long-video": "node scripts/test-long-video.mjs && node scripts/test-long-video-api.mjs",
     "test:long-video-ui": "node scripts/test-long-video-ui.mjs",
-    "test:reading-visual": "node scripts/test-reading-visual.mjs"
+    "test:reading-visual": "node scripts/test-reading-visual.mjs",
+    "test:creative-studio": "node scripts/test-creative-studio-domain.mjs && node scripts/test-creative-studio-api.mjs && node scripts/test-studio-boundaries.mjs && node scripts/test-studio-import-versions.mjs && node scripts/test-creative-graphics-v2.mjs && node scripts/test-studio-services.mjs && node scripts/test-studio-voice.mjs && node scripts/test-studio-canva.mjs && node scripts/test-studio-client-identity.mjs && node scripts/test-studio-review-fixes.mjs && node scripts/test-studio-source-return.mjs",
+    "preview:creative-studio": "node scripts/creative-studio-preview.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

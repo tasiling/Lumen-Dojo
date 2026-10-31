@@ -14,11 +14,11 @@ export default function BackstagePage() {
     <section className="screen backstage-screen">
       <div className="hero backstage-hero">
         <div className="eyebrow">工作後台</div>
-        <h1>內容生產集中在這裡</h1>
-        <p>這裡處理 IG 與正式內容產線；不會進入個人的晨間啟動、日間札記或晚間收光。</p>
+        <h1>舊版工作後台</h1>
+        <p>目前的創作與發布請從織光堂、聊解室進入。這裡保留舊工具與原資料連結。</p>
       </div>
 
-      <div className="backstage-grid">
+      <div className="studio-actions"><Link href="/weaving">織光堂</Link><Link href="/liaojie">聊解室</Link></div><details><summary>舊版工具相容入口</summary><div className="backstage-grid">
         {CORE_TOOLS.map((tool) => (
           <Link key={tool.href} href={tool.href} className="backstage-link">
             <b>{tool.title}</b>
@@ -26,7 +26,7 @@ export default function BackstagePage() {
             <span>進入 →</span>
           </Link>
         ))}
-      </div>
+      </div></details>
 
       <section className="ritual-card">
         <span className="eyebrow">其他既有產線</span>

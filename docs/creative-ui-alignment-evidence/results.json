@@ -1,0 +1,6455 @@
+{
+  "cases": 105,
+  "passed": 105,
+  "results": [
+    {
+      "name": "weaving-home",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 1602.109375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-home",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 1569.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-home",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1569.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-home",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 1569.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-home",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 1257.625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-home",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 1606.015625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-home",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2855.75
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "liaojie-home",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 1719.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "liaojie-home",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 1723.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "liaojie-home",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1723.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "liaojie-home",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 1723.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "liaojie-home",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 1203.78125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "liaojie-home",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 1509.765625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "liaojie-home",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 3226.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-source",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2291.328125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-source",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2246.953125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-source",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2246.953125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-source",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2184.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-source",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 2194.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-source",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2190.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "static",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-source",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 4011.296875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-a",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2210.421875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-a",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2222.421875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-a",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2222.421875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-a",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2200.984375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-a",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 2210.984375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-a",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2206.984375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "static",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-a",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 4184.75
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-c",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2297.03125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-c",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2337.03125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-c",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2337.03125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-c",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2315.59375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-c",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 2325.59375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-c",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2321.59375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "static",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-c",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 4245.34375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-b",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2629.546875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-b",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2615.953125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-b",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2615.953125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-b",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2594.515625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-b",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 2604.515625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-b",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2600.515625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "static",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-b",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 4857.09375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-d",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2674.578125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-d",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2686.578125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-d",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2686.578125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-d",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2654.765625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-d",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 2613.578125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-d",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2609.578125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "static",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-writing-d",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 5058.484375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-review",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2124
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-review",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 1963.65625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-review",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1963.65625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-review",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 1963.65625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-review",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 1951.28125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-review",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 1947.28125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "static",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-review",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 3839.6875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-handoff",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 1402.3125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-handoff",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 1391.125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-handoff",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1391.125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-handoff",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 1391.125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-handoff",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 1321.9375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-handoff",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 1317.9375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "static",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          },
+          {
+            "height": 19.1875,
+            "line": 19.2
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "weaving-handoff",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2808.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": "sticky",
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          },
+          {
+            "height": 76.78125,
+            "line": 38.4
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-sources",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2069.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 254,
+            "children": [
+              {
+                "tag": "B",
+                "x": 47,
+                "y": 1136.171875,
+                "width": 226,
+                "height": 48
+              },
+              {
+                "tag": "SMALL",
+                "x": 47,
+                "y": 1184.171875,
+                "width": 226,
+                "height": 21.4375
+              },
+              {
+                "tag": "P",
+                "x": 47,
+                "y": 1205.609375,
+                "width": 226,
+                "height": 73.5
+              },
+              {
+                "tag": "SPAN",
+                "x": 47,
+                "y": 1299.109375,
+                "width": 84.015625,
+                "height": 17
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 294,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-sources",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2066.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 293,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1149.671875,
+                "width": 265,
+                "height": 48
+              },
+              {
+                "tag": "SMALL",
+                "x": 55,
+                "y": 1197.671875,
+                "width": 265,
+                "height": 21.4375
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1219.109375,
+                "width": 265,
+                "height": 49
+              },
+              {
+                "tag": "SPAN",
+                "x": 55,
+                "y": 1288.109375,
+                "width": 84.015625,
+                "height": 17
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 349,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-sources",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2066.234375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 308,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1149.671875,
+                "width": 280,
+                "height": 48
+              },
+              {
+                "tag": "SMALL",
+                "x": 55,
+                "y": 1197.671875,
+                "width": 280,
+                "height": 21.4375
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1219.109375,
+                "width": 280,
+                "height": 49
+              },
+              {
+                "tag": "SPAN",
+                "x": 55,
+                "y": 1288.109375,
+                "width": 84.015625,
+                "height": 17
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 364,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-sources",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2043.484375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 348,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1126.921875,
+                "width": 320,
+                "height": 48
+              },
+              {
+                "tag": "SMALL",
+                "x": 55,
+                "y": 1174.921875,
+                "width": 320,
+                "height": 21.4375
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1196.359375,
+                "width": 320,
+                "height": 49
+              },
+              {
+                "tag": "SPAN",
+                "x": 55,
+                "y": 1265.359375,
+                "width": 84.015625,
+                "height": 17
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 404,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-sources",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 1969.984375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 435,
+            "children": [
+              {
+                "tag": "B",
+                "x": 87,
+                "y": 1085.421875,
+                "width": 407,
+                "height": 24
+              },
+              {
+                "tag": "SMALL",
+                "x": 87,
+                "y": 1109.421875,
+                "width": 407,
+                "height": 21.4375
+              },
+              {
+                "tag": "P",
+                "x": 87,
+                "y": 1130.859375,
+                "width": 407,
+                "height": 49
+              },
+              {
+                "tag": "SPAN",
+                "x": 87,
+                "y": 1199.859375,
+                "width": 84.015625,
+                "height": 17
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 278,
+          "y": 573,
+          "width": 468,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-sources",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2148.984375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 345,
+            "children": [
+              {
+                "tag": "B",
+                "x": 87,
+                "y": 1085.421875,
+                "width": 317,
+                "height": 48
+              },
+              {
+                "tag": "SMALL",
+                "x": 87,
+                "y": 1133.421875,
+                "width": 317,
+                "height": 21.4375
+              },
+              {
+                "tag": "P",
+                "x": 87,
+                "y": 1154.859375,
+                "width": 317,
+                "height": 49
+              },
+              {
+                "tag": "SPAN",
+                "x": 87,
+                "y": 1223.859375,
+                "width": 84.015625,
+                "height": 17
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 52,
+          "y": 1913.984375,
+          "width": 740,
+          "height": 107,
+          "position": "static"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-sources",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 3504.609375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 308,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1989.484375,
+                "width": 280,
+                "height": 144
+              },
+              {
+                "tag": "SMALL",
+                "x": 55,
+                "y": 2133.484375,
+                "width": 280,
+                "height": 85.78125
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 2219.265625,
+                "width": 280,
+                "height": 49
+              },
+              {
+                "tag": "SPAN",
+                "x": 55,
+                "y": 2307.265625,
+                "width": 84.015625,
+                "height": 17
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 497,
+          "width": 364,
+          "height": 179,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-templates",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 1997.109375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 123,
+            "children": [
+              {
+                "tag": "B",
+                "x": 47,
+                "y": 1194.75,
+                "width": 75.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 47,
+                "y": 1217.75,
+                "width": 95,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 123,
+            "children": [
+              {
+                "tag": "B",
+                "x": 178,
+                "y": 1169.625,
+                "width": 90.015625,
+                "height": 45
+              },
+              {
+                "tag": "P",
+                "x": 178,
+                "y": 1216.625,
+                "width": 95,
+                "height": 78.75
+              }
+            ]
+          },
+          {
+            "width": 123,
+            "children": [
+              {
+                "tag": "B",
+                "x": 47,
+                "y": 1348.375,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 47,
+                "y": 1371.375,
+                "width": 95,
+                "height": 78.75
+              }
+            ]
+          },
+          {
+            "width": 123,
+            "children": [
+              {
+                "tag": "B",
+                "x": 178,
+                "y": 1348.375,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 178,
+                "y": 1371.375,
+                "width": 95,
+                "height": 78.75
+              }
+            ]
+          },
+          {
+            "width": 123,
+            "children": [
+              {
+                "tag": "B",
+                "x": 47,
+                "y": 1503.125,
+                "width": 45.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 47,
+                "y": 1526.125,
+                "width": 95,
+                "height": 105
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 294,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          },
+          {
+            "height": 16.5,
+            "line": 16.5
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-templates",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 1943.359375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 142.5,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1172.375,
+                "width": 75.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1195.375,
+                "width": 114.5,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 142.5,
+            "children": [
+              {
+                "tag": "B",
+                "x": 205.5,
+                "y": 1160.375,
+                "width": 105.015625,
+                "height": 45
+              },
+              {
+                "tag": "P",
+                "x": 205.5,
+                "y": 1207.375,
+                "width": 114.5,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 142.5,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1312.875,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1335.875,
+                "width": 114.5,
+                "height": 78.75
+              }
+            ]
+          },
+          {
+            "width": 142.5,
+            "children": [
+              {
+                "tag": "B",
+                "x": 205.5,
+                "y": 1312.875,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 205.5,
+                "y": 1335.875,
+                "width": 114.5,
+                "height": 78.75
+              }
+            ]
+          },
+          {
+            "width": 142.5,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1467.625,
+                "width": 45.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1490.625,
+                "width": 114.5,
+                "height": 78.75
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 349,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-templates",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1891.359375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1132.375,
+                "width": 75.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1155.375,
+                "width": 122,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 213,
+                "y": 1132.375,
+                "width": 120.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 213,
+                "y": 1155.375,
+                "width": 122,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1260.875,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1283.875,
+                "width": 122,
+                "height": 78.75
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 213,
+                "y": 1274,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 213,
+                "y": 1297,
+                "width": 122,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1415.625,
+                "width": 45.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1438.625,
+                "width": 122,
+                "height": 78.75
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 364,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-templates",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 1814.359375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 170,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1094.75,
+                "width": 75.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1117.75,
+                "width": 142,
+                "height": 26.25
+              }
+            ]
+          },
+          {
+            "width": 170,
+            "children": [
+              {
+                "tag": "B",
+                "x": 233,
+                "y": 1081.625,
+                "width": 120.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 233,
+                "y": 1104.625,
+                "width": 142,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 170,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1210.125,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1233.125,
+                "width": 142,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 170,
+            "children": [
+              {
+                "tag": "B",
+                "x": 233,
+                "y": 1210.125,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 233,
+                "y": 1233.125,
+                "width": 142,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 170,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 1338.625,
+                "width": 45.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 1361.625,
+                "width": 142,
+                "height": 78.75
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 649,
+          "width": 404,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-templates",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 1683.609375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 287.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 87,
+                "y": 1126.75,
+                "width": 75.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 87,
+                "y": 1149.75,
+                "width": 259.328125,
+                "height": 26.25
+              }
+            ]
+          },
+          {
+            "width": 287.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 382.328125,
+                "y": 1126.75,
+                "width": 120.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 382.328125,
+                "y": 1149.75,
+                "width": 259.328125,
+                "height": 26.25
+              }
+            ]
+          },
+          {
+            "width": 287.34375,
+            "children": [
+              {
+                "tag": "B",
+                "x": 677.65625,
+                "y": 1113.625,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 677.65625,
+                "y": 1136.625,
+                "width": 259.34375,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 287.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 87,
+                "y": 1255.25,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 87,
+                "y": 1278.25,
+                "width": 259.328125,
+                "height": 26.25
+              }
+            ]
+          },
+          {
+            "width": 287.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 382.328125,
+                "y": 1242.125,
+                "width": 45.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 382.328125,
+                "y": 1265.125,
+                "width": 259.328125,
+                "height": 52.5
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 278,
+          "y": 573,
+          "width": 468,
+          "height": 107,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-templates",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 1838.609375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 227.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 87,
+                "y": 1126.75,
+                "width": 75.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 87,
+                "y": 1149.75,
+                "width": 199.328125,
+                "height": 26.25
+              }
+            ]
+          },
+          {
+            "width": 227.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 322.328125,
+                "y": 1113.625,
+                "width": 120.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 322.328125,
+                "y": 1136.625,
+                "width": 199.328125,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 227.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 557.65625,
+                "y": 1113.625,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 557.65625,
+                "y": 1136.625,
+                "width": 199.328125,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 227.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 87,
+                "y": 1242.125,
+                "width": 79.125,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 87,
+                "y": 1265.125,
+                "width": 199.328125,
+                "height": 52.5
+              }
+            ]
+          },
+          {
+            "width": 227.328125,
+            "children": [
+              {
+                "tag": "B",
+                "x": 322.328125,
+                "y": 1242.125,
+                "width": 45.015625,
+                "height": 21
+              },
+              {
+                "tag": "P",
+                "x": 322.328125,
+                "y": 1265.125,
+                "width": 199.328125,
+                "height": 52.5
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 52,
+          "y": 1603.609375,
+          "width": 740,
+          "height": 107,
+          "position": "static"
+        },
+        "stageLines": [
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          },
+          {
+            "height": 18,
+            "line": 18
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "retained-templates",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 3714.453125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [
+          "rgba(0, 0, 0, 0)"
+        ],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [],
+        "contentCards": [
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 2157.71875,
+                "width": 120,
+                "height": 92
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 2251.71875,
+                "width": 122,
+                "height": 157.5
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 213,
+                "y": 2131.46875,
+                "width": 120,
+                "height": 92
+              },
+              {
+                "tag": "P",
+                "x": 213,
+                "y": 2225.46875,
+                "width": 122,
+                "height": 210
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 2489.46875,
+                "width": 98.234375,
+                "height": 92
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 2583.46875,
+                "width": 122,
+                "height": 262.5
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 213,
+                "y": 2515.71875,
+                "width": 98.234375,
+                "height": 92
+              },
+              {
+                "tag": "P",
+                "x": 213,
+                "y": 2609.71875,
+                "width": 122,
+                "height": 210
+              }
+            ]
+          },
+          {
+            "width": 150,
+            "children": [
+              {
+                "tag": "B",
+                "x": 55,
+                "y": 2899.96875,
+                "width": 90,
+                "height": 44
+              },
+              {
+                "tag": "P",
+                "x": 55,
+                "y": 2945.96875,
+                "width": 122,
+                "height": 262.5
+              }
+            ]
+          }
+        ],
+        "retainedBar": {
+          "x": 13,
+          "y": 497,
+          "width": 364,
+          "height": 179,
+          "position": "fixed"
+        },
+        "stageLines": [
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          },
+          {
+            "height": 72,
+            "line": 36
+          }
+        ],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "graphic-editor",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": -1036,
+          "width": 320,
+          "height": 4950.546875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [
+          [
+            592.8125,
+            592.8125
+          ],
+          [
+            707.796875,
+            707.796875
+          ],
+          [
+            822.78125,
+            822.78125
+          ],
+          [
+            1017.15625,
+            1017.15625
+          ],
+          [
+            1132.140625,
+            1132.140625
+          ],
+          [
+            1247.125,
+            1247.125
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "graphic-editor",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": -1038,
+          "width": 375,
+          "height": 4980.15625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [
+          [
+            592.421875,
+            592.421875
+          ],
+          [
+            707.40625,
+            707.40625
+          ],
+          [
+            822.390625,
+            822.390625
+          ],
+          [
+            1016.765625,
+            1016.765625
+          ],
+          [
+            1131.75,
+            1131.75
+          ],
+          [
+            1246.734375,
+            1246.734375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "graphic-editor",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": -982,
+          "width": 390,
+          "height": 4919.71875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [
+          [
+            592.421875,
+            592.421875
+          ],
+          [
+            707.40625,
+            707.40625
+          ],
+          [
+            822.390625,
+            822.390625
+          ],
+          [
+            1016.765625,
+            1016.765625
+          ],
+          [
+            1131.75,
+            1131.75
+          ],
+          [
+            1246.734375,
+            1246.734375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "graphic-editor",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": -982,
+          "width": 430,
+          "height": 4941.71875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [
+          [
+            592.421875,
+            592.421875
+          ],
+          [
+            707.40625,
+            707.40625
+          ],
+          [
+            822.390625,
+            822.390625
+          ],
+          [
+            1016.765625,
+            1016.765625
+          ],
+          [
+            1131.75,
+            1131.75
+          ],
+          [
+            1246.734375,
+            1246.734375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "graphic-editor",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": -957,
+          "width": 984,
+          "height": 4301.25
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [
+          [
+            554.640625,
+            554.640625
+          ],
+          [
+            669.625,
+            669.625
+          ],
+          [
+            784.609375,
+            784.609375
+          ],
+          [
+            978.984375,
+            978.984375
+          ],
+          [
+            1093.96875,
+            1093.96875
+          ],
+          [
+            1208.953125,
+            1208.953125
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "graphic-editor",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": -1146,
+          "width": 804,
+          "height": 4973
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [
+          [
+            365.640625,
+            365.640625
+          ],
+          [
+            480.625,
+            480.625
+          ],
+          [
+            595.609375,
+            595.609375
+          ],
+          [
+            789.984375,
+            789.984375
+          ],
+          [
+            904.96875,
+            904.96875
+          ],
+          [
+            1019.953125,
+            1019.953125
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "graphic-editor",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": -2310,
+          "width": 390,
+          "height": 8546.421875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(139, 63, 104)",
+          "rgb(139, 63, 104)"
+        ],
+        "formRows": [
+          [
+            679.265625,
+            679.265625
+          ],
+          [
+            897.4375,
+            897.4375
+          ],
+          [
+            1064.421875,
+            1064.421875
+          ],
+          [
+            1337.203125,
+            1337.203125
+          ],
+          [
+            1555.375,
+            1555.375
+          ],
+          [
+            1722.359375,
+            1722.359375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "owner-service",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2588.890625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": "sticky",
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [
+          [
+            700.09375,
+            700.09375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "owner-service",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2596.890625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": "sticky",
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [
+          [
+            712.09375,
+            712.09375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "owner-service",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2520.109375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": "sticky",
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [
+          [
+            712.09375,
+            712.09375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "owner-service",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2460.109375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": "sticky",
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [
+          [
+            712.09375,
+            712.09375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "owner-service",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 2400.515625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": "sticky",
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [
+          [
+            738.5,
+            738.5
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "owner-service",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2424.515625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": "static",
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [
+          [
+            738.5,
+            738.5
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "owner-service",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 4744.078125
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": "sticky",
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [
+          [
+            1354.484375,
+            1354.484375
+          ]
+        ],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "original-tools",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2633.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "original-tools",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2629.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "original-tools",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2601.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "original-tools",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2517.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "original-tools",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 1801.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "original-tools",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 1829.171875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "original-tools",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 5173.1875
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "publication-editor",
+      "width": 320,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 320,
+        "width": 320,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 2785.375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 320,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "publication-editor",
+      "width": 375,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 375,
+        "width": 375,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 2775.375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 375,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "publication-editor",
+      "width": 390,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 2775.375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 390,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "publication-editor",
+      "width": 430,
+      "height": 844,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 430,
+        "width": 430,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 430,
+          "height": 2775.375
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 764,
+          "width": 430,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "publication-editor",
+      "width": 1024,
+      "height": 768,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 1024,
+        "width": 1024,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 984,
+          "height": 2796.625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 688,
+          "width": 1024,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "publication-editor",
+      "width": 844,
+      "height": 390,
+      "mode": "normal",
+      "metrics": {
+        "scroll": 844,
+        "width": 844,
+        "app": {
+          "x": 20,
+          "y": 20,
+          "width": 804,
+          "height": 2796.625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 310,
+          "width": 844,
+          "height": 80
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    },
+    {
+      "name": "publication-editor",
+      "width": 390,
+      "height": 844,
+      "mode": "large-text",
+      "metrics": {
+        "scroll": 390,
+        "width": 390,
+        "app": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 4251.15625
+        },
+        "tiny": [],
+        "escaped": [],
+        "smallFields": [],
+        "active": [],
+        "save": null,
+        "primaries": [
+          "rgb(69, 99, 143)"
+        ],
+        "formRows": [],
+        "contentCards": [],
+        "retainedBar": null,
+        "stageLines": [],
+        "nav": {
+          "x": 0,
+          "y": 684,
+          "width": 390,
+          "height": 160
+        },
+        "font": "\"Noto Sans TC\", \"Noto Sans CJK TC\", \"PingFang TC\", system-ui, sans-serif"
+      },
+      "errors": []
+    }
+  ],
+  "failures": [],
+  "note": "Actual production React components and compiled CSS. SSR hook fixtures select native editor screens; not hydrated API/save or physical Safari acceptance."
+}
