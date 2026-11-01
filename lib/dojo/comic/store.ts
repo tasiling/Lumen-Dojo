@@ -1,10 +1,12 @@
+import {assertStudioPublication} from '../weavingWorkflow/completions';
+import {readWorkContext} from '../weavingWorkflow/store';
 import 'server-only';
 import { LIAOJIE_PROJECT_TITLE_PREFIX, parseJson } from '../formal';
 import { normalizeLiaojieProject } from '../liaojiePublication';
 import { listJsonRecords } from '../notionStore';
 import { sourcePolicies } from '../creativeSources/store';
 import { readCompletion } from '../weavingWorkflow/completions';
-import { createStep, updateStep, readRecord, readWork, readShuttle, operationId, expectRevision, WEAVING_OWNER, type Body } from '../weavingWorkflow/store';
+import { createStep, updateStep, readRecord, readWork, operationId, expectRevision, WEAVING_OWNER, type Body } from '../weavingWorkflow/store';
 import { inspectWeavingOperation, operationDigest, runWeavingOperation, type OperationKind, type OperationReceipt } from '../weavingWorkflow/operations';
 import { WeavingError, stringValue } from '../weavingWorkflow/model';
 import { assetId } from '../illustrated/model';
@@ -22,7 +24,7 @@ export async function bundleComic(id: string): Promise<ComicBundle> {
 }
 export async function listComics() { const rows=await listJsonRecords(COMIC_PREFIX);return Promise.all(rows.filter(r=>(r.value as ComicProject)?.owner===WEAVING_OWNER&&Boolean((r.value as ComicProject).currentVersionId)).map(r=>bundleComic(r.id))); }
 async function fixed(completionId: string) { const c=await readCompletion(completionId),w=await readWork(c.workId);if(!w.completionVersionRefs.includes(c.id)||w.format!=='text'||!c.text.trim())throw new WeavingError('請先選擇已固定的文字成品',409);return {c,w}; }
-async function publishable(d: ComicProject, confirmed: unknown) {const {c}=await fixed(d.completionId);if(operationDigest(c.text)!==d.sourceDigest)throw new WeavingError('短漫固定來源不符',409);await sourcePolicies.assertPublication(c.sourceSelections??[],confirmed);return c;}
+async function publishable(d: ComicProject, confirmed: unknown) {const {c}=await fixed(d.completionId);if(operationDigest(c.text)!==d.sourceDigest)throw new WeavingError('短漫固定來源不符',409);assertStudioPublication(c);await sourcePolicies.assertPublication(c.sourceSelections??[],confirmed);return c;}
 function replayStep(receipt: OperationReceipt, value: Body, key: string) {const m=value._weavingMutation as Body|undefined;return m?.owner===receipt.owner&&m.operationId===receipt.operationId&&m.inputDigest===receipt.inputDigest&&m.key===key;}
 async function completedMutation(body:Body,kind:OperationKind,id:string,prefix:string,key:string){const receipt=await inspectWeavingOperation(WEAVING_OWNER,operationId(body));if(!receipt)return null;if(receipt.kind!==kind||receipt.inputDigest!==operationDigest(body))throw new WeavingError('同一操作識別的內容不同，請保留原操作',409);const value=await raw(id,prefix);return replayStep(receipt,value,key)?receipt:null;}
 async function checkImages(draft: import('./model').ComicDraft) {for(const i of comicImageUses(draft))await readAsset(i.assetId);}
@@ -60,7 +62,7 @@ export async function handoffComic(body: Body) {
  const id=stringValue(body.projectId,300,'短漫稿',false),outputId=stringValue(body.outputId,300,'短漫成品',false),op=operationId(body);
  const prior=await inspectWeavingOperation(WEAVING_OWNER,op);if(prior&&(prior.kind!=='comic_handoff'||prior.inputDigest!==operationDigest(body)))throw new WeavingError('同一操作內容不同，請保留原操作',409);const publicationId=prior?.result.publication?.id;if(prior&&publicationId){const row=await readRecord(publicationId,LIAOJIE_PROJECT_TITLE_PREFIX),value=parseJson(row.內容) as Body;if(replayStep(prior,value,'publicationLink'))return{publication:normalizeLiaojieProject(value,{id:row.id})};}
  async function validate(){const b=await bundleComic(id);expectRevision(b.project,body.expectedRevision);const output=b.outputs.find(o=>o.id===outputId&&o.versionId===b.project.currentVersionId);if(!output)throw new WeavingError('請先匯出目前保存版本',409);await publishable(b.project,body.publicationConfirmed);assertComicReady(output.draft);await checkImages(output.draft);for(const ref of output.renders)await readAsset(ref.assetId);return b;}
- const publicationStep=createStep(LIAOJIE_PROJECT_TITLE_PREFIX,'publication',async receipt=>{const b=await validate(),{c,w}=await fixed(b.project.completionId),s=await readShuttle(w.shuttleId),core=s.coreVersions.find(v=>v.id===c.coreVersionId);if(!core)throw new WeavingError('核心來源不符',409);return normalizeLiaojieProject({weavingShuttleId:s.id,weavingWorkId:w.id,sourceCompletionVersionId:c.id,sourceCoreVersionId:c.coreVersionId,sourceFormat:'text',sourceTitle:c.title,sourceCoreStatement:core.statement,sourceDraftSnapshot:c.text,sourceOutputUrl:c.outputUrl,title:c.title,audience:s.audience,status:'received',revision:1,comicOutputRefs:[],createdAt:receipt.createdAt},{id:'pending'});});
+ const publicationStep=createStep(LIAOJIE_PROJECT_TITLE_PREFIX,'publication',async receipt=>{const b=await validate(),{c,w}=await fixed(b.project.completionId),s=await readWorkContext(w,c),core=s.coreVersions.find(v=>v.id===c.coreVersionId);if(!core)throw new WeavingError('核心來源不符',409);return normalizeLiaojieProject({weavingShuttleId:s.id,weavingWorkId:w.id,sourceCompletionVersionId:c.id,sourceCoreVersionId:c.coreVersionId,sourceFormat:'text',sourceTitle:c.title,sourceCoreStatement:core.statement,sourceDraftSnapshot:c.text,sourceOutputUrl:c.outputUrl,title:c.title,audience:s.audience,status:'received',revision:1,comicOutputRefs:[],createdAt:receipt.createdAt},{id:'pending'});});
  const r=await runWeavingOperation(WEAVING_OWNER,op,'comic_handoff',body,[{...publicationStep,async findConfirmed(receipt){const b=await validate();
  // Match the immutable completion directly; never the title or a different revision.
  const all=(await listJsonRecords(LIAOJIE_PROJECT_TITLE_PREFIX)).filter(row=>(row.value as Body).sourceCompletionVersionId===b.project.completionId&&(row.value as Body).weavingWorkId===b.project.workId);

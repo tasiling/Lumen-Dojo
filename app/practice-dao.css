@@ -128,3 +128,29 @@
 .dojo.add-shell .reading-add .reading-capture-modes{display:flex;flex-wrap:wrap;gap:8px;background:transparent;border:0;margin:16px 0}
 .dojo.add-shell .reading-add .reading-capture-modes button{min-height:44px;padding:10px 12px;border-radius:12px;font-size:14px;border:1px solid var(--line)}
 .dojo.add-shell .reading-add .reading-quick-capture .two{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+
+/* Learning item hierarchy: preserve stored content while keeping mobile overview readable. */
+.dojo .practice-learning{display:grid;gap:20px;min-width:0}
+.dojo .practice-learning .learning-heading{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:4px 0 0}
+.dojo .practice-learning .learning-heading>div{flex:1;min-width:160px}
+.dojo .practice-learning .learning-heading h1{margin:0;font-size:28px}
+.dojo .practice-learning .learning-heading p{margin:6px 0 0;color:#637286;font-size:14px}
+.dojo .practice-learning .practice-manage-link{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;border:1px solid #d6e4e0;border-radius:12px;background:#fff;font-size:14px;text-decoration:none;box-sizing:border-box}
+.dojo .practice-learning .practice-item-picker{padding:0 4px;font-size:14px;color:#637286}
+.dojo .practice-workspace .practice-item-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 18px}
+.dojo .practice-workspace .practice-item-tabs a{display:flex;align-items:center;justify-content:center;min-width:0;min-height:48px;padding:8px 3px;box-sizing:border-box;font-size:14px;text-decoration:none;line-height:1.4}
+.dojo .practice-item-overview{display:grid;gap:16px;margin-bottom:18px;min-width:0}
+.dojo .practice-direction-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.dojo .practice-item-overview .card{margin:0;min-width:0}
+.dojo .practice-item-overview h2{margin:0 0 8px;font-size:16px;color:#637286}
+.dojo .practice-item-overview p{margin:0;overflow-wrap:anywhere}
+.dojo .practice-item-overview dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px}
+.dojo .practice-item-overview dt{color:#637286;font-size:14px}
+.dojo .practice-item-overview dd{margin:0;overflow-wrap:anywhere}
+.dojo .practice-item-description>summary{justify-content:space-between;color:#18384d;font-weight:650;gap:12px}
+.dojo .practice-item-description[open]>summary span{transform:rotate(45deg)}
+.dojo .practice-source-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.8}
+.dojo .practice-source-text a{color:#246c5d;text-decoration:underline;text-underline-offset:3px}
+.dojo .practice-learning :is(a,summary):focus-visible{outline:2px solid #27816d;outline-offset:3px}
+@media(max-width:650px){.dojo .practice-direction-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:359px){.dojo .practice-workspace .practice-item-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}

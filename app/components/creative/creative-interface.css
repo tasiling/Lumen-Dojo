@@ -3,27 +3,28 @@
   --ink:#253C5C;--muted:#58677C;--paper:#fff;--line:#EBDDEC;--soft:#F8E7F4;--accent:#8B3F68;
   --creative-gradient:linear-gradient(125deg,#F5BDD5 0%,#E3C7EF 54%,#ACC9F7 100%);
   --creative-action:#E494BF;--bg:#FCF5FB;
-  background:var(--bg);color:var(--ink);font:16px/1.65 'Noto Sans TC','Noto Sans CJK TC','PingFang TC',system-ui,sans-serif;
+  --creative-accent:#8B3F68;--creative-soft:#F8E7F4;--creative-line:#EBDDEC;--creative-nav-height:5rem;
+  background:var(--bg);color:var(--ink);font:1rem/1.65 'Noto Sans TC','Noto Sans CJK TC','PingFang TC',system-ui,sans-serif;
 }
-.dojo.creative-shell.creative-liaojie {--bg:#F3F7FD;--line:#D6E3F2;--soft:#EAF1FC;--accent:#45638F;--creative-action:#5676AA;--creative-gradient:linear-gradient(120deg,#B3E1E9 0%,#C2DAF7 52%,#C9B7F2 100%)}
+.dojo.creative-shell.creative-liaojie {--creative-accent:#45638F;--creative-soft:#EAF1FC;--creative-line:#D6E3F2;--bg:#F3F7FD;--line:#D6E3F2;--soft:#EAF1FC;--accent:#45638F;--creative-action:#5676AA;--creative-gradient:linear-gradient(120deg,#B3E1E9 0%,#C2DAF7 52%,#C9B7F2 100%)}
 .dojo.creative-shell.creative-shell :is(h1,h2,h3,h4,b,strong,button,input,textarea,select){font-family:inherit}
 .dojo.creative-shell.creative-shell :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #5E4B91;outline-offset:3px}
 .dojo.creative-shell.creative-shell .screen{padding:18px 18px 24px;min-width:0}
 .dojo.creative-shell.creative-shell .top{border:0;background:var(--bg);padding:14px 18px;gap:12px}
-.dojo.creative-shell.creative-shell .top button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:#ffffffc9;font-size:14px}
+.dojo.creative-shell.creative-shell .top button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:#ffffffc9;font-size:0.875rem}
 .dojo.creative-shell.creative-shell .top .creative-brand{padding:0;border:0;background:transparent;text-align:left;gap:8px;justify-content:flex-start}
 .creative-icon{width:24px;height:24px;flex-shrink:0;display:inline-block;vertical-align:middle}
 .dojo.creative-shell .creative-brand>.creative-icon{width:29px;height:29px}
-.creative-brand b{display:block;font-size:18px;line-height:1.3;letter-spacing:.06em}
-.creative-brand small{display:block;font-size:10px;letter-spacing:.13em;margin-top:2px}
+.creative-brand b{display:block;font-size:1.125rem;line-height:1.3;letter-spacing:.06em}
+.creative-brand small{display:block;font-size:0.625rem;letter-spacing:.13em;margin-top:2px}
 .dojo.creative-shell.creative-shell .top-actions{gap:6px}
 .dojo.creative-shell.creative-shell .top-actions .creative-icon{width:20px;height:20px}
 .dojo.creative-shell.creative-shell :is(.hero.we,.hero.li) {background:var(--creative-gradient);position:relative;isolation:isolate;overflow:hidden;border:0;border-radius:18px;padding:22px 18px;min-height:166px;color:var(--ink);box-shadow:none;margin:0 0 12px}
 .dojo.creative-shell.creative-shell .hero::after{display:none}
 .dojo.creative-shell.creative-shell .hero>:not(.creative-hero-art){position:relative;z-index:1}
-.dojo.creative-shell.creative-shell .hero .eyebrow{color:#455B76;font-size:13px;letter-spacing:.03em}
-.dojo.creative-shell.creative-shell .hero h1{font-size:36px;line-height:1.35;font-weight:800;letter-spacing:.04em;margin:8px 0 10px;overflow-wrap:anywhere}
-.dojo.creative-shell.creative-shell .hero p{font-size:16px;line-height:1.75;margin:0;max-width:27ch;color:var(--ink)}
+.dojo.creative-shell.creative-shell .hero .eyebrow{color:#455B76;font-size:0.8125rem;letter-spacing:.03em}
+.dojo.creative-shell.creative-shell .hero h1{font-size:2.25rem;line-height:1.35;font-weight:800;letter-spacing:.04em;margin:8px 0 10px;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell .hero p{font-size:1rem;line-height:1.75;margin:0;max-width:27ch;color:var(--ink)}
 .creative-hero-art{position:absolute;z-index:0;right:-70px;bottom:-25px;width:80%;height:115%;pointer-events:none}
 .dojo.creative-liaojie.creative-shell .hero{min-height:224px;padding:28px 20px}
 .dojo.creative-liaojie.creative-shell .hero p{max-width:22ch}
@@ -36,53 +37,53 @@
 .dojo.creative-shell.creative-shell .wf-hub{gap:16px;margin-top:12px}
 .dojo.creative-shell.creative-shell .weaving-inbox{margin:16px 0}
 .dojo.creative-shell.creative-shell .wf-hub .weaving-inbox{margin:0}
-.dojo.creative-shell.creative-shell .eyebrow{font-size:13px;line-height:1.5;color:var(--accent)}
-.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox) h2{font-size:21px;line-height:1.5;margin:4px 0 8px;font-weight:750;overflow-wrap:anywhere}
-.dojo.creative-shell.creative-shell .wf-start h2{font-size:24px;line-height:1.5;margin-top:4px}
-.dojo.creative-shell.creative-shell :is(.lead,.ritual-card>p,.wf-task-guide p){font-size:16px;line-height:1.75;color:var(--muted)}
-.dojo.creative-shell.creative-shell :is(.wf-note,.weaving-project-row p,.weaving-project-row small){font-size:13px;line-height:1.65;color:var(--muted)}
-.dojo.creative-shell.creative-shell :is(button,.button-link){min-height:44px;font-size:15px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
-.dojo.creative-shell.creative-shell .wf-start-actions button.primary{width:100%;min-height:48px;border-radius:12px;background:var(--creative-action);border-color:var(--creative-action);color:#253C5C;font-size:17px;font-weight:700}
+.dojo.creative-shell.creative-shell .eyebrow{font-size:0.8125rem;line-height:1.5;color:var(--accent)}
+.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox) h2{font-size:1.3125rem;line-height:1.5;margin:4px 0 8px;font-weight:750;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell .wf-start h2{font-size:1.5rem;line-height:1.5;margin-top:4px}
+.dojo.creative-shell.creative-shell :is(.lead,.ritual-card>p,.wf-task-guide p){font-size:1rem;line-height:1.75;color:var(--muted)}
+.dojo.creative-shell.creative-shell :is(.wf-note,.weaving-project-row p,.weaving-project-row small){font-size:0.8125rem;line-height:1.65;color:var(--muted)}
+.dojo.creative-shell.creative-shell :is(button,.button-link){min-height:44px;font-size:0.9375rem;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell .wf-start-actions button.primary{width:100%;min-height:48px;border-radius:12px;background:var(--creative-action);border-color:var(--creative-action);color:#253C5C;font-size:1.0625rem;font-weight:700}
 .creative-flow-overview{list-style:none;padding:0;margin:22px 0 0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;position:relative;isolation:isolate}
 .creative-flow-overview::before{content:'';position:absolute;z-index:-1;top:22px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,#F5CEE1,#D7D8FA)}
 .creative-flow-overview li{display:flex;align-items:center;flex-direction:column;gap:6px;min-width:0;text-align:center}
 .creative-flow-overview li>span{width:44px;height:44px;border-radius:50%;background:#FBE3F0;display:grid;place-items:center;color:var(--ink)}
 .creative-flow-overview li:nth-child(3)>span{background:#F1DFF5}.creative-flow-overview li:nth-child(4)>span{background:#EAE4FA}.creative-flow-overview li:nth-child(5)>span{background:#DFE8FA}
-.creative-flow-overview b{font-size:11.5px;font-weight:500;line-height:1.5;white-space:nowrap}
+.creative-flow-overview b{font-size:0.71875rem;font-weight:500;line-height:1.5;white-space:nowrap}
 .dojo.creative-shell .creative-section-icon{float:left;width:40px;height:40px;border-radius:10px;background:var(--soft);padding:8px;margin:0 12px 8px 0;color:var(--accent)}
 .dojo.creative-shell .weaving-inbox-heading{gap:8px;align-items:center}
 .dojo.creative-shell .weaving-inbox-heading>div{min-width:0}
-.dojo.creative-shell.creative-shell .weaving-count{min-width:28px;padding:5px 8px;font-size:13px;background:var(--soft);color:var(--accent)}
-.creative-empty,.dojo.creative-shell.creative-shell .weaving-empty,.dojo.creative-shell.creative-shell .empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;background:#F5F5FA;border:1px solid #EBEBF2;border-radius:12px;padding:20px 14px;font-size:15px;color:var(--muted);margin-top:14px}
-.creative-empty p,.dojo.creative-shell .empty p,.dojo.creative-shell .weaving-empty p{margin:0;font-size:14px;line-height:1.65}
+.dojo.creative-shell.creative-shell .weaving-count{min-width:28px;padding:5px 8px;font-size:0.8125rem;background:var(--soft);color:var(--accent)}
+.creative-empty,.dojo.creative-shell.creative-shell .weaving-empty,.dojo.creative-shell.creative-shell .empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;background:#F5F5FA;border:1px solid #EBEBF2;border-radius:12px;padding:20px 14px;font-size:0.9375rem;color:var(--muted);margin-top:14px}
+.creative-empty p,.dojo.creative-shell .empty p,.dojo.creative-shell .weaving-empty p{margin:0;font-size:0.875rem;line-height:1.65}
 .dojo.creative-shell.creative-shell .weaving-empty>.creative-icon{color:#6B7A91;margin:0}
-.dojo.creative-shell.creative-shell .backstage-inline-link{display:flex;align-items:center;padding:10px 12px;font-size:13px;line-height:1.6;background:#F4F5FA;border-color:var(--line);margin:12px 0}
+.dojo.creative-shell.creative-shell .backstage-inline-link{display:flex;align-items:center;padding:10px 12px;font-size:0.8125rem;line-height:1.6;background:#F4F5FA;border-color:var(--line);margin:12px 0}
 .dojo.creative-shell.creative-shell .domain-primary-actions{gap:10px;margin:14px 0 24px}
-.dojo.creative-shell.creative-shell .domain-primary-actions button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;background:var(--soft);border:1px solid var(--line);color:var(--accent);border-radius:12px;font-size:16px}
+.dojo.creative-shell.creative-shell .domain-primary-actions button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;background:var(--soft);border:1px solid var(--line);color:var(--accent);border-radius:12px;font-size:1rem}
 .dojo.creative-shell.creative-shell .wf-steps{gap:3px;margin:4px 0 8px;grid-template-columns:repeat(5,minmax(0,1fr))}
 .dojo.creative-shell.creative-shell .wf-steps button{min-height:80px;padding:4px 0;border:0;border-radius:12px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted)}
 .dojo.creative-shell.creative-shell .wf-steps .creative-step-symbol{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--soft);color:var(--ink)}
-.dojo.creative-shell.creative-shell .wf-steps b{font-size:12px;line-height:1.5;font-weight:500}
-.dojo.creative-shell.creative-shell .wf-steps [aria-current=step]{color:var(--accent);background:#ffffffb0}
+.dojo.creative-shell.creative-shell .wf-steps b{font-size:0.75rem;line-height:1.5;font-weight:500}
+.dojo.creative-shell.creative-shell .wf-steps [aria-current=step]{color:var(--accent);background:transparent}
 .dojo.creative-shell.creative-shell .wf-steps [aria-current=step] .creative-step-symbol{box-shadow:0 0 0 2px var(--accent);background:var(--soft)}
-.dojo.creative-shell.creative-shell :is(.wf-workspace input,.wf-workspace textarea,.wf-workspace select,.wf-publication input,.wf-publication textarea){background:white;border-color:#9FAFC4;border-radius:10px;font-size:16px;line-height:1.6}
-.dojo.creative-shell.creative-shell :is(.wf-workspace .primary,.wf-action-buttons .primary){background:#8B3F68;color:white;border-color:#8B3F68}
-.dojo.creative-shell.creative-shell .wf-action-bar{background:#FFFFFFF5;border-color:var(--line);bottom:calc(84px + env(safe-area-inset-bottom))}
-.dojo.creative-shell.creative-shell .wf-action-buttons button{font-size:14px;min-height:46px}
+.dojo.creative-shell.creative-shell :is(.wf-workspace input,.wf-workspace textarea,.wf-workspace select,.wf-publication input,.wf-publication textarea){background:white;border-color:#9FAFC4;border-radius:10px;font-size:1rem;line-height:1.6}
+.dojo.creative-shell.creative-shell :is(.wf-workspace .primary,.wf-action-buttons .primary){background:var(--creative-accent);color:white;border-color:var(--creative-accent)}
+.dojo.creative-shell.creative-shell .wf-action-bar{background:#FFFFFFF5;border-color:var(--line);bottom:calc(var(--creative-nav-height,5rem) + 8px + env(safe-area-inset-bottom))}
+.dojo.creative-shell.creative-shell .wf-action-buttons button{font-size:0.875rem;min-height:46px}
 .dojo.creative-shell.creative-shell .wf-clarity-workspace{gap:16px;padding-bottom:calc(240px + env(safe-area-inset-bottom))}
 .dojo.creative-shell.creative-shell .wf-clarity-workspace .hero{min-height:0}
-.dojo.creative-shell.creative-shell .wf-clarity-workspace .hero h1{font-size:25px}
-.dojo.creative-shell.creative-shell .wf-clarity-workspace .hero p{max-width:none;font-size:14px}
+.dojo.creative-shell.creative-shell .wf-clarity-workspace .hero h1{font-size:1.5625rem}
+.dojo.creative-shell.creative-shell .wf-clarity-workspace .hero p{max-width:none;font-size:0.875rem}
 .dojo.creative-shell.creative-shell .liaojie-workbench-entry{margin:12px 0}
-.dojo.creative-shell.creative-shell .liaojie-workbench-entry .button-link{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;margin-top:18px;border-radius:12px;background:#5676AA;color:white;font-weight:700;font-size:18px}
-.dojo.creative-shell.creative-shell .wf-publication .primary{background:#45638F;color:#fff}
+.dojo.creative-shell.creative-shell .liaojie-workbench-entry .button-link{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;margin-top:18px;border-radius:12px;background:#5676AA;color:white;font-weight:700;font-size:1.125rem}
+.dojo.creative-shell.creative-shell .wf-publication .primary{background:var(--creative-accent);color:#fff}
 .dojo.creative-shell.creative-shell .wf-publication .platform-picker{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .dojo.creative-shell.creative-shell .wf-publication .platform-picker button{flex:1 1 100px;padding:10px;border-color:var(--line)}
 .dojo.creative-shell.creative-shell .nav{background:#FFFFFFF2;border-color:var(--line);color:var(--ink)}
-.dojo.creative-shell.creative-shell .nav button{font-size:12px;color:#58677C}
+.dojo.creative-shell.creative-shell .nav button{font-size:0.75rem;color:#58677C}
 .dojo.creative-shell.creative-shell .nav [data-nav=add] .nav-icon{background:#52658A;color:white;border-radius:12px;padding:6px;width:40px;height:34px;display:grid;place-items:center;margin:0 auto 2px}
 .dojo.creative-shell.creative-shell .nav [data-nav=add] svg{width:23px;height:23px}
-@media(max-width:359px){.dojo.creative-shell.creative-shell .top{padding:12px;gap:6px}.creative-brand b{font-size:15px}.creative-brand small{font-size:9px}.dojo.creative-shell.creative-shell .top button{padding:8px;font-size:12px}.dojo.creative-shell.creative-shell .screen{padding-left:14px;padding-right:14px}.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox){padding:16px}.creative-flow-overview b{font-size:10.5px}.dojo.creative-shell.creative-shell .wf-steps b{font-size:11px}.dojo.creative-shell.creative-shell .hero h1{font-size:32px}}
+@media(max-width:359px){.dojo.creative-shell.creative-shell .top{padding:12px;gap:6px}.creative-brand b{font-size:0.9375rem}.creative-brand small{font-size:0.5625rem}.dojo.creative-shell.creative-shell .top button{padding:8px;font-size:0.75rem}.dojo.creative-shell.creative-shell .screen{padding-left:14px;padding-right:14px}.dojo.creative-shell.creative-shell :is(.ritual-card,.weaving-inbox){padding:16px}.creative-flow-overview b{font-size:0.65625rem}.dojo.creative-shell.creative-shell .wf-steps b{font-size:0.6875rem}.dojo.creative-shell.creative-shell .hero h1{font-size:2rem}}
 
 .creative-create-fields{border:0;padding:0;margin:0;min-width:0}.creative-create-fields:disabled{opacity:.7}
 
@@ -90,10 +91,102 @@
 .dojo.creative-shell.creative-shell .creative-section-heading h2{margin:0}
 .dojo.creative-shell.creative-shell .liaojie-workbench-entry .button-link{gap:14px}.liaojie-workbench-entry .button-link>.creative-icon{margin-left:auto}
 .dojo.creative-shell.creative-shell .liaojie-workbench-entry .backstage-inline-link{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;margin:16px 0 0;padding:16px 0 0;color:var(--accent)}
-.dojo.creative-shell.creative-shell .hero .creative-hero-subtitle{font-size:21px;margin:0 0 12px}
+.dojo.creative-shell.creative-shell .hero .creative-hero-subtitle{font-size:1.3125rem;margin:0 0 12px}
 .dojo.creative-shell.creative-shell .wf-publication .publication-record{display:grid;gap:8px}
 .dojo.creative-shell.creative-shell .wf-publication .publication-save-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dojo.creative-shell.creative-shell .wf-publication .publication-save-actions button{flex:1 1 100px}
 .dojo.creative-shell.creative-shell :is(.backstage-inline-link,.wf-workspace a,.wf-publication a){min-height:44px;display:inline-flex;align-items:center;overflow-wrap:anywhere}
 .dojo.creative-shell.creative-shell summary{min-height:44px;align-content:center}
 .dojo.creative-shell.creative-shell :is(input,select){min-height:44px}
 @media(max-height:550px){.dojo.creative-shell.creative-shell .wf-action-bar{position:static;margin:12px 0;inset:auto;transform:none;width:auto}.dojo.creative-shell.creative-shell .wf-clarity-workspace{padding-bottom:100px}}
+
+
+/* Shared creative controls: the same primitives for retained and native tools. */
+.dojo.creative-shell.creative-shell {
+  --accent:var(--creative-accent);--soft:var(--creative-soft);--line:var(--creative-line);
+  --creative-space-1:4px;--creative-space-2:8px;--creative-space-3:12px;
+  --creative-space-4:16px;--creative-space-6:24px;--creative-space-8:32px;
+}
+.dojo.creative-shell.creative-shell .app {max-width:1080px;padding-bottom:calc(var(--creative-nav-height) + env(safe-area-inset-bottom) + 24px)}
+.dojo.creative-shell.creative-shell .nav {width:min(100%,1080px);max-width:1080px;min-height:var(--creative-nav-height);padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0}
+.dojo.creative-shell.creative-shell .nav button {min-width:44px;min-height:56px;font-family:inherit;line-height:1.4}
+.dojo.creative-shell.creative-shell .screen {padding:20px;max-width:1040px;margin-inline:auto}
+.dojo.creative-shell.creative-shell .screen .screen {padding-inline:0}
+.dojo.creative-shell.creative-shell #view {min-width:0}
+.dojo.creative-shell.creative-shell #view :is(h1,h2,h3,h4) {font-family:inherit;color:var(--ink);text-wrap:pretty;overflow-wrap:anywhere;letter-spacing:.01em}
+.dojo.creative-shell.creative-shell #view h1 {font-size:clamp(1.625rem,4.6vw,2.25rem);font-weight:750;line-height:1.4;margin:0 0 12px}
+.dojo.creative-shell.creative-shell #view h2 {font-size:clamp(1.25rem,3.2vw,1.5rem);font-weight:700;line-height:1.5;margin:0 0 12px}
+.dojo.creative-shell.creative-shell #view h3 {font-size:1.125rem;line-height:1.5;margin:24px 0 12px}
+.dojo.creative-shell.creative-shell #view :is(p,li,dd) {overflow-wrap:anywhere;line-height:1.75}
+.dojo.creative-shell.creative-shell #view p {margin:0 0 16px}
+.dojo.creative-shell.creative-shell #view small {font-size:0.8125rem;line-height:1.65;overflow-wrap:anywhere}
+.dojo.creative-shell.creative-shell #view :is(.ritual-card,.weaving-inbox,.wf-context) {border-color:var(--creative-line);border-radius:20px;box-shadow:none}
+.dojo.creative-shell.creative-shell #view :is(.wf-workspace,.wf-publication,.illustrated-workspace,.video-workspace,.podcast-workspace,.comic-workspace,.long-video-workspace) {--accent:var(--creative-accent);--soft:var(--creative-soft);--line:var(--creative-line)}
+.dojo.creative-shell.creative-shell #view label {font-size:1rem;font-weight:600;line-height:1.6;color:var(--ink)}
+.dojo.creative-shell.creative-shell #view :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {
+  display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;min-height:48px;
+  font-family:inherit;font-size:1rem;line-height:1.65;font-weight:400;
+  color:var(--ink);background:#fff;border:1px solid #7C8FA9;border-radius:12px;padding:11px 12px;margin:8px 0 16px;
+}
+.dojo.creative-shell.creative-shell #view textarea {resize:vertical;min-height:112px}
+.dojo.creative-shell.creative-shell #view input[type=file] {padding:10px;font-size:0.875rem}
+.dojo.creative-shell.creative-shell #view :is(input[type=checkbox],input[type=radio]) {width:22px;min-width:22px;max-width:22px;height:22px;min-height:22px;padding:0;margin:3px 0 0;accent-color:var(--creative-accent);flex:0 0 22px}
+.dojo.creative-shell.creative-shell #view label:has(>input:is([type=checkbox],[type=radio])) {display:flex;align-items:flex-start;gap:12px;min-height:44px;padding:8px 0;font-weight:400;margin:4px 0}
+.dojo.creative-shell.creative-shell #view :is(button,.button-link) {min-height:48px;min-width:44px;border-radius:12px;font-size:0.9375rem;font-family:inherit;line-height:1.6;max-width:100%;white-space:normal;overflow-wrap:anywhere;transition:background-color 140ms,border-color 140ms,color 140ms}
+.dojo.creative-shell.creative-shell #view .primary,.dojo.creative-shell.creative-shell #view .studio-primary-link {padding:11px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;text-align:center;background:var(--creative-accent);color:#fff;border:1px solid var(--creative-accent);text-decoration:none}
+.dojo.creative-shell.creative-shell #view :is(button,.button-link):active {filter:brightness(.95)}
+.dojo.creative-shell.creative-shell #view button:disabled {opacity:.6;cursor:default;filter:none}
+.dojo.creative-shell.creative-shell #view :is(button,.button-link):focus-visible {outline:3px solid #5e4b91;outline-offset:3px}
+.dojo.creative-shell.creative-shell #view :is(input,textarea,select,button,summary,a) {scroll-margin-block:7rem 13rem}
+.dojo.creative-shell.creative-shell #view .full-button {width:100%;margin-block:16px 8px}
+.dojo.creative-shell.creative-shell #view .hero {padding:28px 24px;margin-bottom:24px;min-height:210px;border-radius:22px}
+.dojo.creative-shell.creative-shell #view .hero h1 {font-size:clamp(2.25rem,7vw,3rem);margin:10px 0 12px;line-height:1.3}
+.dojo.creative-shell.creative-shell #view .hero p {max-width:30ch;margin-bottom:0}
+.dojo.creative-shell.creative-shell #view .creative-section-heading {gap:12px;margin-bottom:16px;align-items:center}
+.dojo.creative-shell.creative-shell #view .creative-section-heading h2 {margin:0}
+.dojo.creative-shell.creative-shell #view .creative-section-heading>.creative-icon {flex:0 0 44px;width:44px;height:44px;padding:10px;background:var(--creative-soft);color:var(--creative-accent);margin:0}
+.dojo.creative-shell.creative-shell #view .creative-flow-overview {margin-top:24px}
+.dojo.creative-shell.creative-shell #view .creative-flow-overview b {font-size:0.75rem;white-space:normal;line-height:1.5}
+.dojo.creative-shell.creative-shell #view .wf-steps [aria-current=step] {background:transparent;border-radius:0;color:#993953}
+.dojo.creative-shell.creative-shell #view .wf-steps [aria-current=step] .creative-step-symbol {box-shadow:0 0 0 2px #a43b59}
+.dojo.creative-shell.creative-shell #view .domain-primary-actions {margin:24px 0;gap:12px}
+.dojo.creative-shell.creative-shell #view .section-title {margin-top:32px}
+.dojo.creative-shell.creative-shell #view .graphic-controls fieldset {min-width:0;display:grid;align-items:end;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;border:1px solid var(--creative-line);padding:16px;border-radius:14px;margin-block:20px}
+.dojo.creative-shell.creative-shell #view .graphic-controls legend {padding-inline:8px;font-weight:700;color:var(--creative-accent)}
+.dojo.creative-shell.creative-shell #view .graphic-controls label {min-width:0;margin-top:8px}
+.dojo.creative-shell.creative-shell #view .graphic-controls p {font-size:0.875rem;color:var(--muted);margin-top:16px}
+.dojo.creative-shell.creative-shell #view .illustrated-flow {background:var(--creative-soft);border-color:var(--creative-line)}
+.dojo.creative-shell.creative-shell #view .illustrated-live-preview {position:static;max-width:540px;width:100%;margin-inline:auto}
+.dojo.creative-shell.creative-shell #view :is(.illustrated-editor,.illustrated-production) {gap:24px}
+.dojo.creative-shell.creative-shell #view .legacy-publication-editor {margin-top:24px}
+@media(min-width:760px) {
+ .dojo.creative-shell.creative-shell .screen {padding:32px}
+ .dojo.creative-shell.creative-shell .top {padding-inline:32px}
+ .dojo.creative-shell.creative-shell #view .hero {padding:36px;min-height:230px}
+ .dojo.creative-shell.creative-shell #view .hero p {max-width:40ch}
+ .dojo.creative-shell.creative-shell #view .illustrated-live-preview {position:sticky;top:100px}
+}
+@media(max-width:359px) {
+ .dojo.creative-shell.creative-shell .screen {padding:16px}
+ .dojo.creative-shell.creative-shell #view .hero {padding:24px 20px}
+ .dojo.creative-shell.creative-shell .top .creative-brand b {font-size:0.9375rem}
+ .dojo.creative-shell.creative-shell .top {padding-inline:16px}
+ .dojo.creative-shell.creative-shell #view :is(.primary,.button-link) {padding-inline:12px}
+}
+@media(max-height:600px) {
+ .dojo.creative-shell.creative-shell #view :is(.studio-save,.wf-action-bar,.illustrated-live-preview) {position:static;inset:auto;transform:none;width:100%;margin-top:20px}
+}
+@media(prefers-reduced-motion:reduce) {
+ .dojo.creative-shell.creative-shell *, .dojo.creative-shell.creative-shell *::before, .dojo.creative-shell.creative-shell *::after {animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+.dojo.creative-shell.creative-shell .top {flex-wrap:wrap;row-gap:8px}
+.dojo.creative-shell.creative-shell .top-actions {margin-left:auto}
+.dojo.creative-shell.creative-shell #view :is(.wf-leave-dialog,.wf-conflict) {max-width:100%;overflow-wrap:anywhere}
+
+.dojo.creative-shell.creative-shell #view :is(.ritual-card,.graphic-controls)>button:not(.full-button) {margin:8px 8px 8px 0}
+.dojo.creative-shell.creative-shell #view .studio>a {display:flex;align-items:center;min-height:44px;margin-block:8px;color:var(--creative-accent)}
+
+.dojo.creative-shell.creative-shell #view .button-link {padding:11px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;text-align:center}
+
+/* Native select and number controls have different intrinsic heights in enlarged text. */
+.dojo.creative-shell.creative-shell #view :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select) {height:calc(1.65em + 24px)}

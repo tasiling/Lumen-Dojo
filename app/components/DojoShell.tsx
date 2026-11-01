@@ -26,7 +26,7 @@ import { useBackStack, useBackableState } from "@/lib/dojo/backstack";
 import { NO_BACK_BUTTON, PARENT_ROUTE, ROUTE_LABEL, USE_BROWSER_BACK } from "@/lib/dojo/backroutes";
 
 function currentSpaceFromPath(pathname: string): SpaceKey {
-  const key = pathname.replace(/^\//, "") as SpaceKey;
+  const key = pathname.split("/").filter(Boolean)[0] as SpaceKey;
   return key in SPACES ? key : "practice";
 }
 
@@ -36,8 +36,8 @@ function BackButton({ pathname }: { pathname: string }) {
   if (NO_BACK_BUTTON.has(pathname)) return null;
 
   const useBrowserBack = USE_BROWSER_BACK.has(pathname);
-  const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/practice/") ? "/practice" : pathname.startsWith("/reading/books/") ? "/reading" : pathname.startsWith("/weaving/") ? "/weaving" : "/");
-  const label = useBrowserBack || pathname === "/add" ? "返回" : (ROUTE_LABEL[parent] ?? "今天");
+  const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/practice/") ? "/practice" : pathname.startsWith("/reading/books/") ? "/reading" : pathname.startsWith("/weaving/") ? "/weaving" : pathname.startsWith("/liaojie/") ? "/liaojie" : "/");
+  const label = useBrowserBack || pathname === "/add" ? "返回" : (pathname === "/practice/manage" || pathname === "/practice/records") ? "學習項目" : (ROUTE_LABEL[parent] ?? "今天");
 
   function handleClick() {
     if (!canLeavePractice()) return;
@@ -48,7 +48,13 @@ function BackButton({ pathname }: { pathname: string }) {
     const query = new URLSearchParams(window.location.search);
     if(pathname === "/add" && query.get("mode") === "reading"){router.push("/reading");return}
     const returnTo = query.get("returnTo");
-    router.push(returnTo?.startsWith("/practice/learning?") ? returnTo : parent);
+    if (returnTo?.startsWith("/practice/learning?")) {router.push(returnTo);return;}
+    if (pathname === "/practice/manage" || pathname === "/practice/records") {
+      const item = query.get("learningItem");
+      router.push(`/practice/learning${item ? `?${new URLSearchParams({learningItem:item})}` : ""}`);
+      return;
+    }
+    router.push(parent);
   }
 
   return (

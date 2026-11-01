@@ -1,0 +1,11 @@
+import {canvaTransfers,createCanvaTransfer,saveCanvaResult} from '@/lib/dojo/creativeStudio/canva';
+import {NextRequest,NextResponse} from 'next/server';
+import {requireLearningOwner} from '@/lib/dojo/learningFoundation/access';
+import {weavingRouteError} from '@/lib/dojo/weavingWorkflow/http';
+import {reconcileOperation} from '@/lib/dojo/weavingWorkflow/store';
+import {archiveStudioImport,studioWorks,studioTopics,getStudioWork,createStudioWork,saveStudioWork,completeStudioWork,handoffStudio,createStudioTopic,saveStudioDirections,importStudio} from '@/lib/dojo/creativeStudio/store';
+import {importPreview} from '@/lib/dojo/creativeStudio/migration';
+export const dynamic='force-dynamic';export const runtime='nodejs';
+const json=(v:unknown)=>NextResponse.json(v,{headers:{'Cache-Control':'private, no-store'}});
+export async function GET(req:NextRequest){try{requireLearningOwner(req);const q=req.nextUrl.searchParams;if(q.has('deckId'))return json({transfers:await canvaTransfers(q.get('deckId')!)});if(q.has('operationId'))return json(await reconcileOperation(q.get('operationId')!));if(q.has('id'))return json(await getStudioWork(q.get('id')!));return json({works:await studioWorks(),topics:await studioTopics()});}catch(e){return weavingRouteError(e);}}
+export async function POST(req:NextRequest){try{requireLearningOwner(req);const text=await req.text();if(text.length>4000000)return NextResponse.json({error:'備份過大，請保留原檔並分批匯入'},{status:413,headers:{'Cache-Control':'private, no-store'}});const b=JSON.parse(text);switch(b.action){case'archive-import':return json({work:await archiveStudioImport(b)});case'canva':return json({transfer:await createCanvaTransfer(b)});case'canva-result':return json({transfer:await saveCanvaResult(b)});case'create':return json({work:await createStudioWork(b)});case'save':return json({work:await saveStudioWork(b)});case'complete':return json(await completeStudioWork(b));case'handoff':return json({project:await handoffStudio(b)});case'topic':return json({topic:await createStudioTopic(b)});case'directions':return json({topic:await saveStudioDirections(b)});case'import-preview':return json({preview:importPreview(b.packet)});case'import':return json(await importStudio(b));default:return NextResponse.json({error:'未知操作'},{status:400});}}catch(e){return weavingRouteError(e);}}

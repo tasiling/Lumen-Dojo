@@ -112,3 +112,16 @@ render(React.createElement(Shell,null,React.createElement('p',null,'editor')));
 globalThis.window={dispatchEvent:()=>true,location:{search:'?mode=reading'}};
 shellButtons.find(b=>b['aria-label']==='返回上一頁').onClick();assert.deepEqual(navigationCalls,['/reading']);delete globalThis.window;
 console.log('PASS actual Back handler: direct reading-add URL without prior history returns to reading');
+for(const [path,search,expected] of [
+ ['/practice/manage','?learningItem=drawing%26stable','/practice/learning?learningItem=drawing%26stable'],
+ ['/practice/records','?new=1&learningItem=drawing-stable','/practice/learning?learningItem=drawing-stable'],
+ ['/practice/records','','/practice/learning'],
+ ['/practice/manage','?learningItem=x&returnTo=%2Fpractice%2Flearning%3FlearningItem%3Dy%26tab%3Dtools','/practice/learning?learningItem=y&tab=tools']
+]){
+ testPath=path;shellButtons.length=0;navigationCalls.length=0;
+ render(React.createElement(Shell,null,React.createElement('p',null,'content')));
+ globalThis.window={dispatchEvent:()=>true,location:{search}};
+ shellButtons.find(b=>b.className==='backbtn').onClick();assert.deepEqual(navigationCalls,[expected]);
+}
+delete globalThis.window;
+console.log('PASS single shell return preserves selected learning item, explicit source tab, and learning index');

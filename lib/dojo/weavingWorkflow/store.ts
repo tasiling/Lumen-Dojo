@@ -12,7 +12,7 @@ import { stringValue, validateWorkPatch, WeavingError, workflowFromLegacy,type C
 import { convertWorkflow,TEXT_TEMPLATES,createTextWorkflow } from './templates';
 import { productionSources, resolveSelections, checkSelectionAvailability, type SelectionRequest } from './sources';
 import { operationDigest } from './operations';
-import { completionDigest, completionPayload, readCompletion } from './completions';
+import { completionDigest, completionPayload, readCompletion, assertStudioPublication } from './completions';
 import { decodePlurkContent } from '@/lib/plurk/notionFormat';
 export const WEAVING_OWNER = 'dojo-private-owner';
 export type Body = Record<string, unknown>;
@@ -34,6 +34,13 @@ export async function readWork(id: string): Promise<WeavingWork> { const row = a
     throw new WeavingError('作品無法讀取', 409); return work; }
 export async function readShuttle(id: string): Promise<WeavingShuttle> { const row = await readRecord(id, WEAVING_SHUTTLE_TITLE_PREFIX); const shuttle = normalizeWeavingShuttle(parseJson(row.內容), { id }); if (!shuttle)
     throw new WeavingError('織光杼無法讀取', 409); return shuttle; }
+/** Publication/media context follows the fixed version, including unassigned explorations. */
+export async function readWorkContext(work: WeavingWork, completion?: {coreVersionId:string;studioSnapshot?:import('../creativeStudio/model').StudioData}) {
+ const snap=completion ? completion.studioSnapshot : work.studio;
+ if(!snap)return readShuttle(work.shuttleId);
+ const direction=snap.direction;
+ return {id:work.shuttleId,audience:work.textWorkflow?.audience||'',sourceSelections:work.textWorkflow?.sourceSelections||[],coreVersions:[{id:completion?.coreVersionId||work.coreVersionId,statement:direction?.statement||'',number:1,changeNote:'固定作品理解快照',derivedFromWorkId:null,createdAt:work.createdAt}]};
+}
 function marker(r: OperationReceipt, key: string) { return { operationId: r.operationId, key, inputDigest: r.inputDigest, owner: r.owner }; }
 function isMarked(v: unknown, r: OperationReceipt, key: string) { const m = (v as {
     _weavingMutation?: ReturnType<typeof marker>;
@@ -45,8 +52,8 @@ export function createStep(prefix: string, key: string, value: (r: OperationRece
             return null; if (!isMarked(rows[0].value, r, key))
             throw new WeavingError('操作紀錄內容不符', 409); return { id: rows[0].id, revision: revisionOf(rows[0].value) }; }, async execute(r) { const content = await value(r); const row = await createKnowledgeEntry({ 標題: title(r), 內容: JSON.stringify({ ...content as object, _weavingMutation: marker(r, key) }) }, { retryCreate: false }); return { id: row.id, revision: revisionOf(content) }; } };
 }
-export function updateStep(id: string, prefix: string, key: string, next: (row: JsonRow, r: OperationReceipt) => Promise<unknown> | unknown): OperationStep {
-    return { key, async findConfirmed(r) { const row = await readRecord(id, prefix); const v = parseJson(row.內容); return isMarked(v, r, key) ? { id, revision: revisionOf(v) } : null; }, async execute(r) { const row = await readRecord(id, prefix); const value = await next(row, r); await updateKnowledgeEntry(id, { 內容: JSON.stringify({ ...value as object, _weavingMutation: marker(r, key) }) }); return { id, revision: revisionOf(value) }; } };
+export function updateStep(id: string, prefix: string, key: string, next: (row: JsonRow, r: OperationReceipt) => Promise<unknown> | unknown, title?: (value: unknown) => string): OperationStep {
+    return { key, async findConfirmed(r) { const row = await readRecord(id, prefix); const v = parseJson(row.內容); return isMarked(v, r, key) ? { id, revision: revisionOf(v) } : null; }, async execute(r) { const row = await readRecord(id, prefix); const value = await next(row, r); await updateKnowledgeEntry(id, { ...(title ? {標題:title(value)} : {}), 內容: JSON.stringify({ ...value as object, _weavingMutation: marker(r, key) }) }); return { id, revision: revisionOf(value) }; } };
 }
 function manualSelections(value: unknown, r: OperationReceipt): WorkflowSelection[] {
     if (!Array.isArray(value) || value.length > 30)
@@ -244,7 +251,9 @@ export async function handoffWork(body: Body) {
                     throw new WeavingError('這件作品已有發布企劃；請明確確認建立新的發布版本', 409);
                 return null;
             }, async execute(receipt) {
-                const work = await readWork(workId), shuttle = await readShuttle(work.shuttleId);
+                const work = await readWork(workId);
+                const fixedContext = typeof body.completionVersionId === 'string' ? await readCompletion(body.completionVersionId) : undefined;
+                const shuttle = await readWorkContext(work, fixedContext);
                 if (body.weavingShuttleId !== undefined && body.weavingShuttleId !== shuttle.id)
                     throw new WeavingError('作品與織光杼關係不符', 403);
                 const completionId = body.completionVersionId;
@@ -257,6 +266,7 @@ export async function handoffWork(body: Body) {
                     throw new WeavingError('請指定固定成品版本', 409);
                 if(c && work.format!=='text' && c.sourceSnapshotState!=='captured' && !c.sourceSelections?.length)
                     throw new WeavingError('舊版成品未保留完整來源，請重新保存並確認成品；歷史版本仍保留',409);
+                assertStudioPublication(c ?? undefined);
                 await sourcePolicies.assertPublication(c?.sourceSelections ?? work.textWorkflow?.sourceSelections ?? shuttle.sourceSelections ?? [], body.publicationConfirmed);
                 const core = shuttle.coreVersions.find(v => v.id === (c?.coreVersionId ?? work.coreVersionId));
                 if (!core)

@@ -1,4 +1,5 @@
 "use client";
+import PublicationSourceReturn from './creativeStudio/PublicationSourceReturn';
 import LongVideoDelivery from './longVideo/LongVideoDelivery';
 import Link from 'next/link';
 import ReleaseWorkspace from './creativeReleases/ReleaseWorkspace';
@@ -18,7 +19,7 @@ import '@/app/weaving/workflow.css';
 
 type LegacyDraft = Pick<LiaojiePublicationProject, 'id' | 'revision' | 'brandAngle' | 'audience' | 'platform' | 'title' | 'coverCopy' | 'summary' | 'callToAction' | 'themeGroup' | 'scheduledOn' | 'status' | 'publishedUrl' | 'responseNote' | 'nextStep'>;
 const legacyDraft = (project: LiaojiePublicationProject): LegacyDraft => ({ id: project.id, revision: project.revision, brandAngle: project.brandAngle, audience: project.audience, platform: project.platform, title: project.title, coverCopy: project.coverCopy, summary: project.summary, callToAction: project.callToAction, themeGroup: project.themeGroup, scheduledOn: project.scheduledOn, status: project.status, publishedUrl: project.publishedUrl, responseNote: project.responseNote, nextStep: project.nextStep });
-function LegacyPublicationEditor({ project, onUpdated }: { project: LiaojiePublicationProject; onUpdated: (value: LiaojiePublicationProject) => void }) {
+export function LegacyPublicationEditor({ project, onUpdated }: { project: LiaojiePublicationProject; onUpdated: (value: LiaojiePublicationProject) => void }) {
   const draft = useWeavingDraft(legacyDraft(project), async ticket => { const { id: _id, revision: _revision, ...patch } = ticket.value; void _id; void _revision; const result = await mutate<{ project: LiaojiePublicationProject }>('/api/dojo/liaojie-projects', 'PATCH', { id: ticket.entityId, expectedRevision: ticket.revision, project: patch }); onUpdated(result.project); return legacyDraft(result.project); });
   const value = draft.value; const edit = (patch: Partial<LegacyDraft>) => draft.edit({ ...value, ...patch });
   return <section className="ritual-card legacy-publication-editor"><div className="creative-section-heading"><CreativeIcon name="document"/><div><span className="eyebrow">原發布整理流程</span><h2>整理這件作品的發布資料</h2></div></div><p className="wf-note">這張舊企劃或非文字作品不會被強制轉進文字平台稿；原本可編輯的欄位完整保留。</p>
@@ -38,7 +39,7 @@ function PublicationEditor({ project, onArchived, onUpdated }: { project: Liaoji
   function archive() { leave.requestLeave(() => { void archiveNow(); }); }
   return <>
     <IllustratedDelivery ids={project.illustratedOutputRefs}/><VideoDelivery ids={project.videoOutputRefs}/><PodcastDelivery ids={project.podcastOutputRefs}/><ComicDelivery ids={project.comicOutputRefs}/><LongVideoDelivery ids={project.longVideoOutputRefs}/>
-    <section className="ritual-card publication-source-card"><div className="creative-section-heading"><CreativeIcon name="inbox"/><div><span className="eyebrow">織光堂交接 · 固定來源</span><h2>{project.sourceTitle}</h2></div></div><p className="wf-note">這是交接時固定保存的原稿。平台改寫、回復舊版或送到噗浪蓋樓，都不會改動它。</p><p><b>核心觀點</b></p><p>{project.sourceCoreStatement}</p>{project.sourceOutputUrl && <a href={project.sourceOutputUrl} target="_blank" rel="noreferrer">查看織光堂成品 ↗</a>}<details><summary>查看固定文字原稿</summary><div className="full-text-preview">{project.sourceDraftSnapshot || '這件作品以外部成品連結為主。'}</div></details></section>
+    <section className="ritual-card publication-source-card"><div className="creative-section-heading"><CreativeIcon name="inbox"/><div><span className="eyebrow">織光堂交接 · 固定來源</span><h2>{project.sourceTitle}</h2></div></div><p className="wf-note">這是交接時固定保存的原稿。平台改寫、回復舊版或送到噗浪蓋樓，都不會改動它。</p><PublicationSourceReturn workId={project.weavingWorkId} completionId={project.sourceCompletionVersionId}/>{project.sourceCoreStatement&&<><p><b>這份作品的理解</b></p><p>{project.sourceCoreStatement}</p></>}{project.sourceOutputUrl && <a href={project.sourceOutputUrl} target="_blank" rel="noreferrer">查看織光堂成品 ↗</a>}<details><summary>查看固定文字原稿</summary><div className="full-text-preview">{project.sourceDraftSnapshot || '這件作品以外部成品連結為主。'}</div></details></section>
     {project.sourceFormat === 'text' && project.sourceCompletionVersionId && project.sourceDraftSnapshot
       ? <><TextPlatformWorkspace project={project}/><details className="legacy-publication-record"><summary>查看既有發布欄位</summary><LegacyPublicationEditor project={project} onUpdated={onUpdated}/></details></>
       : <LegacyPublicationEditor project={project} onUpdated={onUpdated}/>}

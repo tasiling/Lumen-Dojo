@@ -1,5 +1,30 @@
 # 織光堂與聊解室建置進度
 
+## 2026-10-31 UI 對齊 checkpoint
+
+- 同一 branch／[PR107](https://github.com/tasiling/Lumen-Dojo/pull/107)；程式 head `1f808c3246b02c54bad1ff319ac9a2ac0201ab2c`，驗證 tree `877069d51d849b471b57cf7c55ac8522fea8e747`，父提交 `7e64cc92c780f4496cc51248ba9d58b4e26d3a38`。Git Data 建立相同 tree、expected_sha／非 force 更新成功；本節是後續文件提交，最終 head 以 PR 為準。
+- 使用者指出正式介面細節混亂並要求 UI skills 視覺對齊；沿用既定品牌及 Native 直接修正，沒有新設計訪談。UI/UX Pro Max、frontend-design、Awesome Design Skills 已套用。
+- 共用場域色彩／中文字型／表單、1080px 擴充、圖示入口與五步、紅線提示、雙欄與控制高度、低高度保存列及導覽安全區；保留所有資料 ID、A/B/C/D 文字與版本機制。原工具入口改同系列 SVG，內部原 HTML 保留。
+- 獨立審查 0 Critical／2 Important／1 Minor；圖文欄位錯位升級 Important。來源卡排列、舊保存列遮擋、圖文雙欄均 RED→GREEN，沒有延後 Minor；未跑第二次審查。
+- 最後 **105/105** 同源渲染（15 畫面 × 7 設定）及真實按鈕 reduced-motion 檢查通過；包含 A/C 與非空舊素材／模板。build、typecheck、affected lint、11 組原生 domain/API、diff check 通過。
+- 未完成：本輪雲端預覽無法載入，Railway 讀取需重新驗證；沒有完成新 UI 的水合互動／真機驗收，沒有 merge/deploy／正式 Notion 寫入。不可沿用前輪瀏覽器結果冒稱本輪新 UI 已線上驗收。
+- 詳細修正／裁定／代價／圖片及量測：[creative-ui-alignment-delivery.md](creative-ui-alignment-delivery.md)。接下來先可連線環境的互動及本人 iPhone 驗收，再正式發布；既有原工具轉換器與外部客戶入口等工作包不因本次 UI 修正而視為完成。
+
+
+## 2026-10-30 第一輪正式原生整合 checkpoint
+
+- 遠端交付：[PR107](https://github.com/tasiling/Lumen-Dojo/pull/107)，open／draft，尚未 merge/deploy。程式 checkpoint `28800b6d1a0ae3d2c2714dfad539b884f2e2e621`，tree `1e2b58b28779b78d6ff0c7308c6707cf464c83c1`；已 fetch 核對與本機驗證 tree 完全一致，父提交為上述 master。CLI 無推送憑證，使用已連接 Git Data 建立相同 tree、保留父提交、expected_sha 與非 force 更新。此行是其後文件提交，最終 head 以 PR／本文件所在 commit 為準。
+
+- Branch：`codex/weaving-liaojie-native-integration`，基底／最新核對 master `70db289d8d4499a6c91a7b4a3d4e395eed4d06e1`。本節隨本輪程式提交，實際推送 head／PR 於遠端交付核對補記；舊下方歷史狀態不取代此節。
+- 使用者已審閱兩場域整合提案並要求「做一次完整的建置流程」。沿用 Native、隔離測試、推送／建立 PR 授權；本版本不因較早版本的部署同意自行 merge/deploy。
+- 實際新增：獨立織光堂／聊解入口；正式 ID 共用的來源、校訂、A/B/C/D／正文、可未歸杼探索、方向理解版本；固定定稿／D 選版／聊解交接與來源返回；五筆分頁管理；HTML／原生文字備份預覽與恢復。原型主檔第 10 版未改動，其他視窗成果保留。
+- 圖文新增標題／正文位置與字級等控制、1080×1920；沿用 Deck→Version→Output→Asset。Canva 最小固定交接／成品連結回收、實際發表文字的語氣樣本。本人服務管理端含名額、私人解讀、三個行事曆節點／時區／改期取消；非外部自助服務。
+- 審查：固定全分支快照 `1e1fc10`，0 Critical／5 Important／1 備份缺口；備份依驗收要求升級 Important。六項重現 RED→GREEN，修正後 6/6，無延後 Minor。沒有把修正測試冒稱第二次獨立審查。
+- 驗證：`test:creative-studio` 11 組全過；相關 28 組（8 新＋20 既有）全過。精確 320／375／390／430／1024px 原生 React＋產品 CSS 的 15 次渲染、截圖無橫溢。雲端實際操作完成文字→定稿→D→交接，以及圖文編修→保存→真 PNG 1080×1920→同一企劃交接。最後 build／typecheck／affected ESLint 均 exit 0（0 error／0 warning），diff whitespace 檢查通過。另以 RED→GREEN 修正 D 指令混入今日方向的自查問題，改用所選固定版本理解／標題。
+- 驗收限制：完整 Playwright 互動腳本因程序／預覽連線限制未通過；不能聲稱手機 UI 的未保存、失敗／衝突皆已走完，雖然領域／收據／緩衝回歸通過。未讀寫正式 Notion、未改本人裝置資料、未正式部署，未驗 iPhone Safari 真機。
+- 逐項對照、證據、裁定／代價與剩餘串接：[docs/creative-studio-acceptance.md](creative-studio-acceptance.md)。下一輪先做同源可連線環境的全套互動與正式使用者備份試遷移，再逐工具 adapter；外部自助預約／安全交付、影片工具實測、本人錄音與正式部署各自追蹤，不能把本輪當全部完成。
+
+
 ## 2026-10-22 原工具接入 checkpoint
 
 - Branch：`codex/liaojie-original-tools`，基底／核對最新master `f808a4c93ba6582e4afaad18bdb0dded74f8e681`；實作head以本節所在提交／PR為準。此前PR101、PR89已合併，下面的歷史未合併說明保留為當時紀錄。

@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
+import {fixture} from './weaving-fixture.mjs';
+const f=await fixture();let n=0;const check=async(name,fn)=>{await fn();n++;console.log('PASS',name)};
+try{
+ assert.ok(existsSync('lib/dojo/creativeStudio/store.ts'),'native studio persistence must be implemented');
+ const st=f.load('lib/dojo/creativeStudio/store.ts'),m=f.load('lib/dojo/creativeStudio/model.ts');
+ let w=await st.createStudioWork({operationId:'studio-create-001',title:'未歸屬探索'});
+ await check('same create operation reopens exact work without new records',async()=>{const writes=f.writes();assert.equal((await st.createStudioWork({operationId:'studio-create-001',title:'未歸屬探索'})).id,w.id);assert.equal(f.writes(),writes);assert.equal(w.shuttleId,'');});
+ let studio=m.studioForWork(w);studio.source.raw='放了15刀，錢源自客人的小費';studio.source.selected=studio.source.raw;studio.b='B整理';studio.c='C擴寫';studio.body='已完成正文';
+ w=await st.saveStudioWork({operationId:'studio-save-001',id:w.id,expectedRevision:w.revision,title:'保留原稿',studio});
+ await check('save and fresh store read preserve independent modules and source',async()=>{const read=await st.getStudioWork(w.id);assert.equal(read.work.studio.c,'C擴寫');assert.equal(read.work.draftText,'已完成正文');});
+ await check('stale window rejected without overwriting persisted text',async()=>{await assert.rejects(()=>st.saveStudioWork({operationId:'studio-stale-001',id:w.id,expectedRevision:0,title:'錯誤',studio}),e=>e.status===409);assert.equal((await st.getStudioWork(w.id)).work.title,'保留原稿');});
+ await check('raw original immutable; corrections appended separately',async()=>{const s=structuredClone(studio);s.source.raw='改掉原稿';await assert.rejects(()=>st.saveStudioWork({operationId:'studio-raw-001',id:w.id,expectedRevision:w.revision,title:w.title,studio:s}),/原稿/);});
+ await check('completion rejects unreviewed closing checks',async()=>{await assert.rejects(()=>st.completeStudioWork({operationId:'studio-complete-001',id:w.id,expectedRevision:w.revision}),/確認/);});
+ studio.checks={facts:true,privacy:true,citations:true,voice:true};studio.source.allowPublic=true;
+ w=await st.saveStudioWork({operationId:'studio-save-002',id:w.id,expectedRevision:w.revision,title:w.title,studio});
+ const done=await st.completeStudioWork({operationId:'studio-complete-002',id:w.id,expectedRevision:w.revision,previewDigest:(await st.getStudioWork(w.id)).previewDigest});w=done.work;
+ await check('standalone work uses existing immutable completion and selected source',async()=>{assert.equal(done.completion.text,'已完成正文');assert.equal(done.completion.studioSnapshot.c,'C擴寫');assert.equal(done.completion.sourceSelections[0].selectedText,studio.source.selected);});
+ const p=await st.handoffStudio({operationId:'studio-handoff-001',id:w.id,completionId:done.completion.id,publicationConfirmed:true});
+ await check('fixed handoff works without fabricated shuttle and survives new draft',async()=>{assert.equal(p.sourceDraftSnapshot,'已完成正文');assert.equal(p.weavingShuttleId,'');studio.body='尚未定稿的新文字';w=(await st.getStudioWork(w.id)).work;await st.saveStudioWork({operationId:'studio-save-003',id:w.id,expectedRevision:w.revision,title:w.title,studio});assert.equal((await st.handoffStudio({operationId:'studio-handoff-002',id:w.id,completionId:done.completion.id,publicationConfirmed:true})).id,p.id);});
+ await check('all source context uses fixed adoption even if current work direction changes',async()=>{const context=await f.load('lib/dojo/weavingWorkflow/store.ts').readWorkContext((await st.getStudioWork(w.id)).work,done.completion);assert.equal(context.coreVersions[0].id,'unassigned');});
+ const topic=await st.createStudioTopic({operationId:'studio-topic-001',title:'金錢與工作'});
+ const t=await st.saveStudioDirections({operationId:'studio-direction-001',id:topic.id,expectedRevision:topic.revision,directions:Array.from({length:14},(_,i)=>m.newDirection('dir-'+i,'方向'+i,'理解'+i,'v-'+i,'2026-10-30'))});
+ await check('topic holds 14 independently versioned directions',async()=>assert.equal(t.studioDirections.length,14));
+ const packet={flowVersion:2,sources:[],workSessions:[{id:'old-a',data:{title:'舊稿',draft:'舊全文',aResponse:'討論'}}]};
+ const first=await st.importStudio({operationId:'studio-import-001',packet});
+ await check('reimport with new operation preserves canonical native ID',async()=>{const second=await st.importStudio({operationId:'studio-import-002',packet});assert.deepEqual(second.workIds,first.workIds);});
+ await check('actual API enforces owner auth and returns cache-private response',async()=>{const route=f.load('app/api/dojo/creative-studio/route.ts');assert.equal((await route.GET(f.req('GET','/api/dojo/creative-studio',null,false))).status,401);const r=await route.GET(f.req('GET','/api/dojo/creative-studio?id='+w.id));assert.equal(r.status,200);assert.ok(r.headers.get('cache-control').includes('no-store'));});
+ await check('oversized import is rejected as HTTP failure before storage writes',async()=>{const route=f.load('app/api/dojo/creative-studio/route.ts'),before=f.writes();const r=await route.POST(f.req('POST','/api/dojo/creative-studio',{action:'import',packet:{padding:'x'.repeat(4000000)}}));assert.equal(r.status,413);assert.equal(f.writes(),before);});
+ console.log(`PASS studio integration ${n}/${n}`);
+}finally{await f.close()}
