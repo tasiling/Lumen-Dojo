@@ -1,5 +1,6 @@
 "use client";
 
+import { contextualAdd } from "@/lib/dojo/contextualAdd";
 import PracticeField from "./PracticeField";
 import CreativeIcon from './creative/CreativeIcon';
 import { TodayCalendarIcon } from "./TodayCalendarArt";
@@ -36,7 +37,7 @@ function BackButton({ pathname }: { pathname: string }) {
 
   const useBrowserBack = USE_BROWSER_BACK.has(pathname);
   const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/practice/") ? "/practice" : pathname.startsWith("/reading/books/") ? "/reading" : pathname.startsWith("/weaving/") ? "/weaving" : pathname.startsWith("/liaojie/") ? "/liaojie" : "/");
-  const label = useBrowserBack ? "返回" : (ROUTE_LABEL[parent] ?? "今天");
+  const label = useBrowserBack || pathname === "/add" ? "返回" : (pathname === "/practice/manage" || pathname === "/practice/records") ? "學習項目" : (ROUTE_LABEL[parent] ?? "今天");
 
   function handleClick() {
     if (!canLeavePractice()) return;
@@ -44,12 +45,20 @@ function BackButton({ pathname }: { pathname: string }) {
       router.back();
       return;
     }
-    const returnTo = new URLSearchParams(window.location.search).get("returnTo");
-    router.push(returnTo?.startsWith("/practice/learning?") ? returnTo : parent);
+    const query = new URLSearchParams(window.location.search);
+    if(pathname === "/add" && query.get("mode") === "reading"){router.push("/reading");return}
+    const returnTo = query.get("returnTo");
+    if (returnTo?.startsWith("/practice/learning?")) {router.push(returnTo);return;}
+    if (pathname === "/practice/manage" || pathname === "/practice/records") {
+      const item = query.get("learningItem");
+      router.push(`/practice/learning${item ? `?${new URLSearchParams({learningItem:item})}` : ""}`);
+      return;
+    }
+    router.push(parent);
   }
 
   return (
-    <button className="backbtn" onClick={handleClick} aria-label={`返回${label}`}>
+    <button className="backbtn" onClick={handleClick} aria-label={label === "返回" ? "返回上一頁" : `返回${label}`}>
       {(pathname === "/calendar" || pathname === "/map") ? <TodayCalendarIcon name="i-back" /> : (/^\/(forage|reading)(\/|$)/.test(pathname)) ? <ForageIcon name="i-back" /> : "‹"} {label}
     </button>
   );
@@ -123,7 +132,8 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
   const mapRoute = pathname === "/map";
   const practiceRealmRoute = /^\/(practice|dao)(\/|$)/.test(pathname);
   const readingRoute = /^\/reading(\/|$)/.test(pathname);
-  const sharedUiRoute = todayCalendarRoute || mapRoute || practiceRealmRoute;
+  const addRoute = pathname === "/add";
+  const sharedUiRoute = todayCalendarRoute || mapRoute || practiceRealmRoute || readingRoute || addRoute;
   const {
     entries,
     addEntry,
@@ -131,6 +141,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
     modalOpen,
     modalOptions,
     closeQuickAdd,
+    openQuickAdd,
     startTimerFromSpace,
   } = useDojo();
 
@@ -142,13 +153,21 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
     router.push("/timer");
   }
 
+  function openAddFromHere() {
+    if(pathname === "/add") return; // Already in the editor: keep its mode and unsaved content.
+    if(!canLeavePractice()) return;
+    const target=contextualAdd(pathname,window.location.search);
+    if(target.type==='record') openQuickAdd({presetSpace:target.space,presetKind:target.kind});
+    else router.push(target.href);
+  }
+
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
   return (
-    <div className={`dojo${practiceRealmRoute ? ` practice-dao-shell ${pathname.startsWith("/dao") ? "dao-shell" : "practice-shell"}` : ""}${creativeRoute ? ` creative-shell creative-${pathname.startsWith('/weaving') ? 'weaving' : 'liaojie'}` : ''}${readingRoute ? " reading-shell" : pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : mapRoute ? " tc-shell tc-map-theme" : todayCalendarRoute ? ` tc-shell${pathname === "/" ? " tc-today-theme" : " tc-calendar-theme"}` : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
+    <div className={`dojo${addRoute ? " add-shell" : ""}${practiceRealmRoute ? ` practice-dao-shell ${pathname.startsWith("/dao") ? "dao-shell" : "practice-shell"}` : ""}${creativeRoute ? ` creative-shell creative-${pathname.startsWith('/weaving') ? 'weaving' : 'liaojie'}` : ''}${readingRoute ? " reading-shell" : pathname.startsWith("/forage") ? " dojo-ui forage-shell" : pathname === "/bingo" ? " weekly-shell" : mapRoute ? " tc-shell tc-map-theme" : todayCalendarRoute ? ` tc-shell${pathname === "/" ? " tc-today-theme" : " tc-calendar-theme"}` : ""}`} data-realm={pathname.startsWith("/forage") ? "orange" : undefined}>
       <main className="app">
         <header className="top">
           {creativeHome ? <button className="creative-brand" onClick={() => {if(canLeavePractice()) router.push('/');}} aria-label="行光道場，返回今天"><CreativeIcon name="sun"/><span><b>行光道場</b><small>Lumen Dojo</small></span></button> : pathname === "/bingo" ? <button className="weekly-brand" onClick={() => router.push("/")} aria-label="行光道場，返回今天"><WeeklyIcon name="compass"/><span>行光道場</span></button> : todayCalendarRoute || pathname === "/practice" || pathname === "/dao" ? <div className="brand"><TodayCalendarIcon name="i-sun" /><div><b>行光道場</b><small>Lumen Dojo</small></div></div> : <BackButton pathname={pathname} />}
@@ -167,7 +186,7 @@ export default function DojoShell({ children }: { children: React.ReactNode }) {
             className={isActive(item.href) ? "on" : ""}
             aria-current={isActive(item.href) ? "page" : undefined}
             data-nav={item.key}
-            onClick={() => { if(canLeavePractice()) router.push(item.href); }}
+            onClick={() => { if(item.key === "add") openAddFromHere(); else if(canLeavePractice()) router.push(item.href); }}
           >
             <span className="nav-icon">{sharedUiRoute || pathname === "/bingo" ? <TodayCalendarIcon name={({ sun: "i-sun", calendar: "i-calendar", add: "i-plus", board: "i-grid", history: "i-history" })[item.icon]} /> : (/^\/(forage|reading)(\/|$)/.test(pathname)) && item.icon === "add" ? <ForageIcon name="i-plus"/> : <NavIcon name={item.icon} />}</span>
             {item.label}

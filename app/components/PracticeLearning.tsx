@@ -1,5 +1,6 @@
 "use client";
 import { LearningItemIcon } from "./PracticeArt";
+import PracticeItemOverview from "./PracticeItemOverview";
 import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import Link from "./PracticeRouteLink";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -73,13 +74,15 @@ export default function PracticeLearning() {
   );
   const toolsReturn = item ? href(item.id, "tools") : "/practice/learning";
   return (
-    <>
+    <div className="practice-learning">
       <div className="learning-heading">
+        {item && <span className="practice-entry-icon"><LearningItemIcon name={item.name} /></span>}
         <div>
-          <h1>心・知</h1>
-          <p>本期專注與全部學習項目，依自己的步調探索。</p>
+          <h1>{item?.name ?? "心・知"}</h1>
+          <p>{item ? "依自己的步調修習" : "本期專注與全部學習項目，依自己的步調探索。"}</p>
         </div>
         <Link
+          className="practice-manage-link"
           href={`/practice/manage${item ? `?learningItem=${item.id}` : ""}`}
         >
           管理學習項目
@@ -112,7 +115,7 @@ export default function PracticeLearning() {
               )}
             </>
           )}
-          <details open={!item}>
+          <details className="practice-item-picker" open={!item}>
             <summary>全部學習項目（{items.length}）</summary>
             <div className="practice-shortcuts">
               {items.map((e) => (
@@ -130,9 +133,8 @@ export default function PracticeLearning() {
             <p role="alert">此學習項目待確認或無法存取，沒有刪除歷史關聯。</p>
           )}
           {item && (
-            <section>
-              <h2>{item.name}</h2>
-              <nav className="practice-tabs" aria-label="學習項目分頁">
+            <section className="practice-item">
+              <nav className="practice-tabs practice-item-tabs" aria-label="學習項目分頁">
                 {[
                   ["overview", "總覽"],
                   ["path", "學習路徑"],
@@ -150,16 +152,7 @@ export default function PracticeLearning() {
               </nav>
               {tab === "overview" && (
                 <>
-                  <p>{item.description || "尚未填寫說明。"}</p>
-                  <h3>長期願景</h3>
-                  <p>{item.vision || "保留探索空間，尚未指定願景。"}</p>
-                  {legacy && (
-                    <div className="card">
-                      <p>目前階段：{legacy.currentStage}</p>
-                      <p>目前專注：{legacy.currentFocus || "尚未指定"}</p>
-                      <p>下一步：{legacy.nextAction || "尚未指定"}</p>
-                    </div>
-                  )}
+                  <PracticeItemOverview item={item} legacy={legacy} />
                   <button className="primary" onClick={record}>
                     開始修習・留下紀錄
                   </button>
@@ -290,6 +283,6 @@ export default function PracticeLearning() {
       {legacyError && tab !== "logs" && (
         <p role="alert">舊學習紀錄讀取失敗：{legacyError}</p>
       )}
-    </>
+    </div>
   );
 }

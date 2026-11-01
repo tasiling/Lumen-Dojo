@@ -38,3 +38,38 @@
 - 修改的共用 shell、欄位元件及新增／更新測試 ESLint，git diff whitespace 檢查通過。
 
 限制：縮短 Chromium viewport 不能等同 iPhone Safari 實體鍵盤與安全區驗收；正式資料寫入、完整舊 R2 能力／道藏／回流未納入。本次只批准合併，不手動部署或修改 Auto deploy、憑證、資料庫及 `/data`。合併可能由現有 Auto deploy 自動發布；需獨立讀取部署結果才能聲稱上線。
+
+## 2026-10-23：正式手機截圖修正
+
+基準 master `70db289d8d4499a6c91a7b4a3d4e395eed4d06e1`（PR104 已合併）。使用者提供 IMG_1402–1406，先分析後明確要求修改。隔離分支 `codex/practice-mobile-polish-20261023`，本輪不合併或部署。
+
+實際修正：
+- 修習／道藏補上內容容器真正使用的 --bg；按鈕連結有48px完整排版；頁首與不透明底導共用幾何與綠／紫／杏色，補安全區與底部留白。閱讀內文仍保留既有新視覺。
+- 修習所依主視覺→身心靈入口→常用工具→有內容／載入／錯誤才出現的自譯→最近修習排序。學習正文與其他修習紀錄保留各自穩定 ID 和入口，同卡片清楚標示；活動事件收在折疊區，不把工程名詞放在首頁。
+- 道藏入口有圖示、內文與箭頭；入藏按鈕、標題與白底空卡有獨立間距。讀取失敗不顯示假的空紀錄；已讀取紀錄在其他資料失敗時仍保留可見。
+- 中央新增只選擇既有編輯器、不自動寫入：修習所／道藏開既有 quickadd；指定學習項目進新正文；閱讀進 /add?mode=reading；其他場域保留一般新增。
+- /add 由 server 讀取合法 mode，再以 key 初始化原有 client 工作區，避免閱讀摘錄先閃現擷取；擷取／閱讀／行程原處理器保持。閱讀新增頁另補清楚字級與表單樣式；返回按鈕在無歷史時可回閱讀。
+- 新紀錄使用既有 owner-scoped foundation graph 將 legacyKey 解析為正式 ID，等待資料載入後才開編輯器；找不到或封存項目不建立關聯。existing record 不因 foundation 遲到而重載草稿。
+- 審查抓到切換 URL 時舊 draft 可能仍顯示，已加 loadedEditorContext 對應與 save guard；先寫出可失敗的 retained-hook-state 真實 React render 重現，再驗證無效新位置、有效新位置載入中均不顯示舊表單，既有封存項目歷史仍可編輯。
+
+驗證：`scripts/test-practice-mobile-polish.mjs`：contextual add 邊界／編碼、真實 React SSR 首頁排序、道藏、空／失敗／長文／穩定ID、初始新增模式、已讀取內容保留、別名轉換、既有表單位置切換；CSS parser 根因檢查 --bg、anchor display、底導不透明。`scripts/test-practice-field-help.mjs` 和 `test:r2-3-api` 通過。TypeScript 通過；本輪最終 production build 結果寫於 PR。
+
+限制：以上不是375/390/430px、桌面像素、iPhone Safari、鍵盤／實際滾動或正式 Notion 讀寫驗收；沒有透過localhost或其他來源繞過先前 file URL 的瀏覽器安全拒絕。保留未驗證狀態，不宣稱全站視覺已驗收。
+
+下一步：對此修正版做真實裝置驗收，再依對應版本授權合併／部署；完整能力、道藏與成果流程仍按前述依賴另續作。不把 PR104 的合併授權推定為本修正版已准發布。
+
+補充驗證：實際 Shell onClick 以隔離 navigation/store 邊界呼叫，確認修習／道藏開正確既有表單、選定項目與閱讀導向正確、取消離開時不導向或開表單；在 /add 再按新增為 no-op，不重置模式與未保存內容；直接進閱讀新增且無歷史時返回閱讀頁。這些是 handler／React render 檢查，不是觸控或像素驗收。
+
+最終：本輪最終 `npm run build`（Next16.2.10）成功；上述 SSR／handler／CSS 原因檢查、field-help、TypeScript 與 r2-3-api 通過。未驗證的實機項目保持待驗收；未取得此修正版合併／發布授權，僅推送與準備可審閱 PR。
+
+## 2026-11-01：再次對照正式截圖與學習內頁
+
+先核對 PR106 仍 OPEN、head `315a9afc41653743130318549b303de636caf754`；正式 Railway 成功部署仍是 PR104 merge `70db289d8d4499a6c91a7b4a3d4e395eed4d06e1`。本輪截圖的米色內容、文字型 CTA 與底導穿透尚未包含 PR106 修正，不能當成該修正版已發布又失效。延續同一分支，合入 master `bb42a0c8cc64b11d655db6147c47a9df5684125b`，共用 shell 衝突保留 master 聊解回退與既有新增返回；未修改創作工作區實作。
+
+新完成：選定學習項目名稱成為唯一主標題，沿用不同項目圖示；管理入口有44px按鈕排版。手機375／390／430px預定採四等寬48px分頁，359px以下才改兩欄。總覽以現有長期方向、目標、成果呈現白底卡片；完整長說明與來源收於原生可鍵盤展開的 details，不截斷／改寫準備稿，不推定階段、程度或課綱。來源以文字保留且只有HTTP(S)轉連結，React轉義正文。移除頁內重複返回；獨立審查指出管理／紀錄的選定項目返回會遺失，已將原 fallback 移至唯一頁首返回並驗證編碼、無選擇與明確來源tab。
+
+本輪驗證：先以實際 PracticeLearning React SSR 重現選定項目主標題失敗，再驗證修正後標題、管理入口、單一active tab、長文收合、來源連結、文字轉義與索引頁。`test-practice-mobile-polish.mjs` 全部通過，新增實際 shell 返回處理器回歸；field-help、learning-foundation、learning-records、r2-3-api 通過；next typegen＋tsc、修改元件 ESLint 通過。獨立審查的 P2 返回風險已處理。
+
+範圍限制：CSS／SSR 不是375／390／430px或桌面像素驗收；本輪沒有真實瀏覽器／iPhone Safari、虛擬鍵盤／安全區實機、正式資料寫入驗證。不得沿用 PR104 或舊 HTML 的瀏覽器通過數字。本輪未合併／部署，仍須對應版本驗收與發布授權。後續先完成真實畫面與互動核對，再按原依賴續接能力／成果流程。
+
+最終補充：本輪最新來源 `npm run build` 成功（Next16.2.10、TypeScript、53靜態頁）；頁首管理／紀錄返回標籤同步為「學習項目」。獨立審查重驗無未解決重要問題。實際修改與測試同存 PR106 的既有分支；不含正式發布。

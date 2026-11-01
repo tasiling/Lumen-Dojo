@@ -62,19 +62,10 @@ export default function PracticeWorkspace({
       live = false;
     };
   }, [workspace]);
-  const returnTo = params.get("returnTo");
-  const parent = returnTo?.startsWith("/practice/learning?")
-    ? returnTo
-    : (workspace === "manage" || workspace === "records")
-      ? `/practice/learning${params.get("learningItem") ? `?learningItem=${params.get("learningItem")}` : ""}`
-      : "/practice";
   const kind =
     workspace === "body" ? "身" : workspace === "emotion" ? "心／情" : "靈";
   return (
     <section className="screen practice-workspace">
-      <Link href={parent}>
-        ‹ 返回{parent === "/practice" ? "修習所" : "學習項目"}
-      </Link>
       {workspace !== "learning" && <h1>{names[workspace]}</h1>}
       {workspace === "learning" && <PracticeLearning />}
       {workspace === "records" && <Records />}
