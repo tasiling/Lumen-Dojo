@@ -1,5 +1,6 @@
 "use client";
 import { LearningItemIcon } from "./PracticeArt";
+import PracticeLearningPath from "./PracticeLearningPath";
 import PracticeItemOverview from "./PracticeItemOverview";
 import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import Link from "./PracticeRouteLink";
@@ -160,44 +161,7 @@ export default function PracticeLearning() {
               )}
               {tab === "path" && (
                 <>
-                  <p>階段是能力養成結構，沒有逐關解鎖。</p>
-                  {!stages.length && !topics.length && (
-                    <p>空白路徑也能開始修習，尚無階段或主題。</p>
-                  )}
-                  {stages.map((s) => (
-                    <article className="card" key={s.id}>
-                      <h3>{s.name}</h3>
-                      <small>{STATUS_LABELS[s.status]}</small>
-                      <p>{s.description}</p>
-                      <p>學習目標：{s.goal || "尚未指定"}</p>
-                      <p>預期成果：{s.expectedOutcome || "尚未指定"}</p>
-                      {topics
-                        .filter((t) => t.stageId === s.id)
-                        .map((t) => (
-                          <div key={t.id}>
-                            <b>{t.name}</b>
-                            <small>{STATUS_LABELS[t.status]}</small>
-                            <p>{t.description}</p>
-                            <p>{t.goal}</p>
-                            <p>{t.expectedOutcome}</p>
-                          </div>
-                        ))}
-                    </article>
-                  ))}
-                  {topics
-                    .filter(
-                      (t) =>
-                        !t.stageId || !stages.some((s) => s.id === t.stageId),
-                    )
-                    .map((t) => (
-                      <article className="card" key={t.id}>
-                        <h3>{t.name}</h3>
-                        <p>尚未指定階段 · {STATUS_LABELS[t.status]}</p>
-                        <p>{t.description}</p>
-                        <p>{t.goal}</p>
-                        <p>{t.expectedOutcome}</p>
-                      </article>
-                    ))}
+                  <PracticeLearningPath key={item.id} stages={stages} topics={topics} />
                   <button onClick={record}>留下修習紀錄</button>
                 </>
               )}

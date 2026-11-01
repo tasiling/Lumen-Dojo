@@ -66,7 +66,7 @@ export default function PracticeWorkspace({
     workspace === "body" ? "身" : workspace === "emotion" ? "心／情" : "靈";
   return (
     <section className="screen practice-workspace">
-      {workspace !== "learning" && <h1>{names[workspace]}</h1>}
+      {workspace !== "learning" && workspace !== "records" && <h1>{names[workspace]}</h1>}
       {workspace === "learning" && <PracticeLearning />}
       {workspace === "records" && <Records />}
       {workspace === "manage" && (

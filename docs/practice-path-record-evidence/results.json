@@ -1,0 +1,44 @@
+{
+  "browser": "Chromium",
+  "fixtureOnly": true,
+  "realBackendWrites": 0,
+  "interceptedWrites": 5,
+  "results": [
+    {
+      "width": 375,
+      "pathTopics": 20,
+      "noOverflow": true,
+      "dateFieldsFit": true,
+      "helpKeepsBody": true,
+      "failedSaveKeepsBody": true
+    },
+    {
+      "width": 390,
+      "pathTopics": 20,
+      "noOverflow": true,
+      "dateFieldsFit": true,
+      "helpKeepsBody": true,
+      "failedSaveKeepsBody": true
+    },
+    {
+      "width": 430,
+      "pathTopics": 20,
+      "noOverflow": true,
+      "dateFieldsFit": true,
+      "helpKeepsBody": true,
+      "failedSaveKeepsBody": true
+    },
+    {
+      "width": 1024,
+      "pathTopics": 20,
+      "noOverflow": true,
+      "dateFieldsFit": true,
+      "helpKeepsBody": true,
+      "failedSaveKeepsBody": true
+    }
+  ],
+  "emptyPath": true,
+  "saveRetry": true,
+  "pageErrors": [],
+  "safari": false
+}
