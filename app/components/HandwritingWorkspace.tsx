@@ -205,7 +205,7 @@ export default function HandwritingWorkspace() {
           <p>{font.description}</p>
           <p>建議順序：字形與筆順 → 大小寫 → 字距與比例 → 單字 → 短句 → 不看字帖的自主書寫。</p>
           {font.status !== "archived" && <Link href={`/practice/records?new=1&learningItem=${encodeURIComponent(item!.id)}&stageId=${encodeURIComponent(stage!.id)}&topicId=${encodeURIComponent(font.id)}`}>為這款字型留下紀錄</Link>}
-          {font.status === "archived" && <p>此字型主題已封存，請到管理頁恢復。</p>
+          {font.status === "archived" && <p>此字型主題已封存，請到管理頁恢復。</p>}
         </article>)}
       </div>}
     </section>
