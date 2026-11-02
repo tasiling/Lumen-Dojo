@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "./PracticeRouteLink";
 import { RealmArt } from "./PracticeArt";
 import type {
@@ -45,6 +45,7 @@ export default function HandwritingWorkspace() {
   const [snapshot, setSnapshot] = useState<FoundationSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const createInFlight = useRef(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [fontName, setFontName] = useState("");
@@ -79,7 +80,8 @@ export default function HandwritingWorkspace() {
   const canEdit = Boolean(item && item.status !== "archived");
 
   async function create(kind: EntityKind, input: EntityInput, itemId: string | null) {
-    if (busy) return false;
+    if (createInFlight.current) return false;
+    createInFlight.current = true;
     setBusy(true);
     setError("");
     setNotice("");
@@ -99,12 +101,13 @@ export default function HandwritingWorkspace() {
       try { await reload(); } catch { /* Leave the error visible; do not retry a create automatically. */ }
       return false;
     } finally {
+      createInFlight.current = false;
       setBusy(false);
     }
   }
 
   async function addFont() {
-    if (!item || !stage || !canEdit) return;
+    if (!item || !stage || !canEdit || stage.status === "archived") return;
     const name = fontName.trim();
     if (!name) { setError("先填寫這款字型或字帖的名稱。"); return; }
     if (fonts.some((font) => font.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
@@ -182,7 +185,8 @@ export default function HandwritingWorkspace() {
           <Link href={`/practice/records?new=1&learningItem=${encodeURIComponent(item.id)}`}>留下書寫紀錄</Link>
         </div>
       </div>}
-      {stage && canEdit && <div className="card">
+      {stage?.status === "archived" && <p role="status">英文字型階段已封存。請先到學習管理頁恢復，才能新增字型。</p>}
+      {stage && canEdit && stage.status !== "archived" && <div className="card">
         <h3>新增一款字型</h3>
         <p>依實際教材命名，不猜測字體。每一款會保存成獨立主題，可在管理頁更新詳情。</p>
         <div className="learning-editor">
@@ -200,7 +204,8 @@ export default function HandwritingWorkspace() {
           <h3>{font.name}</h3>
           <p>{font.description}</p>
           <p>建議順序：字形與筆順 → 大小寫 → 字距與比例 → 單字 → 短句 → 不看字帖的自主書寫。</p>
-          <Link href={`/practice/records?new=1&learningItem=${encodeURIComponent(item!.id)}&stageId=${encodeURIComponent(stage!.id)}&topicId=${encodeURIComponent(font.id)}`}>為這款字型留下紀錄</Link>
+          {font.status !== "archived" && <Link href={`/practice/records?new=1&learningItem=${encodeURIComponent(item!.id)}&stageId=${encodeURIComponent(stage!.id)}&topicId=${encodeURIComponent(font.id)}`}>為這款字型留下紀錄</Link>}
+          {font.status === "archived" && <p>此字型主題已封存，請到管理頁恢復。</p>
         </article>)}
       </div>}
     </section>
