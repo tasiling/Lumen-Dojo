@@ -70,6 +70,7 @@ export default function PracticeHome() {
         <div className="practice-panel-head"><h2 id="practice-tools-title">常用工具</h2><Link href="/practice/learning?tab=tools" className="practice-text-link">學習項目</Link></div>
         <PracticeLink row href="/practice/context" title="語境修習室" detail="從真實素材練習表達" />
         <PracticeLink row href="/practice/vocabulary" title="VocabForge" detail="回到詞庫，五字複習" />
+        <PracticeLink row href="/practice/handwriting" title="書寫修習" detail="不同英文字型、連筆、中文與左手" />
         <details className="practice-more-tools"><summary>其他工具</summary>
           <PracticeLink row href="/practice/journal" title="日記自譯" detail="從日記內容練習英文" />
           <PracticeLink row href="/practice/grammar" title="句型與語法" />
