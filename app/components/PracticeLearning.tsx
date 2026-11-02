@@ -184,6 +184,11 @@ export default function PracticeLearning() {
                         {label}
                       </Link>
                     ))}
+                  {item.name === "書寫修習" && (
+                    <Link className="card practice-link" href="/practice/handwriting">
+                      書寫修習・字型與連筆
+                    </Link>
+                  )}
                   <Link
                     className="card practice-link"
                     href={`/reading?returnTo=${encodeURIComponent(toolsReturn)}`}

@@ -21,7 +21,11 @@ export default function LearningRecordWorkspace({ learningItemId, recent = false
   const newItemsReady=Boolean(recordId)||itemsReady;
   const resolvedItemId=editing&&!recordId?newRecordItemId(items,requestedItemId):requestedItemId;
   const itemId=resolvedItemId??requestedItemId;
-  const editorContext=JSON.stringify([recordId||'',itemId]);
+  const requestedStageId=q.get("stageId");
+  const requestedTopicId=q.get("topicId");
+  const initialStage=!recordId?items.find(e=>e.kind==="stage"&&e.id===requestedStageId&&e.itemId===itemId&&e.status!=="archived"):undefined;
+  const initialTopic=!recordId&&initialStage?items.find(e=>e.kind==="topic"&&e.id===requestedTopicId&&e.itemId===itemId&&e.stageId===initialStage.id&&e.status!=="archived"):undefined;
+  const editorContext=JSON.stringify([recordId||"",itemId,initialStage?.id||"",initialTopic?.id||""]);
   const [records, setRecords] = useState<LearningRecord[]>([]);
   const [draft, setDraft] = useState<Partial<LearningRecord>>({ practicedOn: taipeiTodayISO(), recordedOn: taipeiTodayISO(), learningItemIds: itemId ? [itemId] : [], primaryLearningItemId: itemId, whatIDid: "", status: "draft" });
   const [saved, setSaved] = useState(""); const [ready, setReady] = useState(false);
@@ -38,8 +42,8 @@ export default function LearningRecordWorkspace({ learningItemId, recent = false
     if(!recordId && resolvedItemId===null){setError('找不到可新增紀錄的學習項目，請返回重新選擇。');return}
     let live = true;
     createRequestId.current = crypto.randomUUID();
-    const initial = { practicedOn: taipeiTodayISO(), recordedOn: taipeiTodayISO(), learningItemIds: itemId ? [itemId] : [], primaryLearningItemId: itemId, whatIDid: "", status: "draft" as const };
-    (recordId ? read(`/api/dojo/learning/records?id=${recordId}`).then(j => j.record) : Promise.resolve(initial)).then(r => { if(live) { setDraft(r); setSaved(JSON.stringify(r)); setLoadedEditorContext(editorContext);setReady(true); } }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, [recordId, itemId, editing, newItemsReady, resolvedItemId, editorContext]);
+    const initial = { practicedOn: taipeiTodayISO(), recordedOn: taipeiTodayISO(), learningItemIds: itemId ? [itemId] : [], primaryLearningItemId: itemId, learningStageId: initialStage?.id ?? null, learningTopicId: initialTopic?.id ?? null, whatIDid: "", status: "draft" as const };
+    (recordId ? read(`/api/dojo/learning/records?id=${recordId}`).then(j => j.record) : Promise.resolve(initial)).then(r => { if(live) { setDraft(r); setSaved(JSON.stringify(r)); setLoadedEditorContext(editorContext);setReady(true); } }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, [recordId, itemId, editing, newItemsReady, resolvedItemId, editorContext, initialStage?.id, initialTopic?.id]);
   useEffect(() => { if(editing) return; let live = true; const params = new URLSearchParams({ limit: recent ? "5" : "20" }); if(itemId) params.set("learningItemId", itemId); if(status) params.set("status", status); if(stage) params.set("stageId", stage); if(topic) params.set("topicId", topic);
     read(`/api/dojo/learning/records?${params}`).then(j => { if(live) { setRecords(j.records); setCursor(j.cursor); setReady(true); } }).catch(e => { if(live) setError(e.message); }); return () => { live = false; }; }, [itemId, status, stage, topic, editing, recent]);
   async function more() { setBusy(true); try { const p = new URLSearchParams({ cursor: cursor!, limit: "20" }); if(itemId) p.set("learningItemId", itemId); if(status) p.set("status", status); if(stage) p.set("stageId", stage); if(topic) p.set("topicId", topic); const j = await read(`/api/dojo/learning/records?${p}`); setRecords(r => [...r, ...j.records]); setCursor(j.cursor); } catch(e) { setError(String(e)); } finally { setBusy(false); } }

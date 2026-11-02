@@ -14,6 +14,7 @@ export function PracticeIcon({name}:{name:string}) {
     psychology:<><path d="M7 21v-5c-6-6-2-14 5-14 8 0 8 6 8 9l2 3h-5v7M9 7c2-3 8-1 6 2l-3 3-3-3Z"/></>,
     medicine:<><path d="M12 22V9M12 16C2 17 1 8 3 5c7 0 11 4 9 11Zm0-5C12 4 17 2 22 2c0 6-3 10-10 9Z"/></>,
     drawing:<><path d="m3 21 2-7L17 2l5 5L10 19Zm2-7 5 5M14 5l5 5M3 22h19"/></>,
+    handwriting:<><path d="m3 21 6-2L21 7l-5-5L4 14l-1 7ZM13 5l5 5M8 16l2 2M4 22h17"/></>,
     body:<><circle cx="15" cy="4" r="2"/><path d="m10 8 4-1 3 5 4 1M14 8l-3 7-6 2M11 15l5 2-3 5M10 8l-4 4"/></>,
     learning:<><path d="M12 5C8 2 3 3 3 5v15c3-2 6-2 9 0 3-2 6-2 9 0V5c0-2-5-3-9 0Zm0 0v15"/></>,
     emotion:<path d="M12 21 3 12C-3 3 8-1 12 7c4-8 15-4 9 5Z"/>,
@@ -29,6 +30,6 @@ export function PracticeIcon({name}:{name:string}) {
 }
 
 export function LearningItemIcon({name}:{name:string}) {
-  const key = /英文/.test(name)?'english':/按摩/.test(name)?'massage':/易經/.test(name)?'iching':/紫微/.test(name)?'ziwei':/奇門/.test(name)?'qimen':/塔羅/.test(name)?'tarot':/雷諾曼/.test(name)?'lenormand':/心理/.test(name)?'psychology':/中醫/.test(name)?'medicine':/繪圖|速寫/.test(name)?'drawing':'learning';
+  const key = /英文/.test(name)?'english':/按摩/.test(name)?'massage':/易經/.test(name)?'iching':/紫微/.test(name)?'ziwei':/奇門/.test(name)?'qimen':/塔羅/.test(name)?'tarot':/雷諾曼/.test(name)?'lenormand':/心理/.test(name)?'psychology':/中醫/.test(name)?'medicine':/繪圖|速寫/.test(name)?'drawing':/書寫|練字/.test(name)?'handwriting':'learning';
   return <PracticeIcon name={key}/>;
 }
