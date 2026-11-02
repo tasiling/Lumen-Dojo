@@ -3,7 +3,7 @@ import {mkdir} from 'node:fs/promises';
 import {chromium} from 'playwright';
 import {isolatedServer} from './isolated-practice-server.mjs';
 const server=await isolatedServer(3077,'original-tools-fixture');
-const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox']});
 const out='/tmp/liaojie-original-tools';await mkdir(out,{recursive:true});
 try {
  const unauth=await browser.newPage();await unauth.goto(server.base+'/liaojie/tools');assert.match(unauth.url(),/unlock/);await unauth.close();
@@ -12,11 +12,11 @@ try {
  await ctx.route('**/api/**',route=>route.fulfill({json:{entries:[],captures:[],missing:[]}}));
  const page=await ctx.newPage();page.setDefaultTimeout(25000);
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
- await page.goto(server.base+'/liaojie/tools');await page.getByRole('heading',{name:'聊解室創作工具',exact:true}).waitFor();
+ await page.goto(server.base+'/liaojie/tools');await page.getByRole('heading',{name:'原工具與裝置備份',exact:true}).waitFor();
  for(const name of ['知識鑽石框架','日上三更・指令產生器','日上三更・批次出題產生器','雜誌對話紀錄模板','IG 輪播圖文產生器'])assert.equal(await page.getByRole('link',{name:'開啟'+name,exact:true}).count(),1);
  console.log('PASS authenticated hub with all five original tools');
  await page.goto(server.base+'/liaojie/tools/diamond');
- const frame=page.frameLocator('iframe');await page.getByRole('button',{name:'下載備份',exact:true}).waitFor();
+ const frame=page.frameLocator('iframe');await page.getByText('裝置保存與備份',{exact:true}).click();await page.getByRole('button',{name:'下載備份',exact:true}).waitFor();
  await frame.locator('#global-draft').fill('【隔離測試】我發現休息也能讓想法慢慢成形。');
  await frame.getByRole('button',{name:'生成A模組指令',exact:true}).click();
  assert.match(await frame.locator('#a-output').innerText(),/我發現休息/);
@@ -31,6 +31,7 @@ try {
  await otherFrame.locator('#global-draft').fill('視窗B的保留稿');await other.getByRole('alert').filter({hasText:'另一個視窗'}).waitFor();assert.equal(await otherFrame.locator('#global-draft').inputValue(),'視窗B的保留稿');
  await other.close();
  assert.equal(await frame.locator('body').evaluate(()=>{try{return parent.document.body.textContent}catch{return 'blocked'}}),'blocked','original script cannot access authenticated parent DOM');
+ await page.getByText('裝置保存與備份',{exact:true}).click();
  const backupWait=page.waitForEvent('download');await page.getByRole('button',{name:'下載備份',exact:true}).click();const backup=await backupWait;assert.match(backup.suggestedFilename(),/diamond/);
  await page.getByLabel('匯入工具備份').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from('{"version":1,"tool":"carousel"}')});
  await page.getByRole('alert').filter({hasText:'有效備份'}).waitFor();assert.equal(await frame.locator('#global-draft').inputValue(),'視窗A的新稿');
@@ -42,11 +43,15 @@ try {
  }
  console.log('PASS diamond original instructions + nodes + refresh + invalid import + isolated frame + five sizes');
  for(const [tool,canvas,button] of [['magazine','#previewCanvas','#downloadCurrentBtn'],['carousel','#cv','#btnPng']]){
-  await page.goto(server.base+'/liaojie/tools/'+tool);await frame.locator(canvas).waitFor();await page.getByRole('button',{name:'下載備份',exact:true}).isEnabled();
+  await page.goto(server.base+'/liaojie/tools/'+tool);await frame.locator(canvas).waitFor();await page.getByText('裝置保存與備份',{exact:true}).click();await page.getByRole('button',{name:'下載備份',exact:true}).isEnabled();
   if(tool==='carousel'){
    const before=await frame.locator('.tab').count();
    await frame.locator('#btnAddMag').click();await frame.locator('#btnAddArch').click();
    assert.equal(await frame.locator('.tab').count(),before+2,'all original page types work');
+   await frame.locator('#btnDel').click();await frame.locator('#toast').getByRole('button',{name:'復原',exact:true}).waitFor();
+   assert(await frame.locator('#toast').evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}),'undo notice stays inside tool viewport');
+   assert(await page.locator('iframe').evaluate(el=>el.getBoundingClientRect().height<=Math.max(650,innerHeight-110)+1),'carousel retains bounded viewport for fixed notices');
+   await frame.locator('#toast').getByRole('button',{name:'復原',exact:true}).click();assert.equal(await frame.locator('.tab').count(),before+2,'deleted page can be restored');
   }
   const dl=page.waitForEvent('download');await frame.locator(button).click();const png=await dl;
   assert.match(png.suggestedFilename(),/\.png$/);

@@ -1,0 +1,63 @@
+/* Interface skin only. Original scripts, saved fields and exported canvas artwork stay intact. */
+:root {
+  --bg:#F3F7FD;--paper:#FFFFFF;--panel:#FFFFFF;--card:#FFFFFF;
+  --surface:#FFFFFF;--surface-2:#EAF1FC;--ink:#253C5C;--text:#253C5C;
+  --muted:#58677C;--sub:#58677C;--text-muted:#58677C;
+  --line:#D6E3F2;--border:#D6E3F2;--accent:#5676AA;--primary:#5676AA;
+  --primary-hover:#45638F;--gold:#45638F;--green:#5676AA;--green-dark:#45638F;
+  --green-soft:#EAF1FC;--cream:#EAF1FC;--radius:16px;--shadow:none;
+}
+html {max-width:100%;scroll-behavior:smooth;}
+body {margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;font-size:16px;line-height:1.7;padding-bottom:24px;}
+.app {background:var(--bg);min-height:0;}
+header,.top,.topbar {position:static;background:transparent;border:0;box-shadow:none;backdrop-filter:none;}
+h1,.brand {font-family:inherit;font-size:20px;letter-spacing:.02em;line-height:1.5;}
+h2,.step h2 {font-family:inherit;font-size:17px;line-height:1.6;}
+:is(.hint,.step .hint,.sub,.subtitle,.meta,.brand small,small.hint) {font-family:inherit;font-size:14px;color:var(--muted);line-height:1.7;}
+:is(.step,.panel,.section,.shared-card,.role-card,.card) {border-color:var(--line);border-radius:18px;box-shadow:none;}
+:is(.step,.section,.shared-card,.role-card,.card) {background:var(--paper);padding:18px;}
+:is(.step,.section) {margin-bottom:16px;}
+:is(.sidebar,.preview-area) {background:var(--bg);}
+:is(.day-card,.simple-day,.branch,.promptPanel,.turn,.msg,.checklist) {background:var(--paper);border-color:var(--line);}
+:is(.day-head,.note-box,.tag,code,.cardtable th,.panel.highlight) {background:var(--surface-2);color:var(--ink);border-color:var(--line);}
+button,.btn {font-family:inherit;min-height:44px;border-radius:12px;line-height:1.5;}
+button:focus-visible,a:focus-visible,summary:focus-visible {outline:3px solid var(--primary);outline-offset:3px;}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),textarea,select {
+  font-family:inherit;font-size:16px;line-height:1.6;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:12px;min-height:46px;max-width:100%;
+}
+textarea {padding:12px;}
+input:focus-visible,textarea:focus-visible,select:focus-visible {outline:2px solid var(--primary);outline-offset:2px;}
+::placeholder {color:#6B7D93;opacity:1;}
+:is(.primary,.btn.primary,button.fill) {background:var(--primary);border-color:var(--primary);color:white;}
+:is(button.secondary,button.toggle) {background:var(--surface-2);color:var(--ink);border:1px solid var(--line);}
+button:disabled {opacity:.55;cursor:not-allowed;}
+pre,.out,.output-box {background:var(--paper);border-color:var(--line);overflow-wrap:anywhere;white-space:pre-wrap;}
+.row {gap:8px;}
+#methods {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+#methods button {padding:12px 8px;min-height:78px;text-align:left;font-size:15px;background:var(--paper);border:1px solid var(--line);}
+#methods button small {font-size:13px;margin-top:4px;}
+#methods button.on {background:var(--surface-2);border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary);}
+#methods button.on small {color:var(--ink);}
+.stationgrid {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.stationgrid button {min-height:44px;white-space:normal;}
+.jumpbar {position:static;margin:0 0 16px;padding:8px 0;background:var(--bg);}
+.bottombar {position:static;border:1px solid var(--line);border-radius:16px;margin-top:16px;flex-wrap:wrap;padding:12px;}
+.bottombar button {flex:1 1 140px;}
+body {overflow-wrap:anywhere;}
+@media(max-width:600px) {
+  body {padding-left:12px;padding-right:12px;}
+  body:has(>.app),body:has(>.wrap) {padding-left:0;padding-right:0;}
+  .topbar {padding:16px;gap:12px;}
+  .screen {padding:12px;}
+  .app {max-width:100%;}
+  .panel,.stageBox {min-width:0!important;width:100%;flex-basis:100%!important;}
+  .stageBox {position:static!important;}
+  .wrap {padding:12px;}
+  header,main,.shared-panel,.stage-nav {padding-left:12px;padding-right:12px;}
+  .row>* {min-width:0;}
+  canvas {max-width:100%;height:auto;}
+  .stage-btn {flex:1 1 40%;}
+  .cardtable {table-layout:fixed;}
+  .cardtable td.small-col {white-space:normal;}
+}
+@media(prefers-reduced-motion:reduce) {html {scroll-behavior:auto;}* {transition:none!important;}}
