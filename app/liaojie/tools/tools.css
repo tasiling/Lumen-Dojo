@@ -48,3 +48,7 @@
 
 /* Carousel has transient fixed undo/error notices; keep its original visible viewport. */
 .original-tool-frame--viewport {min-height:650px;}
+/* A shared tool follows the realm it was opened from. */
+.dojo.creative-shell.creative-weaving :is(.original-tool-workspace,.original-tools-hub) {--creative-accent:#8B3F68;--creative-soft:#F8E7F4;--creative-line:#EBDDEC;}
+.dojo.creative-shell .original-workspace-header,.dojo.creative-shell .original-tools-hero {background:var(--creative-gradient);}
+.dojo.creative-shell .original-tool-frame {background:var(--bg);}

@@ -1,0 +1,19 @@
+READY isolated UI server 3079
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: weaving home needs a visible tool entrance
+
+0 !== 1
+
+    at file:///workspace/scratch/fe04bf06655e/lumen-dojo/scripts/test-creative-tool-realms-ui.mjs:16:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 0,
+  expected: 1,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.1

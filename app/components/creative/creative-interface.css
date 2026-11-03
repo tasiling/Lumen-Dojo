@@ -190,3 +190,23 @@
 
 /* Native select and number controls have different intrinsic heights in enlarged text. */
 .dojo.creative-shell.creative-shell #view :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select) {height:calc(1.65em + 24px)}
+/* Plurk is the same editor under both realm routes; /plurk remains a Liaojie alias. */
+.dojo.creative-shell.creative-shell .plurk {--gold:var(--creative-accent);padding-bottom:calc(110px + env(safe-area-inset-bottom));}
+.dojo.creative-shell.creative-shell .plurk .go {background:var(--creative-accent);border-color:var(--creative-accent);color:#fff;}
+.dojo.creative-shell.creative-shell .plurk :is(.card,.field,.pick,.seg) {border-color:var(--creative-line);}
+.dojo.creative-shell.creative-shell .plurk .card {background:var(--paper);border-radius:18px;margin-block:16px;box-shadow:none;}
+.dojo.creative-shell.creative-shell .plurk :is(.wide,.seg button.on,.pick.on) {background:var(--creative-soft);color:var(--creative-accent);border-color:var(--creative-accent);}
+.dojo.creative-shell.creative-shell .plurk :is(.ctitle,.ftag) {font-family:inherit;}
+.dojo.creative-shell.creative-shell .plurk :is(.card.due .ctitle,.card.due .cmeta,.tower li.done .ftag,.pv b) {color:var(--creative-accent);}
+.dojo.creative-shell.creative-shell .plurk .tabs {flex-wrap:wrap;gap:8px;}
+.dojo.creative-shell.creative-shell .plurk :is(button,a.tn) {min-height:44px;}
+.dojo.creative-shell.creative-shell .plurk :is(.acts,.ffoot,.seg) {flex-wrap:wrap;gap:8px;}
+.dojo.creative-shell.creative-shell .plurk .field {font:inherit;max-width:100%;min-width:0;}
+.dojo.creative-shell.creative-shell .plurk :is(.k,.sect) {font-family:inherit;color:var(--creative-accent);}
+.dojo.creative-shell.creative-shell .plurk .segline {color:var(--ink);}
+.dojo.creative-shell.creative-shell .plurk .toast {background:var(--creative-accent);max-width:calc(100% - 32px);bottom:calc(var(--creative-nav-height) + env(safe-area-inset-bottom) + 16px);}
+.dojo.creative-shell.creative-shell .creative-tool-heading {padding:20px;border-radius:22px;background:var(--creative-gradient);margin-bottom:20px;}
+.dojo.creative-shell.creative-shell .creative-tool-heading>a {display:flex;align-items:center;min-height:44px;color:var(--ink);font-size:15px;text-decoration:none;}
+.dojo.creative-shell.creative-shell .creative-tool-heading h1 {font-size:clamp(24px,5vw,32px);margin:8px 0;line-height:1.5;}
+.dojo.creative-shell.creative-shell .creative-tool-heading p {font-size:16px;line-height:1.7;margin:0;}
+.dojo.creative-shell.creative-shell .plurk .note {background:var(--creative-soft);border-color:var(--creative-line);color:var(--muted);}

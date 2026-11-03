@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState} from 'react';
+import type {ToolRealm} from '@/lib/liaojieTools/catalog';
 import {readTool,saveTool,validSnapshot,type ToolSnapshot} from '@/lib/liaojieTools/snapshot';
 
 function frameDocument(html:string, bridge:string, tool:string, token:string, snapshot:ToolSnapshot|null) {
@@ -9,7 +10,7 @@ function frameDocument(html:string, bridge:string, tool:string, token:string, sn
   const before = `<meta http-equiv="Content-Security-Policy" content="${csp}"><script>window.__LUMEN_TOOL__=${config};${bridge}</script>`;
   return html.replace(/<head>/i,'<head>'+before);
 }
-export default function OriginalToolWorkspace({tool,name,html,bridge}:{tool:string;name:string;html:string;bridge:string}) {
+export default function OriginalToolWorkspace({tool,name,html,bridge,realm='liaojie'}:{tool:string;name:string;html:string;bridge:string;realm?:ToolRealm}) {
   const frame=useRef<HTMLIFrameElement>(null), current=useRef<ToolSnapshot|null>(null), revision=useRef(0), serialized=useRef(''), token=useRef('');
   const pending=useRef<ToolSnapshot|null>(null), saving=useRef(false), blocked=useRef(false), dirty=useRef(false);
   const [src,setSrc]=useState(''),[status,setStatus]=useState('正在讀取裝置草稿…'),[error,setError]=useState(''),[ready,setReady]=useState(false),[canBackup,setCanBackup]=useState(false);
@@ -92,8 +93,8 @@ export default function OriginalToolWorkspace({tool,name,html,bridge}:{tool:stri
   }
   return <section className="original-tool-workspace">
     <header className="original-workspace-header">
-      <Link className="original-workspace-back" href={tool.startsWith('sanko-')?'/liaojie/sanko':'/liaojie/tools'} onClick={event=>{if(dirty.current&&!confirm('目前修改尚未保存。請先下載草稿備份；仍要離開？'))event.preventDefault();}}>← {tool.startsWith('sanko-')?'日上三更｜占卜內容製作':'聊解室工具'}</Link>
-      <span className="original-workspace-eyebrow">聊解室 · 創作工具</span>
+      <Link className="original-workspace-back" href={`/${realm}/tools`} onClick={event=>{if(dirty.current&&!confirm('目前修改尚未保存。請先下載草稿備份；仍要離開？'))event.preventDefault();}}>← {realm==='weaving'?'織光堂工具':'聊解室工具'}</Link>
+      <span className="original-workspace-eyebrow">{realm==='weaving'?'織光堂':'聊解室'} · 創作工具</span>
       <h1>{name}</h1>
       <p className="original-save-status" role="status">{status}</p>
       <details className="original-backup-panel"><summary>裝置保存與備份</summary>

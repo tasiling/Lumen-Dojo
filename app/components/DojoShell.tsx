@@ -26,6 +26,7 @@ import { useBackStack, useBackableState } from "@/lib/dojo/backstack";
 import { NO_BACK_BUTTON, PARENT_ROUTE, ROUTE_LABEL, USE_BROWSER_BACK } from "@/lib/dojo/backroutes";
 
 function currentSpaceFromPath(pathname: string): SpaceKey {
+  if(pathname === "/plurk")return "liaojie";
   const key = pathname.split("/").filter(Boolean)[0] as SpaceKey;
   return key in SPACES ? key : "practice";
 }
@@ -126,7 +127,7 @@ const PRIVACY_OPTIONS: Privacy[] = ["私人", "限閱", "公開"];
 export default function DojoShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const creativeRoute = /^\/(weaving|liaojie)(\/|$)/.test(pathname);
+  const creativeRoute = /^\/(weaving|liaojie)(\/|$)/.test(pathname) || pathname === "/plurk";
   const creativeHome = pathname === '/weaving' || pathname === '/liaojie';
   const todayCalendarRoute = pathname === "/" || pathname === "/calendar";
   const mapRoute = pathname === "/map";

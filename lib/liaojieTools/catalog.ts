@@ -7,3 +7,5 @@ export const ORIGINAL_TOOLS = [
 ] as const;
 export type OriginalToolId = typeof ORIGINAL_TOOLS[number]['id'];
 export function originalTool(id: string) { return ORIGINAL_TOOLS.find(tool => tool.id === id); }
+
+export type ToolRealm = 'weaving' | 'liaojie';

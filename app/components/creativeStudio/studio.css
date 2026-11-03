@@ -56,3 +56,4 @@
 @media(max-width:359px) {.studio .ritual-card,.studio-home .ritual-card {padding:20px}.studio-link-grid {grid-template-columns:1fr}.studio-save {padding:8px;gap:8px}.studio-save button {padding-inline:10px!important}.studio-steps svg {width:44px;height:44px}.studio-steps::before {top:30px}}
 @media(min-width:900px) {.studio-home {grid-template-columns:1fr 1fr;align-items:start}.studio-home .ritual-card {padding:28px}.studio-workspace .ritual-card {padding:28px}}
 @media(max-height:600px) {.studio-save {position:static;inset:auto}}
+.studio-home .studio-tools-entry {grid-column:1/-1;}

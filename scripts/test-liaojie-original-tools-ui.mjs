@@ -12,7 +12,7 @@ try {
  await ctx.route('**/api/**',route=>route.fulfill({json:{entries:[],captures:[],missing:[]}}));
  const page=await ctx.newPage();page.setDefaultTimeout(25000);
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
- await page.goto(server.base+'/liaojie/tools');await page.getByRole('heading',{name:'原工具與裝置備份',exact:true}).waitFor();
+ await page.goto(server.base+'/liaojie/tools');await page.getByRole('heading',{name:'創作工具',exact:true}).waitFor();
  for(const name of ['知識鑽石框架','日上三更｜AI 寫作指令產生器','日上三更｜規劃多天的占卜貼文','雜誌對話紀錄模板','IG 輪播圖文產生器'])assert.equal(await page.getByRole('link',{name:'開啟'+name,exact:true}).count(),1);
  console.log('PASS authenticated hub with all five original tools');
  await page.goto(server.base+'/liaojie/tools/diamond');
