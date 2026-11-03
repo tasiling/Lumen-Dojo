@@ -1,0 +1,12 @@
+2026-11-03 naming update
+PASS ESLint changed TS/TSX and TypeScript
+PASS production build
+PASS original script blocks identical (eight-method definitions and generated writing content retained)
+READY isolated UI server 3078
+PASS 15 field views: 320/375/390/430/1024px, theme, touch spacing, font size, content height, no horizontal overflow; expanded stations and generated output
+READY isolated UI server 3077
+PASS authenticated hub with all five original tools
+PASS diamond original instructions + nodes + refresh + invalid import + isolated frame + five sizes
+PASS magazine original canvas + real 1080x1350 PNG + five sizes
+PASS carousel original canvas + real 1080x1350 PNG + five sizes
+PASS original sanko single instruction and batch schedule + five sizes
