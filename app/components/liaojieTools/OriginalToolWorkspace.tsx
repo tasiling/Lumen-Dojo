@@ -1,20 +1,21 @@
 'use client';
 import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState} from 'react';
+import type {ToolRealm} from '@/lib/liaojieTools/catalog';
 import {readTool,saveTool,validSnapshot,type ToolSnapshot} from '@/lib/liaojieTools/snapshot';
 
 function frameDocument(html:string, bridge:string, tool:string, token:string, snapshot:ToolSnapshot|null) {
   const config = JSON.stringify({tool,token,snapshot}).replaceAll('<','\\u003c');
   const csp = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'";
   const before = `<meta http-equiv="Content-Security-Policy" content="${csp}"><script>window.__LUMEN_TOOL__=${config};${bridge}</script>`;
-  const responsive = '<style>html,body{max-width:100%;}input,textarea,select{max-width:100%;}pre,.output-box{overflow-wrap:anywhere;white-space:pre-wrap;}@media(max-width:600px){.wrap{padding:10px;}.panel,.stageBox{min-width:0!important;width:100%;flex-basis:100%!important;}.stageBox{position:static!important;}header,main,.shared-panel,.stage-nav{padding-left:12px!important;padding-right:12px!important;}.role-card,.shared-card{padding:14px!important;}.row>*{min-width:0;}canvas{max-width:100%;height:auto;}.stage-btn{flex:1 1 40%;}}</style>';
-  return html.replace(/<head>/i,'<head>'+before).replace('</head>',responsive+'</head>');
+  return html.replace(/<head>/i,'<head>'+before);
 }
-export default function OriginalToolWorkspace({tool,name,html,bridge}:{tool:string;name:string;html:string;bridge:string}) {
+export default function OriginalToolWorkspace({tool,name,html,bridge,realm='liaojie'}:{tool:string;name:string;html:string;bridge:string;realm?:ToolRealm}) {
   const frame=useRef<HTMLIFrameElement>(null), current=useRef<ToolSnapshot|null>(null), revision=useRef(0), serialized=useRef(''), token=useRef('');
   const pending=useRef<ToolSnapshot|null>(null), saving=useRef(false), blocked=useRef(false), dirty=useRef(false);
   const [src,setSrc]=useState(''),[status,setStatus]=useState('正在讀取裝置草稿…'),[error,setError]=useState(''),[ready,setReady]=useState(false),[canBackup,setCanBackup]=useState(false);
   const input=useRef<HTMLInputElement>(null);
+  const [frameHeight,setFrameHeight]=useState(650);
   const mount=useCallback((snapshot:ToolSnapshot|null)=>{
     token.current=crypto.randomUUID();setReady(false);current.current=snapshot;setCanBackup(!!snapshot);
     serialized.current=snapshot?JSON.stringify(snapshot):'';pending.current=null;
@@ -22,7 +23,7 @@ export default function OriginalToolWorkspace({tool,name,html,bridge}:{tool:stri
   },[html,bridge,tool]);
   useEffect(()=>{
     let active=true;
-    readTool(tool).then(record=>{if(!active)return;revision.current=record?.revision??0;mount(record?.snapshot??null);setStatus(record?'已讀取裝置草稿':'尚無草稿，開始編寫後自動保存');}).catch(()=>{if(active){blocked.current=true;setError('無法讀取裝置儲存，先保留目前視窗並下載備份。');mount(null);}});
+    readTool(tool).then(record=>{if(!active)return;revision.current=record?.revision??0;mount(record?.snapshot??null);setStatus(record?'已讀取裝置草稿':'尚無草稿，開始編寫後自動保存');}).catch(()=>{if(active){blocked.current=true;setError('無法讀取裝置儲存，先保留目前視窗並下載草稿備份。');mount(null);}});
     return()=>{active=false;};
   },[tool,mount]);
   const flush=useCallback(async()=>{
@@ -41,6 +42,7 @@ export default function OriginalToolWorkspace({tool,name,html,bridge}:{tool:stri
     function receive(event:MessageEvent){
       if(event.source!==frame.current?.contentWindow||event.data?.lumenTool!==token.current)return;
       if(event.data.type==='ready'){setReady(true);return;}
+      if(tool!=='carousel'&&event.data.type==='resize'&&Number.isFinite(event.data.height)){setFrameHeight(Math.max(300,Math.min(100000,event.data.height)));return;}
       if(event.data.type==='error'){setError(event.data.message);return;}
       if(event.data.type==='dirty'){dirty.current=true;setStatus('有修改，正在準備保存…');return;}
       if(event.data.type!=='snapshot'||!validSnapshot(event.data.snapshot,tool))return;
@@ -66,7 +68,7 @@ export default function OriginalToolWorkspace({tool,name,html,bridge}:{tool:stri
           if(event.source!==frame.current?.contentWindow||event.data?.lumenTool!==token.current||event.data.requestId!==requestId||!validSnapshot(event.data.snapshot,tool))return;
           cleanup();resolve(event.data.snapshot);
         };
-        const timeout=setTimeout(()=>{cleanup();reject(new Error('無法擷取最新內容，請稍後再下載備份'));},8000);
+        const timeout=setTimeout(()=>{cleanup();reject(new Error('無法擷取最新內容，請稍後再下載草稿備份'));},8000);
         addEventListener('message',receive);frame.current?.contentWindow?.postMessage({lumenTool:token.current,type:'capture',requestId},'*');
       });
       const url=URL.createObjectURL(new Blob([JSON.stringify(snapshot)],{type:'application/json'}));
@@ -86,11 +88,22 @@ export default function OriginalToolWorkspace({tool,name,html,bridge}:{tool:stri
     }catch(reason){setError(reason instanceof Error?reason.message:String(reason));}
   }
   async function reloadSaved(){
-    if(!confirm('讀取裝置中的版本？目前視窗尚未保存的修改會被替換，請先下載備份。'))return;
-    try{const record=await readTool(tool);if(saving.current)return;revision.current=record?.revision??0;blocked.current=false;dirty.current=false;setError('');mount(record?.snapshot??null);setStatus('已讀取裝置版本');}catch{setError('仍無法讀取裝置版本，目前內容保持不變');}
+    if(!confirm('載入這個瀏覽器已保存的草稿？目前視窗尚未保存的修改會被替換，請先下載草稿備份。'))return;
+    try{const record=await readTool(tool);if(saving.current)return;revision.current=record?.revision??0;blocked.current=false;dirty.current=false;setError('');mount(record?.snapshot??null);setStatus('已載入本機草稿');}catch{setError('仍無法載入本機草稿，目前內容保持不變');}
   }
   return <section className="original-tool-workspace">
-    <header className="original-workspace-header"><Link href="/liaojie/tools" onClick={event=>{if(dirty.current&&!confirm('目前修改尚未保存。請先下載備份；仍要離開？'))event.preventDefault();}}>← 創作工具</Link><h1>{name}</h1><div className="original-workspace-actions"><button onClick={()=>void backup()} disabled={!ready||!canBackup}>下載備份</button><button onClick={()=>input.current?.click()} disabled={!ready}>匯入備份</button><button onClick={()=>void reloadSaved()} disabled={!ready}>讀取裝置版本</button><input ref={input} aria-label="匯入工具備份" type="file" accept=".json,application/json" hidden onChange={event=>{const file=event.target.files?.[0];if(file)void restore(file);event.target.value='';}}/></div><p role="status">{status}</p><p className="original-local-note">僅保存在這個瀏覽器，未跨裝置同步。原工具的專案、圖片與文字下載仍可使用。</p>{error&&<p role="alert">{error}</p>}</header>
-    {src&&<iframe ref={frame} title={name} srcDoc={src} sandbox="allow-scripts allow-downloads allow-modals" className="original-tool-frame"/>}
+    <header className="original-workspace-header">
+      <Link className="original-workspace-back" href={`/${realm}/tools`} onClick={event=>{if(dirty.current&&!confirm('目前修改尚未保存。請先下載草稿備份；仍要離開？'))event.preventDefault();}}>← {realm==='weaving'?'織光堂工具':'聊解室工具'}</Link>
+      <span className="original-workspace-eyebrow">{realm==='weaving'?'織光堂':'聊解室'} · 創作工具</span>
+      <h1>{name}</h1>
+      <p className="original-save-status" role="status">{status}</p>
+      <details className="original-backup-panel"><summary>裝置保存與備份</summary>
+        <p className="original-local-note">草稿僅保存在這個瀏覽器，未跨裝置同步。換裝置前請下載草稿備份；工具內的專案、圖片與文字下載仍可使用。</p>
+        <div className="original-workspace-actions"><button onClick={()=>void backup()} disabled={!ready||!canBackup}>下載草稿備份</button><button onClick={()=>input.current?.click()} disabled={!ready}>從備份恢復草稿</button><button onClick={()=>void reloadSaved()} disabled={!ready}>載入本機草稿</button></div>
+      </details>
+      <input ref={input} aria-label="選擇草稿備份檔案" type="file" accept=".json,application/json" hidden onChange={event=>{const file=event.target.files?.[0];if(file)void restore(file);event.target.value='';}}/>
+      {error&&<p role="alert">{error}</p>}
+    </header>
+    {src&&<iframe ref={frame} title={name} srcDoc={src} sandbox="allow-scripts allow-downloads allow-modals" className={"original-tool-frame"+(tool==='carousel'?' original-tool-frame--viewport':'')} style={{height:tool==='carousel'?'calc(100dvh - 110px)':frameHeight}}/>}
   </section>;
 }

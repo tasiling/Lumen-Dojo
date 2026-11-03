@@ -11,6 +11,8 @@
 // 完成/排程時間)即時送出,不需要使用者手動按「存檔」。
 //
 // 不接噗浪 API、不做自動發佈——排程只是「預先寫好＋到點提示」。
+import Link from 'next/link';
+import {usePathname} from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, Fragment, type ReactNode } from "react";
 import { useBackableState } from "@/lib/dojo/backstack";
 import {
@@ -95,6 +97,8 @@ async function del(url: string) {
 }
 
 export default function PlurkPage() {
+  const pathname=usePathname();
+  const toolHome=pathname.startsWith('/weaving')?'/weaving/tools':'/liaojie/tools';
   const [templates, setTemplates] = useState<PlurkTemplate[]>([]);
   const [drafts, setDrafts] = useState<PlurkDraft[]>([]);
   const [loading, setLoading] = useState(true);
@@ -743,8 +747,7 @@ export default function PlurkPage() {
 
   return (
     <section className="screen plurk">
-      <h1>噗浪・蓋樓台</h1>
-      <p className="lead">寫好放著,時間到打開,一層層貼上去。</p>
+      <header className="creative-tool-heading"><Link href={toolHome}>← 創作工具</Link><h1>噗浪・蓋樓台</h1><p>寫好放著，時間到打開，一層層貼上去。</p></header>
 
       <div className="tabs">
         <button className={tab === "post" ? "on" : ""} onClick={() => setTab("post")}>

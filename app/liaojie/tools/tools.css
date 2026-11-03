@@ -15,3 +15,40 @@
 .original-tool-frame{width:100%;height:calc(100dvh - 110px);min-height:650px;display:block;border:0;background:#f7f6f2;}
 .original-tool-entry{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;padding:16px;background:#eef4fc;border-radius:14px;align-items:center;}
 @media(max-width:600px){.original-tools-grid{grid-template-columns:1fr;}.original-tool-card{padding:18px;}.original-tools-hub{padding:16px 12px 110px;}}
+/* The hub, wrapper and embedded controls share the established Liaojie field. */
+.original-tool-workspace,.sanko-home {--ink:#253C5C;--creative-soft:#EAF1FC;--creative-line:#D6E3F2;--creative-accent:#45638F;}
+.original-tool-workspace {max-width:1100px;margin:auto;padding:0 12px calc(110px + env(safe-area-inset-bottom));}
+.original-workspace-header {margin:0 0 12px;padding:20px;border:1px solid var(--creative-line);border-radius:22px;background:linear-gradient(120deg,#B3E1E9 0%,#C2DAF7 52%,#C9B7F2 100%);}
+.original-workspace-back {display:flex;align-items:center;min-height:44px;width:fit-content;font-size:15px;color:var(--ink);text-decoration:none;margin-bottom:12px;}
+.original-workspace-eyebrow {display:block;font-size:13px;color:#455B76;}
+.original-workspace-header h1 {font-size:clamp(23px,5vw,30px);line-height:1.5;margin:6px 0 12px;overflow-wrap:anywhere;}
+.original-workspace-header .original-save-status {font-size:13px;color:#455B76;margin:8px 0;}
+.original-backup-panel {border-top:1px solid #FFFFFF99;margin-top:14px;padding-top:6px;}
+.original-backup-panel summary {min-height:44px;align-content:center;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);}
+.original-workspace-actions {gap:8px;margin:12px 0 0;}
+.original-workspace-actions button {min-height:44px;font-size:14px;border-color:var(--creative-line);border-radius:12px;padding:10px 12px;}
+.original-tool-frame {height:auto;min-height:300px;background:#F3F7FD;border-radius:18px;}
+.original-local-note {font-size:13px;}
+.sanko-home {max-width:900px;margin:auto;padding:0 16px calc(110px + env(safe-area-inset-bottom));}
+.sanko-home .original-tools-hero {margin:0 0 20px;background:var(--creative-gradient,linear-gradient(120deg,#B3E1E9,#C2DAF7 52%,#C9B7F2));}
+.sanko-home .original-tools-hero>span {font-size:13px;color:#455B76;}
+.sanko-home .original-tools-hero h1 {line-height:1.4;margin:10px 0 12px;}
+.sanko-home .original-tools-hero p {margin:0;font-size:16px;line-height:1.8;}
+.sanko-entry-list {display:grid;gap:14px;}
+.sanko-entry {display:flex;align-items:center;gap:14px;border:1px solid var(--creative-line);border-radius:20px;padding:20px;background:white;color:var(--ink);text-decoration:none;min-height:110px;}
+.sanko-entry-copy {display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;}
+.sanko-entry-copy small {font-size:12px;color:var(--creative-accent);letter-spacing:.1em;}
+.sanko-entry-copy strong {font-size:18px;line-height:1.5;}
+.sanko-entry-copy>span {font-size:14px;color:#58677C;line-height:1.7;}
+.sanko-entry>.creative-icon {flex:0 0 20px;width:20px;}
+.sanko-entry:hover {border-color:var(--creative-accent);background:#F9FBFF;}
+.sanko-entry:focus-visible,.original-workspace-header :is(button,a,summary):focus-visible {outline:3px solid var(--creative-accent);outline-offset:3px;}
+@media(max-width:600px) {.original-workspace-header {padding:16px;}.sanko-home {padding-inline:12px;}.sanko-entry {padding:16px;gap:12px;}.sanko-entry-copy strong {font-size:17px;}}
+.dojo.creative-shell.creative-shell .screen:is(.sanko-home,.original-tools-hub) {padding:0 12px calc(110px + env(safe-area-inset-bottom));}
+
+/* Carousel has transient fixed undo/error notices; keep its original visible viewport. */
+.original-tool-frame--viewport {min-height:650px;}
+/* A shared tool follows the realm it was opened from. */
+.dojo.creative-shell.creative-weaving :is(.original-tool-workspace,.original-tools-hub) {--creative-accent:#8B3F68;--creative-soft:#F8E7F4;--creative-line:#EBDDEC;}
+.dojo.creative-shell .original-workspace-header,.dojo.creative-shell .original-tools-hero {background:var(--creative-gradient);}
+.dojo.creative-shell .original-tool-frame {background:var(--bg);}

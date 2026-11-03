@@ -1,4 +1,3 @@
-import Link from "next/link";
 import "../components/creativeSources/sourceSettings.css";
 import ModuleDomainPage from "../components/ModuleDomainPage";
 import WeavingCaptureInbox from "../components/WeavingCaptureInbox";
@@ -15,7 +14,6 @@ export default function WeavingPage() {
         <>
           <StudioHome />
           <details><summary>查看野採已採用素材</summary><WeavingCaptureInbox /></details>
-          <Link href="/liaojie/tools" className="backstage-inline-link">原工具與裝置備份 →</Link>
         </>
       )}
     /></div>
