@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {ToolRealm} from '@/lib/liaojieTools/catalog';
 import {readTool,saveTool,validSnapshot,type ToolSnapshot} from '@/lib/liaojieTools/snapshot';
+import WritingEntryGuide from '../creativeStudio/WritingEntryGuide';
 
 function frameDocument(html:string, bridge:string, tool:string, token:string, snapshot:ToolSnapshot|null) {
   const config = JSON.stringify({tool,token,snapshot}).replaceAll('<','\\u003c');
@@ -95,7 +96,8 @@ export default function OriginalToolWorkspace({tool,name,html,bridge,realm='liao
     <header className="original-workspace-header">
       <Link className="original-workspace-back" href={`/${realm}/tools`} onClick={event=>{if(dirty.current&&!confirm('目前修改尚未保存。請先下載草稿備份；仍要離開？'))event.preventDefault();}}>← {realm==='weaving'?'織光堂工具':'聊解室工具'}</Link>
       <span className="original-workspace-eyebrow">{realm==='weaving'?'織光堂':'聊解室'} · 創作工具</span>
-      <h1>{name}</h1>
+      <h1>{name}{tool==='diamond'?'｜舊版草稿與備份':''}</h1>
+      {tool==='diamond'&&<><p className="original-local-note">此處保留舊 v9 草稿與原流程。新的「靈感給 A、草稿給 B」使用下方入口；舊資料不會自動搬走，請先備份，再到作品管理預覽匯入。</p><WritingEntryGuide realm={realm} beforeStart={()=>{if(dirty.current){setError('舊版修改尚未保存。請先等待保存完成或下載草稿備份，再開新協作。');return false;}return true;}}/><Link className="button-link" href="/weaving/import">預覽匯入舊資料</Link></>}
       <p className="original-save-status" role="status">{status}</p>
       <details className="original-backup-panel"><summary>裝置保存與備份</summary>
         <p className="original-local-note">草稿僅保存在這個瀏覽器，未跨裝置同步。換裝置前請下載草稿備份；工具內的專案、圖片與文字下載仍可使用。</p>
@@ -104,6 +106,7 @@ export default function OriginalToolWorkspace({tool,name,html,bridge,realm='liao
       <input ref={input} aria-label="選擇草稿備份檔案" type="file" accept=".json,application/json" hidden onChange={event=>{const file=event.target.files?.[0];if(file)void restore(file);event.target.value='';}}/>
       {error&&<p role="alert">{error}</p>}
     </header>
+    {tool==='diamond'&&<p className="original-legacy-boundary">以下為舊版 v9 操作區，沿用舊規則及裝置草稿。</p>}
     {src&&<iframe ref={frame} title={name} srcDoc={src} sandbox="allow-scripts allow-downloads allow-modals" className={"original-tool-frame"+(tool==='carousel'?' original-tool-frame--viewport':'')} style={{height:tool==='carousel'?'calc(100dvh - 110px)':frameHeight}}/>}
   </section>;
 }

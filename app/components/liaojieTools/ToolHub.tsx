@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CreativeIcon from '@/app/components/creative/CreativeIcon';
+import WritingEntryGuide from '../creativeStudio/WritingEntryGuide';
 import { ORIGINAL_TOOLS, type ToolRealm } from '@/lib/liaojieTools/catalog';
 import '@/app/liaojie/tools/tools.css';
 export default function ToolHub({ realm }: {
@@ -9,8 +10,8 @@ export default function ToolHub({ realm }: {
     return <section className="screen original-tools-hub">
   <Link className="original-workspace-back" href={'/' + realm}>← {name}</Link>
   <header className="original-tools-hero"><span>{name} · 寫作與製作</span><h1>創作工具</h1><p>從文字整理、占卜貼文到圖文編排，選一個工具開始。兩個場域共用同一份工具草稿。</p></header>
-  <section className="ritual-card"><h2>知識鑽石｜文章協作</h2><p>從素材探索方向、整理主文、轉製限動與延伸題材；回覆、主稿與完稿版本分開保存。</p><Link className="button-link" href={`/${realm}/works`}>開始或接續文章協作</Link></section>
-  <div className="original-tools-grid">{ORIGINAL_TOOLS.map((tool, i) => <article key={tool.id} className="ritual-card original-tool-card"><span className="original-tool-number"><CreativeIcon name={(['diamond', 'sun', 'layers', 'chat', 'document'] as const)[i]}/></span><h2>{tool.name}</h2><p>{tool.purpose}</p><p className="original-tool-detail">{tool.detail}</p><Link className="button-link" href={`/${realm}/tools/${tool.id}`} aria-label={'開啟' + tool.name}>開啟工具 →</Link></article>)}
+  <section className="ritual-card"><h2>知識鑽石｜文章協作</h2><WritingEntryGuide realm={realm}/><Link className="button-link" href={`/${realm}/works`}>接續已有文章與探索</Link></section>
+  <div className="original-tools-grid">{ORIGINAL_TOOLS.map((tool, i) => <article key={tool.id} className="ritual-card original-tool-card"><span className="original-tool-number"><CreativeIcon name={(['diamond', 'sun', 'layers', 'chat', 'document'] as const)[i]}/></span><h2>{tool.id === 'diamond' ? '舊版知識鑽石｜草稿與備份' : tool.name}</h2><p>{tool.id === 'diamond' ? '找回舊 v9 的裝置草稿，核對或下載備份。新創作請使用上方的 A／B 入口。' : tool.purpose}</p><p className="original-tool-detail">{tool.detail}</p><Link className="button-link" href={`/${realm}/tools/${tool.id}`} aria-label={tool.id === 'diamond' ? '開啟舊版知識鑽石與備份' : '開啟' + tool.name}>{tool.id === 'diamond' ? '開啟舊版與備份 →' : '開啟工具 →'}</Link></article>)}
    <article className="ritual-card original-tool-card"><span className="original-tool-number"><CreativeIcon name="layers"/></span><h2>噗浪・蓋樓台</h2><p>把長文分樓，逐樓複製並整理發文排程。</p><p className="original-tool-detail">保留原有範本與草稿；到點提醒，由你確認並貼上噗浪。</p><Link className="button-link" href={`/${realm}/plurk`}>開啟噗浪蓋樓台 →</Link></article>
   </div>
   <p className="original-tools-note">五個原工具的草稿保存在這個瀏覽器；換裝置前請下載草稿備份。噗浪草稿與範本沿用原有保存方式。AI 寫作指令可交給慣用的 AI 對話執行。</p>

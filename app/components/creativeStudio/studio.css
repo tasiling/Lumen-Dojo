@@ -61,3 +61,17 @@
 .studio-home .studio-tools-entry {grid-column:1/-1;}
 
 .studio-choice{margin:18px 0}.studio-choice .studio-actions{justify-content:flex-start;margin-top:8px}.studio button[aria-pressed=true]{background:var(--creative-accent,#8b3f68);color:white}.studio-collaboration{border-block:1px solid var(--border,#ddd);padding-block:16px}.studio pre.studio-manuscript{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.studio-writing-guide {margin:20px 0;min-width:0;color:var(--ink,#253c5c)}
+.studio-writing-guide h2 {font-size:1.25rem;font-weight:700;line-height:1.5;text-wrap:balance}
+.studio-writing-guide p {margin:10px 0;line-height:1.75;overflow-wrap:anywhere}
+.studio-writing-choices {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0;min-width:0}
+.studio-writing-choices article {min-width:0;padding:16px;border:1px solid var(--creative-line,#ebddec);border-radius:16px;background:var(--creative-soft,#f8e7f4);display:flex;flex-direction:column}
+.studio-writing-choices h3 {font-size:1.0625rem;font-weight:700;line-height:1.6}
+.studio-writing-choices small {display:block;font-size:.875rem;line-height:1.75;color:var(--muted,#58677c);margin-bottom:16px}
+.studio-writing-choices button {min-height:48px;width:100%;margin-top:auto!important;white-space:normal!important;line-height:1.5!important;padding:12px!important;color:var(--creative-accent,#8b3f68);background:var(--paper,#fff);border:1px solid var(--creative-line,#ebddec);border-radius:12px;cursor:pointer}
+.studio-writing-choices button:disabled {opacity:.55;cursor:wait}
+.studio-writing-guide :focus-visible {outline:3px solid var(--creative-accent,#8b3f68);outline-offset:3px}
+.studio-writing-guide .studio-writing-next {font-size:.9375rem}
+.studio-entry-input {padding:16px;border:1px solid var(--creative-line,#ebddec);border-radius:16px;margin:16px 0}
+.original-legacy-boundary {padding:16px;margin:0;background:var(--creative-soft,#f8e7f4);border-block:1px solid var(--creative-line,#ebddec);font-weight:650}
+@media(max-width:599px) {.studio-writing-choices {grid-template-columns:1fr}}

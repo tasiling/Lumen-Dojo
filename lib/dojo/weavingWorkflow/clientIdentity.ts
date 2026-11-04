@@ -11,4 +11,11 @@ type Intent={id:string;createdAt:string;key:string};
 const pending=new Map<string,Intent>();
 export function beginIntent(scope:string,input:unknown):Intent{const key=JSON.stringify(input),storageKey='weaving-intent:'+scope;let prior=pending.get(scope);try{const stored=sessionStorage.getItem(storageKey);if(!prior&&stored)prior=JSON.parse(stored);}catch{}if(prior?.key===key){pending.set(scope,prior);return prior;}const intent={id:randomID(),createdAt:new Date().toISOString(),key};pending.set(scope,intent);try{sessionStorage.setItem(storageKey,JSON.stringify(intent));}catch{}return intent;}
 export function confirmIntent(scope:string,id:string){const intent=pending.get(scope);if(intent?.id!==id)return;pending.delete(scope);try{sessionStorage.removeItem('weaving-intent:'+scope);}catch{}}
-export async function copyText(text:string){if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(text);const el=document.createElement('textarea');el.value=text;el.style.position='fixed';el.style.opacity='0';document.body.append(el);el.select();const ok=document.execCommand('copy');el.remove();if(!ok)throw Error('無法複製，請直接選取欄位中的文字。');}
+export async function copyText(text:string){
+ if(navigator.clipboard?.writeText){
+  try{await navigator.clipboard.writeText(text);return;}catch{/* File previews and embedded browsers can deny the modern clipboard API. */}
+ }
+ const el=document.createElement('textarea');el.value=text;el.style.position='fixed';el.style.opacity='0';document.body.append(el);
+ try{el.select();el.setSelectionRange(0,text.length);if(!document.execCommand('copy'))throw Error('無法複製，請直接選取欄位中的文字。');}
+ finally{el.remove();}
+}
