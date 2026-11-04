@@ -1,0 +1,99 @@
+{
+  "sourceCommit": "b2a8e1771228bda9e394b31297fb245e40394ff8",
+  "findings": [
+    {
+      "id": "G01",
+      "summary": "尚未採用的 A 完整回覆被放進 B 的「來源版本理解」欄",
+      "evidence": {
+        "authorAnswers": "",
+        "hasAdoptedDirection": false,
+        "understanding": "AI 提出的暫定解讀，作者尚未採用。"
+      }
+    },
+    {
+      "id": "G02",
+      "summary": "未歸屬方向只保留在原始封存，沒有新版可編輯方向",
+      "evidence": {
+        "originalDirections": 2,
+        "editableDirections": 1,
+        "unassignedArchived": true
+      }
+    },
+    {
+      "id": "G03",
+      "summary": "舊式本人回答、逐次草稿及平台配文沒有轉入對應的新版使用欄位",
+      "evidence": {
+        "originalAnswers": [
+          "舊欄位的作者確認意思",
+          "舊欄位的第一個回答",
+          "舊欄位的第二個回答"
+        ],
+        "editableAnswers": "",
+        "originalDraftHistory": 2,
+        "nativeDraftHistory": 0,
+        "platformDraftsArchived": {
+          "plurk": "舊噗浪配文",
+          "ig": "舊 IG 配文",
+          "threads": "舊 Threads 配文"
+        }
+      }
+    },
+    {
+      "id": "G04",
+      "summary": "重複匯入可接續，但匯入預覽沒有新建／接續對照，也未逐項列出未轉欄位",
+      "evidence": {
+        "sameIdOnReimport": true,
+        "previewKeys": [
+          "kind",
+          "digest",
+          "works",
+          "archive",
+          "warnings"
+        ],
+        "previewUnchangedAfterImport": true
+      }
+    },
+    {
+      "id": "G05",
+      "summary": "本人意思改版後，舊 B 回覆仍可採用，採用輪次會記成改版後的意思",
+      "evidence": {
+        "previousRoundAnswers": "第一版本人意思",
+        "adoptionRoundAnswers": "第二版本人意思，立場已改變",
+        "adoptedPreviousCandidate": true
+      }
+    },
+    {
+      "id": "G06",
+      "summary": "剪藏／來源選摘未接入新版 A/B 的創作入口",
+      "verification": "code-path review",
+      "evidence": {
+        "native_editor": "app/components/creativeStudio/StudioWorkspace.tsx uses manual source fields and links; no SourcePicker",
+        "source_settings": "app/components/creativeSources/SourceSettingsWorkspace.tsx mounts SourcePicker settingsOnly; does not join selections to a work",
+        "existing_picker": "app/components/weaving/CreateShuttleForm.tsx creates an old shuttle-based work and requires coreStatement",
+        "old_capture_gate": "lib/dojo/weavingWorkflow/sources.ts requires adopted + C2/C3 + weaving destination for capture candidates"
+      }
+    },
+    {
+      "id": "G07",
+      "summary": "共用功能尚未保留聊解室返回情境",
+      "verification": "code-path review",
+      "evidence": {
+        "workspace": "StudioWorkspace links topics/sources/import/legacy tools to /weaving paths",
+        "topics": "StudioTopics has hardcoded /weaving/works return",
+        "import": "StudioImport opens /weaving/works and returns /weaving",
+        "voice": "StudioVoice returns /weaving or releases, no origin realm state",
+        "old_tool": "OriginalToolWorkspace diamond import link is /weaving/import"
+      }
+    }
+  ],
+  "baseline": {
+    "file": "weaving-liaojie-workflow-v1(1).html",
+    "size_bytes": 358979
+  },
+  "preview": {
+    "file": "織光堂與聊解室-PR114草稿模擬.html",
+    "version": "1",
+    "size_bytes": 7798060
+  },
+  "existing_domain_checks_passed": 98
+}
