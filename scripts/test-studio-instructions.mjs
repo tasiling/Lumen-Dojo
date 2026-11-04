@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {fixture} from './weaving-fixture.mjs';
+
+const f=await fixture();
+try {
+ const {blankStudio}=f.load('lib/dojo/creativeStudio/model.ts');
+ const {collaborationInstructions,instructionsForSource}=f.load('lib/dojo/creativeStudio/collaboration.ts');
+ const {previewReply,applyReplyPreview}=f.load('lib/dojo/creativeStudio/reply.ts');
+ const s=blankStudio();s.module='C';
+ const auto=collaborationInstructions(s);
+ for(const rule of ['金句','每一行必須是語意完整','預設只產出1頁','不是硬性上限','通用萬用句','注意→興趣→渴望→行動'])assert.ok(auto.includes(rule),rule);
+ assert.ok(!auto.includes('每頁150–200字；'),'original range is advice, not a forced range');
+ s.collaboration.cFrameworkMode='all';const all=collaborationInstructions(s);
+ assert.ok(all.includes('五框全部測試模式'));assert.ok(all.includes('不要在最後加總結、推薦或排名'));
+ s.collaboration.cMode='expand';s.collaboration.cExpandFramework='scqa';s.collaboration.cExpandLevel='deep';
+ const expand=collaborationInstructions(s);
+ for(const rule of ['SCQA四要素','衝突（功能標籤：警示收束）','深度擴寫','節奏雕刻','4-6個關鍵節點','主要結構或觀點要改變時回 B、A','該段維持原樣不擴寫'])assert.ok(expand.includes(rule),rule);
+ assert.ok(!expand.includes('五段骨架'),'SCQA expansion must not silently use diamond');
+ console.log('PASS C retains original story positioning, framework comparison and framework-specific expansion rules');
+ s.module='B';s.collaboration.framework='single';const b=collaborationInstructions(s);
+ for(const rule of ['核心主張','支撐點一','支撐點三','回扣','理論可只作背景','新立場回 A','本人提供'])assert.ok(b.includes(rule),rule);
+ s.module='A';const a=collaborationInstructions(s);
+ for(const rule of ['觀察','感受','推測','accumulate','revise','new-direction','同義改標題','沒有一兩個上限'])assert.ok(a.includes(rule),rule);
+ assert.ok(!a.includes('順序不可打亂'),'material exploration must not force six sections');
+ s.module='D';const d=collaborationInstructions(s);
+ for(const rule of ['垂直深挖','水平平移','反面驗證','跨系統嫁接','【第二層：跨主題連接】','【第三層：三分類延伸地圖】','不是總數上限','不要求先發布'])assert.ok(d.includes(rule),rule);
+ console.log('PASS A preserves material-first exploration and routing; B and D retain operational framework specifications');
+ const fixed=blankStudio();fixed.collaboration.aAnswers='固定版本當時確認意思';
+ s.module='C';s.collaboration.aAnswers='目前另一種意思';s.collaboration.research=[{title:'本輪選用的研究',source:'查核來源',mechanism:'機制',scope:'範圍',relation:'關聯',use:'body'}];s.examples=[{kind:'metaphor',text:'本輪另選的比喻',adopted:true,module:'C',mode:'expand'}];
+ assert.equal(typeof instructionsForSource,'function');const fixedPrompt=instructionsForSource(s,fixed);
+ for(const text of ['固定版本當時確認意思','本輪選用的研究','本輪另選的比喻','"use":"body"'])assert.ok(fixedPrompt.includes(text),text);
+ assert.ok(!fixedPrompt.includes('目前另一種意思'));
+ console.log('PASS fixed source retains its author meaning while carrying this round’s explicit research, example and task choices');
+ s.module='D';
+ s.d='【第一層：候選節點清單】\n垂直深挖\n\n新的問題\n把一句話帶過的機制展開\n來源：「已確認的原文」第3段\n\n水平平移\n\n換一個場景\n比較同一機制的差異\n來源：「另一句原文」第5段\n【第二層：跨主題連接】\n這些節點有關聯\n【第三層：三分類延伸地圖】\n想更深入這個主題';
+ const dp=previewReply(s,{versionId:'fixed-v1',text:''});assert.equal(dp.candidates.length,2);assert.equal(dp.candidates[0].title,'新的問題');assert.ok(dp.candidates[0].quote.includes('已確認的原文'));assert.ok(dp.candidates[0].locator.includes('第3段'));assert.equal(applyReplyPreview(s,dp,'fixed-v1',undefined,'').collaboration.candidates[0].sourceVersion,'fixed-v1');
+ s.module='A';s.a='先保留兩種理解。\n```json\n'+JSON.stringify({summary:'討論摘要',candidates:[{title:'素材中的問題',understanding:'現在的理解',originalQuote:'素材原句',quoteLocator:'S1第2段',destination:{mode:'new-direction'}}]})+'\n```';
+ const ap=previewReply(s);assert.equal(ap.candidates.length,1);assert.equal(ap.candidates[0].statement,'現在的理解');assert.equal(ap.candidates[0].locator,'S1第2段');assert.equal(s.a.includes('討論摘要'),true);assert.equal(s.body,'');
+ console.log('PASS original A JSON and D four-axis replies preview editable candidates without changing raw reply or manuscript');
+}finally{await f.close();}

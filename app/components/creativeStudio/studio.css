@@ -1,5 +1,7 @@
 /* Native creative workspaces use the shared realm palette and control primitives. */
 .studio,.studio-home {color:var(--ink,#253c5c);min-width:0}
+.studio-graphic-preview {min-width:0;max-width:100%}
+.studio-graphic-preview svg {display:block;width:100%;height:auto;max-width:100%}
 .studio {max-width:1000px;margin:auto;padding-bottom:24px}
 .studio p,.studio-home p {line-height:1.75;overflow-wrap:anywhere}
 .studio .ritual-card,.studio-home .ritual-card {margin:24px 0;padding:24px;min-width:0}
