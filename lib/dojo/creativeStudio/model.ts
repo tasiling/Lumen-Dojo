@@ -1,3 +1,4 @@
+import {blankCollaboration,normalizeCollaboration,type Collaboration} from './collaboration';
 import {randomID} from '../weavingWorkflow/clientIdentity';
 /** Versioned native work fields. Fixed output IDs stay in the existing completion/media stores. */
 export type StudioCorrection = {
@@ -44,6 +45,10 @@ export type StudioAnalysis = {
 };
 export type StudioData = {
     schema: 1;
+    collaboration: Collaboration;
+    archivedFromStatus: string;
+    contentKind: string;
+    platform: string;
     module: 'A' | 'B' | 'C' | 'D';
     source: StudioSource;
     direction: DirectionAdoption | null;
@@ -77,7 +82,7 @@ export type StudioData = {
     importIdentity: string;
     legacy: Record<string, unknown> | null;
 };
-export function blankStudio(): StudioData { return { schema: 1, module: 'A', source: { id: '', title: '', raw: '', corrections: [], selected: '', selectedVersion: 'original', read: 'selected', allowAI: false, allowPublic: false }, direction: null, a: '', b: '', c: '', d: '', body: '', research: '', researchUse: 'background', examples: [], checks: { facts: false, privacy: false, citations: false, voice: false }, analyses: [], history: [], originKey: '', serviceId: '', importIdentity: '', legacy: null }; }
+export function blankStudio(): StudioData { return { schema: 1, collaboration: blankCollaboration(), archivedFromStatus: '', contentKind: 'article', platform: '', module: 'A', source: { id: '', title: '', raw: '', corrections: [], selected: '', selectedVersion: 'original', read: 'selected', allowAI: false, allowPublic: false }, direction: null, a: '', b: '', c: '', d: '', body: '', research: '', researchUse: 'background', examples: [], checks: { facts: false, privacy: false, citations: false, voice: false }, analyses: [], history: [], originKey: '', serviceId: '', importIdentity: '', legacy: null }; }
 export function object(v: unknown): Record<string, unknown> { if (!v || typeof v !== 'object' || Array.isArray(v))
     throw Error('資料格式不完整'); return v as Record<string, unknown>; }
 export function raw(v: unknown, max = 80000): string { if (typeof v !== 'string' || v.length > max)
@@ -101,6 +106,9 @@ export function normalizeStudio(value: unknown): StudioData {
     if (!['A', 'B', 'C', 'D'].includes(String(v.module)) || !['selected', 'allowed', 'private'].includes(String(s.read)) || !['background', 'body', 'none'].includes(String(v.researchUse)))
         throw Error('工作設定不正確');
     const base = blankStudio();
+    base.collaboration=normalizeCollaboration(v.collaboration);
+    base.archivedFromStatus=raw(v.archivedFromStatus ?? '',80);
+    base.contentKind=raw(v.contentKind ?? 'article',80);base.platform=raw(v.platform ?? '',80);
     for (const k of ['a', 'b', 'c', 'd', 'body', 'research', 'originKey', 'serviceId', 'importIdentity'] as const)
         base[k] = raw(v[k], k === 'originKey' ? 2000 : k === 'serviceId' ? 300 : 80000);
     const correctionIds = new Set<string>();
@@ -155,5 +163,5 @@ export function catalogPage<T extends {
 
 export function studioPromptSource(s:StudioData,module:StudioData['module'],completion?:{id:string;text:string;studioSnapshot?:StudioData},confirmedVersionId=''){
  if(module==='D'){if(!completion)throw Error('請先選本件完稿版本');const permission=completion.studioSnapshot?.source;if(confirmedVersionId!==completion.id&&(!permission?.allowAI||permission.read==='private'))throw Error('請先核對所選完稿的外部使用許可，或逐次確認本次使用');return {text:completion.text,versionId:completion.id,understanding:completion.studioSnapshot?.direction?.statement||completion.studioSnapshot?.a||''};}
- if(!s.source.allowAI||s.source.read==='private')throw Error('請先確認本次素材與稿件可交給外部 AI');return {text:module==='C'?s.body:s.source.selected,versionId:s.source.selectedVersion,understanding:s.direction?.statement||s.a};
+ if(!s.source.allowAI||s.source.read==='private')throw Error('請先確認本次素材與稿件可交給外部 AI');return {text:module==='C'?(s.collaboration.cSource||s.body):module==='A'&&s.collaboration.aMode==='draft'?(s.body||s.source.selected):module==='B'?[s.source.selected,s.body?'目前主稿：\n'+s.body:''].filter(Boolean).join('\n\n'):s.source.selected,versionId:module==='C'?(s.collaboration.cVersionId||'draft'):s.source.selectedVersion,understanding:s.direction?.statement||s.a};
 }

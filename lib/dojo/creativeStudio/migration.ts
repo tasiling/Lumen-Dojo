@@ -20,7 +20,7 @@ export type ImportPreview = {
     warnings: string[];
 };
 export function importPreview(value: unknown): ImportPreview {
-    const p = object(value), digest = importDigest(p);
+    const envelope=object(value), p = envelope.state && (envelope.kind==='lumen-weaving-flow-prototype') ? object(envelope.state) : envelope, digest = importDigest(p);
     if(p.work&&Array.isArray(p.completionVersions)){
       const w=object(p.work);if(w.recordType!=='weaving-work'||typeof w.id!=='string')throw Error('原生作品備份格式不正確');
       const studio=w.studio?normalizeStudio(w.studio):blankStudio();studio.body=String(w.draftText||studio.body);const data={title:w.title,draft:studio.body,versions:p.completionVersions.map(x=>{const c=object(x),snapshot=c.studioSnapshot as StudioData|undefined;return {...c,format:'text',body:c.text,adoptedDirection:snapshot?.direction?{directionId:snapshot.direction.directionId,understandingVersionId:snapshot.direction.versionId,title:snapshot.direction.title,understanding:{statement:snapshot.direction.statement}}:null};})};
@@ -36,7 +36,14 @@ export function importPreview(value: unknown): ImportPreview {
             s.c = String(d.cResponse || '');
             s.d = String(d.dResponse || '');
             s.body = String(d.draft || '');
-            s.research = String(object(d.bc || {}).research || d.theory || '');
+            const bc=object(d.bc||{}), f=s.collaboration;
+            s.research = typeof d.theory==='string'?d.theory:'';
+            for(const key of ['aMode','aAnswers','bMode','framework','closure','practices','cMode','cExpandedResponse','cSource','cFrameworkMode','cExpandFramework','cExpandLevel','dSystems'] as const)if(typeof d[key]==='string')(f as unknown as Record<string,unknown>)[key]=d[key];
+            const notes=d.handoffNotes&&typeof d.handoffNotes==='object'?object(d.handoffNotes):{};
+            for(const key of ['expression','boundary','keep','unresolved'] as const)f[key]=String(notes[key]||'');
+            f.manuscript=String(bc.manuscript||'');f.editorial=String(bc.editorial||'');
+            if(Array.isArray(bc.research))f.research=bc.research.map(x=>{const r=object(x);return {title:String(r.title||''),source:String(r.source||''),mechanism:String(r.mechanism||''),scope:String(r.scope||''),relation:String(r.relation||''),use:r.use==='include'?'body':r.use==='unused'?'none':'background'};});
+            if(Array.isArray(bc.examples))s.examples=bc.examples.map(x=>{const e=object(x);return {kind:['experience','external','hypothetical','metaphor'].includes(String(e.kind))?e.kind:'hypothetical',text:String(e.text||'')+(e.source?'\n來源：'+e.source:''),adopted:e.selected===true};}) as StudioData['examples'];
             const viewed = sources.find(x => x.id === d.viewedSourceId) || sources[0];
             if (viewed) {
                 const segments = Array.isArray(viewed.segments) ? viewed.segments as Record<string, unknown>[] : [];
@@ -53,7 +60,7 @@ export function importPreview(value: unknown): ImportPreview {
             s.importIdentity = identity;
             return { sourceId: id, title: String(d.title || '未命名探索草稿'), shuttleId: typeof w.shuttleId === 'string' ? w.shuttleId : null, identity, studio: s };
         });
-        return { kind: 'html', digest, works, archive: copy(p), warnings: ['先保留原識別、完整來源／校訂／模組／方向與版本備份。舊圖文及媒體輸出未驗證前保留為歷史，不標記為新生成成品。', '公開及外部工具許可須由本人重新核對。'] };
+        return { kind: 'html', digest, works, archive: copy(p), warnings: ['先保留原識別、完整來源／校訂／模組／方向與版本備份。舊圖文及媒體輸出未驗證前保留為歷史，不標記為新生成成品。', '公開及外部工具許可須由本人重新核對。', 'A 本人回答、B/C 設定與雙 C 回覆、逐筆研究已轉為可編輯欄位；舊協作輪次、候選分流及圖文配置仍留在原始封存，需核對後接續。'] };
     }
     if (p.recordType === 'weaving-work')
         return { kind: 'formal', digest, works: [], archive: copy(p), warnings: ['既有正式作品直接開啟原 ID，不另建同名副本。'] };

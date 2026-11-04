@@ -9,7 +9,7 @@ import { createTextWorkflow } from '../weavingWorkflow/templates';
 import { WeavingError,normalizeWorkflow } from '../weavingWorkflow/model';
 import { blankStudio, normalizeStudio, normalizeDirections, studioForWork, raw, type StudioData } from './model';
 import { importDigest, importPreview, planImport } from './migration';
-export async function studioWorks() { return (await listJsonRecords(WEAVING_WORK_TITLE_PREFIX)).flatMap(r => { const w = normalizeWeavingWork(r.value, { id: r.id }); return w && w.status !== 'archived' ? [w] : []; }); }
+export async function studioWorks(includeArchived=false) { return (await listJsonRecords(WEAVING_WORK_TITLE_PREFIX)).flatMap(r => { const w = normalizeWeavingWork(r.value, { id: r.id }); return w && (includeArchived || w.status !== 'archived') ? [w] : []; }); }
 export async function studioTopics() { return (await listJsonRecords(WEAVING_SHUTTLE_TITLE_PREFIX)).flatMap(r => { const s = normalizeWeavingShuttle(r.value, { id: r.id }); return s && s.status !== 'archived' ? [s] : []; }); }
 export async function getStudioWork(id: string) { const work = await readWork(id); if (!work.studio && work.shuttleId) {
     const topic = await readShuttle(work.shuttleId), data = studioForWork(work), direction = topic.studioDirections?.find(d => d.versions.some(v => v.id === work.coreVersionId)), version = direction?.versions.find(v => v.id === work.coreVersionId);
@@ -60,6 +60,8 @@ export async function saveStudioWork(body: Body) {
                 incoming.importIdentity = old.studio.importIdentity;
             if (old.studio?.legacy)
                 incoming.legacy = old.studio.legacy;
+            if(JSON.stringify(incoming.collaboration.rounds.slice(0,prev.collaboration.rounds.length))!==JSON.stringify(prev.collaboration.rounds))throw new WeavingError('已保存協作輪次不可覆寫，請新增一輪',409);
+            if(['completed','sent_to_liaojie','archived'].includes(old.status) && (incoming.body!==prev.body || (body.title!==undefined&&body.title!==old.title)))throw new WeavingError('請先開始修訂，再修改完稿內容',409);
             incoming.history = prev.history;
             if (prev.body && prev.body !== incoming.body)
                 incoming.history = [...prev.history, { id: receipt.operationId, text: prev.body, note: '改寫前正文', createdAt: receipt.createdAt }];
@@ -68,7 +70,7 @@ export async function saveStudioWork(body: Body) {
                 if (c.workId !== id || c.text !== a.sourceText || c.coreVersionId !== a.coreVersionId)
                     throw new WeavingError('D 分析來源版本不符', 403);
             }
-            return { ...old, title: raw(body.title ?? old.title, 200) || '未命名探索草稿', shuttleId, coreVersionId: incoming.direction?.versionId || 'unassigned', studio: incoming, textWorkflow: workflow(incoming, old), draftText: incoming.body, revision: old.revision + 1, status: 'drafting', updatedAt: receipt.createdAt };
+            return { ...old, title: raw(body.title ?? old.title, 200) || '未命名探索草稿', shuttleId, coreVersionId: incoming.direction?.versionId || 'unassigned', studio: incoming, textWorkflow: workflow(incoming, old), draftText: incoming.body, revision: old.revision + 1, status: ['completed','sent_to_liaojie','archived'].includes(old.status)?old.status:'drafting', updatedAt: receipt.createdAt };
         })]);
     return readWork(r.result.work.id);
 }
@@ -89,7 +91,7 @@ export async function importStudio(body: Body) {
     const preview = importPreview(body.packet), op = operationId(body);
     if (preview.kind !== 'html')
         throw new WeavingError('這份備份請由原工具或原正式入口開啟；預覽與備份保持可用');
-    const packet = body.packet as Record<string, unknown>, originalTopics = Array.isArray(packet.shuttles) ? packet.shuttles as Record<string, unknown>[] : [], originalDirections = Array.isArray(packet.directions) ? packet.directions as Record<string, unknown>[] : [];
+    const envelope=body.packet as Record<string,unknown>, packet = (envelope.kind==='lumen-weaving-flow-prototype'&&envelope.state?envelope.state:envelope) as Record<string, unknown>, originalTopics = Array.isArray(packet.shuttles) ? packet.shuttles as Record<string, unknown>[] : [], originalDirections = Array.isArray(packet.directions) ? packet.directions as Record<string, unknown>[] : [];
     const mapping = new Map<string, string>();
     for (const old of originalTopics) {
         const directions = originalDirections.filter(d => d.shuttleId === old.id), identity = importDigest({ topic: old, directions });
@@ -103,7 +105,7 @@ export async function importStudio(body: Body) {
         const r = await runWeavingOperation(WEAVING_OWNER, operationDigest(['import-topic', identity]), 'migrate', { identity }, [step]);
         mapping.set(String(old.id), r.result.shuttle.id);
     }
-    const allWorks=await studioWorks(),nativeWork=(body.packet as {work?:{id?:string}}).work;
+    const allWorks=await studioWorks(true),nativeWork=(body.packet as {work?:{id?:string}}).work;
     if(nativeWork?.id&&allWorks.some(w=>w.id===nativeWork.id))return {workIds:[nativeWork.id],warnings:[...preview.warnings,'原正式作品仍在，已接續其目前版本；未用備份覆蓋較新的內容。']};
     const planned = planImport(allWorks, preview), workIds: string[] = [];
     for (const x of preview.works) {
@@ -145,3 +147,6 @@ export async function importStudio(body: Body) {
 }
 export async function archiveStudioImport(body: Body) { const id = raw(body.id, 300); const r = await runWeavingOperation(WEAVING_OWNER, operationId(body), 'archive', body, [updateStep(id, WEAVING_WORK_TITLE_PREFIX, 'work', (row, r) => { const w = normalizeWeavingWork(JSON.parse(row.內容), { id })!; expectRevision(w, body.expectedRevision); if (!w.studio?.importIdentity)
         throw new WeavingError('這項不是匯入作品', 403); return { ...w, status: body.restore === true ? 'drafting' : 'archived', revision: w.revision + 1, updatedAt: r.createdAt }; })]); return readWork(r.result.work.id); }
+
+export async function transitionStudioWork(body:Body){const id=raw(body.id,300);if(!['archive','restore','revise'].includes(String(body.transition)))throw new WeavingError('狀態操作不正確');const r=await runWeavingOperation(WEAVING_OWNER,operationId(body),'patch',body,[updateStep(id,WEAVING_WORK_TITLE_PREFIX,'work',(row,r)=>{const old=normalizeWeavingWork(JSON.parse(row.內容),{id})!;expectRevision(old,body.expectedRevision);const studio=studioForWork(old),from=studio.archivedFromStatus;if(body.transition==='archive'&&old.status!=='archived')studio.archivedFromStatus=old.status;return {...old,studio,status:body.transition==='archive'?'archived':body.transition==='restore'?(from&&from!=='archived'?from:old.currentCompletionVersionId?'completed':'drafting'):'drafting',revision:old.revision+1,updatedAt:r.createdAt};})]);return readWork(r.result.work.id);}
+export async function deriveStudioWork(body:Body){const parent=await readWork(raw(body.id,300));expectRevision(parent,body.expectedRevision);const original=studioForWork(parent),s=blankStudio();if(original.collaboration.cMode!=='condense'||!original.c.trim())throw new WeavingError('請先確認轉製文案');s.body=original.c;s.source=structuredClone(original.source);s.direction=original.direction;s.contentKind='story';s.collaboration.cSource=original.collaboration.cSource||original.body;s.collaboration.cVersionId=original.collaboration.cVersionId||'draft';s.originKey='derived:'+parent.id+':'+operationDigest([s.body,s.collaboration.cSource]);s.legacy={derivedSource:{workId:parent.id,text:s.collaboration.cSource,versionId:s.collaboration.cVersionId}};const w=await createStudioWork({...body,studio:s,title:parent.title+'｜限動',shuttleId:parent.shuttleId});const result=await runWeavingOperation(WEAVING_OWNER,operationDigest(['link-derived',operationId(body)]),'patch',{parentId:parent.id,childId:w.id},[updateStep(w.id,WEAVING_WORK_TITLE_PREFIX,'work',(row,r)=>({...normalizeWeavingWork(JSON.parse(row.內容),{id:w.id})!,derivedFromWorkId:parent.id,revision:w.revision+1,updatedAt:r.createdAt}))]);return readWork(result.result.work.id);}

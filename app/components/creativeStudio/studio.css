@@ -57,3 +57,5 @@
 @media(min-width:900px) {.studio-home {grid-template-columns:1fr 1fr;align-items:start}.studio-home .ritual-card {padding:28px}.studio-workspace .ritual-card {padding:28px}}
 @media(max-height:600px) {.studio-save {position:static;inset:auto}}
 .studio-home .studio-tools-entry {grid-column:1/-1;}
+
+.studio-choice{margin:18px 0}.studio-choice .studio-actions{justify-content:flex-start;margin-top:8px}.studio button[aria-pressed=true]{background:var(--creative-accent,#8b3f68);color:white}.studio-collaboration{border-block:1px solid var(--border,#ddd);padding-block:16px}.studio pre.studio-manuscript{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
