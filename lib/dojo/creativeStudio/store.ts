@@ -171,6 +171,17 @@ export async function importStudio(body: Body) {
     const planned = planImport(allWorks, preview), workIds: string[] = [];
     for (const x of preview.works) {
         const nativeData = x.studio.legacy?.nativeWork, native = nativeData ? normalizeWeavingWork(nativeData, { id: x.sourceId }) : null;
+        const legacyData = x.studio.legacy?.data as Record<string, unknown> | undefined, versions = Array.isArray(legacyData?.versions) ? legacyData.versions as Record<string, unknown>[] : [];
+        // Verify the backup itself, never an old live completion owned by another work.
+        // Keep the original packet and immutable studio snapshots as historical evidence.
+        if (native) {
+            for (const a of x.studio.analyses) {
+                const sources = versions.filter(v => v.id === a.completionId);
+                const source = sources[0];
+                if (sources.length !== 1 || source.workId !== native.id || source.state !== 'confirmed' || source.text !== a.sourceText || source.coreVersionId !== a.coreVersionId || !a.sourceText.trim())
+                    throw new WeavingError('D 分析來源版本無法核對；請保留原始備份並核對固定版本', 409);
+            }
+        }
         const resumed = planned.resume.find(r => r.identity === x.identity);
         let w = resumed ? await readWork(resumed.workId) : null;
         if (!w) {
@@ -182,7 +193,6 @@ export async function importStudio(body: Body) {
             }
             w = await createStudioWork({ operationId: operationDigest([op, x.identity]), title: x.title, shuttleId, canonicalSelections: native?.textWorkflow?.sourceSelections || x.selections, studio: { ...x.studio, direction, originKey: 'import:' + x.identity } }, native || undefined);
         }
-        const legacyData = x.studio.legacy?.data as Record<string, unknown> | undefined, versions = Array.isArray(legacyData?.versions) ? legacyData.versions as Record<string, unknown>[] : [];
         for (const old of versions) {
             const illustrated = old.format === 'illustrated' && Array.isArray(old.pages) && old.pages.length > 0;
             const text = (typeof old.body === 'string' ? old.body : typeof old.draft === 'string' ? old.draft : '') || (illustrated ? prototypePageText(old.pages) : '');
@@ -212,7 +222,26 @@ export async function importStudio(body: Body) {
                 studio.source.selected = oldSources.map(r => String(r.text || '')).join('\n\n');
             studio.source.allowPublic = false;
             studio.source.allowAI = false;
-            await runWeavingOperation(WEAVING_OWNER, operationDigest(['import-version', identity]), 'migrate', { workId: w.id, identity }, [createStep(COMPLETION_TITLE_PREFIX, 'completion', r => ({ schemaVersion: 1, owner: WEAVING_OWNER, workId: w!.id, operationId: r.operationId, coreVersionId: studio.direction?.versionId || 'unassigned', sourceSelections: Array.isArray(old.sourceSelections) ? old.sourceSelections : workflow(studio).sourceSelections, sourceSnapshotState: 'captured', outputKind: illustrated ? 'carousel_copy' : 'article', text, title: String(old.title || x.title), outputUrl: '', createdAt: typeof old.createdAt === 'string' ? old.createdAt : r.createdAt, state: 'confirmed', supersededBy: null, studioSnapshot: studio, importIdentity: identity, originalVersionId: String(old.id || '') })), updateStep(w.id, WEAVING_WORK_TITLE_PREFIX, 'work', (row, r) => { const work = normalizeWeavingWork(JSON.parse(row.內容), { id: w!.id })!; return { ...work, revision: work.revision + 1, completionVersionRefs: [...new Set([...work.completionVersionRefs, r.result.completion.id])], currentCompletionVersionId: r.result.completion.id }; })]);
+            await runWeavingOperation(WEAVING_OWNER, operationDigest(['import-version', identity]), 'migrate', { workId: w.id, identity }, [createStep(COMPLETION_TITLE_PREFIX, 'completion', r => ({ schemaVersion: 1, owner: WEAVING_OWNER, workId: w!.id, operationId: r.operationId, coreVersionId: native && typeof old.coreVersionId === 'string' ? old.coreVersionId : studio.direction?.versionId || 'unassigned', sourceSelections: Array.isArray(old.sourceSelections) ? old.sourceSelections : workflow(studio).sourceSelections, sourceSnapshotState: 'captured', outputKind: illustrated ? 'carousel_copy' : 'article', text, title: String(old.title || x.title), outputUrl: '', createdAt: typeof old.createdAt === 'string' ? old.createdAt : r.createdAt, state: 'confirmed', supersededBy: null, studioSnapshot: studio, importIdentity: identity, originalVersionId: String(old.id || '') })), updateStep(w.id, WEAVING_WORK_TITLE_PREFIX, 'work', (row, r) => { const work = normalizeWeavingWork(JSON.parse(row.內容), { id: w!.id })!; return { ...work, revision: work.revision + 1, completionVersionRefs: [...new Set([...work.completionVersionRefs, r.result.completion.id])], currentCompletionVersionId: r.result.completion.id }; })]);
+        }
+        if (native && x.studio.analyses.length) {
+            const completions = await listCompletions(w.id);
+            const analyses = x.studio.analyses.map(a => {
+                const source = versions.find(v => v.id === a.completionId)!;
+                const matches = completions.filter(c => {
+                    const provenance = c as unknown as Record<string, unknown>;
+                    return provenance.originalVersionId === a.completionId && provenance.importIdentity === importDigest([x.identity, source]) && c.workId === w!.id && c.text === a.sourceText && c.coreVersionId === a.coreVersionId;
+                });
+                if (matches.length !== 1)
+                    throw new WeavingError('D 分析來源版本無法核對；保留原始分析，請核對還原版本', 409);
+                return { ...a, completionId: matches[0].id };
+            });
+            await runWeavingOperation(WEAVING_OWNER, operationDigest(['native-analysis-versions', x.identity, w.id]), 'migrate', { id: w.id, analyses }, [updateStep(w.id, WEAVING_WORK_TITLE_PREFIX, 'work', (row, r) => {
+                const current = normalizeWeavingWork(JSON.parse(row.內容), { id: w!.id })!, studio = studioForWork(current);
+                if (JSON.stringify(studio.analyses) !== JSON.stringify(x.studio.analyses))
+                    throw new WeavingError('D 分析來源版本修復前已有變更；請保留資料並核對', 409);
+                return { ...current, studio: { ...studio, analyses }, revision: current.revision + 1, updatedAt: r.createdAt };
+            })]);
         }
         if (native?.currentCompletionVersionId) {
             const fixed = (await listCompletions(w.id)).find(c => (c as unknown as {
