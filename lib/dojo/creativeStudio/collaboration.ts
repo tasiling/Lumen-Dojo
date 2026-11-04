@@ -1,3 +1,4 @@
+import { responseOrigin, type TaskTicket } from './tasks';
 import type { StudioData } from './model';
 import { prototypeTaskSpecifications } from './prototypeSpecifications';
 import { WeavingError } from '../weavingWorkflow/model';
@@ -11,6 +12,8 @@ export type Research = {
     use: 'background' | 'body' | 'none';
 };
 export type Collaboration = {
+    tasks: TaskTicket[];
+    responseTasks: Record<string, string>;
     reviewReply: string;
     aMode: string;
     aIntent: string;
@@ -59,10 +62,12 @@ export type Collaboration = {
         sourceVersion: string;
         settings: string;
         createdAt: string;
+        taskSignature?: string;
+        taskId?: string;
     }[];
 };
 export const frameworks = { auto: '依意圖建議', reflect: '起承轉合', diamond: '知識鑽石 2.0', single: '單一想法核心法', sb7: 'StoryBrand SB7', scqa: 'SCQA', turn: '痛點、轉折、新可能' };
-export function blankCollaboration(): Collaboration { return { reviewReply: '', aMode: 'material', aIntent: '', aAnswers: '', expression: '', boundary: '', keep: '', unresolved: '', bMode: 'conservative', framework: 'auto', closure: '未定', practices: '', manuscript: '', editorial: '', cMode: 'condense', cExpandedResponse: '', cManuscript: '', cExpandedManuscript: '', cExpandedSource: '', cExpandedVersionId: '', cSource: '', cVersionId: '', cFrameworkMode: 'auto', cExpandFramework: 'diamond', cExpandLevel: 'standard', dSystems: '', research: [], candidates: [], rounds: [] }; }
+export function blankCollaboration(): Collaboration { return { tasks: [], responseTasks: {}, reviewReply: '', aMode: 'material', aIntent: '', aAnswers: '', expression: '', boundary: '', keep: '', unresolved: '', bMode: 'conservative', framework: 'auto', closure: '未定', practices: '', manuscript: '', editorial: '', cMode: 'condense', cExpandedResponse: '', cManuscript: '', cExpandedManuscript: '', cExpandedSource: '', cExpandedVersionId: '', cSource: '', cVersionId: '', cFrameworkMode: 'auto', cExpandFramework: 'diamond', cExpandLevel: 'standard', dSystems: '', research: [], candidates: [], rounds: [] }; }
 export function normalizeCollaboration(v: unknown): Collaboration {
     const b = blankCollaboration();
     if (v === undefined)
@@ -71,7 +76,7 @@ export function normalizeCollaboration(v: unknown): Collaboration {
         throw Error('協作設定格式不正確');
     const x = v as Record<string, unknown>;
     for (const k of Object.keys(b) as (keyof Collaboration)[]) {
-        if (k === 'research' || k === 'rounds' || k === 'candidates')
+        if (k === 'research' || k === 'rounds' || k === 'candidates' || k === 'tasks' || k === 'responseTasks')
             continue;
         if (['reviewReply', 'cManuscript', 'cExpandedManuscript', 'cExpandedSource', 'cExpandedVersionId'].includes(k) && x[k] === undefined)
             continue;
@@ -85,6 +90,15 @@ export function normalizeCollaboration(v: unknown): Collaboration {
         if (!Array.isArray(x[key]) || x[key].length > 500)
             throw Error('協作清單格式或長度不正確');
     }
+    if (x.tasks !== undefined && (!Array.isArray(x.tasks) || x.tasks.length > 500)) throw Error('協作任務清單不正確');
+    b.tasks = (Array.isArray(x.tasks) ? x.tasks : []).map((t: TaskTicket) => {
+        for (const k of ['id','key','sourceText','sourceVersion','answers','settings','signature','createdAt'] as const)
+            if (typeof t[k] !== 'string' || t[k].length > (k === 'settings' ? 4000000 : 160000)) throw Error('協作任務快照不正確');
+        if(t.prompt!==undefined && (typeof t.prompt!=='string'||t.prompt.length>4000000))throw Error('協作完整指令不正確');
+        return { ...t };
+    });
+    if (x.responseTasks !== undefined && (!x.responseTasks || typeof x.responseTasks !== 'object' || Array.isArray(x.responseTasks))) throw Error('回覆任務對應不正確');
+    b.responseTasks = Object.fromEntries(Object.entries(x.responseTasks || {}).map(([k,v]) => { if (typeof v !== 'string' || v.length > 120) throw Error('回覆任務對應不正確'); return [k,v]; }));
     b.candidates = Array.isArray(x.candidates) ? x.candidates.map(c => {
         if (!c || typeof c !== 'object')
             throw Error('候選格式不正確');
@@ -117,10 +131,10 @@ export function replyText(s: {
     module: string;
     collaboration: Collaboration;
 }) { return s.module === 'C' && s.collaboration.cMode === 'expand' ? s.collaboration.cExpandedResponse : ({ A: s.a, B: s.b, C: s.c, D: s.d }[s.module] || ''); }
-export function recordRound(s: Parameters<typeof replyText>[0], source: {
-    text: string;
-    versionId: string;
-}, settings: string) { return { id: randomID(), module: s.module, mode: s.module === 'C' ? s.collaboration.cMode : 'main', reply: replyText(s), answers: s.collaboration.aAnswers, sourceText: source.text, sourceVersion: source.versionId, settings, createdAt: new Date().toISOString() }; }
+export function recordRound(s: StudioData, source: { text: string; versionId: string }, settings: string) {
+    const origin = responseOrigin(s);
+    return { id: randomID(), module: s.module, mode: s.module === 'C' ? s.collaboration.cMode : 'main', reply: replyText(s), answers: origin?.answers ?? s.collaboration.aAnswers, sourceText: origin?.sourceText ?? source.text, sourceVersion: origin?.sourceVersion ?? source.versionId, settings: origin?.settings ?? settings, taskSignature: origin?.signature || '', taskId: origin?.id || '', createdAt: new Date().toISOString() };
+}
 export function collaborationInstructions(s: {
     module: string;
     collaboration: Collaboration;
@@ -172,11 +186,11 @@ export function cBase(f: Collaboration) { return f.cMode === 'expand' ? { text: 
 /** Fixed content keeps its meaning; task, research and case choices belong to this round. */
 export function instructionsForSource(s: StudioData, fixed?: StudioData) {
     if (!fixed)
-        return collaborationInstructions(s);
+        return collaborationInstructions(s)+'\n本人採用的方向版本：'+JSON.stringify(s.direction)+(s.module==='B'&&s.a?'\n未採用 A 討論（僅候選，不等於本人意思）：\n'+s.a:'');
     const f = fixed.collaboration, current = s.collaboration;
     return collaborationInstructions({ ...s, collaboration: { ...current,
             aIntent: f.aIntent, aAnswers: f.aAnswers, expression: f.expression,
             keep: f.keep, unresolved: f.unresolved, practices: f.practices,
             boundary: [...new Set([f.boundary, current.boundary].filter(Boolean))].join('\n')
-        } });
+        } })+'\n本人採用的方向版本：'+JSON.stringify(fixed.direction);
 }

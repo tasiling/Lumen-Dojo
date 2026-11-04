@@ -83,6 +83,11 @@ export function importPreview(value: unknown): ImportPreview {
             const notes = d.handoffNotes && typeof d.handoffNotes === 'object' ? object(d.handoffNotes) : {};
             for (const key of ['expression', 'boundary', 'keep', 'unresolved'] as const)
                 f[key] = String(notes[key] || '');
+            if (!f.aAnswers.trim()) f.aAnswers = [['原意',d.intent],['回答一',d.question1],['回答二',d.question2]].filter(([,v])=>typeof v==='string' && v.trim()).map(([label,v])=>label+'：'+v).join('\n\n');
+            s.history = (Array.isArray(d.draftHistory)?d.draftHistory:[]).map((h,i)=>{const v=typeof h==='string'?{text:h}:object(h);return{id:'legacy-history-'+i,text:String(v.text || v.body || v.draft || ''),note:String(v.note || '舊版逐次草稿 '+(i+1)),createdAt:String(v.createdAt || '')};});
+            const platformDrafts=d.platformDrafts && typeof d.platformDrafts==='object'?object(d.platformDrafts):{};
+            s.platformDrafts=Object.entries(platformDrafts).map(([platform,value],i)=>({id:'legacy-platform-'+i,platform,text:typeof value==='string'?value:JSON.stringify(value,null,2),sourceVersionId:String(d.handoffId || '')}));
+            s.publicationHistory=(Array.isArray(d.publicationHistory)?d.publicationHistory:[]).map((h,i)=>{const v=object(h),schedule=v.schedule && typeof v.schedule==='object'?object(v.schedule):{};return{id:'legacy-publication-'+i,platform:String(v.platform || (Array.isArray(v.platforms)?v.platforms.join('／'):'')),url:String(v.publishedUrl || v.url || ''),publishedOn:String(v.publishedOn || v.publishedAt || [schedule.date,schedule.time].filter(Boolean).join(' ')),timeZone:String(schedule.zone || v.zone || ''),sourceVersionId:String(v.versionId || ''),note:JSON.stringify(v,null,2)};});
             f.cExpandedSource = f.cSource;
             f.cExpandedVersionId = String(bc.baseChoice || 'manual');
             f.cVersionId = f.cExpandedVersionId;
@@ -114,7 +119,7 @@ export function importPreview(value: unknown): ImportPreview {
                 if (material.selected.length)
                     s.source.selectedVersion = corrected.revision;
             }
-            s.legacy = { sourceWorkId: id, data: copy(d), sources: copy(sources), shuttles: copy(p.shuttles || []), directions: copy(p.directions || []), explorations: copy(p.explorations || []), packet: copy(p) };
+            s.legacy = { migrationVersion:2, sourceWorkId: id, data: copy(d), sources: copy(sources), shuttles: copy(p.shuttles || []), directions: copy(p.directions || []), explorations: copy(p.explorations || []), packet: copy(p) };
             const identity = importDigest({ sourceId: id, shuttleId: w.shuttleId || null, data: d, sources });
             s.importIdentity = identity;
             return { sourceId: id, title: String(d.title || '未命名探索草稿'), shuttleId: typeof w.shuttleId === 'string' ? w.shuttleId : null, identity, studio: s, selections: material.selections };

@@ -1,3 +1,4 @@
+import { looseDirections, saveLooseDirection } from '@/lib/dojo/creativeStudio/looseDirections';
 import { routeStudioCandidate } from '@/lib/dojo/creativeStudio/candidateRouting';
 import { previewStudioGraphics, restoreStudioGraphics } from '@/lib/dojo/creativeStudio/graphics';
 import { canvaTransfers, createCanvaTransfer, saveCanvaResult } from '@/lib/dojo/creativeStudio/canva';
@@ -5,8 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireLearningOwner } from '@/lib/dojo/learningFoundation/access';
 import { weavingRouteError } from '@/lib/dojo/weavingWorkflow/http';
 import { reconcileOperation } from '@/lib/dojo/weavingWorkflow/store';
-import { adoptStudioCandidate, transitionStudioWork, deriveStudioWork, archiveStudioImport, studioWorks, studioTopics, getStudioWork, createStudioWork, saveStudioWork, completeStudioWork, handoffStudio, createStudioTopic, saveStudioDirections, importStudio } from '@/lib/dojo/creativeStudio/store';
-import { importPreview } from '@/lib/dojo/creativeStudio/migration';
+import { handoffRecoveredPlatform, previewStudioImport, selectStudioSources, adoptStudioCandidate, transitionStudioWork, deriveStudioWork, archiveStudioImport, studioWorks, studioTopics, getStudioWork, createStudioWork, saveStudioWork, completeStudioWork, handoffStudio, createStudioTopic, saveStudioDirections, importStudio } from '@/lib/dojo/creativeStudio/store';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 const json = (v: unknown) => NextResponse.json(v, { headers: { 'Cache-Control': 'private, no-store' } });
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
             return json(await reconcileOperation(q.get('operationId')!));
         if (q.has('id'))
             return json(await getStudioWork(q.get('id')!));
-        return json({ works: await studioWorks(q.get('includeArchived') === '1'), topics: await studioTopics() });
+        return json({ works: await studioWorks(q.get('includeArchived') === '1'), topics: await studioTopics(), looseDirections: await looseDirections() });
     }
     catch (e) {
         return weavingRouteError(e);
@@ -47,10 +47,13 @@ export async function POST(req: NextRequest) {
             case 'create': return json({ work: await createStudioWork(b) });
             case 'save': return json({ work: await saveStudioWork(b) });
             case 'complete': return json(await completeStudioWork(b));
+            case 'handoff-platform': return json(await handoffRecoveredPlatform(b));
             case 'handoff': return json({ project: await handoffStudio(b) });
             case 'topic': return json({ topic: await createStudioTopic(b) });
             case 'directions': return json({ topic: await saveStudioDirections(b) });
-            case 'import-preview': return json({ preview: importPreview(b.packet) });
+            case 'import-preview': return json({ preview: await previewStudioImport(b.packet) });
+            case 'select-sources': return json({work:await selectStudioSources(b)});
+            case 'loose-direction': return json(await saveLooseDirection(b));
             case 'import': return json(await importStudio(b));
             default: return NextResponse.json({ error: '未知操作' }, { status: 400 });
         }

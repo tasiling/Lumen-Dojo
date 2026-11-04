@@ -1,15 +1,23 @@
+import { normalizeLiaojieProject } from '../liaojiePublication';
+import { createTextVariant, saveTextVariant } from '../liaojieText/store';
+import { adaptSource } from '../liaojieText/model';
+import { sourcePolicies } from '../creativeSources/store';
+import { productionSources, type SelectionRequest } from '../weavingWorkflow/sources';
+import { taskContext, taskStatus } from './tasks';
+import { importLooseDirection, nativeDirection, looseDirections } from './looseDirections';
+import { importReport } from './importPlan';
 import { cBase, manuscriptForAdoption, recordRound } from './collaboration';
 import 'server-only';
 import { listJsonRecords } from '../notionStore';
-import { WEAVING_WORK_TITLE_PREFIX, WEAVING_SHUTTLE_TITLE_PREFIX, COMPLETION_TITLE_PREFIX } from '../formal';
+import { WEAVING_WORK_TITLE_PREFIX, WEAVING_SHUTTLE_TITLE_PREFIX, COMPLETION_TITLE_PREFIX, LIAOJIE_PROJECT_TITLE_PREFIX } from '../formal';
 import { createWorkDraft, createShuttleDraft, normalizeWeavingWork, normalizeWeavingShuttle, type WeavingWork } from '../weavingShuttle';
-import { createStep, updateStep, readWork, readShuttle, expectRevision, operationId, WEAVING_OWNER, completeWork, handoffWork, type Body } from '../weavingWorkflow/store';
+import { createStep, updateStep, readWork, readShuttle, expectRevision, operationId, readRecord, WEAVING_OWNER, completeWork, handoffWork, type Body } from '../weavingWorkflow/store';
 import { runWeavingOperation, operationDigest, inspectWeavingOperation } from '../weavingWorkflow/operations';
 import { completionDigest, listCompletions, readCompletion } from '../weavingWorkflow/completions';
 import { createTextWorkflow } from '../weavingWorkflow/templates';
 import { WeavingError, normalizeWorkflow } from '../weavingWorkflow/model';
 import { blankStudio, normalizeStudio, normalizeDirections, studioForWork, raw, type StudioData } from './model';
-import { importDigest, importPreview, planImport, prototypePageText } from './migration';
+import { importDigest, planImport, prototypePageText } from './migration';
 export async function studioWorks(includeArchived = false) { return (await listJsonRecords(WEAVING_WORK_TITLE_PREFIX)).flatMap(r => { const w = normalizeWeavingWork(r.value, { id: r.id }); return w && (includeArchived || w.status !== 'archived') ? [w] : []; }); }
 export async function studioTopics() { return (await listJsonRecords(WEAVING_SHUTTLE_TITLE_PREFIX)).flatMap(r => { const s = normalizeWeavingShuttle(r.value, { id: r.id }); return s && s.status !== 'archived' ? [s] : []; }); }
 export async function getStudioWork(id: string) {
@@ -69,6 +77,7 @@ export async function saveStudioWork(body: Body) {
     const id = raw(body.id, 300), incoming = normalizeStudio(body.studio), op = operationId(body);
     const r = await runWeavingOperation(WEAVING_OWNER, op, 'patch', body, [updateStep(id, WEAVING_WORK_TITLE_PREFIX, 'work', async (row, receipt) => {
             const old = normalizeWeavingWork(JSON.parse(row.內容), { id })!;
+            for(const ticket of studioForWork(old).collaboration.tasks)if(!incoming.collaboration.tasks.some(t=>JSON.stringify(t)===JSON.stringify(ticket)))throw new WeavingError('已保存的協作任務不可刪除或改寫',409);
             expectRevision(old, body.expectedRevision);
             const prev = studioForWork(old);
             if (prev.source.raw && prev.source.raw !== incoming.source.raw)
@@ -120,7 +129,7 @@ export async function handoffStudio(body: Body) {
         throw new WeavingError('完稿不屬於這件作品', 403);
     if (c.studioSnapshot && !c.studioSnapshot.source.allowPublic)
         throw new WeavingError('這份固定版本尚未確認可公開；請確認用途後重新定稿', 403);
-    return handoffWork({ operationId: operationId(body), weavingWorkId: id, completionVersionId: c.id, publicationConfirmed: body.publicationConfirmed, createNewVersion: body.createNewVersion });
+    return handoffWork({ operationId: operationId(body), weavingWorkId: id, completionVersionId: c.id, publicationConfirmed: body.publicationConfirmed, createNewVersion: body.createNewVersion, returnRealm:body.returnRealm });
 }
 export async function createStudioTopic(body: Body) {
     const title = raw(body.title, 200);
@@ -143,8 +152,23 @@ export async function saveStudioDirections(body: Body) {
         })]);
     return readShuttle(r.result.shuttle.id);
 }
+export async function selectStudioSources(body: Body) {
+    const id=raw(body.id,300),requests=body.selectionRequests as SelectionRequest[],resolved=await productionSources(undefined,'perspective',true).resolveSelections(requests),selections=resolved.map((r,i)=>({...r,locator:(r.locator+' · 第 '+requests[i].start+'–'+requests[i].end+' 字元').slice(0,2000)})),policies=await sourcePolicies.list();
+    const result=await runWeavingOperation(WEAVING_OWNER,operationId(body),'patch',body,[updateStep(id,WEAVING_WORK_TITLE_PREFIX,'work',row=>{
+        const old=normalizeWeavingWork(JSON.parse(row.內容),{id})!;expectRevision(old,body.expectedRevision);
+        if(['completed','sent_to_liaojie','archived'].includes(old.status))throw Error('請先開始修訂或恢復作品，再加入素材');
+        const s=studioForWork(old),previous=old.textWorkflow || createTextWorkflow('article'),added=selections.filter(r=>!previous.sourceSelections.some(x=>x.digest===r.digest && x.sourceId===r.sourceId));
+        if(!added.length)return old;
+        const text=added.map(r=>r.selectedText).join('\n\n');
+        s.source={...s.source,raw:s.source.raw || text,selected:[s.source.selected,text].filter(Boolean).join('\n\n'),selectedVersion:'original',title:[s.source.title,...added.map(r=>r.locator)].filter(Boolean).join('／').slice(0,300),allowAI:false,allowPublic:false,read:selections.some(r=>policies.some(p=>p.ref.sourceType===r.sourceType&&p.ref.sourceId===r.sourceId&&p.discovery==='private'))?'private':s.source.read};
+        normalizeStudio(s);
+        return {...old,studio:s,textWorkflow:{...previous,sourceSelections:[...previous.sourceSelections,...added]},revision:old.revision+1,updatedAt:new Date().toISOString()};
+    })]);return readWork(result.result.work.id);
+}
+export async function previewStudioImport(packet: unknown) {const works=await studioWorks(true),loose=await looseDirections(true),pre=importReport(packet,works,loose),fixed=(await Promise.all(pre.plan.filter(p=>p.workId).map(p=>listCompletions(p.workId)))).flat();return importReport(packet,works,loose,fixed);}
 export async function importStudio(body: Body) {
-    const preview = importPreview(body.packet), op = operationId(body);
+    const preview = await previewStudioImport(body.packet), op = operationId(body);
+    if(body.planDigest && body.planDigest !== preview.planDigest)throw new WeavingError('預覽後資料已變更，請重新預覽新建／接續對照',409);
     if (preview.kind !== 'html')
         throw new WeavingError('這份備份請由原工具或原正式入口開啟；預覽與備份保持可用');
     const envelope = body.packet as Record<string, unknown>, packet = (envelope.kind === 'lumen-weaving-flow-prototype' && envelope.state ? envelope.state : envelope) as Record<string, unknown>, originalTopics = Array.isArray(packet.shuttles) ? packet.shuttles as Record<string, unknown>[] : [], originalDirections = Array.isArray(packet.directions) ? packet.directions as Record<string, unknown>[] : [];
@@ -153,14 +177,17 @@ export async function importStudio(body: Body) {
         const directions = originalDirections.filter(d => d.shuttleId === old.id), identity = importDigest({ topic: old, directions });
         const existing = (await studioTopics()).find(t => t.studioImportIdentity === identity);
         if (existing) {
+            const native=directions.map(nativeDirection);
+            if(native.some(d=>{const prev=existing.studioDirections?.find(x=>x.id===d.id);return prev&&!prev.details;}))await runWeavingOperation(WEAVING_OWNER,operationDigest(['import-direction-metadata',identity]),'migrate',{identity},[updateStep(existing.id,WEAVING_SHUTTLE_TITLE_PREFIX,'topic',(row,r)=>{const t=normalizeWeavingShuttle(JSON.parse(row.內容),{id:existing.id})!;return {...t,studioDirections:(t.studioDirections||[]).map(d=>{const source=native.find(x=>x.id===d.id);return source&&!d.details?{...d,question:d.question||source.question,angle:d.angle||source.angle,details:source.details}:d;}),revision:t.revision+1,updatedAt:r.createdAt};})]);
             mapping.set(String(old.id), existing.id);
             continue;
         }
-        const nativeDirections = normalizeDirections(directions.map(d => ({ id: String(d.id), title: String(d.title || '待整理方向'), versions: (Array.isArray(d.versions) ? d.versions : []).map(x => { const v = x as Record<string, unknown>; return { id: String(v.id), statement: String(v.statement || ''), note: String(v.unresolved || v.note || ''), createdAt: String(v.createdAt || '') }; }) })));
+        const nativeDirections = directions.map(nativeDirection);
         const step = createStep(WEAVING_SHUTTLE_TITLE_PREFIX, 'shuttle', () => ({ ...createShuttleDraft({ title: String(old.title || '匯入主題'), sourceType: 'manual', sourceSnapshot: '', coreStatement: String(old.title || '匯入主題') }), studioImportIdentity: identity, studioLegacy: structuredClone(old), studioDirections: nativeDirections, revision: 1 }));
         const r = await runWeavingOperation(WEAVING_OWNER, operationDigest(['import-topic', identity]), 'migrate', { identity }, [step]);
         mapping.set(String(old.id), r.result.shuttle.id);
     }
+    for(const d of originalDirections.filter(d=>!originalTopics.some(t=>t.id===d.shuttleId)))await importLooseDirection(d);
     const allWorks = await studioWorks(true), nativeWork = (body.packet as {
         work?: {
             id?: string;
@@ -192,6 +219,19 @@ export async function importStudio(body: Body) {
                 direction = { directionId: String(old.directionId), versionId: String(old.understandingVersionId), title: String(old.title || ''), statement: String(understanding?.statement || '') };
             }
             w = await createStudioWork({ operationId: operationDigest([op, x.identity]), title: x.title, shuttleId, canonicalSelections: native?.textWorkflow?.sourceSelections || x.selections, studio: { ...x.studio, direction, originKey: 'import:' + x.identity } }, native || undefined);
+        }
+        if(resumed && !native && studioForWork(w).legacy?.migrationVersion !== 2){
+            const targetId=w.id;
+            await runWeavingOperation(WEAVING_OWNER,operationDigest(['import-functional-backfill',x.identity]),'migrate',{identity:x.identity,id:targetId},[updateStep(targetId,WEAVING_WORK_TITLE_PREFIX,'work',(row,r)=>{
+                const old=normalizeWeavingWork(JSON.parse(row.內容),{id:targetId})!, current=studioForWork(old), converted=x.studio;
+                if(!current.collaboration.aAnswers.trim())current.collaboration.aAnswers=converted.collaboration.aAnswers;
+                current.history=[...current.history,...converted.history.filter(h=>!current.history.some(x=>x.id===h.id))];
+                current.platformDrafts=[...current.platformDrafts,...converted.platformDrafts.filter(h=>!current.platformDrafts.some(x=>x.id===h.id))];
+                current.publicationHistory=[...current.publicationHistory,...converted.publicationHistory.filter(h=>!current.publicationHistory.some(x=>x.id===h.id))];
+                current.legacy={...current.legacy,migrationVersion:2};
+                return {...old,studio:current,revision:old.revision+1,updatedAt:r.createdAt};
+            })]);
+            w=await readWork(targetId);
         }
         for (const old of versions) {
             const illustrated = old.format === 'illustrated' && Array.isArray(old.pages) && old.pages.length > 0;
@@ -242,6 +282,15 @@ export async function importStudio(body: Body) {
                     throw new WeavingError('D 分析來源版本修復前已有變更；請保留資料並核對', 409);
                 return { ...current, studio: { ...studio, analyses }, revision: current.revision + 1, updatedAt: r.createdAt };
             })]);
+        }
+        w=await readWork(w.id);
+        const oldPlatform=studioForWork(w);
+        const restoredVersions=await listCompletions(w.id);
+        let platformsChanged=false;
+        for(const draft of [...oldPlatform.platformDrafts,...oldPlatform.publicationHistory]){const restored=restoredVersions.find(c=>(c as unknown as {originalVersionId?:string}).originalVersionId===draft.sourceVersionId);if(restored){draft.sourceVersionId=restored.id;platformsChanged=true;}}
+        if(platformsChanged){
+            const targetId=w.id;
+            await runWeavingOperation(WEAVING_OWNER,operationDigest(['import-platform-sources-v2',x.identity,w.revision]),'migrate',{identity:x.identity,id:targetId},[updateStep(targetId,WEAVING_WORK_TITLE_PREFIX,'work',(row,r)=>{const old=normalizeWeavingWork(JSON.parse(row.內容),{id:targetId})!,current=studioForWork(old);return {...old,studio:{...current,platformDrafts:oldPlatform.platformDrafts,publicationHistory:oldPlatform.publicationHistory},revision:old.revision+1,updatedAt:r.createdAt};})]);w=await readWork(targetId);
         }
         if (native?.currentCompletionVersionId) {
             const fixed = (await listCompletions(w.id)).find(c => (c as unknown as {
@@ -305,6 +354,8 @@ export async function deriveStudioWork(body: Body) {
             shuttleId = topic.id;
         }
     }
+    const derivedTask=taskContext({...original,module:'C'},base===original?undefined:base);
+    if(taskStatus({...original,module:'C'},derivedTask,derivedTask.settings).stale && body.confirmStale !== true)throw new WeavingError('轉製來源或任務已改版，請先核對是否沿用舊候選',409);
     s.source = structuredClone(base.source);
     s.direction = base.direction;
     s.collaboration.aAnswers = base.collaboration.aAnswers;
@@ -335,12 +386,10 @@ export async function adoptStudioCandidate(body: Body) {
                 if (c.workId !== id || c.text !== cb.text)
                     throw new WeavingError('C 底稿與所選固定版本不符', 409);
             }
+            const contextTask=taskContext({...s,module:body.moduleName as 'B'|'C'}, body.moduleName==='C' && !['','draft','manual'].includes(cb.versionId)?(await readCompletion(cb.versionId)).studioSnapshot:undefined);
+            if(taskStatus({...s,module:body.moduleName as 'B'|'C'},contextTask,contextTask.settings).stale && body.confirmStale !== true)throw new WeavingError('本輪來源或本人意思已改版；請核對舊回覆後明確確認沿用',409);
             const next = manuscriptForAdoption(s, body.moduleName === 'B' ? 'B' : 'C-expand'), previous = s.body;
-            const { rounds: priorRounds, candidates: priorCandidates, reviewReply: priorReview, ...controls } = f;
-            void priorRounds;
-            void priorCandidates;
-            void priorReview;
-            const round = recordRound({ ...s, module: body.moduleName as 'B' | 'C' }, { text: body.moduleName === 'C' ? cb.text : s.source.selected, versionId: body.moduleName === 'C' ? cb.versionId : s.source.selectedVersion }, JSON.stringify({ settings: controls, research: s.research, researchUse: s.researchUse, examples: s.examples }));
+            const round = recordRound({ ...s, module: body.moduleName as 'B' | 'C' }, contextTask, contextTask.settings);
             round.id = receipt.operationId;
             round.createdAt = receipt.createdAt;
             f.rounds.push(round);
@@ -357,4 +406,35 @@ export async function adoptStudioCandidate(body: Body) {
             return { ...old, studio: s, draftText: next, textWorkflow: workflow(s, old), status: 'drafting', revision: old.revision + 1, updatedAt: receipt.createdAt };
         })]);
     return readWork(r.result.work.id);
+}
+
+/** Explicitly make a fresh publication, preserving existing platform variants. */
+export async function handoffRecoveredPlatform(body: Body) {
+ const op=operationId(body),previous=await inspectWeavingOperation(WEAVING_OWNER,op);
+ if(previous?.state==='confirmed'){
+  if(previous.inputDigest!==operationDigest(body))throw new WeavingError('原交接操作內容不同',409);
+  const projectId=(previous.context as {projectId:string}).projectId;
+  return {project:normalizeLiaojieProject(JSON.parse((await readRecord(projectId,LIAOJIE_PROJECT_TITLE_PREFIX)).內容),{id:projectId})!};
+ }
+ const w=await readWork(raw(body.id,300)),grantOp=operationDigest([op,'public-purpose-version']);
+ if(!await inspectWeavingOperation(WEAVING_OWNER,grantOp))expectRevision(w,body.expectedRevision);
+ const draft=studioForWork(w).platformDrafts.find(d=>d.id===body.platformDraftId);
+ if(!draft || !draft.text.trim() || body.publicationConfirmed!==true)throw new WeavingError('請核對配文與公開用途');
+ if(w.status==='archived')throw new WeavingError('請先恢復封存作品，再交接',409);
+ const fixed=await readCompletion(draft.sourceVersionId);if(fixed.workId!==w.id)throw new WeavingError('配文來源不是本件完成版');
+ const platform=({ig:'instagram_post',IG:'instagram_post',instagram:'instagram_post',instagram_post:'instagram_post',threads:'threads',Threads:'threads',plurk:'plurk','噗浪':'plurk'} as Record<string,string>)[draft.platform];
+ if(!platform)throw new WeavingError('請將平台設為 plurk、ig 或 threads，再交接');
+ if(fixed.studioSnapshot?.source.read==='private')throw new WeavingError('這份來源只限本人查看，請先修訂並重新確認用途',403);
+ await sourcePolicies.assertPublication(fixed.sourceSelections,body.publicationConfirmed);
+ // Reaffirm the exact historical text as a new purpose-confirmed fixed version.
+ // Historical permissions, current manuscript and the original fixed version stay intact.
+ const approved=await runWeavingOperation(WEAVING_OWNER,grantOp,'complete',body,[
+  createStep(COMPLETION_TITLE_PREFIX,'completion',r=>({...fixed,id:undefined,operationId:r.operationId,createdAt:r.createdAt,publicSourceVersionId:fixed.id,publicationPurpose:'本人確認本次平台配文交接',studioSnapshot:fixed.studioSnapshot?{...fixed.studioSnapshot,source:{...fixed.studioSnapshot.source,allowPublic:true}}:undefined})),
+  updateStep(w.id,WEAVING_WORK_TITLE_PREFIX,'work',(row,r)=>{const old=normalizeWeavingWork(JSON.parse(row.內容),{id:w.id})!;return {...old,completionVersionRefs:[...new Set([...old.completionVersionRefs,r.result.completion.id])],currentCompletionVersionId:old.currentCompletionVersionId===fixed.id?r.result.completion.id:old.currentCompletionVersionId,revision:old.revision+1,updatedAt:r.createdAt};})
+ ]);
+ const project=await handoffWork({operationId:operationDigest([op,'platform-project']),weavingWorkId:w.id,completionVersionId:approved.result.completion.id,publicationConfirmed:true,createNewVersion:true,returnRealm:body.returnRealm});
+ const b=await createTextVariant({operationId:operationDigest([op,'platform-variant']),publicationId:project.id,platform});
+ if(b.currentVersion.changeNote!=='由舊平台配文明確交接')await saveTextVariant({operationId:operationDigest([op,'platform-copy']),variantId:b.variant.id,expectedRevision:b.variant.revision,draft:{title:fixed.title,voiceNote:'',changeNote:'由舊平台配文明確交接',blocks:adaptSource(platform as never,draft.text),scheduledOn:null,publishedUrl:''}});
+ await runWeavingOperation(WEAVING_OWNER,op,'migrate',body,[],{projectId:project.id});
+ return {project};
 }

@@ -71,7 +71,7 @@ export function sourceResolver(adapter: SourceAdapter) {
 function candidate(kind: SourceKind, id: string, label: string, locator: string, contentKind: ContentKind, text: string, version?: string): SourceCandidate {
     return { sourceType: kind, sourceId: id, label, locator, contentKind, text, version: version ?? `snapshot:${digest([label, locator, contentKind, text])}`, availability: 'available' };
 }
-export function productionSources(bookId?: string, use: KnowledgeUse = 'perspective') {
+export function productionSources(bookId?: string, use: KnowledgeUse = 'perspective', exploration = false) {
     async function all(kind: SourceKind): Promise<SourceCandidate[]> {
         if (kind === 'reading_note') {
             const books = (await listReadingBooks()).filter(b => !bookId || b.id === bookId);
@@ -89,7 +89,7 @@ export function productionSources(bookId?: string, use: KnowledgeUse = 'perspect
         }
         if (kind === 'forage_capture') {
             const rows = await listJsonRecords(CAPTURE_TITLE_PREFIX);
-            return rows.flatMap(row => { const c = normalizeCaptureEntry(row.value, { id: row.id }); return c && c.status === 'adopted' && ['C2', 'C3'].includes(c.creativeMaturity) && c.destinations.includes('weaving') ? [candidate(kind, c.id, c.title, [c.sourceLocator, c.sourceUrl].filter(Boolean).join('・'), 'insight', c.forageSummary || c.excerpt || c.note)] : []; });
+            return rows.flatMap(row => { const c = normalizeCaptureEntry(row.value, { id: row.id }); return c && (exploration || c.status === 'adopted' && ['C2', 'C3'].includes(c.creativeMaturity) && c.destinations.includes('weaving')) ? [candidate(kind, c.id, c.title, [c.sourceLocator, c.sourceUrl].filter(Boolean).join('・'), 'insight', (exploration ? c.excerpt || c.note || c.forageSummary : c.forageSummary || c.excerpt || c.note), exploration ? 'explore-source:'+digest([c.id,c.updatedAt,c.excerpt,c.note,c.forageSummary]) : undefined)] : []; });
         }
         if (kind === 'knowledge_claim') {
             return (await listKnowledgeClaims()).flatMap(c => { const v = activeClaimVersion(c); return v && knowledgeClaimCanUse(c, use) ? [candidate(kind, c.id, c.title, v.sources.map(s => s.locator || s.label).join('・'), c.type==='experience'?'experience':v.claimant==='external_author'?'quote':'understanding', v.statement, `${v.id}:${digest([v.statement, v.sources, c.allowedUses])}`)] : []; });
@@ -116,7 +116,7 @@ export async function checkSelectionAvailability(selections: WorkflowSelection[]
         if(!source||'proposal-source:'+fingerprint(source)!==s.sourceVersion)throw new WeavingError('提案來源已更新或無法使用，請重新選摘再完成',409);
         continue;
     }
-    const current = await resolver.get(s.sourceType, s.sourceId);
+    const current = await (s.sourceVersion?.startsWith('explore-source:')?productionSources(undefined,'perspective',true):resolver).get(s.sourceType, s.sourceId);
     if (!current || current.version !== s.sourceVersion)
         throw new WeavingError('來源已更新或無法使用；保留歷史，請重新選摘再完成', 409);
 } }
