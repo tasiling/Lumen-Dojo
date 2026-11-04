@@ -44,6 +44,15 @@ export function importPreview(value: unknown): ImportPreview {
             f.manuscript=String(bc.manuscript||'');f.editorial=String(bc.editorial||'');
             if(Array.isArray(bc.research))f.research=bc.research.map(x=>{const r=object(x);return {title:String(r.title||''),source:String(r.source||''),mechanism:String(r.mechanism||''),scope:String(r.scope||''),relation:String(r.relation||''),use:r.use==='include'?'body':r.use==='unused'?'none':'background'};});
             if(Array.isArray(bc.examples))s.examples=bc.examples.map(x=>{const e=object(x);return {kind:['experience','external','hypothetical','metaphor'].includes(String(e.kind))?e.kind:'hypothetical',text:String(e.text||'')+(e.source?'\n來源：'+e.source:''),adopted:e.selected===true};}) as StudioData['examples'];
+            const rows=(v:unknown)=>Array.isArray(v)?v.map(object):[];
+            f.rounds=rows(bc.runs).map((r,i)=>{const base=r.base?object(r.base):{};return {id:String(r.id||`bc-${i}`),module:String(r.module||'B'),mode:String(r.mode||'main'),reply:String(r.raw||r.text||''),answers:String(r.authorAnswers||''),sourceText:String(base.text||''),sourceVersion:String(base.sourceVersionId||base.choice||'unknown'),settings:JSON.stringify({base:r.base,direction:r.direction,sources:r.sources,aReply:r.aReply,manuscript:r.manuscript,editorial:r.editorial,research:r.research,examples:r.examples}),createdAt:String(r.createdAt||'')};});
+            for(const e of rows(p.explorations).filter(e=>e.workId===id)){
+                const origin=e.origin?object(e.origin):{};
+                f.rounds.push({id:String(e.id||`exploration-${f.rounds.length}`),module:String(e.stage||'A'),mode:String(e.mode||'material'),reply:String(e.aiReply||e.findings||e.summary||''),answers:String(e.answers||''),sourceText:String(origin.bodySnapshot||rows(origin.sourceRefs).map(r=>r.text||'').join('\n\n')),sourceVersion:String(origin.workVersionId||origin.understandingVersionId||'unknown'),settings:JSON.stringify(e),createdAt:String(e.createdAt||'')});
+                for(const c of rows(e.candidates)){const co=c.origin?object(c.origin):origin;
+                    f.candidates.push({id:String(c.id||`candidate-${f.candidates.length}`),module:String(e.stage||'A'),title:String(c.title||''),statement:String(c.understanding||c.question||c.angle||''),quote:String(c.originalQuote||''),locator:String(c.quoteLocator||''),sourceVersion:String(co.workVersionId||co.understandingVersionId||'unknown'),topicId:'',directionId:''});
+                }
+            }
             const viewed = sources.find(x => x.id === d.viewedSourceId) || sources[0];
             if (viewed) {
                 const segments = Array.isArray(viewed.segments) ? viewed.segments as Record<string, unknown>[] : [];
@@ -60,7 +69,7 @@ export function importPreview(value: unknown): ImportPreview {
             s.importIdentity = identity;
             return { sourceId: id, title: String(d.title || '未命名探索草稿'), shuttleId: typeof w.shuttleId === 'string' ? w.shuttleId : null, identity, studio: s };
         });
-        return { kind: 'html', digest, works, archive: copy(p), warnings: ['先保留原識別、完整來源／校訂／模組／方向與版本備份。舊圖文及媒體輸出未驗證前保留為歷史，不標記為新生成成品。', '公開及外部工具許可須由本人重新核對。', 'A 本人回答、B/C 設定與雙 C 回覆、逐筆研究已轉為可編輯欄位；舊協作輪次、候選分流及圖文配置仍留在原始封存，需核對後接續。'] };
+        return { kind: 'html', digest, works, archive: copy(p), warnings: ['先保留原識別、完整來源／校訂／模組／方向與版本備份。舊圖文及媒體輸出未驗證前保留為歷史，不標記為新生成成品。', '公開及外部工具許可須由本人重新核對。', 'A 本人回答、B/C 設定與雙 C 回覆、逐筆研究已轉為可編輯欄位；B/C 及探索輪次、候選已轉為可查看欄位；候選的舊去向保留在輪次來源紀錄，請核對後重新連結正式方向。圖文配置仍留在原始封存。'] };
     }
     if (p.recordType === 'weaving-work')
         return { kind: 'formal', digest, works: [], archive: copy(p), warnings: ['既有正式作品直接開啟原 ID，不另建同名副本。'] };

@@ -165,3 +165,12 @@ export function studioPromptSource(s:StudioData,module:StudioData['module'],comp
  if(module==='D'){if(!completion)throw Error('請先選本件完稿版本');const permission=completion.studioSnapshot?.source;if(confirmedVersionId!==completion.id&&(!permission?.allowAI||permission.read==='private'))throw Error('請先核對所選完稿的外部使用許可，或逐次確認本次使用');return {text:completion.text,versionId:completion.id,understanding:completion.studioSnapshot?.direction?.statement||completion.studioSnapshot?.a||''};}
  if(!s.source.allowAI||s.source.read==='private')throw Error('請先確認本次素材與稿件可交給外部 AI');return {text:module==='C'?(s.collaboration.cSource||s.body):module==='A'&&s.collaboration.aMode==='draft'?(s.body||s.source.selected):module==='B'?[s.source.selected,s.body?'目前主稿：\n'+s.body:''].filter(Boolean).join('\n\n'):s.source.selected,versionId:module==='C'?(s.collaboration.cVersionId||'draft'):s.source.selectedVersion,understanding:s.direction?.statement||s.a};
 }
+
+/** Append a candidate understanding without rewriting adopted or earlier versions. */
+export function mergeCandidateDirection(direction:StudioDirection,candidate:{id:string;title:string;statement:string;quote:string;locator:string;sourceVersion:string},workId:string,createdAt:string):StudioDirection {
+ const versionId='candidate-'+candidate.id;
+ const prior=direction.versions.find(v=>v.id===versionId);
+ if(prior){if(prior.statement!==candidate.statement)throw Error('此候選已接入方向；若理解改變請新增候選');return direction;}
+ if(!candidate.statement.trim())throw Error('請填候選理解');
+ return {...direction,versions:[...direction.versions,{id:versionId,statement:candidate.statement,note:`候選來源 ${workId} / ${candidate.sourceVersion} / ${candidate.locator}：${candidate.quote}`,createdAt}]};
+}
