@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireLearningOwner } from '@/lib/dojo/learningFoundation/access';
 import { weavingRouteError } from '@/lib/dojo/weavingWorkflow/http';
 import { reconcileOperation } from '@/lib/dojo/weavingWorkflow/store';
-import { handoffRecoveredPlatform, previewStudioImport, selectStudioSources, adoptStudioCandidate, transitionStudioWork, deriveStudioWork, archiveStudioImport, studioWorks, studioTopics, getStudioWork, createStudioWork, saveStudioWork, completeStudioWork, handoffStudio, createStudioTopic, saveStudioDirections, importStudio } from '@/lib/dojo/creativeStudio/store';
+import { adoptResearchIntegration, handoffRecoveredPlatform, previewStudioImport, selectStudioSources, adoptStudioCandidate, transitionStudioWork, deriveStudioWork, archiveStudioImport, studioWorks, studioTopics, getStudioWork, createStudioWork, saveStudioWork, completeStudioWork, handoffStudio, createStudioTopic, saveStudioDirections, importStudio } from '@/lib/dojo/creativeStudio/store';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 const json = (v: unknown) => NextResponse.json(v, { headers: { 'Cache-Control': 'private, no-store' } });
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
         switch (b.action) {
             case 'route-candidate': return json(await routeStudioCandidate(b));
             case 'restore-graphics': return json(await restoreStudioGraphics(b));
+            case 'adopt-research': return json({work:await adoptResearchIntegration(b)});
             case 'adopt': return json({ work: await adoptStudioCandidate(b) });
             case 'transition': return json({ work: await transitionStudioWork(b) });
             case 'derive': return json({ work: await deriveStudioWork(b) });

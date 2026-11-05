@@ -1,3 +1,4 @@
+import {assertResearchHistory,previewResearchIntegration} from './researchWorkflow';
 import { assertPlatformProvenance } from './model';
 import { normalizeLiaojieProject } from '../liaojiePublication';
 import { createTextVariant, saveTextVariant } from '../liaojieText/store';
@@ -81,7 +82,7 @@ export async function saveStudioWork(body: Body) {
             for(const ticket of studioForWork(old).collaboration.tasks)if(!incoming.collaboration.tasks.some(t=>JSON.stringify(t)===JSON.stringify(ticket)))throw new WeavingError('已保存的協作任務不可刪除或改寫',409);
             expectRevision(old, body.expectedRevision);
             const prev = studioForWork(old);
-            try { assertPlatformProvenance(prev,incoming); }
+            try { assertPlatformProvenance(prev,incoming);assertResearchHistory(prev.researchWork,incoming.researchWork); }
             catch (e) { throw new WeavingError((e as Error).message,409); }
             if (prev.source.raw && prev.source.raw !== incoming.source.raw)
                 throw new WeavingError('原稿已保存；請追加校訂，保留原稿與歷史', 409);
@@ -442,4 +443,21 @@ export async function handoffRecoveredPlatform(body: Body) {
  if(b.currentVersion.changeNote!=='由舊平台配文明確交接')await saveTextVariant({operationId:operationDigest([op,'platform-copy']),variantId:b.variant.id,expectedRevision:b.variant.revision,draft:{title:fixed.title,voiceNote:'',changeNote:'由舊平台配文明確交接',blocks:adaptSource(platform as never,draft.text),scheduledOn:null,publishedUrl:''}});
  await runWeavingOperation(WEAVING_OWNER,op,'migrate',body,[],{projectId:project.id});
  return {project};
+}
+
+export async function adoptResearchIntegration(body:Body){
+ const id=raw(body.id,300);const result=await runWeavingOperation(WEAVING_OWNER,operationId(body),'patch',body,[updateStep(id,WEAVING_WORK_TITLE_PREFIX,'work',(row,receipt)=>{
+  const old=normalizeWeavingWork(JSON.parse(row.內容),{id})!;expectRevision(old,body.expectedRevision);
+  if(['completed','sent_to_liaojie','archived'].includes(old.status))throw new WeavingError('請先開始修訂或恢復作品，再採用研究整合稿',409);
+  const s=studioForWork(old),w=s.researchWork;
+  try{
+   if(body.confirm!==true||body.replyDigest!==operationDigest(w.integrationReply)||body.taskId!==w.integrationTaskId)throw Error('請重新預覽並確認這份整合稿');
+   const p=previewResearchIntegration(s,w.integrationTaskId,w.integrationReply,old.title);
+   if(p.structureProposal&&body.keepStructure!==true)throw Error('請先核對結構建議；本輪僅採用引用與銜接變更');
+   if(s.body&&s.body!==p.candidate)s.history.push({id:receipt.operationId,text:s.body,note:'研究整合前正文',createdAt:receipt.createdAt});
+   w.rounds.push({id:receipt.operationId,taskId:p.taskId,stage:'integration-adopt',question:w.question,raw:p.raw,adoptedText:p.candidate,createdAt:receipt.createdAt});
+   s.body=p.candidate;s.checks={facts:false,privacy:false,citations:false,voice:false};normalizeStudio(s);
+   return{...old,studio:s,draftText:s.body,textWorkflow:workflow(s,old),status:'drafting',revision:old.revision+1,updatedAt:receipt.createdAt};
+  }catch(e){throw new WeavingError((e as Error).message,409);}
+ })]);return readWork(result.result.work.id);
 }

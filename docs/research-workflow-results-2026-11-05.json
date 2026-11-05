@@ -1,0 +1,47 @@
+{
+  "rw-regression": {
+    "passLines": 131,
+    "last": "PASS native source return: canonical work ID, new fixed version/draft distinction, legacy access",
+    "failures": []
+  },
+  "rw-ui-native": {
+    "passLines": 58,
+    "last": "PASS native legacy v9 boundary, import entry and same-realm new B route; no uncaught browser errors",
+    "failures": []
+  },
+  "rw-ui-html": {
+    "passLines": 14,
+    "last": "PASS research browser 13/13",
+    "failures": []
+  },
+  "rw-copy-html": {
+    "passLines": 8,
+    "last": "PASS clipboard UI 7/7",
+    "failures": []
+  },
+  "rw-b-html": {
+    "passLines": 12,
+    "last": "PASS B repair browser 11/11",
+    "failures": []
+  },
+  "rw-legacy-html": {
+    "passLines": 10,
+    "last": "PASS local reload keeps preview work; no uncaught browser errors or HTTP requests",
+    "failures": []
+  },
+  "rw-entry-html": {
+    "passLines": 4,
+    "last": "PASS legacy diamond route clearly explains v9, exposes migration and enters the new B in the same realm",
+    "failures": []
+  },
+  "rw-backup-html": {
+    "passLines": 2,
+    "last": "PASS reset refreshes source links; simulated failed save retains input and retries successfully",
+    "failures": []
+  },
+  "rw-five-html": {
+    "passLines": 7,
+    "last": "PASS offline reload retains new migration/task/source data with no uncaught errors or network calls",
+    "failures": []
+  }
+}
