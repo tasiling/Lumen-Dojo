@@ -48,5 +48,12 @@
   "build": 0,
   "modifiedScopeEslint": 0,
   "iphoneSafariAcceptance": false,
-  "productionDeployed": false
+  "productionDeployed": false,
+  "delivery": {
+    "version": 4,
+    "bytes": 7910411,
+    "sha256": "bf3a045b1f58c0876cd383259b41d64f11acea47c23bc758fe695209901c424a",
+    "sourceCommit": "cb91566f8898dca6b8017af001c2123f92e8a773",
+    "sameLibraryItem": true
+  }
 }
