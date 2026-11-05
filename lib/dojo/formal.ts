@@ -1,3 +1,4 @@
+import {normalizeCaptureContext,type CaptureContext} from "./captureContext";
 import {
   GUANGFA,
   GUANGXING,
@@ -68,6 +69,7 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   "行光創作來源設定-v1-",
   "行光創作提案-v1-",
   "行光創作找題設定-v1-",
+  "行光彈性選擇-",
 ] as const;
 
 // Keep the dojo day anchored to Taipei time. The environment variable remains available
@@ -102,6 +104,7 @@ export type DailyTask = {
 };
 
 export type DayLog = {
+  context?: CaptureContext | null;
   id: string;
   time: string;
   text: string;
@@ -152,6 +155,8 @@ export type DailyRecord = {
   englishRhythm: {
     touches: EnglishTouchType[];
     vocabForgeRounds: number;
+    manualTouches?: EnglishTouchType[];
+    manualRounds?: number;
     note: string;
     updatedAt: string | null;
   };
@@ -598,7 +603,7 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
   const englishRhythm = source.englishRhythm && typeof source.englishRhythm === "object"
     ? source.englishRhythm
     : base.englishRhythm;
-  const vocabForgeRounds = Math.max(0, Math.min(5, Math.round(Number(englishRhythm.vocabForgeRounds) || 0)));
+  const vocabForgeRounds = Math.max(0, Math.min(999, Math.round(Number(englishRhythm.vocabForgeRounds) || 0)));
   const englishTouches = Array.isArray(englishRhythm.touches)
     ? Array.from(new Set(englishRhythm.touches.filter(
         (item): item is EnglishTouchType =>
@@ -649,10 +654,11 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
             id: stringValue(log.id, crypto.randomUUID()),
             time: TIME_RE.test(stringValue(log.time)) ? stringValue(log.time) : "",
             text,
+            context: normalizeCaptureContext(log.context),
             createdAt: stringValue(log.createdAt, new Date().toISOString()),
           } satisfies DayLog;
         })
-        .filter((item): item is DayLog => item !== null)
+        .filter((item): item is NonNullable<typeof item> => item !== null)
         .slice(0, 100)
     : [];
 
@@ -682,6 +688,8 @@ export function normalizeDailyRecord(value: unknown, expectedDate: string): Dail
     },
     englishRhythm: {
       touches: englishTouches.slice(0, 4),
+      ...(Array.isArray(englishRhythm.manualTouches)?{manualTouches:englishRhythm.manualTouches.filter(t=>["input","output","vocabulary","transfer"].includes(t))}:{}),
+      ...(typeof englishRhythm.manualRounds==="number"?{manualRounds:Math.max(0,Math.min(999,englishRhythm.manualRounds))}:{}),
       vocabForgeRounds,
       note: stringValue(englishRhythm.note).slice(0, 1000),
       updatedAt: nullableString(englishRhythm.updatedAt),

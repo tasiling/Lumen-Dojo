@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import ActualRecords from "@/app/components/livedProgress/ActualRecords";
+import {WeeklyChoices} from "@/app/components/livedProgress/FlexibleChoices";
 import { useEffect, useMemo, useState, useRef } from "react";
 import ReadingInsightPlanner from "@/app/components/ReadingInsightPlanner";
 import WeeklyTaskLibrary, {type WeeklySourceTab} from "@/app/components/WeeklyTaskLibrary";
@@ -132,7 +134,7 @@ export default function BingoPage() {
   const [modeDraft, setModeDraft] = useState<BingoCell["completion"]["mode"]>("single");
   const [noteDraft, setNoteDraft] = useState("");
   const [checklistDraft,setChecklistDraft]=useState("");
-  const [view,setView]=useState<"board"|"list">("board");
+  const [view,setView]=useState<"board"|"list"|"actual">("board");
   const [carryLinks,setCarryLinks]=useState<WeeklyCarryLink[]>([]);
   const [carryTarget,setCarryTarget]=useState("");
   const [showRollover,setShowRollover]=useState(false);
@@ -586,6 +588,7 @@ export default function BingoPage() {
           <section className="weekly-tab-panel weekly-library-view" hidden={activeTab !== "library"} aria-label="組盤任務來源">
             <div className="weekly-section-intro"><h2>把想做的事，放進這一週</h2><p>本週還有 {board.cells.filter(cell => cell.index !== 12 && !cell.text.trim()).length} 個空白格。先選任務，再確認本週名稱與完成條件。</p></div>
           {!board.archivedAt && (
+            <><WeeklyChoices today={today}/>
             <WeeklyTaskLibrary
               inline
               sourceTab={libraryTab}
@@ -595,7 +598,7 @@ export default function BingoPage() {
               board={board}
               disabled={saving}
               onApply={async (next, message) => { await save(next, message); }}
-            />
+            /></>
           )}
 
             {board.archivedAt && <div className="weekly-empty-state"><h3>這一週已經封存</h3><p>切換到未封存的週盤，再加入新任務。</p><button onClick={() => navigateTab("board")}>回到盤面</button></div>}
@@ -605,12 +608,12 @@ export default function BingoPage() {
             <div className="weekly-board-layout"><div className="weekly-board-main">
           <section className="ritual-card board-card">
             <div className="weekly-board-top">
-              <div className="weekly-view-tabs" aria-label="盤面顯示方式"><button aria-pressed={view === "board"} onClick={() => setView("board")}>盤面</button><button aria-pressed={view === "list"} onClick={() => {setView("list"); setEditing(false);}}>清單</button></div>
+              <div className="weekly-view-tabs" aria-label="盤面顯示方式"><button aria-pressed={view === "board"} onClick={() => setView("board")}>盤面</button><button aria-pressed={view === "list"} onClick={() => {setView("list"); setEditing(false);}}>清單</button><button aria-pressed={view === "actual"} onClick={()=>{setView("actual");setEditing(false);}}>實際紀錄</button></div>
               {board.archivedAt ? <span className="saved-mark">唯讀</span> : <button className="weekly-edit-button" onClick={() => {setSelected(null); setEditing(value => !value);}}><WeeklyIcon name="write"/>{editing ? "完成編輯" : "編輯格子"}</button>}
             </div>
             {editing && <label className="weekly-title-editor">週盤名稱<input className="field" value={board.title} onChange={event => setBoard({...board, title: event.target.value})}/></label>}
             {view === "list" && <div className="weekly-list-filters" aria-label="篩選任務"><button aria-pressed={categoryFilter === "all"} onClick={() => setCategoryFilter("all")}>全部</button>{colorCounts.map(({category}) => <button key={category} aria-pressed={categoryFilter === category} onClick={() => setCategoryFilter(category)}>{category === "important" ? "重要" : category === "hobby" ? "喜歡" : "照顧自己"}</button>)}</div>}
-            {view==='list'?<div className="weekly-task-list">{board.cells.filter(c=>c.index!==12&&c.text&&(categoryFilter==='all'||c.category===categoryFilter)).map(cell=><button key={cell.index} onClick={()=>openCell(cell.index)}><span>{String(cell.index+1).padStart(2,'0')} · {cell.completed?'✓ 完成':`${cell.completion.progress}/${cell.completion.target}`}</span><b>{cell.text}</b><small>{cell.completion.criteria}</small></button>)}</div>:<div ref={gridRef} className={`bingo-grid ${editing?'editing':''}`}>
+            {view==='actual'?<ActualRecords key={board.weekStart} board={board} onApply={save}/>:view==='list'?<div className="weekly-task-list">{board.cells.filter(c=>c.index!==12&&c.text&&(categoryFilter==='all'||c.category===categoryFilter)).map(cell=><button key={cell.index} onClick={()=>openCell(cell.index)}><span>{String(cell.index+1).padStart(2,'0')} · {cell.completed?'✓ 完成':`${cell.completion.progress}/${cell.completion.target}`}</span><b>{cell.text}</b><small>{cell.completion.criteria}</small></button>)}</div>:<div ref={gridRef} className={`bingo-grid ${editing?'editing':''}`}>
               {!editing&&lineGeometry&&<svg className="bingo-lines" viewBox={`0 0 ${lineGeometry.width} ${lineGeometry.height}`} aria-hidden="true">{activeLineIds.map(id=>{const indices=BINGO_LINES[Number(id.replace('line-',''))];if(!indices)return null;const a=lineGeometry.points[indices[0]],b=lineGeometry.points[indices[4]];return <g key={id}><line className="line-underlay" x1={a.x} y1={a.y} x2={b.x} y2={b.y}/><line className="line-thread" x1={a.x} y1={a.y} x2={b.x} y2={b.y}/></g>})}</svg>}
               {board.cells.map(cell=>editing&&cell.index!==12?<textarea data-cell-index={cell.index} key={cell.index} value={cell.text} maxLength={300} disabled={Boolean(cell.assignedDate)||carryLinks.some(l=>l.taskInstanceId===cell.taskInstanceId)} onChange={e=>setBoard({...board,cells:board.cells.map(c=>c.index===cell.index?{...c,text:e.target.value}:c)})} placeholder={`${cell.index+1}`} aria-label={`第 ${cell.index+1} 格`}/>:<button data-cell-index={cell.index} key={cell.index} className={`bingo-cell ${cell.category||'uncolored'} ${cell.completed?'done':cell.completion.progress?'partial':cell.text?'assigned':'empty-cell'} ${cell.index===12?'free':''} ${connectedIndices.has(cell.index)?'in-line':''}`} onClick={()=>{if(cell.index!==12)openCell(cell.index)}} aria-label={cell.index===12?'自在格，已完成':`${cell.text||'加入任務'}，${cell.completed?'已完成':`${cell.completion.progress}/${cell.completion.target}`}`}>
                 {cell.index === 12 ? <><WeeklyIcon name="spark" className="weekly-free-icon"/><span className="bingo-cell-title">自在格</span></> : cell.text ? <><span className="weekly-cell-meta"><span>{String(cell.index + 1).padStart(2, "0")}</span><span>{cell.disposition ? (cell.disposition === "paused" ? "暫停" : "取消") : cell.completed ? <WeeklyIcon name="check"/> : cell.completion.target > 1 ? `${cell.completion.progress}/${cell.completion.target}` : <WeeklyIcon name={cell.category === "health" ? "leaf" : cell.category === "hobby" ? "heart" : cell.category === "important" ? "target" : "compass"}/>}</span></span><span className="bingo-cell-title">{Array.from(bingoCellShortLabel(cell)).slice(0, 4).reduce((rows, c, i) => rows + c + (i === 1 ? "\n" : ""), "")}</span></> : <><WeeklyIcon name="plus" className="weekly-empty-plus"/><span className="weekly-empty-number">{String(cell.index + 1).padStart(2, "0")}</span></>}

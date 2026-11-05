@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {emptyDailyRecord,normalizeDailyRecord,taipeiTodayISO,type DailyRecord} from '../lib/dojo/formal';
+const date='2026-11-04',original=emptyDailyRecord(date);
+original.daytime.logs=[{id:'note-1',time:'07:47',text:'備餐',createdAt:'2026-11-03T23:47:00Z',context:{scope:'life',label:'生活',path:'生活'}} as never];
+const normalized=normalizeDailyRecord(original,date);
+assert.equal((normalized.daytime.logs[0] as unknown as {context?:{scope:string}}).context?.scope,'life','life classification survives saved daily normalization');
+assert.equal(normalized.date,date);assert.equal(normalized.daytime.logs[0].id,'note-1');
+const unclassified=emptyDailyRecord(date);unclassified.daytime.logs=[{id:'note-2',time:'12:00',text:'先記下',createdAt:'2026-11-04T04:00:00Z'}];
+assert.equal((normalizeDailyRecord(unclassified,date).daytime.logs[0] as unknown as {context?:unknown}).context,null);
+assert.equal(taipeiTodayISO(new Date('2026-11-04T15:30:00Z')),date);
+console.log('PASS capture roundtrip and unchanged date ownership');
+import {recordClock,displayedLogClock} from '../lib/dojo/captureContext';
+import {reconcileEnglishProgress,actualFacts,pinActual,normalizeChoices,emptyChoices,directionDue} from '../lib/dojo/livedProgress';
+import {emptyWeeklyBoard} from '../lib/dojo/formal';
+assert.equal(displayedLogClock({time:'07:47',createdAt:'2026-11-03T23:47:00Z'},date),'10:47');assert.equal(recordClock(new Date('2026-11-04T15:30:00Z')),'02:30');assert.equal(recordClock(new Date('2026-07-04T23:47:00Z')),'09:47');
+const old=emptyDailyRecord(date);old.englishRhythm.touches=['transfer'];const next=structuredClone(old);next.daytime.logs=[{id:'en',text:'英文課堂',time:'10:47',createdAt:'2026-11-03T23:47:00Z',context:{key:'english-class',label:'英文課堂',path:'修習所／英文',scope:'practice',subject:'english',source:'classroom',touches:[],rounds:0}}];
+assert.deepEqual(reconcileEnglishProgress(next,old).englishRhythm.touches,['transfer']);next.daytime.logs[0].context!.touches=['input','output'];const synced=reconcileEnglishProgress(next,old);assert.equal(synced.englishRhythm.touches.length,3);const removed=structuredClone(synced);removed.daytime.logs=[];assert.deepEqual(reconcileEnglishProgress(removed,synced).englishRhythm.touches,['transfer']);
+const facts=actualFacts([next,next]);assert.equal(facts.length,1);const board=emptyWeeklyBoard('2026-11-02');const pinned=pinActual(board,facts[0],'hobby',0);assert(pinned.cells[0].completed);assert.throws(()=>pinActual(pinned,facts[0],'hobby',1),/已選入/);assert.throws(()=>pinActual(board,facts[0],'hobby',12),/空白格/);
+const choices=emptyChoices();choices.ideas.push({id:'one',text:'先試試',status:'recent',pickedOn:date,context:null});assert.equal(normalizeChoices(choices).ideas[0].pickedOn,date);assert.throws(()=>normalizeChoices({...choices,ideas:[choices.ideas[0],choices.ideas[0]]}),/重複/);assert(directionDue({id:'d',text:'英文',active:true,createdOn:'2026-10-20',context:next.daytime.logs[0].context!,interval:7},[],date));
+console.log('PASS English evidence/manual preservation, source dedup, pinning, choices, reminders and Melbourne clock');
+import {preserveLogContexts} from '../lib/dojo/livedProgress';
+const legacy=structuredClone(original) as unknown as {daytime:{logs:Record<string,unknown>[]}};delete legacy.daytime.logs[0].context;
+assert.equal((preserveLogContexts(legacy,normalized) as DailyRecord).daytime.logs[0].context?.scope,'life');
+const explicit=structuredClone(original);explicit.daytime.logs[0].context=null;assert.equal((preserveLogContexts(explicit,normalized) as DailyRecord).daytime.logs[0].context,null);
+
+// Manual and source evidence can overlap without either becoming the other's owner.
+const overlap=structuredClone(synced);overlap.englishRhythm.manualTouches=['input'];overlap.englishRhythm.touches=['input','output'];
+const manualEdit=structuredClone(overlap);manualEdit.englishRhythm.touches.push('vocabulary');
+const overlapBeforeRemoval=reconcileEnglishProgress(manualEdit,overlap);const overlapSaved=structuredClone(overlapBeforeRemoval);overlapSaved.daytime.logs=[];
+assert.deepEqual(reconcileEnglishProgress(overlapSaved,overlapBeforeRemoval).englishRhythm.touches.sort(),['input','vocabulary']);
+const topicA={...next.daytime.logs[0].context!,key:'topic-a',subject:'learning',learningItemId:'item-a',topicId:'topic-a'};
+const topicB={...topicA,key:'topic-b',topicId:'topic-b'};
+const activity=emptyDailyRecord(date);activity.daytime.logs=[{...next.daytime.logs[0],context:topicB}];
+assert(directionDue({id:'specific',text:'主題 A',active:true,createdOn:'2026-10-20',context:topicA,interval:7},[activity],date));
+const cleared=structuredClone(synced);cleared.daytime.logs[0].context!.touches=[];
+assert.deepEqual(reconcileEnglishProgress(cleared,synced).englishRhythm.touches,['transfer']);
+
+const templateA={...topicA,key:'template:a',source:'template',learningItemId:undefined,topicId:undefined};
+activity.daytime.logs[0].context={...templateA,key:'template:b'};
+assert(directionDue({id:'template',text:'範本 A',active:true,createdOn:'2026-10-20',context:templateA,interval:7},[activity],date));

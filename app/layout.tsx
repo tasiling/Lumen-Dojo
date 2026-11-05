@@ -6,6 +6,7 @@ import DojoShell from "./components/DojoShell";
 import "./globals.css";
 import "./dojo.css";
 import "./today-calendar.css";
+import "./lived-progress.css";
 import "./design-v2-tokens.css";
 import "./reference-colors.css";
 import "./navigation.css";
