@@ -70,5 +70,13 @@
     "real private backup migration",
     "production writes/deploy",
     "automatic publishing"
-  ]
+  ],
+  "delivery": {
+    "name": "織光堂與聊解室-PR114草稿模擬.html",
+    "version": 3,
+    "bytes": 7900336,
+    "sha256": "6819f7fd97686cd4489503fa3ca8aa51337aa3fdb4a545dd392f8f59ecbe3d2d",
+    "sourceCommit": "498d8b6ba7af72d2cec4c94ae2dbc09e771e9514",
+    "sameLibraryItem": true
+  }
 }
