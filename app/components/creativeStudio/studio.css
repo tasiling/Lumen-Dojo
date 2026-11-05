@@ -75,3 +75,13 @@
 .studio-entry-input {padding:16px;border:1px solid var(--creative-line,#ebddec);border-radius:16px;margin:16px 0}
 .original-legacy-boundary {padding:16px;margin:0;background:var(--creative-soft,#f8e7f4);border-block:1px solid var(--creative-line,#ebddec);font-weight:650}
 @media(max-width:599px) {.studio-writing-choices {grid-template-columns:1fr}}
+
+.studio-targets {display:grid;gap:24px;margin:24px 0;padding:20px 0;border-block:1px solid var(--creative-line,#e5d9e9)}
+.studio-target-group {min-width:0}.studio-target-group>b {display:block;margin-bottom:10px}
+.studio-target-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-width:0}
+.studio .studio-target-grid button {width:100%;min-width:0;min-height:48px;margin:0!important;padding:10px 4px!important;white-space:normal!important;overflow-wrap:anywhere;line-height:1.5!important}
+.studio-target-group p {margin:10px 0 0;font-size:.9375rem}
+.studio-b-intake,.studio-research {margin:24px 0;padding-block:20px;border-top:1px solid var(--creative-line,#e5d9e9);min-width:0}
+.studio-reply-actions {display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;align-items:stretch}
+.studio .studio-reply-actions button {flex:1 1 12rem;min-height:48px;white-space:normal!important;line-height:1.6!important;margin:0!important}
+.studio-reply-preview {margin:20px 0;padding:16px;border:1px solid var(--creative-accent,#8b3f68);border-radius:12px;background:var(--creative-soft,#f8e7f4)}

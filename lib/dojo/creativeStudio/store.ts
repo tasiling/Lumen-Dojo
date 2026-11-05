@@ -1,3 +1,4 @@
+import { assertPlatformProvenance } from './model';
 import { normalizeLiaojieProject } from '../liaojiePublication';
 import { createTextVariant, saveTextVariant } from '../liaojieText/store';
 import { adaptSource } from '../liaojieText/model';
@@ -80,6 +81,8 @@ export async function saveStudioWork(body: Body) {
             for(const ticket of studioForWork(old).collaboration.tasks)if(!incoming.collaboration.tasks.some(t=>JSON.stringify(t)===JSON.stringify(ticket)))throw new WeavingError('已保存的協作任務不可刪除或改寫',409);
             expectRevision(old, body.expectedRevision);
             const prev = studioForWork(old);
+            try { assertPlatformProvenance(prev,incoming); }
+            catch (e) { throw new WeavingError((e as Error).message,409); }
             if (prev.source.raw && prev.source.raw !== incoming.source.raw)
                 throw new WeavingError('原稿已保存；請追加校訂，保留原稿與歷史', 409);
             if (JSON.stringify(incoming.source.corrections.slice(0, prev.source.corrections.length)) !== JSON.stringify(prev.source.corrections))
@@ -360,6 +363,7 @@ export async function deriveStudioWork(body: Body) {
     s.direction = base.direction;
     s.collaboration.aAnswers = base.collaboration.aAnswers;
     s.contentKind = 'story';
+    s.targetPlatforms = ['IG'];
     s.platform = 'IG';
     s.collaboration.cSource = f.cSource;
     s.collaboration.cVersionId = f.cVersionId || 'manual';
@@ -422,6 +426,7 @@ export async function handoffRecoveredPlatform(body: Body) {
  if(!draft || !draft.text.trim() || body.publicationConfirmed!==true)throw new WeavingError('請核對配文與公開用途');
  if(w.status==='archived')throw new WeavingError('請先恢復封存作品，再交接',409);
  const fixed=await readCompletion(draft.sourceVersionId);if(fixed.workId!==w.id)throw new WeavingError('配文來源不是本件完成版');
+ if(draft.sourceText!==undefined&&(!draft.sourceText.trim()||fixed.text!==draft.sourceText))throw new WeavingError('平台稿與所選完稿的來源正文不同，請重新核對或由該完稿另做平台稿',409);
  const platform=({ig:'instagram_post',IG:'instagram_post',instagram:'instagram_post',instagram_post:'instagram_post',threads:'threads',Threads:'threads',plurk:'plurk','噗浪':'plurk'} as Record<string,string>)[draft.platform];
  if(!platform)throw new WeavingError('請將平台設為 plurk、ig 或 threads，再交接');
  if(fixed.studioSnapshot?.source.read==='private')throw new WeavingError('這份來源只限本人查看，請先修訂並重新確認用途',403);

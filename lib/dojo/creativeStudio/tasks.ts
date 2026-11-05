@@ -17,7 +17,7 @@ export function makeTask(s: StudioData, source: { text: string; versionId: strin
 export function responseOrigin(s: StudioData) {
     const f = s.collaboration, key = taskKey(s), binding = f.responseTasks[key];
     if (binding) return f.tasks.find(t => t.id === binding);
-    const old = f.rounds.findLast(r => r.module === s.module && r.mode !== 'review' && (s.module !== 'C' || r.mode === f.cMode) && r.reply === replyText(s));
+    const old = f.rounds.findLast(r => r.module === s.module && !['review','intake'].includes(r.mode) && (s.module !== 'C' || r.mode === f.cMode) && r.reply === replyText(s));
     return old ? { id: old.taskId || '', key, sourceText: old.sourceText, sourceVersion: old.sourceVersion, settings: old.settings, answers: old.answers, signature: old.taskSignature || '', createdAt: old.createdAt } : undefined;
 }
 export function taskStatus(s: StudioData, source: { text: string; versionId: string }, settings: string) {

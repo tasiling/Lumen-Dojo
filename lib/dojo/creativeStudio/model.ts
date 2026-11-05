@@ -1,5 +1,6 @@
 import { cBase, blankCollaboration, normalizeCollaboration, type Collaboration } from './collaboration';
 import { randomID } from '../weavingWorkflow/clientIdentity';
+import { normalizeTargets, type WritingPlatform } from './targets';
 /** Versioned native work fields. Fixed output IDs stay in the existing completion/media stores. */
 export type StudioCorrection = {
     id: string;
@@ -46,12 +47,13 @@ export type StudioAnalysis = {
 };
 export type StudioData = {
     schema: 1;
-    platformDrafts: { id: string; platform: string; text: string; sourceVersionId: string }[];
+    platformDrafts: { id: string; platform: string; text: string; sourceVersionId: string; sourceText?: string; taskId?: string; rawReply?: string }[];
     publicationHistory: { id: string; platform: string; url: string; publishedOn: string; timeZone: string; sourceVersionId: string; note: string }[];
     collaboration: Collaboration;
     archivedFromStatus: string;
     contentKind: string;
     platform: string;
+    targetPlatforms: WritingPlatform[];
     module: 'A' | 'B' | 'C' | 'D';
     source: StudioSource;
     direction: DirectionAdoption | null;
@@ -88,11 +90,17 @@ export type StudioData = {
     importIdentity: string;
     legacy: Record<string, unknown> | null;
 };
-export function blankStudio(): StudioData { return { schema: 1, platformDrafts: [], publicationHistory: [], collaboration: blankCollaboration(), archivedFromStatus: '', contentKind: 'article', platform: '', module: 'A', source: { id: '', title: '', raw: '', corrections: [], selected: '', selectedVersion: 'original', read: 'selected', allowAI: false, allowPublic: false }, direction: null, a: '', b: '', c: '', d: '', body: '', research: '', researchUse: 'background', examples: [], checks: { facts: false, privacy: false, citations: false, voice: false }, analyses: [], history: [], originKey: '', serviceId: '', importIdentity: '', legacy: null }; }
+export function blankStudio(): StudioData { return { schema: 1, platformDrafts: [], publicationHistory: [], collaboration: blankCollaboration(), archivedFromStatus: '', contentKind: 'article', platform: '', targetPlatforms: [], module: 'A', source: { id: '', title: '', raw: '', corrections: [], selected: '', selectedVersion: 'original', read: 'selected', allowAI: false, allowPublic: false }, direction: null, a: '', b: '', c: '', d: '', body: '', research: '', researchUse: 'background', examples: [], checks: { facts: false, privacy: false, citations: false, voice: false }, analyses: [], history: [], originKey: '', serviceId: '', importIdentity: '', legacy: null }; }
 export function object(v: unknown): Record<string, unknown> {
     if (!v || typeof v !== 'object' || Array.isArray(v))
         throw Error('資料格式不完整');
     return v as Record<string, unknown>;
+}
+export function assertPlatformProvenance(previous: StudioData, next: StudioData) {
+    for (const old of previous.platformDrafts.filter(d => d.sourceText !== undefined)) {
+        const row = next.platformDrafts.find(d => d.id === old.id);
+        if (!row || row.sourceText !== old.sourceText || row.taskId !== old.taskId || row.rawReply !== old.rawReply) throw Error('已保存平台稿的來源與原回覆不可改寫，請由新回覆另存平台稿');
+    }
 }
 export function raw(v: unknown, max = 80000): string {
     if (typeof v !== 'string' || v.length > max)
@@ -143,7 +151,7 @@ export function normalizeStudio(value: unknown): StudioData {
     if (!['A', 'B', 'C', 'D'].includes(String(v.module)) || !['selected', 'allowed', 'private'].includes(String(s.read)) || !['background', 'body', 'none'].includes(String(v.researchUse)))
         throw Error('工作設定不正確');
     const base = blankStudio();
-    base.platformDrafts = list(v.platformDrafts ?? []).map(x => { const p=object(x); return { id: raw(p.id,120), platform: raw(p.platform,80), text: raw(p.text), sourceVersionId: raw(p.sourceVersionId ?? '',300) }; });
+    base.platformDrafts = list(v.platformDrafts ?? []).map(x => { const p=object(x); return { id: raw(p.id,120), platform: raw(p.platform,80), text: raw(p.text), sourceVersionId: raw(p.sourceVersionId ?? '',300), ...(p.sourceText === undefined ? {} : {sourceText:raw(p.sourceText)}), ...(p.taskId === undefined ? {} : {taskId:raw(p.taskId,120)}), ...(p.rawReply === undefined ? {} : {rawReply:raw(p.rawReply)}) }; });
     base.publicationHistory = list(v.publicationHistory ?? []).map(x => { const p=object(x); return { id:raw(p.id,120),platform:raw(p.platform ?? '',80),url:raw(p.url ?? '',2000),publishedOn:raw(p.publishedOn ?? '',80),timeZone:raw(p.timeZone ?? '',80),sourceVersionId:raw(p.sourceVersionId ?? '',300),note:raw(p.note ?? '',8000) }; });
     base.collaboration = normalizeCollaboration(v.collaboration);
     const oldCollaboration = v.collaboration as Record<string, unknown> | undefined;
@@ -158,6 +166,7 @@ export function normalizeStudio(value: unknown): StudioData {
     base.archivedFromStatus = raw(v.archivedFromStatus ?? '', 80);
     base.contentKind = raw(v.contentKind ?? 'article', 80);
     base.platform = raw(v.platform ?? '', 80);
+    base.targetPlatforms = normalizeTargets(v.targetPlatforms, base.platform);
     for (const k of ['a', 'b', 'c', 'd', 'body', 'research', 'originKey', 'serviceId', 'importIdentity'] as const)
         base[k] = raw(v[k], k === 'originKey' ? 2000 : k === 'serviceId' ? 300 : 80000);
     const correctionIds = new Set<string>();

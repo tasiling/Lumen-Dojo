@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-05",
+  "scope": "PR114 draft and same HTML; no production deployment",
+  "newDomainScenarios": 9,
+  "domainSuite": {
+    "command": "npm run test:creative-studio",
+    "exitCode": 0,
+    "passLinesIncludingSummaries": 115
+  },
+  "nativeUi": {
+    "command": "npm run test:creative-studio-ui",
+    "exitCode": 0,
+    "newBScenarios": {
+      "checks": 10,
+      "errors": [],
+      "network": []
+    }
+  },
+  "htmlUi": {
+    "newBScenarios": {
+      "checks": 11,
+      "errors": [],
+      "network": []
+    },
+    "existingScenarios": 23,
+    "existingScripts": [
+      "test-preview.mjs",
+      "test-entry-guidance.mjs",
+      "test-backup.mjs",
+      "test-five-gaps.mjs"
+    ],
+    "exitCode": 0
+  },
+  "typecheck": 0,
+  "scopedEslint": 0,
+  "productionBuild": 0,
+  "fullRepositoryLint": {
+    "exitCode": 1,
+    "baselineError": "app/components/LearningRecordWorkspace.tsx:41 react-hooks/set-state-in-effect",
+    "baselineReproducedFromHead": true,
+    "warnings": 6
+  },
+  "layout": {
+    "realms": [
+      "weaving",
+      "liaojie"
+    ],
+    "widths": [
+      320,
+      390,
+      430
+    ],
+    "fontScales": [
+      1,
+      1.5
+    ],
+    "assertions": [
+      "equal width",
+      "same row",
+      "group gap >= 23px",
+      "button gap >= 9px",
+      "button min height 48px",
+      "text fits",
+      "no horizontal overflow"
+    ]
+  },
+  "notPerformed": [
+    "real ChatGPT research retrieval",
+    "owner iPhone Safari acceptance",
+    "real private backup migration",
+    "production writes/deploy",
+    "automatic publishing"
+  ]
+}

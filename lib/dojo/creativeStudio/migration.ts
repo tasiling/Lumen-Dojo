@@ -1,3 +1,4 @@
+import { normalizeTargets } from './targets';
 import { createHash } from 'node:crypto';
 import { blankStudio, normalizeStudio, object, type StudioData } from './model';
 import type { WorkflowSelection } from '../weavingWorkflow/model';
@@ -68,6 +69,8 @@ export function importPreview(value: unknown): ImportPreview {
             s.c = String(d.cResponse || '');
             s.d = String(d.dResponse || '');
             s.body = String(d.draft || '');
+            s.targetPlatforms = [...new Set((Array.isArray(d.platforms) ? d.platforms : typeof d.platform === 'string' ? [d.platform] : []).flatMap(v => typeof v === 'string' ? normalizeTargets(undefined, v) : []))];
+            s.platform = s.targetPlatforms[0] || '';
             if (d.format === 'illustrated') {
                 s.contentKind = 'illustrated';
                 if (!s.body.trim())

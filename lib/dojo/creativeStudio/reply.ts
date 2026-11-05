@@ -1,6 +1,9 @@
 import type { StudioData } from './model';
-import { cBase, parseReply, replyText, type Research } from './collaboration';
+import { cBase, parseReply, replyText, recordRound, instructionsForSource, type Research } from './collaboration';
 import { randomID } from '../weavingWorkflow/clientIdentity';
+import { sha256Text } from '../weavingWorkflow/clientIdentity';
+import { responseOrigin } from './tasks';
+import { writingPlatforms } from './targets';
 export type ReplyPreview = {
     module: StudioData['module'];
     mode: string;
@@ -13,6 +16,7 @@ export type ReplyPreview = {
     research: Research[];
     examples: StudioData['examples'];
     candidates: StudioData['collaboration']['candidates'];
+    platformDrafts: { platform: string; text: string }[];
     warnings: string[];
 };
 const obj = (v: unknown): Record<string, unknown> | null => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : null;
@@ -109,7 +113,7 @@ export function previewReply(s: StudioData, source = replySource(s)): ReplyPrevi
             warnings.push('一筆研究缺少名稱，保留在完整回覆中。');
             continue;
         }
-        research.push({ title, source, mechanism: value(r, 'mechanism', '機制'), scope: value(r, 'scope', '適用範圍與限制', '適用範圍', '限制'), relation: value(r, 'relation', '與素材的關聯', '素材關聯'), use: 'background' });
+        research.push({ title, source, mechanism: value(r, 'mechanism', '機制'), scope: value(r, 'scope', '適用範圍與限制', '適用範圍', '限制'), relation: value(r, 'relation', '與素材的關聯', '素材關聯'), use: 'background', chosen: false });
     }
     if (rs.trim() && !research.length)
         warnings.push('研究段落未能逐筆辨識，請手動整理或請 AI 按固定欄位重排。');
@@ -133,16 +137,17 @@ export function previewReply(s: StudioData, source = replySource(s)): ReplyPrevi
     }
     if (!Object.keys(sections).length)
         warnings.push('沒有辨識到固定段落標題；完整回覆仍可保存，不會自動改動主稿。');
-    return { module: s.module, mode: s.collaboration.cMode, reply, source: { ...source }, sections, research, examples, candidates, warnings };
+    const platformDrafts = s.module === 'B' ? writingPlatforms.flatMap(platform => sections['平台稿：' + platform]?.trim() ? [{ platform, text: sections['平台稿：' + platform].trim() }] : []) : [];
+    return { module: s.module, mode: s.collaboration.cMode, reply, source: { ...source }, sections, research, examples, candidates, platformDrafts, warnings };
 }
-export function applyReplyPreview(s: StudioData, p: ReplyPreview, sourceVersion: string, include = { research: true, examples: true, candidates: true }, sourceText = replySource(s).text): Partial<StudioData> {
+export function applyReplyPreview(s: StudioData, p: ReplyPreview, sourceVersion: string, include: {research: boolean; examples: boolean; candidates: boolean; platforms?: boolean} = { research: true, examples: true, candidates: true, platforms: true }, sourceText = replySource(s).text, confirmedManuscript?: string): Partial<StudioData> {
     if (p.module !== s.module || p.mode !== s.collaboration.cMode || p.reply !== replyText(s) || p.source.versionId !== sourceVersion || p.source.text !== sourceText)
         throw Error('模組、模式、回覆或來源已變更，請重新辨識再確認。');
     const f = structuredClone(s.collaboration), examples = structuredClone(s.examples);
     if (include.research)
         for (const r of p.research)
             if (!f.research.some(x => x.title === r.title && x.source === r.source))
-                f.research.push({ ...r, use: 'background' });
+                f.research.push({ ...r, use: 'background', chosen: false });
     if (include.examples)
         for (const e of p.examples)
             if (!examples.some(x => x.kind === e.kind && x.text === e.text && x.source === e.source && x.module === e.module && x.mode === e.mode))
@@ -151,15 +156,42 @@ export function applyReplyPreview(s: StudioData, p: ReplyPreview, sourceVersion:
         for (const c of p.candidates)
             if (!f.candidates.some(x => x.module === c.module && x.title === c.title && x.statement === c.statement && x.quote === c.quote))
                 f.candidates.push({ ...c, sourceVersion });
-    if (p.sections['候選主文']?.trim()) {
+    const manuscript = confirmedManuscript ?? p.sections['候選主文'];
+    if (manuscript?.trim()) {
         if (s.module === 'B')
-            f.manuscript = p.sections['候選主文'];
+            { f.manuscript = manuscript; f.manuscriptReplyDigest = sha256Text(p.reply); }
         if (s.module === 'C' && f.cMode === 'condense')
-            f.cManuscript = p.sections['候選主文'];
+            f.cManuscript = manuscript;
         if (s.module === 'C' && f.cMode === 'expand')
-            f.cExpandedManuscript = p.sections['候選主文'];
+            f.cExpandedManuscript = manuscript;
     }
     if (s.module === 'B' && p.sections['編輯說明'] !== undefined)
         f.editorial = p.sections['編輯說明'];
-    return { collaboration: f, examples };
+    if (s.module === 'B') {
+        const report = p.sections['研究查找狀態'];
+        if (report !== undefined || p.research.length) {
+            f.researchReport = report?.trim() || '回覆提供研究候選，來源仍需本人核對。';
+            f.researchStatus = p.research.length ? 'candidates' : /無法|不能|未核實|待查/.test(report || '') ? 'unverified' : /未找到|查無/.test(report || '') ? 'reported-none' : /不查找|暫不/.test(report || '') ? 'skipped' : 'unverified';
+        }
+    }
+    const platformDrafts = structuredClone(s.platformDrafts);
+    if (s.module === 'B' && include.platforms !== false) {
+        const taskId = responseOrigin(s)?.id || '', sourceBody = manuscript?.trim() ? manuscript : s.body;
+        for (const d of p.platformDrafts) {
+            // Reconfirming the same reply never overwrites a platform draft the author edited.
+            const id = 'b-platform-' + sha256Text(JSON.stringify([taskId, p.reply, d.platform])).slice(0, 40);
+            if (!platformDrafts.some(x => x.id === id)) platformDrafts.push({ id, ...d, sourceVersionId: '', sourceText: sourceBody, taskId, rawReply: p.reply });
+        }
+    }
+    return { collaboration: f, examples, platformDrafts };
+}
+/** A confirmed intake is retained even if the author does not adopt its manuscript. */
+export function confirmBReply(s: StudioData, p: ReplyPreview, include: {research: boolean; examples: boolean; candidates: boolean; platforms?: boolean}, manuscript: string) {
+    if (s.module !== 'B') throw Error('請回 B 模組確認這份回覆');
+    const patch = applyReplyPreview(s,p,p.source.versionId,include,replySource(s).text,manuscript);
+    if (p.reply.trim()) {
+        const round = {...recordRound(s,p.source,instructionsForSource(s)),mode:'intake'};
+        if (!patch.collaboration!.rounds.some(r => r.mode==='intake' && r.module==='B' && r.reply===round.reply && r.taskId===round.taskId && r.sourceText===round.sourceText && r.settings===round.settings)) patch.collaboration!.rounds.push(round);
+    }
+    return patch;
 }
