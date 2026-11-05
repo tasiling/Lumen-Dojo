@@ -100,3 +100,14 @@
 .studio-collaboration-tools button>span,.studio-collaboration-tools button>small {display:block}.studio-collaboration-tools button>small {font-size:.8125rem;font-weight:400;margin-top:4px}
 
 .studio-research-workbench {min-width:0}.studio-research-step {margin:20px 0;padding:16px;border:1px solid var(--creative-line,#e5d9e9);border-radius:12px;min-width:0}.studio-research-step h3 {font-size:1.125rem;line-height:1.6;text-wrap:balance}.studio-study-card {padding:12px 0;border-bottom:1px solid var(--creative-line,#e5d9e9);min-width:0}.studio-study-card .studio-check {display:flex;gap:10px;align-items:flex-start}.studio-study-card input[type=checkbox] {flex-shrink:0;margin-top:6px}.studio-study-source {font-size:.875rem;overflow-wrap:anywhere}.studio-point-card {margin:12px 0;border:1px solid var(--creative-line,#e5d9e9);border-radius:12px;padding:12px!important}.studio-research-step>button {min-height:48px;white-space:normal!important;width:100%;margin:12px 0!important}.studio-research-step .studio-transfer-actions button {min-height:48px}.studio-research-workbench pre {white-space:pre-wrap;overflow-wrap:anywhere}.studio-research-workbench .studio-reply-preview {padding:12px}.studio-research-workbench h4 {line-height:1.6;margin-top:16px}.studio-research-workbench textarea {font-weight:400}
+
+/* Research dialogue: author and GPT turns remain separate and readable on phones. */
+.studio-discussion-context,.studio-discussion-timeline {min-width:0;margin:20px 0}
+.studio-discussion-turn,.studio-discussion-conclusion {min-width:0;padding:16px 0;border-top:1px solid var(--creative-line,#e5d9e9)}
+.studio-discussion-turn-head {display:grid;gap:8px;margin-bottom:16px}
+.studio-discussion-author {padding:16px;margin:16px 0;background:var(--creative-soft,#f8e7f4);border:1px solid var(--creative-line,#e5d9e9);border-radius:10px;min-width:0}
+.studio-discussion-turn .studio-manuscript,.studio-discussion-author .studio-manuscript {margin:8px 0 20px;white-space:pre-wrap;overflow-wrap:anywhere}
+.studio-research-workbench .studio-check {display:flex;gap:10px;align-items:flex-start;min-height:44px;line-height:1.7}
+.studio-research-workbench .studio-check input {flex:0 0 22px;width:22px;height:22px;margin-top:3px}
+.studio-discussion-turn>button,.studio-discussion-author>button {min-height:48px;width:100%;white-space:normal!important;margin:12px 0!important}
+#research-discussion,#research-author-answer,#research-author-question {scroll-margin-top:24px;scroll-margin-bottom:110px}
