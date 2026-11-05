@@ -85,3 +85,16 @@
 .studio-reply-actions {display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;align-items:stretch}
 .studio .studio-reply-actions button {flex:1 1 12rem;min-height:48px;white-space:normal!important;line-height:1.6!important;margin:0!important}
 .studio-reply-preview {margin:20px 0;padding:16px;border:1px solid var(--creative-accent,#8b3f68);border-radius:12px;background:var(--creative-soft,#f8e7f4)}
+
+/* Scoped controls: equal columns and stable gaps, including research and secondary actions. */
+.studio-choice .studio-actions,.studio-collaboration-tools,.studio-transfer-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.studio .studio-choice .studio-actions button,.studio .studio-collaboration-tools button,.studio .studio-transfer-actions button {width:100%;min-width:0;min-height:48px;white-space:normal!important;overflow-wrap:anywhere;text-wrap:balance;line-height:1.6!important;padding:12px 8px!important;margin:0!important}
+.studio-collaboration-tools {margin:24px 0;padding-top:20px;border-top:1px solid var(--creative-line,#e5d9e9)}
+.studio-instruction-transfer {margin:24px 0;padding:20px 0;border-top:1px solid var(--creative-line,#e5d9e9);min-width:0}
+.studio-instruction-transfer h3 {font-size:1.125rem;line-height:1.6;margin-bottom:12px}
+.studio .studio-copy-primary {display:block;width:100%;min-height:52px;white-space:normal!important;margin:0!important}
+.studio-instruction-transfer textarea[readonly] {user-select:text;-webkit-user-select:text;min-height:180px}
+.studio-instruction-transfer [role=status],.studio-instruction-transfer [role=alert] {margin:12px 0}
+.studio-transfer-actions {margin:16px 0}
+
+.studio-collaboration-tools button>span,.studio-collaboration-tools button>small {display:block}.studio-collaboration-tools button>small {font-size:.8125rem;font-weight:400;margin-top:4px}

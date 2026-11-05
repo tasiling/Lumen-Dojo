@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {chromium} from 'playwright';
+const html=process.env.STUDIO_HTML_PATH,base=process.env.STUDIO_UI_URL||'http://127.0.0.1:4173',browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+let checks=0;const pass=text=>{checks++;console.log('PASS',text);};
+async function setup(mode){
+ const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,...(mode==='actual'?{permissions:['clipboard-read','clipboard-write']}: {})});
+ if(mode!=='actual')await ctx.addInitScript(mode=>{
+  window.__clip={gesture:false,value:'原有剪貼簿',calls:[]};
+  addEventListener('click',()=>{window.__clip.gesture=true;setTimeout(()=>window.__clip.gesture=false,0);},true);
+  const denied=()=>Promise.reject(new DOMException('clipboard denied','NotAllowedError'));
+  const api={write(items){const active=window.__clip.gesture;window.__clip.calls.push({method:'write',active});return Promise.resolve().then(async()=>{if(mode==='denied'||!active)throw new DOMException('gesture expired','NotAllowedError');window.__clip.value=await(await items[0].getType('text/plain')).text();});},writeText(text){const active=window.__clip.gesture;window.__clip.calls.push({method:'writeText',active});if(mode==='denied'||!active)return denied();window.__clip.value=text;return Promise.resolve();}};
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:api});document.execCommand=()=>false;
+ },mode);
+ const p=await ctx.newPage();p.setDefaultTimeout(20000);p.setDefaultNavigationTimeout(60000);p.on('dialog',d=>d.accept());const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ return{ctx,p,errors};
+}
+async function enter(p,realm){await p.goto(html?'file://'+html+'#/'+realm:base+'/'+realm);await p.getByRole('button',{name:'帶草稿進 B',exact:true}).click();await p.getByRole('textbox',{name:'交給 B 的草稿／素材',exact:true}).fill('複製驗收：先留下自己的觀察。\n\n字句與研究設定都要完整。');await p.getByRole('checkbox',{name:'本次選摘可交給外部 AI／製作工具',exact:true}).check();await p.evaluate(()=>{const fetch=window.fetch;window.fetch=(...args)=>new Promise(resolve=>setTimeout(resolve,12)).then(()=>fetch(...args));});}
+const panel=p=>p.getByRole('region',{name:'完整協作指令操作',exact:true});
+async function taskCount(p,ctx){const path=html?new URL(p.url()).hash.slice(1).split('?')[0]:new URL(p.url()).pathname,id=path.split('/').at(-1);const w=html?await p.evaluate(id=>window.__PREVIEW__.snapshot().works.find(w=>w.id===id),id):(await(await ctx.request.get(base+'/api/dojo/creative-studio?id='+id)).json()).work;return{count:w.studio.collaboration.tasks.length,prompt:w.studio.collaboration.tasks.at(-1)?.prompt};}
+const copy=p=>p.getByRole('button',{name:'複製 B 協作指令',exact:true});
+try{
+ for(const realm of ['weaving','liaojie']){
+  const{ctx,p,errors}=await setup('gesture');await enter(p,realm);
+  for(const width of [320,390,430])for(const scale of [1,1.5]){await p.setViewportSize({width,height:844});const style=await p.addStyleTag({content:`html{font-size:${16*scale}px!important}`});for(const name of ['本輪研究查找','回覆保存與檢查']){const boxes=await p.getByRole('group',{name,exact:true}).getByRole('button').evaluateAll(nodes=>nodes.map(b=>{const r=b.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height,scroll:b.scrollWidth,client:b.clientWidth};}));assert.equal(boxes.length,2);assert.ok(Math.abs(boxes[0].w-boxes[1].w)<1);assert.ok(Math.abs(boxes[0].y-boxes[1].y)<1);assert.ok(Math.abs(boxes[0].h-boxes[1].h)<1);assert.ok(boxes[1].x-boxes[0].x-boxes[0].w>=11);assert.ok(boxes.every(b=>b.h>=48&&b.scroll<=b.client+1));}assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await style.evaluate(el=>el.remove());}await p.setViewportSize({width:390,height:844});pass(realm+' research and save/check controls align at 320/390/430px and normal/150% text');
+  const order=await p.evaluate(()=>{const main=[...document.querySelectorAll('button')].find(b=>b.textContent==='複製 B 協作指令'),secondary=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='保存本輪回覆與來源設定');return !!(main.compareDocumentPosition(secondary)&Node.DOCUMENT_POSITION_FOLLOWING);});assert.equal(order,true);
+  await copy(p).click();await panel(p).getByRole('status').filter({hasText:'已複製完整指令'}).waitFor();const text=await panel(p).getByRole('textbox',{name:'完整協作指令（可手動複製）',exact:true}).inputValue(),result=await p.evaluate(()=>window.__clip);assert.equal(result.value,text);assert.equal(result.calls[0].method,'write');assert.equal(result.calls[0].active,true);assert.ok(text.includes('複製驗收'));assert.ok(text.includes('主動提出有幫助的研究候選'));pass(realm+' delayed prepare/save preserves simulated WebKit gesture and writes the full saved B prompt');
+  const before=await taskCount(p,ctx);assert.equal(before.prompt,text);await copy(p).click();await panel(p).getByRole('status').filter({hasText:'已複製完整指令'}).waitFor();assert.equal((await p.evaluate(()=>window.__clip)).value,text);assert.equal((await taskCount(p,ctx)).count,before.count);assert.deepEqual(errors,[]);await ctx.close();
+ }
+ {
+  const{ctx,p,errors}=await setup('denied');await enter(p,'weaving');await copy(p).click();await panel(p).getByRole('alert').filter({hasText:'未能寫入剪貼簿'}).waitFor();const input=panel(p).getByRole('textbox',{name:'完整協作指令（可手動複製）',exact:true}),text=await input.inputValue();assert.ok(text.length>1000);assert.equal((await p.evaluate(()=>window.__clip)).value,'原有剪貼簿');assert.equal(await p.getByRole('status').filter({hasText:'已複製本次'}).count(),0);await panel(p).getByRole('button',{name:'重新複製完整指令',exact:true}).click();await panel(p).getByRole('alert').filter({hasText:'未能寫入剪貼簿'}).waitFor();await panel(p).getByRole('button',{name:'全選指令',exact:true}).click();assert.deepEqual(await input.evaluate(el=>[el.selectionStart,el.selectionEnd,document.activeElement===el]),[0,text.length,true]);const downloadEvent=p.waitForEvent('download');await panel(p).getByRole('button',{name:'下載指令檔',exact:true}).click();const d=await downloadEvent;const path='/tmp/studio-clipboard-downloaded.txt';await d.saveAs(path);assert.equal(await fs.readFile(path,'utf8'),text);pass('denied modern/legacy clipboard shows nearby failure, preserves old clipboard, supports exact full selection and downloaded bytes');
+  await p.getByRole('button',{name:'複製 AI 檢查指令',exact:true}).click();const check=p.getByRole('region',{name:'AI 檢查指令操作',exact:true});await check.getByRole('alert').filter({hasText:'未能寫入剪貼簿'}).waitFor();assert.ok((await check.getByRole('textbox',{name:'AI 檢查指令（可手動複製）',exact:true}).inputValue()).includes('複製驗收'));assert.deepEqual(errors,[]);pass('AI check copy has the same visible manual recovery instead of a hidden top-page error');await ctx.close();
+ }
+ {
+  const{ctx,p,errors}=await setup('actual');await enter(p,'liaojie');await copy(p).click();await panel(p).getByRole('status').filter({hasText:'已複製完整指令'}).waitFor();const text=await panel(p).getByRole('textbox',{name:'完整協作指令（可手動複製）',exact:true}).inputValue();assert.equal(await p.evaluate(()=>navigator.clipboard.readText()),text);const raw=p.getByRole('textbox',{name:'B 完整 AI 回覆（含研究與編輯說明）',exact:true});await raw.focus();await p.keyboard.press('Control+V');assert.equal(await raw.inputValue(),text);assert.deepEqual(errors,[]);pass('real Chromium clipboard reads and keyboard-pastes byte-identical complete B instruction, beyond a success message');await ctx.close();
+ }
+ await fs.writeFile('/tmp/studio-copy-'+(html?'html':'native')+'-results.json',JSON.stringify({checks,realms:['weaving','liaojie'],simulatedPolicy:['gesture-required','denied-modern-and-legacy'],realClipboardEngine:'Chromium',iphoneSafariVerified:false},null,2));console.log(`PASS clipboard UI ${checks}/${checks}`);
+}finally{await browser.close();}

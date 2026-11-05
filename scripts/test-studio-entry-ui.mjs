@@ -23,7 +23,7 @@ try {
         await field('我的回答與確認意思').fill('保留觀察，不替我推測他人的動機。');
         await page.getByRole('checkbox', { name: '本次選摘可交給外部 AI／製作工具', exact: true }).check();
         await button('複製 B 協作指令').click();
-        const instruction = await page.locator('pre.studio-manuscript').first().innerText();
+        const instruction = await page.getByRole('textbox',{name:'完整協作指令（可手動複製）',exact:true}).inputValue();
         assert.ok(instruction.includes(draft));
         assert.ok(instruction.includes('保留觀察，不替我推測他人的動機。'));
         assert.deepEqual((await page.getByRole('alert').allTextContents()).filter(text => text.trim()), []);
@@ -42,7 +42,7 @@ try {
     await field('交給 A 的靈感／素材').fill('隔離驗收：一個還沒有完整答案的感受。');
     await page.getByRole('checkbox', { name: '本次選摘可交給外部 AI／製作工具', exact: true }).check();
     await button('複製 A 協作指令').click();
-    assert.ok((await page.locator('pre.studio-manuscript').first().innerText()).includes('素材盤點，探索候選'));
+    assert.ok((await page.getByRole('textbox',{name:'完整協作指令（可手動複製）',exact:true}).inputValue()).includes('素材盤點，探索候選'));
     assert.deepEqual((await page.getByRole('alert').allTextContents()).filter(text => text.trim()), []);
     console.log('PASS native A generates material exploration instructions without a complete draft');
     await page.goto(base + '/liaojie/tools');

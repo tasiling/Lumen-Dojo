@@ -15,7 +15,21 @@ export async function copyText(text:string){
  if(navigator.clipboard?.writeText){
   try{await navigator.clipboard.writeText(text);return;}catch{/* File previews and embedded browsers can deny the modern clipboard API. */}
  }
- const el=document.createElement('textarea');el.value=text;el.style.position='fixed';el.style.opacity='0';document.body.append(el);
- try{el.select();el.setSelectionRange(0,text.length);if(!document.execCommand('copy'))throw Error('無法複製，請直接選取欄位中的文字。');}
- finally{el.remove();}
+ const previous=document.activeElement as HTMLElement|null,el=document.createElement('textarea');el.value=text;el.readOnly=true;el.style.position='fixed';el.style.left='-9999px';el.style.top='0';el.style.fontSize='16px';document.body.append(el);
+ try{el.focus?.({preventScroll:true});el.select();el.setSelectionRange(0,text.length);if(!document.execCommand('copy'))throw Error('無法複製，請直接選取欄位中的文字。');}
+ finally{el.remove();previous?.focus?.({preventScroll:true});}
+}
+/** Start the native clipboard request during the click; resolve its text only after saving. */
+export function copyAfterPreparing(prepare:()=>Promise<string>):Promise<boolean>{
+ const ready=prepare();let writing:Promise<boolean>|undefined;
+ if(navigator.clipboard?.write&&typeof ClipboardItem==='function'){
+  const blob=ready.then(text=>new Blob([text],{type:'text/plain'}));
+  // A denied clipboard may stop consuming the Blob before preparation itself fails.
+  void blob.catch(()=>{});
+  try{writing=navigator.clipboard.write([new ClipboardItem({'text/plain':blob})]).then(()=>true,()=>false);}catch{}
+ }
+ return ready.then(async text=>{
+  if(writing&&await writing)return true;
+  try{await copyText(text);return true;}catch{return false;}
+ });
 }
