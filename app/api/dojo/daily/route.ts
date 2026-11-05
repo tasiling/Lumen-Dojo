@@ -12,6 +12,8 @@ import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import { syncVocabForgeWeeklyBingo } from "@/lib/dojo/englishRhythm";
 
+import {reconcileEnglishProgress,preserveLogContexts} from "@/lib/dojo/livedProgress";
+
 export const dynamic = "force-dynamic";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -55,7 +57,9 @@ export async function PUT(req: NextRequest) {
     const saved = await withLearningWriteLock(async () => {
       const current = await readJsonRecord(dailyRecordTitle(date));
       if(current && (!raw || typeof raw !== "object" || (raw as { updatedAt?: string }).updatedAt !== (current.value as { updatedAt?: string }).updatedAt)) throw new LearningError("每日紀錄版本已變更，請重新讀取",409);
-      return upsertJsonRecord(dailyRecordTitle(date), normalizeDailyRecord(raw, date));
+      const previous=current?normalizeDailyRecord(current.value,date):emptyDailyRecord(date);
+      const next=normalizeDailyRecord(preserveLogContexts(raw,previous),date);
+      return upsertJsonRecord(dailyRecordTitle(date), reconcileEnglishProgress(next,previous));
     });
     const record = normalizeDailyRecord(saved.value, date);
     record.updatedAt = (saved.value as { updatedAt: string }).updatedAt;

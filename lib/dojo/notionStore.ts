@@ -28,7 +28,7 @@ export async function listJsonRecords(prefix: string) {
 }
 
 export async function upsertJsonRecord(title: string, value: unknown, options?: { projection?: boolean; manualCompletion?: boolean }) {
-  const guarded = ["行光今日-", "行光週盤-", "行光英文自譯-"].some(prefix => title.startsWith(prefix));
+  const guarded = ["行光今日-", "行光週盤-", "行光英文自譯-", "行光彈性選擇-"].some(prefix => title.startsWith(prefix));
   async function save() {
     const existing = await findKnowledgeEntryByTitle(title);
     let merged = guarded ? preserveProjection(title, value, existing ? parseJson(existing.內容) : null, options?.projection, options?.manualCompletion) : value;

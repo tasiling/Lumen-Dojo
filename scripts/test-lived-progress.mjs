@@ -1,0 +1,2 @@
+import {execFileSync} from 'node:child_process';import {mkdtempSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
+const out=mkdtempSync(join(tmpdir(),'lumen-lived-'));execFileSync('npx',['tsc','--outDir',out,'--module','commonjs','--moduleResolution','node','--target','es2022','--esModuleInterop','--skipLibCheck','tests/lived-progress.test.ts'],{stdio:'inherit'});execFileSync('node',[join(out,'tests/lived-progress.test.js')],{stdio:'inherit'});

@@ -15,6 +15,8 @@
     "test:capture-exploration": "node scripts/test-capture-exploration.mjs",
     "test:html-entity-overflow": "node scripts/test-html-entity-mobile-overflow.mjs",
     "lint": "eslint",
+    "test:lived-progress": "node scripts/test-lived-progress.mjs && node scripts/test-lived-progress-api.mjs",
+    "test:lived-progress-ui": "node scripts/test-lived-progress-ui.mjs",
     "test:weekly": "node scripts/test-weekly-bingo-v2.mjs",
     "test:learning-foundation": "node scripts/test-learning-foundation.mjs",
     "test:learning-foundation-api": "node scripts/test-learning-foundation-api.mjs",

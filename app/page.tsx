@@ -1,6 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import {CaptureControls,LogContextControl} from "./components/livedProgress/CaptureControls";
+import EnglishDetails from "./components/livedProgress/EnglishDetails";
+import {TodayChoices} from "./components/livedProgress/FlexibleChoices";
+import {recordClock,displayedLogClock,type CaptureContext} from "@/lib/dojo/captureContext";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { TodayCalendarIcon, TodayGlassMotif } from "@/app/components/TodayCalendarArt";
 import { TODAY_REALM_PALETTE } from "@/lib/dojo/todayCalendarUi";
@@ -11,7 +15,6 @@ import { SPACES, type SpaceKey } from "@/lib/dojo/constants";
 import type { PersonalContinuation } from "@/lib/dojo/continuations";
 import {
   DAILY_TASK_CATEGORIES,
-  DOJO_TIME_ZONE,
   ENGLISH_TOUCH_TYPES,
   completedBingoLines,
   emptyDailyRecord,
@@ -60,11 +63,9 @@ const REFLECTION_PROMPTS = {
 } as const;
 
 function formatToday(dateISO: string) {
-  return new Intl.DateTimeFormat("zh-TW", {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(new Date(`${dateISO}T12:00:00+08:00`));
+  const [year, month, day] = dateISO.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return `${month}月${day}日 星期${"日一二三四五六"[weekday]}`;
 }
 
 function carryOptionLabel(iso: string, index: number) {
@@ -114,6 +115,7 @@ export default function TodayPage() {
   const [saveRoleMessage, setSaveRoleMessage] = useState(true);
   const [roleMessageFeedback, setRoleMessageFeedback] = useState<string | null>(null);
   const [reusingChoice, setReusingChoice] = useState(false);
+  const [captureContext,setCaptureContext]=useState<CaptureContext|null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -300,22 +302,18 @@ export default function TodayPage() {
     const text = logText.trim();
     if (!text) return;
     const now = new Date();
-    const time = new Intl.DateTimeFormat("zh-TW", {
-      timeZone: DOJO_TIME_ZONE,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(now);
+    const time=recordClock(now);
     const next = {
       ...record,
       daytime: {
         ...record.daytime,
-        logs: [...record.daytime.logs, { id: crypto.randomUUID(), time, text, createdAt: now.toISOString() }],
+        logs: [...record.daytime.logs, { id: crypto.randomUUID(), time, text, createdAt: now.toISOString(),context:captureContext }],
       },
     };
     setLogText("");
     try {
       await persist(next, "白天追蹤已存下來。");
+      setCaptureContext(null);
     } catch {
       setLogText(text);
     }
@@ -873,7 +871,7 @@ export default function TodayPage() {
               </span>
             </summary>
             <div className="english-rhythm-body">
-              <p className="english-rhythm-status">{englishRhythmStatus(englishTouchCount)}</p>
+              <EnglishDetails record={record} save={persist} disabled={saving}/><p className="english-rhythm-status">{englishRhythmStatus(englishTouchCount)}</p>
               <div className="english-touch-grid">
                 {ENGLISH_TOUCH_ORDER.map((touch) => {
                   const meta = ENGLISH_TOUCH_TYPES[touch];
@@ -933,6 +931,7 @@ export default function TodayPage() {
           <section className="ritual-card daytime-card" id="today-daytime">
             <span className="eyebrow"><TodayCalendarIcon name="i-write" />白天追蹤</span>
             <h2>留下正在發生的事</h2>
+            <TodayChoices record={record} saveRecord={persist}/>
             <div className="quick-log">
               <input
                 className="field"
@@ -948,12 +947,13 @@ export default function TodayPage() {
               />
               <button type="button" onClick={() => void addLog()} disabled={!logText.trim() || saving}>記下</button>
             </div>
+            <CaptureControls value={captureContext} onChange={setCaptureContext} disabled={saving}/>
             {record.daytime.logs.length > 0 && (
               <div className="day-log-list">
                 {record.daytime.logs.map((log) => (
                   <div className="day-log" key={log.id}>
-                    <time>{log.time}</time>
-                    <span>{log.text}</span>
+                    <time>{displayedLogClock(log,date)}</time>
+                    <div className="lp-log-content"><span>{log.text}</span><LogContextControl value={log.context??null} disabled={saving} onChange={context=>{const next={...record,daytime:{...record.daytime,logs:record.daytime.logs.map(l=>l.id===log.id?{...l,context}:l)}};void persist(next,"分類已更新。").catch(()=>{});}}/></div>
                     <button type="button" onClick={() => void removeLog(log.id)} aria-label={`刪除「${log.text}」`}>×</button>
                   </div>
                 ))}
