@@ -6,8 +6,8 @@ import ts from 'typescript';
 const base=process.env.STUDIO_DISCUSSION_BASE,out=process.env.STUDIO_DISCUSSION_OUT,source=process.env.STUDIO_DISCUSSION_SOURCE||'local-review';
 if(!base||!out)throw Error('Set STUDIO_DISCUSSION_BASE and STUDIO_DISCUSSION_OUT');
 let html=fs.readFileSync(base,'utf8');const baseHash=createHash('sha256').update(html).digest('hex');
-const reviewed=new Map([['05e6e8d5c78df984a070fd685b16d15b5a328fce43e5402cc999e0b2bb24d5d9',8],['3d332753dfb099e10f504be7c91094a76a4b698bfc6d135836869fd18bea792b',9],['2a9a02b07418f0b53e17140064157202b61d4055e5586043e861fe288a5bf35a',10],['e3f823c45ed430b685106de3f63992b0559305a3bf52884d189f1bf132ac806b',11]]),baseVersion=reviewed.get(baseHash);
-if(baseVersion!==11)throw Error('This research-list repair requires reviewed authoritative media version 11; review a newer base before patching');
+const reviewed=new Map([['05e6e8d5c78df984a070fd685b16d15b5a328fce43e5402cc999e0b2bb24d5d9',8],['3d332753dfb099e10f504be7c91094a76a4b698bfc6d135836869fd18bea792b',9],['2a9a02b07418f0b53e17140064157202b61d4055e5586043e861fe288a5bf35a',10],['e3f823c45ed430b685106de3f63992b0559305a3bf52884d189f1bf132ac806b',11],['45827299c57bf1b2f468ea6d775a9f8e42dd2d8acd782294ddec15e04ab82e93',12]]),baseVersion=reviewed.get(baseHash);
+if(baseVersion!==12)throw Error('This layout repair requires reviewed authoritative media version 12; review a newer base before patching');
 const targets=[{id:46,path:'app/components/creativeStudio/StudioWorkspace.tsx',marker:'function Editor('},{id:7,path:'lib/dojo/creativeStudio/researchWorkflow.ts',marker:'function jsonBlock('},{id:62,path:'app/components/creativeStudio/ResearchWorkbench.tsx',marker:'function ResearchWorkbench('},{id:10,path:'lib/dojo/creativeStudio/collaboration.ts',marker:'function collaborationInstructions('},{id:57,path:'lib/dojo/creativeStudio/reply.ts',marker:'function previewReply('},{id:58,path:'app/components/creativeStudio/CollaborationPanel.tsx',marker:'function CollaborationPanel('},{id:60,path:'app/components/creativeStudio/BReplyIntake.tsx',marker:'function BReplyIntake('}];
 const before=html;const changed=[];
 for(const t of targets){
@@ -24,7 +24,7 @@ const css=fs.readFileSync('app/components/creativeStudio/studio.css','utf8').spl
 html=html.replace(/<meta name="lumen-discussion-source"[^>]*>/g,'');
 html=html.replace(/<style id="research-discussion-update">[\s\S]*?<\/style>/g,'');
 html=html.replace('</head>','<meta name="lumen-discussion-source" content="'+source+'"><style id="research-discussion-update">/* Research dialogue:'+css+'</style></head>');
-html=html.replace(/草稿第 11 版 · 2026.11.06｜候選稿、研究與本人決定交接/,'草稿第 12 版 · 2026.11.06｜研究清單辨識與原位恢復');
+html=html.replace(/草稿第 12 版 · 2026.11.06｜研究清單辨識與原位恢復/,'草稿第 13 版 · 2026.11.06｜手機介面與完整流程檢查');
 // Verify every unrelated compiled module byte-for-byte, including media and local storage adapters.
 const modules=s=>new Map([...s.matchAll(/^(\d+):\[function\(require,module,exports\)\{\n([\s\S]*?)\n\},(\{[^\n]*\})\]/gm)].map(m=>[m[1],m[2]+m[3]]));
 const oldModules=modules(before),newModules=modules(html);for(const [id,text] of oldModules)if(!changed.some(t=>String(t.id)===id)&&newModules.get(id)!==text)throw Error('Unrelated module changed '+id);
