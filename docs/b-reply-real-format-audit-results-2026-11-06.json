@@ -1,0 +1,38 @@
+{
+  "version": "行光道場 · 草稿操作預覽\n草稿第 10 版 · 2026.11.06｜直接接續 B 回覆與研究討論",
+  "previewFoundTwoStudies": true,
+  "previewFoundZeroExamples": true,
+  "candidateLength": 1321,
+  "bodyAfterConfirm": "上一份主稿（本次尚未採用候選文章）",
+  "storedCandidateLength": 1321,
+  "nextTaskArticle": "上一份主稿（本次尚未採用候選文章）",
+  "nextTaskFormalStudyCount": 2,
+  "nextTaskStudyFields": [
+    {
+      "title": "外在獎勵對原有興趣的影響",
+      "source": "",
+      "mechanism": "",
+      "scope": "",
+      "relation": ""
+    },
+    {
+      "title": "創作興趣與收入誘因如何並存",
+      "source": "",
+      "mechanism": "",
+      "scope": "",
+      "relation": ""
+    }
+  ],
+  "candidateDirections": 0,
+  "originalReplyPreserved": true,
+  "framework": "auto",
+  "closure": "未定",
+  "inputStructure": {
+    "headings": 7,
+    "researchRecords": 2,
+    "researchFormat": "R-number headings with English labelled bullets",
+    "directionFormat": "two-row tab-separated table",
+    "experienceFormat": "two natural experience bullets"
+  },
+  "scope": "isolated browser audit, no implementation changes"
+}
