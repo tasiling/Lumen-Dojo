@@ -1,0 +1,123 @@
+{
+  "sourceCommit": "df8fa38b7fcb53a77d30231a46dad7d4857c578d",
+  "preview": {
+    "libraryFileId": "libfile_2d2c0cb2d8f481919cad19d650d95cae",
+    "version": 11,
+    "bytes": 8191497,
+    "sha256": "e3f823c45ed430b685106de3f63992b0559305a3bf52884d189f1bf132ac806b"
+  },
+  "pureNatural": 10,
+  "nativeNaturalUI": {
+    "checks": 8,
+    "errors": []
+  },
+  "htmlNaturalUI": {
+    "checks": 8,
+    "errors": []
+  },
+  "htmlDiscussionUI": 13,
+  "htmlResearchUI": 13,
+  "htmlMedia": 3,
+  "fullRelevantSuite": "npm run test:creative-studio: exit 0",
+  "nativeFullUISuite": "node scripts/test-studio-ui-isolated.mjs: exit 0",
+  "build": "exit 0",
+  "types": "exit 0",
+  "changedTypeScriptLint": "exit 0",
+  "actualReplyRetest": {
+    "sections": [
+      "討論回覆",
+      "候選方向",
+      "研究查找狀態",
+      "研究參考",
+      "例子提案",
+      "編輯說明",
+      "候選主文"
+    ],
+    "research": 2,
+    "completeFields": [
+      {
+        "source": true,
+        "mechanism": true,
+        "scope": true,
+        "relation": true
+      },
+      {
+        "source": true,
+        "mechanism": true,
+        "scope": true,
+        "relation": true
+      }
+    ],
+    "candidates": 2,
+    "examples": 2,
+    "candidateChars": 1322,
+    "warnings": [
+      "「外在獎勵對原有興趣的影響」未附可複製的 DOI 或完整網址；僅書目或「論文 DOI」標籤不代表已核對來源。",
+      "「創作興趣與收入誘因如何並存」未附可複製的 DOI 或完整網址；僅書目或「論文 DOI」標籤不代表已核對來源。"
+    ]
+  },
+  "bundle": {
+    "baseHash": "2a9a02b07418f0b53e17140064157202b61d4055e5586043e861fe288a5bf35a",
+    "baseVersion": 10,
+    "source": "df8fa38b7fcb53a77d30231a46dad7d4857c578d",
+    "changed": [
+      {
+        "id": 46,
+        "file": "app/components/creativeStudio/StudioWorkspace.tsx",
+        "oldHash": "2fe378bea1a53e351c23d55a205349a66d8f95a5547b1b3648d1fbe1d498e028",
+        "newHash": "2fe378bea1a53e351c23d55a205349a66d8f95a5547b1b3648d1fbe1d498e028"
+      },
+      {
+        "id": 7,
+        "file": "lib/dojo/creativeStudio/researchWorkflow.ts",
+        "oldHash": "8d678a3947a7aa6b57536d5363a9731c9ef553a7b4e03343772242649e69430e",
+        "newHash": "955318a6e392b3ede625a47b222dc3b395a31e97d0d8d5c966a187f6f820917d"
+      },
+      {
+        "id": 62,
+        "file": "app/components/creativeStudio/ResearchWorkbench.tsx",
+        "oldHash": "93afd4378af34ecccaf8d785548b6c65472ae86c6d95d3f8e6f74ca1a0d46ba8",
+        "newHash": "53f7e4b368ba95dc4861b9a6c81570592fb4d41d45c2bbed233223659763e1b2"
+      },
+      {
+        "id": 10,
+        "file": "lib/dojo/creativeStudio/collaboration.ts",
+        "oldHash": "e2ac64c14301d45029814352ba7430019aab84dbeb2afa382cf8e2c5fd0d3a08",
+        "newHash": "374a5ae77c6074889186160368299968e8172d1685579de1dde2ab7813c1f8b8"
+      },
+      {
+        "id": 57,
+        "file": "lib/dojo/creativeStudio/reply.ts",
+        "oldHash": "3a0ec10ea004def0d42fcee3fce9e218442699c89e6fbe2473aa5f0b245be1d9",
+        "newHash": "ac6988c4d2a183ce2e7b0a5536c5b02e566faeb7418fbc17f4cb26a5d642e426"
+      },
+      {
+        "id": 58,
+        "file": "app/components/creativeStudio/CollaborationPanel.tsx",
+        "oldHash": "3f7bc6473cf788a5c3913512a0fd9a20aac34b38deee22a462ba5d4042b41175",
+        "newHash": "4434b85d5a85e7cf7c290698275ede8a2498d4ac3482acb055c3e21ab91e3861"
+      },
+      {
+        "id": 60,
+        "file": "app/components/creativeStudio/BReplyIntake.tsx",
+        "oldHash": "1b9cf876faca6c05b4e10a0c6c7d8c59e5b78e5f7105041c0e05ac335adfecc0",
+        "newHash": "d71f48104a256904ca414012801ffc93bc04f9fcb0af31f7e390e34dfa6d2df3"
+      },
+      {
+        "id": 6,
+        "file": "media-adapter:adopt-research-only",
+        "oldHash": "1793ab2eea63d96ac7a1e88cee25b548b26aa235be2dd820fdd59eba3ade8970",
+        "newHash": "60d57e2e29783ad625c0a9e5b4e19ea6e73a606864cd442060e3f231def0b8b0"
+      }
+    ],
+    "preservedModules": 93,
+    "bytes": 8191497,
+    "sha256": "e3f823c45ed430b685106de3f63992b0559305a3bf52884d189f1bf132ac806b"
+  },
+  "pending": [
+    "iPhone/Safari physical acceptance",
+    "private actual user backup acceptance",
+    "scientific/source correctness of external GPT research"
+  ],
+  "productionDeployed": false
+}

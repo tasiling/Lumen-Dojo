@@ -26,5 +26,5 @@ Spec: docs/b-reply-real-format-audit-2026-11-06.md plus the already approved Q1â
 - [x] Repair reply parser and prompt; surface preview counts/fields/warnings and explicit framework/closure confirmation.
 - [x] Add failing version-selection tests (candidate without adoption, stale candidate/body protection, source restore, adoption switch).
 - [x] Implement article source normalization, immutable task basis, selection UI and native/offline adoption transition.
-- [ ] Run targeted, full creative-studio, build/types/lint and actual browser path across both realms; check 320/390/430 widths.
-- [ ] Patch the same authoritative HTML v10, test research/discussion/backup/media preservation, replace same preview identity, record actual evidence and pending phone acceptance.
+- [x] Run targeted, full creative-studio, build/types/lint and actual browser path across both realms; check 320/390/430 widths.
+- [x] Patch the same authoritative HTML v10, test research/discussion/backup/media preservation, replace same preview identity, record actual evidence and pending phone acceptance.
