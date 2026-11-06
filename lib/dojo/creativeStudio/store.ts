@@ -456,7 +456,7 @@ export async function adoptResearchIntegration(body:Body){
    if(p.structureProposal&&body.keepStructure!==true)throw Error('請先核對結構建議；本輪僅採用引用與銜接變更');
    if(s.body&&s.body!==p.candidate)s.history.push({id:receipt.operationId,text:s.body,note:'研究整合前正文',createdAt:receipt.createdAt});
    w.rounds.push({id:receipt.operationId,taskId:p.taskId,stage:'integration-adopt',question:w.question,raw:p.raw,adoptedText:p.candidate,createdAt:receipt.createdAt});
-   s.body=p.candidate;s.checks={facts:false,privacy:false,citations:false,voice:false};normalizeStudio(s);
+   s.body=p.candidate;w.articleSource='current';s.checks={facts:false,privacy:false,citations:false,voice:false};normalizeStudio(s);
    return{...old,studio:s,draftText:s.body,textWorkflow:workflow(s,old),status:'drafting',revision:old.revision+1,updatedAt:receipt.createdAt};
   }catch(e){throw new WeavingError((e as Error).message,409);}
  })]);return readWork(result.result.work.id);
