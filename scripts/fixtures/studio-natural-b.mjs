@@ -39,6 +39,9 @@ R2｜研究二的中文名稱
 
 新的候選第二段。`;
 
+// Chinese enumerated headings from natural GPT output; manuscript remains synthetic.
+export const chineseResearch = natural.replace('R1｜研究一的中文名稱','一、研究一的中文名稱').replace('R2｜研究二的中文名稱','二、研究二的中文名稱');
+
 // Same field structure as the user's next GPT response, with a synthetic manuscript.
 export const bareResearch = `討論回覆
 本輪先討論文章。

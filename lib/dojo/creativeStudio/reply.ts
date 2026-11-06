@@ -50,7 +50,10 @@ function entries(text: string, prefix: string): Record<string, unknown>[] {
     const parsed = array(text);
     if (parsed)
         return parsed.map(obj).filter((x): x is Record<string, unknown> => !!x);
-    const heading=`^[\\t ]*(?:#{1,4}[\\t ]*)?${prefix}[0-9０-９]+(?:[\\t ]*[｜|：:．.、-][\\t ]*(.*)|[\\t ]*)$`;
+    // Natural research replies also use Chinese/Arabic enumeration, not only R1.
+    // Keep this alternative scoped to research; ordinary prose is never a record.
+    const number=prefix==='R'?'(?:R[0-9０-９]+|[一二三四五六七八九十百]+|[0-9０-９]+)':prefix+'[0-9０-９]+';
+    const heading=`^[\\t ]*(?:#{1,4}[\\t ]*)?${number}(?:[\\t ]*[｜|：:．.、-][\\t ]*(.*)|[\\t ]*)$`;
     const blocks = text.split(new RegExp(`(?=${heading.replace('(.*)','.*')})`, 'm'));
     return blocks.flatMap(block => {
         const lines=block.trim().split('\n'),head=lines.shift()?.match(new RegExp(heading));

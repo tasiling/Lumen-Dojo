@@ -1,4 +1,4 @@
-import {natural,bareResearch} from './fixtures/studio-natural-b.mjs';
+import {natural,bareResearch,chineseResearch} from './fixtures/studio-natural-b.mjs';
 import assert from 'node:assert/strict';
 import {fixture} from './weaving-fixture.mjs';
 const f=await fixture();let passed=0,failed=0;
@@ -8,6 +8,8 @@ const m=f.load('lib/dojo/creativeStudio/model.ts'),r=f.load('lib/dojo/creativeSt
 
 const s=m.blankStudio();s.module='B';s.body='舊主稿第一段。\n\n舊主稿第二段。';s.source.selected='原始草稿。';s.source.allowAI=true;s.b=natural;
 const p=r.previewReply(s);
+await test('Chinese enumerated research headings preserve two independent complete studies',()=>{const x=structuredClone(s);x.b=chineseResearch;const q=r.previewReply(x);assert.equal(q.research.length,2);assert.match(q.research[0].title,/研究一的中文名稱\nSynthetic study one/);assert.equal(q.research[0].mechanism,'第一項研究的機制。');assert.equal(q.research[1].source,'https://example.org/study-two');assert.equal(q.research[1].relation,'對應文章的第三段。');assert.ok(!q.warnings.some(w=>w.includes('研究段落未能逐筆辨識')));});
+await test('research numbering variants stay separate and do not mistake ordinary prose for records',()=>{for(const [one,two] of [['1.','2.'],['１、','２、'],['十一、','十二、'],['### 一、','### 二、']]){const x=structuredClone(s);x.b=chineseResearch.replace('一、研究一',one+'研究一').replace('二、研究二',two+'研究二');assert.equal(r.previewReply(x).research.length,2,one);}const x=structuredClone(s);x.b='研究參考\n本輪尚未找到研究。\n請勿推測。';assert.equal(r.previewReply(x).research.length,0);});
 await test('natural English-labelled research preserves academic title, source, mechanism, limits and relation',()=>{assert.equal(p.research.length,2);assert.match(JSON.stringify(p.research[0]),/Synthetic study one/);assert.match(p.research[0].source,/Demo/);assert.equal(p.research[0].mechanism,'第一項研究的機制。');assert.match(p.research[0].scope,/只有摘要/);assert.equal(p.research[0].relation,'對應文章的第二段。');});
 await test('direction table and existing-experience bullets become unadopted editable candidates',()=>{assert.equal(p.candidates.length,2);assert.match(p.candidates[1].statement,/SB7/);assert.equal(p.examples.length,2);assert.equal(p.examples[0].kind,'experience');assert.match(p.examples[0].source,/本次文字/);assert.ok(!p.examples[1].text.includes('外部案例'));});
 await test('entry counts cannot mask missing DOI/link or missing research fields',()=>{assert.ok(p.warnings.some(w=>/DOI|網址|連結/.test(w)));const bad=structuredClone(s);bad.b='研究參考\nR1｜只有名稱\n\n候選主文\n測試';const q=r.previewReply(bad);assert.ok(q.warnings.some(w=>/機制/.test(w)));assert.ok(q.warnings.some(w=>/限制/.test(w)));assert.ok(q.warnings.some(w=>/關聯/.test(w)));});
