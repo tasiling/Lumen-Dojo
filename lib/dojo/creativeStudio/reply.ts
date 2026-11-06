@@ -50,8 +50,12 @@ function entries(text: string, prefix: string): Record<string, unknown>[] {
     const parsed = array(text);
     if (parsed)
         return parsed.map(obj).filter((x): x is Record<string, unknown> => !!x);
-    const blocks = text.split(new RegExp(`(?=^\\s*(?:#{1,4}\\s*)?${prefix}[0-9０-９]+\\s*[｜|：:．.、-])`, 'm'));
-    return blocks.flatMap(block => { const lines = block.trim().split('\n'); const head = lines.shift()?.match(new RegExp(`^\\s*(?:#{1,4}\\s*)?${prefix}[0-9０-９]+\\s*[｜|：:．.、-]\\s*(.*)`)); return head ? [{ heading: head[1], title: head[1], ...labelled(lines.join('\n')) }] : []; });
+    const heading=`^[\\t ]*(?:#{1,4}[\\t ]*)?${prefix}[0-9０-９]+(?:[\\t ]*[｜|：:．.、-][\\t ]*(.*)|[\\t ]*)$`;
+    const blocks = text.split(new RegExp(`(?=${heading.replace('(.*)','.*')})`, 'm'));
+    return blocks.flatMap(block => {
+        const lines=block.trim().split('\n'),head=lines.shift()?.match(new RegExp(heading));
+        return head?[{heading:head[1]||'',title:head[1]||'',...labelled(lines.join('\n'))}]:[];
+    });
 }
 /** Conservative tab/Markdown tables: header names identify columns, never guess prose. */
 function directionTable(text: string): Record<string, unknown>[] {
@@ -70,8 +74,11 @@ function directionTable(text: string): Record<string, unknown>[] {
 }
 function experienceBullets(text:string):Record<string,unknown>[] {
     return text.split('\n').flatMap(line=>{
-        const m=line.match(/^\s*[-*]\s+(experience|external|hypothetical|metaphor|本人真實經驗|外部案例|假設例子|比喻)[｜|]\s*來源[：:]\s*([^。]+)[。]\s*(.+)$/i);
-        return m?[{kind:m[1],source:m[2],text:m[3]}]:[];
+        const prefix='(experience|external|hypothetical|metaphor|本人真實經驗|外部案例|假設例子|比喻)';
+        const before=line.match(new RegExp('^\\s*[-*]\\s+'+prefix+'[｜|]\\s*來源[：:]\\s*([^。]+)[。]\\s*(.+)$','i'));
+        if(before)return[{kind:before[1].toLowerCase(),source:before[2].trim(),text:before[3].trim()}];
+        const after=line.match(new RegExp('^\\s*[-*]\\s+'+prefix+'[：:]\\s*(.+?)\\s*來源[：:]\\s*(.+?)[。.]?\\s*$','i'));
+        return after?[{kind:after[1].toLowerCase(),source:after[3].trim(),text:after[2].trim()}]:[];
     });
 }
 /** Suggestions are displayed as quotes, and only an explicit author click changes settings. */
@@ -227,6 +234,19 @@ export function applyReplyPreview(s: StudioData, p: ReplyPreview, sourceVersion:
         }
     }
     return { collaboration: f, examples, platformDrafts };
+}
+/** Missing research is recoverable next to discussion, without re-adopting the manuscript. */
+export function bResearchRecovery(s:StudioData){
+    const preview=previewReply(s),raw=preview.sections['研究參考']||'';
+    const pending=preview.research.some(r=>!s.collaboration.research.some(x=>(x.title===r.title||x.title===r.title.split('\n')[0])&&(!x.source||x.source===r.source)&&(['source','mechanism','scope','relation'] as const).every(k=>!!x[k].trim()||!r[k].trim())))||(!preview.research.length&&/^(?:[ \t]*R[0-9０-９]+)|"title"/mi.test(raw));
+    return{preview,pending:s.module==='B'&&pending};
+}
+export function confirmBResearchRecovery(s:StudioData,p:ReplyPreview):Partial<StudioData>{
+    if(s.module!=='B'||!p.research.length)throw Error('尚未辨識到研究，完整 B 原文保留；請手動整理研究欄位');
+    const patch=applyReplyPreview(s,p,p.source.versionId,{research:true,examples:false,candidates:false,platforms:false},replySource(s).text,s.collaboration.manuscript),next=patch.collaboration!;
+    const f={...s.collaboration,research:next.research,researchReport:next.researchReport,researchStatus:next.researchStatus,rounds:[...s.collaboration.rounds]};
+    if(!f.rounds.some(r=>r.mode==='research-intake'&&r.reply===p.reply))f.rounds.push({...recordRound(s,p.source,instructionsForSource(s)),mode:'research-intake'});
+    return{collaboration:f};
 }
 /** A confirmed intake is retained even if the author does not adopt its manuscript. */
 export function confirmBReply(s: StudioData, p: ReplyPreview, include: {research: boolean; examples: boolean; candidates: boolean; platforms?: boolean}, manuscript: string) {

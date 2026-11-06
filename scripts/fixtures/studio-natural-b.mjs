@@ -38,3 +38,37 @@ R2｜研究二的中文名稱
 新的候選第一段。
 
 新的候選第二段。`;
+
+// Same field structure as the user's next GPT response, with a synthetic manuscript.
+export const bareResearch = `討論回覆
+本輪先討論文章。
+
+研究查找狀態
+已提供候選，尚未由本人採用。
+
+研究參考
+R1
+
+* title：Synthetic reward study
+* source：Demo（2020），Example Journal。DOI：10.1000/demo-one
+* mechanism：只供測試的機制一。
+* scope：只有摘要，不推論個人因果。
+* relation：可作文章背景。
+
+R2
+
+* title：Synthetic motivation study
+* source：https://example.org/demo-two
+* mechanism：只供測試的機制二。
+* scope：測試適用範圍。
+* relation：另一段背景。
+
+例子提案
+本輪不新增案例。保留原稿經驗：
+* experience：活動有人參與。來源：本次草稿。
+* experience：暫停之後重新整理生活。來源：本次草稿。
+
+候選主文
+候選文章第一段。
+
+候選文章第二段。`;
