@@ -46,7 +46,7 @@ function context(s:StudioData,kind:ResearchTask['kind'],title:string){
 const judgementFormat='請用標題「## 研究採用判讀」附JSON陣列，每項欄位 studyId/title/status/claim/evidence/locator/limitation/relation/placement/sentence。status為usable（可考慮寫入）、background（只供背景）、unsupported（不宜如此推論）、pending（待核對）。evidence是可追查原文依據，locator是原文位置；不得捏造。找不到依據或未讀到資料則pending，不能把只有摘要說成讀過全文。每個重點單獨列，不用整篇研究代替判讀。';
 export function makeResearchTask(s:StudioData,kind:ResearchTask['kind'],title:string):ResearchTask{
  if(s.source.read==='private'||!s.source.allowAI)throw Error('請先確認本次選摘可交給外部 AI');
- const c=context(s,kind,title),w=s.researchWork,previous=w.rounds.filter(r=>!w.excludedRounds.includes(r.id)&&r.stage!=='integration-adopt').map(r=>({id:r.id,taskId:r.taskId,stage:r.stage,question:r.question,reply:r.raw,answerTo:r.answerTo||'',originalStudies:w.tasks.find(t=>t.id===r.taskId)?.studies||[]})),d:DiscussionContext={question:w.question,answerTo:w.answerTo,focusMode:w.focusMode,focusPointIds:[...w.focusPointIds],excerpt:w.focusExcerpt,roundIds:previous.map(r=>r.id)};
+ const c=context(s,kind,title),w=s.researchWork,previous=w.rounds.filter(r=>!w.excludedRounds.includes(r.id)&&r.stage!=='integration-adopt').map(r=>({id:r.id,taskId:r.taskId,stage:r.stage,question:r.question,reply:r.raw,answerTo:r.answerTo||'',originalStudies:w.tasks.find(t=>t.id===r.taskId)?.studies||[]})),d:DiscussionContext={question:w.question+(!w.answerTo&&w.authorAnswer.trim()?'\n我的補充想法：'+w.authorAnswer:''),answerTo:w.answerTo,focusMode:w.focusMode,focusPointIds:[...w.focusPointIds],excerpt:w.focusExcerpt,roundIds:previous.map(r=>r.id)};
  const task=kind==='integration'?'只將已採用重點自然轉述整合進文章；預設保留原文，只修改研究與必要銜接段落。不得引入未採用研究或新立場。若認為需改整體結構，先在structureProposal提出理由和方案，不實際執行。輸出「## 研究整合變更」JSON物件：{"changes":[{"before":"原文中一個完整段落，逐字相同","after":"該段整合後文字","reason":"修改理由","pointIds":["已採用重點ID"]}],"structureProposal":"沒有結構調整建議則留空"}。before不得跨段，每個變更都需列對應pointIds；保留未修改段落。網站會用原來源在文末列參考出處，不得另造文獻。':kind==='summary'?'整理目前討論，不直接重寫正文，不替本人採用。請輸出一份JSON物件，包含points陣列及conclusions陣列。conclusions每項用kind（understood已釐清／candidate想試放／question仍有疑問／unused暫不使用）、text、reason、studyIds、pointIds；ID只能使用本輪列出的來源，無對應可留空陣列。候選只是建議，證據支持與本文適用須分別說明。下列判讀陣列請放在points欄位，不另附第二份JSON。\n'+judgementFormat:'和作者繼續討論選定研究、重點或文章段落，先接住本人的疑問與接續回答，再說明理解、分歧與仍需釐清處。先不改正文、不替本人採用。這輪請自然對話，不需要JSON；必要時只提出少量與本文直接相關的問題。不要重問已回答的問題。不能把只有摘要說成讀過全文。';
  const prompt=task+'\n來源缺漏要明說，不要以先前書目自動補認本輪來源；若提出新資料先列待補核，不直接當成本輪已核對研究。\n本次討論對象：'+d.focusMode+'\n選定段落：'+d.excerpt+'\n本人問題固定快照：'+d.question+'\n'+'\n本人本輪問題：'+s.researchWork.question+'\n本輪來源與文章（來源未知時明說待查）：\n'+c.basis+(kind!=='integration'?'\n已貼回的討論：\n'+previous.map((r,i)=>'【歷史'+(i+1)+' · '+r.stage+' · '+r.id+'】\n原任務：'+r.taskId+'\n對應回覆：'+r.answerTo+'\n本人當輪問題：'+r.question+'\n'+(r.stage==='author-answer'?'本人的接續回答：':'GPT完整回覆：')+'\n'+r.reply+'\n原輪研究來源：'+JSON.stringify(r.originalStudies)).join('\n\n')+'\n目前回覆：\n'+(kind==='summary'&&s.researchWork.reply&&!previous.some(r=>r.reply===s.researchWork.reply)?s.researchWork.reply:''):'');if(prompt.length>80000)throw Error('討論指令過長，請取消帶入部分歷史後重試；紀錄仍保留');return{id:randomID(),kind,...c,digest:sha256Text(c.basis),createdAt:new Date().toISOString(),prompt,...(kind==='integration'?{}:{discussion:d})};
 }
@@ -55,6 +55,16 @@ export function appendResearchRound(s:StudioData,taskId:string,stage='discussion
  const w=structuredClone(s.researchWork),task=w.tasks.find(t=>t.id===taskId);if(!task||task.kind==='integration'||!w.reply.trim())throw Error('請選擇對應的研究任務並貼回討論');
  if(w.rounds.some(r=>r.taskId===taskId&&r.stage===stage&&r.raw===w.reply))return w;
  w.rounds.push({id:randomID(),taskId,stage,question:task.discussion?.question??w.question,raw:w.reply,createdAt:new Date().toISOString()});return w;
+}
+/** Existing B text becomes a local discussion starting point, never a newly generated AI reply. */
+export function researchFromB(s:StudioData,title:string):ResearchWork{
+ if(!s.b.trim())throw Error('目前沒有 B 完整回覆可接續，請先貼回 B 回覆');
+ const w=structuredClone(s.researchWork),old=w.rounds.find(r=>r.stage==='imported-b'&&r.raw===s.b);
+ if(old){w.answerTo=old.id;return w;}
+ const available=studiesFor(s);w.selected=w.selected.filter(id=>available.some(r=>r.id===id));w.focusMode=w.selected.length?'studies':'article';
+ if(w.focusExcerpt&&!(s.body||s.source.selected).includes(w.focusExcerpt))w.focusExcerpt='';
+ const c=context({...s,researchWork:w},'discussion',title),now=new Date().toISOString(),task:ResearchTask={id:randomID(),kind:'discussion',...c,digest:sha256Text(c.basis),createdAt:now,prompt:'本機接續既有 B 完整回覆。此任務只記錄接續時文章及研究，不能認定原回覆由本任務或目前來源產生；原回覆的研究及來源仍待核對。',discussion:{question:w.question,answerTo:'',focusMode:w.focusMode,focusPointIds:[],excerpt:w.focusExcerpt,roundIds:[]}};
+ const round:ResearchRound={id:randomID(),taskId:task.id,stage:'imported-b',question:'接續既有 B 回覆（原產生任務與來源待核對）',raw:s.b,createdAt:now};w.tasks.push(task);w.rounds.push(round);w.answerTo=round.id;return w;
 }
 export function appendResearchAnswer(s:StudioData):ResearchWork{
  const w=structuredClone(s.researchWork),target=w.rounds.find(r=>r.id===w.answerTo&&r.stage!=='author-answer'&&r.stage!=='integration-adopt');

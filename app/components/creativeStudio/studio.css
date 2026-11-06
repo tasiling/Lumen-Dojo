@@ -111,3 +111,8 @@
 .studio-research-workbench .studio-check input {flex:0 0 22px;width:22px;height:22px;margin-top:3px}
 .studio-discussion-turn>button,.studio-discussion-author>button {min-height:48px;width:100%;white-space:normal!important;margin:12px 0!important}
 #research-discussion,#research-author-answer,#research-author-question {scroll-margin-top:24px;scroll-margin-bottom:110px}
+
+.studio-research-shortcut {padding:16px;margin:20px 0;border:1px solid var(--creative-accent,#8b3f68);background:var(--creative-soft,#f8e7f4);border-radius:12px}
+.studio-research-shortcut h2 {font-size:1.125rem;line-height:1.6}.studio-research-shortcut button {display:block;width:100%;min-height:48px;white-space:normal!important}
+.studio-discussion-settings>summary,.studio-discussion-timeline>summary {cursor:pointer;min-height:48px;line-height:1.7;padding:12px 0;font-weight:600}
+.studio-discussion-settings[open] {padding-bottom:16px}.studio-research-workbench .studio-reply-preview>button {width:100%;min-height:48px;white-space:normal!important}

@@ -1,0 +1,70 @@
+{
+  "entry-domain": {
+    "passLines": 9,
+    "last": "PASS discussion 8/8",
+    "failures": []
+  },
+  "entry-regression": {
+    "passLines": 140,
+    "last": "PASS native source return: canonical work ID, new fixed version/draft distinction, legacy access",
+    "failures": []
+  },
+  "entry-native-all": {
+    "passLines": 82,
+    "last": "PASS native legacy v9 boundary, import entry and same-realm new B route; no uncaught browser errors",
+    "failures": []
+  },
+  "entry-native-font-final": {
+    "passLines": 37,
+    "last": "PASS research browser 12/12",
+    "failures": []
+  },
+  "entry-html-final": {
+    "passLines": 11,
+    "last": "PASS entry repair 10/10",
+    "failures": []
+  },
+  "entry-discussion-html-final": {
+    "passLines": 14,
+    "last": "PASS discussion browser 13/13",
+    "failures": []
+  },
+  "entry-research-html-final": {
+    "passLines": 14,
+    "last": "PASS research browser 13/13",
+    "failures": []
+  },
+  "entry-media-html": {
+    "passLines": 3,
+    "last": "PASS updated discussion HTML full backup restores existing media production tasks without replacing article work data",
+    "failures": []
+  },
+  "bundle": {
+    "baseHash": "3d332753dfb099e10f504be7c91094a76a4b698bfc6d135836869fd18bea792b",
+    "baseVersion": 9,
+    "source": "local-review",
+    "changed": [
+      {
+        "id": 46,
+        "file": "app/components/creativeStudio/StudioWorkspace.tsx",
+        "oldHash": "d7cad8960d3646cd25cb0516a1299313597ac5d01967f0df3fe69b4dac1c0375",
+        "newHash": "2fe378bea1a53e351c23d55a205349a66d8f95a5547b1b3648d1fbe1d498e028"
+      },
+      {
+        "id": 7,
+        "file": "lib/dojo/creativeStudio/researchWorkflow.ts",
+        "oldHash": "c063f4a30ef1b70eb8c4586f5056baef29c27ff7331fedad1f9765b4d7323acb",
+        "newHash": "8d678a3947a7aa6b57536d5363a9731c9ef553a7b4e03343772242649e69430e"
+      },
+      {
+        "id": 62,
+        "file": "app/components/creativeStudio/ResearchWorkbench.tsx",
+        "oldHash": "6044f6ef8b3e891dde7ae5c55f4a68061631114851e309be86bd8b909dcc0cc1",
+        "newHash": "93afd4378af34ecccaf8d785548b6c65472ae86c6d95d3f8e6f74ca1a0d46ba8"
+      }
+    ],
+    "preservedModules": 98,
+    "bytes": 8180055,
+    "sha256": "4597707ed42d3e0d7ede1c8d82d25432126c05622cdd21cbb6e007e361325fd5"
+  }
+}
