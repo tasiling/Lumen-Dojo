@@ -132,6 +132,30 @@
 .studio .studio-visible-research .studio-study-card:last-child {border-bottom:0;padding-bottom:0}
 .studio .studio-reply-preview>article {padding-block:16px;border-bottom:1px solid var(--creative-line,#e5d9e9);min-width:0;overflow-wrap:anywhere}
 .studio .studio-reply-preview>article:last-of-type {border-bottom:0}
+
+/* Writing usability: preserve realm colors, give each task a clear local action. */
+.studio-workspace .studio-work-state {padding:12px 16px;background:var(--creative-soft,#f8e7f4)}
+.studio-workspace .studio-work-state>p {margin:0}
+.studio-workspace .studio-work-state summary {min-height:44px;display:flex;align-items:center}
+.studio-workspace .studio-work-state details>button {margin:8px 8px 8px 0!important}
+.studio-workspace .studio-use-article {margin-block:24px;padding-block:20px;border-block:1px solid var(--creative-line,#e5d9e9)}
+.studio-workspace .studio-use-article>button {width:100%;min-height:48px;white-space:normal!important}
+.studio-workspace .studio-research-workbench>.studio-research-step {padding:20px 0;border:0;border-top:1px solid var(--creative-line,#e5d9e9);border-radius:0;background:transparent}
+.studio-workspace .studio-later-step>summary {font-size:1.125rem;font-weight:650;line-height:1.6;padding-block:12px;min-height:48px}
+.studio-workspace .studio-later-step[open]>summary {margin-bottom:16px}
+.studio-workspace .studio-research-workbench .studio-reply-preview {margin-block:16px}
+.studio-workspace .studio-discussion-author {padding:12px 0!important;border:0!important;background:transparent!important}
+.studio-workspace .studio-reply-actions,.studio-workspace .studio-transfer-actions {justify-content:flex-start;gap:12px}
+.studio-workspace .studio-reply-actions button,.studio-workspace .studio-transfer-actions button {padding:12px 16px!important}
+.studio-workspace .studio-instruction-transfer details[open] {margin-top:16px}
+.studio-workspace .studio-secondary>summary {min-height:44px;padding-block:12px}
+.studio-workspace .studio-collaboration>p {max-width:64ch}
+@media(max-width:430px){
+ .studio-workspace .studio-modules {gap:8px}
+ .studio-workspace .studio-modules button {padding:10px 4px!important}
+ .studio-workspace .studio-modules small {font-size:.875rem;line-height:1.5}
+ .studio-workspace .studio-reply-actions>button {flex-basis:100%}
+}
 @media(max-width:430px) {
  .studio .studio-research-step,.studio .studio-discussion-author {padding:12px}
 }

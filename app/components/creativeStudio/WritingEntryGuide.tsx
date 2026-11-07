@@ -33,13 +33,13 @@ export default function WritingEntryGuide({ realm, onChoose, beforeStart, disabl
     }
     return <section className="studio-writing-guide" aria-label="文章協作起點">
         <h2>靈感給 A，草稿給 B</h2>
-        <p>依你手上已有的內容選擇起點；A、B、C、D 可各自使用。</p>
+        <p>有靈感就從 A 開始；已有文章可直接用 B。</p>
         <div className="studio-writing-choices">
-            <article><h3>A｜靈感與方向探索</h3><p>只有觀察、感受、問題、逐字稿或零散想法，也可以開始。和 AI 釐清想說什麼、保留多個方向，按需要試寫。</p><small>已有方向可繼續討論；已有草稿也可選擇檢查結構。</small><button disabled={disabled || busy} onClick={() => void start('A')}>{onChoose ? '本件切到 A：探索靈感' : '帶靈感進 A'}</button></article>
-            <article><h3>B｜草稿整理與研究</h3><p>已有草稿就直接交給 B，依你的意思整理主文。修改幅度、框架、研究與例子都由你選擇，不必先完成 A。</p><small>AI 完整回覆、研究與候選主文分開；確認採用才更新正文。</small><button disabled={disabled || busy} onClick={() => void start('B')}>{onChoose ? '本件切到 B：整理草稿' : '帶草稿進 B'}</button></article>
+            <article><h3>A｜還在找寫作方向</h3><p>把想法或生活素材交給 ChatGPT，一起討論想寫什麼。</p><small>已有方向可繼續討論；已有草稿也可選擇檢查結構。</small><button disabled={disabled || busy} onClick={() => void start('A')}>{onChoose ? '用 A 討論方向' : '從靈感開始寫'}</button></article>
+            <article><h3>B｜已有草稿，想繼續修改</h3><p>直接貼上草稿，設定想怎麼修改，也可請 ChatGPT 找研究。</p><small>貼回後先檢查文章與研究，確認後再選用。</small><button disabled={disabled || busy} onClick={() => void start('B')}>{onChoose ? '用 B 整理這篇草稿' : '整理已有草稿'}</button></article>
         </div>
-        <p className="studio-writing-next">主稿給 C：轉製限動或擴寫。完稿給 D：從固定完成版本延伸題材，尚未發布也可使用。</p>
-        <p>操作方式：複製本輪指令到 ChatGPT → 貼回完整回覆 → 確認整理與採用。本人回答另外保存。</p>
+        <p className="studio-writing-next">C 可以把文章改成限動或擴寫；D 從已完稿的文章找新題材。</p>
+        <p>複製指令到 ChatGPT，取得回覆後貼回網站，再決定使用哪些內容。</p>
         {error && <p role="alert">{error}</p>}
     </section>;
 }
