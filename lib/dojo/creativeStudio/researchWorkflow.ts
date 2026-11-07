@@ -1,0 +1,113 @@
+import type {StudioData} from './model';
+import {randomID,sha256Text} from '../weavingWorkflow/clientIdentity';
+export type Study={id:string;title:string;source:string;mechanism:string;scope:string;relation:string;excerpt:string;access:string};
+export type ResearchPoint={id:string;taskId:string;studyId:string;title:string;status:'usable'|'background'|'unsupported'|'pending';claim:string;evidence:string;locator:string;limitation:string;relation:string;placement:string;sentence:string;decision:'undecided'|'adopt'|'background'|'skip';checked:boolean};
+export type ResearchConclusion={id:string;taskId:string;kind:'understood'|'candidate'|'question'|'unused';text:string;reason:string;studyIds:string[];pointIds:string[];decision:'undecided'|'keep'|'skip'};
+export type DiscussionContext={question:string;answerTo:string;focusMode:'studies'|'points'|'article';focusPointIds:string[];excerpt:string;roundIds:string[]};
+export type ResearchTask={id:string;kind:'discussion'|'summary'|'integration';article:string;basis:string;digest:string;studies:Study[];points:ResearchPoint[];prompt:string;createdAt:string;discussion?:DiscussionContext};
+export type ResearchRound={id:string;taskId:string;stage:string;question:string;raw:string;createdAt:string;adoptedText?:string;answerTo?:string};
+export type ResearchWork={articleSource:'current'|'candidate'|'original';focusMode:'studies'|'points'|'article';focusPointIds:string[];focusExcerpt:string;answerTo:string;authorAnswer:string;excludedRounds:string[];conclusions:ResearchConclusion[];selected:string[];notes:Record<string,{excerpt:string;access:string}>;question:string;reply:string;replyTaskId:string;integrationReply:string;integrationTaskId:string;tasks:ResearchTask[];rounds:ResearchRound[];points:ResearchPoint[]};
+export const blankResearchWork=():ResearchWork=>({articleSource:'current',focusMode:'studies',focusPointIds:[],focusExcerpt:'',answerTo:'',authorAnswer:'',excludedRounds:[],conclusions:[],selected:[],notes:{},question:'',reply:'',replyTaskId:'',integrationReply:'',integrationTaskId:'',tasks:[],rounds:[],points:[]});
+const text=(v:unknown,max=80000):string=>{if(typeof v!=='string'||v.length>max)throw Error('研究討論文字格式或長度不正確');return v;};
+const list=(v:unknown):unknown[]=>{if(!Array.isArray(v)||v.length>200)throw Error('研究討論清單格式或長度不正確');return v;};
+const object=(v:unknown):Record<string,unknown>=>{if(!v||typeof v!=='object'||Array.isArray(v))throw Error('研究討論資料格式不正確');return v as Record<string,unknown>;};
+function strings<T>(row:Record<string,unknown>,keys:string[]){const out:Record<string,string>={};for(const key of keys)out[key]=text(row[key]);return out as T;}
+function discussion(value:unknown):DiscussionContext{const v=object(value),mode=text(v.focusMode);if(!['studies','points','article'].includes(mode))throw Error('討論對象不正確');return{question:text(v.question),answerTo:text(v.answerTo),focusMode:mode as DiscussionContext['focusMode'],focusPointIds:list(v.focusPointIds).map(x=>text(x,120)),excerpt:text(v.excerpt),roundIds:list(v.roundIds).map(x=>text(x,120))};}
+function conclusion(value:unknown):ResearchConclusion{const v=object(value),c=strings<ResearchConclusion>(v,['id','taskId','kind','text','reason','decision']);if(!['understood','candidate','question','unused'].includes(c.kind)||!['undecided','keep','skip'].includes(c.decision))throw Error('討論結論類別不正確');return{...c,studyIds:list(v.studyIds).map(x=>text(x,120)),pointIds:list(v.pointIds).map(x=>text(x,120))};}
+function study(value:unknown):Study{return strings<Study>(object(value),['id','title','source','mechanism','scope','relation','excerpt','access']);}
+function point(value:unknown):ResearchPoint{const row=object(value),p=strings<ResearchPoint>(row,['id','taskId','studyId','title','status','claim','evidence','locator','limitation','relation','placement','sentence','decision']);if(!['usable','background','unsupported','pending'].includes(p.status)||!['undecided','adopt','background','skip'].includes(p.decision)||typeof row.checked!=='boolean')throw Error('研究判讀選項不正確');return{...p,checked:row.checked};}
+export function normalizeResearchWork(value:unknown):ResearchWork{
+ if(value===undefined)return blankResearchWork();const v=object(value),w=blankResearchWork();
+ w.articleSource=(v.articleSource??'current') as ResearchWork['articleSource'];if(!['current','candidate','original'].includes(w.articleSource))throw Error('討論文章版本不正確');
+ w.focusMode=(v.focusMode??'studies') as ResearchWork['focusMode'];if(!['studies','points','article'].includes(w.focusMode))throw Error('討論對象不正確');w.focusPointIds=list(v.focusPointIds??[]).map(x=>text(x,120));w.focusExcerpt=text(v.focusExcerpt??'');w.answerTo=text(v.answerTo??'');w.authorAnswer=text(v.authorAnswer??'');w.excludedRounds=list(v.excludedRounds??[]).map(x=>text(x,120));w.conclusions=list(v.conclusions??[]).map(conclusion);
+ for(const k of ['question','reply','replyTaskId','integrationReply','integrationTaskId'] as const)w[k]=text(v[k]);
+ w.selected=list(v.selected).map(x=>text(x,120));w.notes=Object.fromEntries(Object.entries(object(v.notes)).map(([k,x])=>{const r=object(x),access=text(r.access);if(!['unknown','abstract','full'].includes(access))throw Error('研究閱讀範圍不正確');return[k,{excerpt:text(r.excerpt),access}];}));
+ w.tasks=list(v.tasks).map(x=>{const r=object(x),t=strings<ResearchTask>(r,['id','kind','article','basis','digest','prompt','createdAt']);if(!['discussion','summary','integration'].includes(t.kind)||sha256Text(t.basis)!==t.digest)throw Error('研究任務快照不正確');const studies=list(r.studies).map(study),points=list(r.points).map(point),basis=object(JSON.parse(t.basis));if(basis.article!==t.article||JSON.stringify(basis.studies)!==JSON.stringify(studies)||JSON.stringify(basis.points)!==JSON.stringify(points))throw Error('研究任務與來源快照不一致');return{...t,studies,points,...(r.discussion===undefined?{}:{discussion:discussion(r.discussion)})};});
+ w.rounds=list(v.rounds).map(x=>{const r=object(x);return{...strings<ResearchRound>(r,['id','taskId','stage','question','raw','createdAt']),...(r.adoptedText===undefined?{}:{adoptedText:text(r.adoptedText)}),...(r.answerTo===undefined?{}:{answerTo:text(r.answerTo)})};});
+ w.points=list(v.points).map(point);const unique=(ids:string[])=>ids.every((id,i)=>!!id&&ids.indexOf(id)===i);
+ if(!unique(w.tasks.map(t=>t.id))||!unique(w.rounds.map(r=>r.id))||!unique(w.points.map(p=>p.id)))throw Error('研究討論識別重複');
+ for(const p of w.points)if(!w.tasks.find(t=>t.id===p.taskId)?.studies.some(s=>s.id===p.studyId))throw Error('研究重點無法核對原任務來源');
+ for(const r of w.rounds){if(!w.tasks.some(t=>t.id===r.taskId))throw Error('研究回覆找不到原任務');if(r.answerTo&&!w.rounds.some(x=>x.id===r.answerTo&&x.stage!=='author-answer'&&x.taskId===r.taskId))throw Error('接續回答找不到對應討論');}if(!unique(w.conclusions.map(c=>c.id)))throw Error('討論結論識別重複');for(const c of w.conclusions){const t=w.tasks.find(t=>t.id===c.taskId);if(!t||c.studyIds.some(id=>!t.studies.some(r=>r.id===id))||c.pointIds.some(id=>!t.points.some(p=>p.id===id)))throw Error('討論結論來源不正確');}
+ return w;
+}
+export function studiesFor(s:StudioData):Study[]{return s.collaboration.research.map((r,i)=>{const data={title:r.title,source:r.source,mechanism:r.mechanism,scope:r.scope,relation:r.relation},id='study-'+sha256Text(JSON.stringify([i,data])).slice(0,24),note=s.researchWork.notes[id];return{id,...data,excerpt:note?.excerpt||'',access:note?.access||'unknown'};});}
+export function pointStudy(s:StudioData,p:ResearchPoint){return s.researchWork.tasks.find(t=>t.id===p.taskId)?.studies.find(r=>r.id===p.studyId);}
+export function checkPoint(s:StudioData,p:ResearchPoint){const r=pointStudy(s,p);if(p.status!=='usable'||!p.checked||!r?.title.trim()||!r?.source.trim()||![p.claim,p.evidence,p.limitation,p.relation,p.sentence].every(x=>x.trim()))throw Error('採用前請核對原文依據、來源、限制、文章關聯及候選寫法；待查或不宜推論的重點不能直接採用');if(!studiesFor(s).some(x=>x.id===r.id&&JSON.stringify(x)===JSON.stringify(r)))throw Error('研究資料已改版，請重新討論及核對這個重點');}
+/** The editable body and an unadopted B candidate are distinct inputs. Never silently fall back. */
+export function researchArticle(s:StudioData){
+ const kind=s.researchWork.articleSource||'current';
+ if(kind==='candidate'){
+  if(!s.collaboration.manuscript.trim())throw Error('尚無已確認的 B 候選稿，請先辨識回覆並確認分欄');
+  if(s.b.trim()&&s.collaboration.manuscriptReplyDigest!==sha256Text(s.b))throw Error('B 回覆已變更，請重新確認候選稿再討論');
+  return{kind,label:'B 候選稿（回覆分欄版）',text:s.collaboration.manuscript};
+ }
+ return kind==='original'?{kind,label:'原始草稿／本次選摘',text:s.source.selected}:{kind,label:s.body?'目前正文':'原始草稿（目前尚無正文）',text:s.body||s.source.selected};
+}
+function context(s:StudioData,kind:ResearchTask['kind'],title:string){
+ const w=s.researchWork,current=studiesFor(s),points=kind==='integration'?w.points.filter(p=>p.decision==='adopt'):w.focusMode==='points'?w.points.filter(p=>w.focusPointIds.includes(p.id)):[];if(kind!=='integration'&&w.focusMode==='points'&&(!points.length||points.length!==new Set(w.focusPointIds).size))throw Error('請選要討論的研究重點');
+ if(kind==='integration')for(const p of points)checkPoint(s,p);
+ const ids=kind==='integration'||w.focusMode==='points'?[...new Set(points.map(p=>p.studyId))]:w.focusMode==='article'?[]:w.selected;
+ const studies=current.filter(r=>ids.includes(r.id));
+ if((!studies.length&&(kind==='integration'||w.focusMode!=='article'))||studies.length!==new Set(ids).size)throw Error('請先選擇目前版本的研究；資料若已修改，請重新選取');
+ const selectedArticle=researchArticle(s),article=selectedArticle.text;if(!article.trim())throw Error('請先準備要討論的文章或草稿');
+ if(kind==='integration'&&!points.length)throw Error('請先核對並採用至少一個研究重點');
+ if(kind!=='integration'&&w.focusExcerpt&&!article.includes(w.focusExcerpt))throw Error('選定討論段落已不在目前正文，請重新選取');
+ const basis=JSON.stringify({...(kind!=='integration'&&w.focusExcerpt?{excerpt:w.focusExcerpt}:{}),title,article,writingSettings:{framework:s.collaboration.framework,closure:s.collaboration.closure,modification:s.collaboration.bMode,intent:s.collaboration.aIntent,keep:s.collaboration.keep,practices:s.collaboration.practices},...(selectedArticle.kind!=='current'?{articleSource:selectedArticle.kind,currentBodyDigest:sha256Text(s.body),...(selectedArticle.kind==='candidate'?{candidateReplyDigest:s.collaboration.manuscriptReplyDigest}:{})}:{}),source:s.source.selectedVersion,answers:s.collaboration.aAnswers,boundary:s.collaboration.boundary,studies,points});return{article,basis,studies,points};
+}
+const judgementFormat='請用標題「## 研究採用判讀」附JSON陣列，每項欄位 studyId/title/status/claim/evidence/locator/limitation/relation/placement/sentence。status為usable（可考慮寫入）、background（只供背景）、unsupported（不宜如此推論）、pending（待核對）。evidence是可追查原文依據，locator是原文位置；不得捏造。找不到依據或未讀到資料則pending，不能把只有摘要說成讀過全文。每個重點單獨列，不用整篇研究代替判讀。';
+export function makeResearchTask(s:StudioData,kind:ResearchTask['kind'],title:string):ResearchTask{
+ if(s.source.read==='private'||!s.source.allowAI)throw Error('請先確認本次選摘可交給外部 AI');
+ const c=context(s,kind,title),w=s.researchWork,previous=w.rounds.filter(r=>!w.excludedRounds.includes(r.id)&&r.stage!=='integration-adopt').map(r=>({id:r.id,taskId:r.taskId,stage:r.stage,question:r.question,reply:r.raw,answerTo:r.answerTo||'',originalStudies:w.tasks.find(t=>t.id===r.taskId)?.studies||[]})),d:DiscussionContext={question:w.question+(!w.answerTo&&w.authorAnswer.trim()?'\n我的補充想法：'+w.authorAnswer:''),answerTo:w.answerTo,focusMode:w.focusMode,focusPointIds:[...w.focusPointIds],excerpt:w.focusExcerpt,roundIds:previous.map(r=>r.id)};
+ const task=kind==='integration'?'只將已採用重點自然轉述整合進文章；預設保留原文，只修改研究與必要銜接段落。不得引入未採用研究或新立場。若認為需改整體結構，先在structureProposal提出理由和方案，不實際執行。輸出「## 研究整合變更」JSON物件：{"changes":[{"before":"原文中一個完整段落，逐字相同","after":"該段整合後文字","reason":"修改理由","pointIds":["已採用重點ID"]}],"structureProposal":"沒有結構調整建議則留空"}。before不得跨段，每個變更都需列對應pointIds；保留未修改段落。網站會用原來源在文末列參考出處，不得另造文獻。':kind==='summary'?'整理目前討論，不直接重寫正文，不替本人採用。請輸出一份JSON物件，包含points陣列及conclusions陣列。conclusions每項用kind（understood已釐清／candidate想試放／question仍有疑問／unused暫不使用）、text、reason、studyIds、pointIds；ID只能使用本輪列出的來源，無對應可留空陣列。候選只是建議，證據支持與本文適用須分別說明。下列判讀陣列請放在points欄位，不另附第二份JSON。\n'+judgementFormat:'和作者繼續討論選定研究、重點或文章段落，先接住本人的疑問與接續回答，再說明理解、分歧與仍需釐清處。先不改正文、不替本人採用。這輪請自然對話，不需要JSON；必要時只提出少量與本文直接相關的問題。不要重問已回答的問題。不能把只有摘要說成讀過全文。';
+ const prompt=task+'\n來源缺漏要明說，不要以先前書目自動補認本輪來源；若提出新資料先列待補核，不直接當成本輪已核對研究。\n本次討論對象：'+d.focusMode+'\n選定段落：'+d.excerpt+'\n本人問題固定快照：'+d.question+'\n'+'\n本人本輪問題：'+s.researchWork.question+'\n本輪來源與文章（以此處article為本輪唯一文章底稿，歷史中的其他稿只作往返紀錄；來源未知時明說待查）：\n'+c.basis+(kind!=='integration'?'\n已貼回的討論：\n'+previous.map((r,i)=>'【歷史'+(i+1)+' · '+r.stage+' · '+r.id+'】\n原任務：'+r.taskId+'\n對應回覆：'+r.answerTo+'\n本人當輪問題：'+r.question+'\n'+(r.stage==='author-answer'?'本人的接續回答：':'GPT完整回覆：')+'\n'+r.reply+'\n原輪研究來源：'+JSON.stringify(r.originalStudies)).join('\n\n')+'\n目前回覆：\n'+(kind==='summary'&&s.researchWork.reply&&!previous.some(r=>r.reply===s.researchWork.reply)?s.researchWork.reply:''):'');if(prompt.length>80000)throw Error('討論指令過長，請取消帶入部分歷史後重試；紀錄仍保留');return{id:randomID(),kind,...c,digest:sha256Text(c.basis),createdAt:new Date().toISOString(),prompt,...(kind==='integration'?{}:{discussion:d})};
+}
+export function researchTaskStale(s:StudioData,t:ResearchTask,title:string){try{const current=JSON.parse(context(s,t.kind,title).basis),previous=JSON.parse(t.basis);/* Older saved tasks did not pin writing settings; preserve that historical scope. */if(previous.writingSettings===undefined)delete current.writingSettings;return JSON.stringify(current)!==t.basis;}catch{return true;}}
+export function appendResearchRound(s:StudioData,taskId:string,stage='discussion'):ResearchWork{
+ const w=structuredClone(s.researchWork),task=w.tasks.find(t=>t.id===taskId);if(!task||task.kind==='integration'||!w.reply.trim())throw Error('請選擇對應的研究任務並貼回討論');
+ if(w.rounds.some(r=>r.taskId===taskId&&r.stage===stage&&r.raw===w.reply))return w;
+ w.rounds.push({id:randomID(),taskId,stage,question:task.discussion?.question??w.question,raw:w.reply,createdAt:new Date().toISOString()});return w;
+}
+/** Existing B text becomes a local discussion starting point, never a newly generated AI reply. */
+export function researchFromB(s:StudioData,title:string):ResearchWork{
+ if(!s.b.trim())throw Error('目前沒有 B 完整回覆可接續，請先貼回 B 回覆');
+ const w=structuredClone(s.researchWork),old=w.rounds.find(r=>r.stage==='imported-b'&&r.raw===s.b);
+ if(old){w.answerTo=old.id;return w;}
+ const available=studiesFor(s);w.selected=w.selected.filter(id=>available.some(r=>r.id===id));w.focusMode=w.selected.length?'studies':'article';
+ if(w.focusExcerpt&&!researchArticle(s).text.includes(w.focusExcerpt))w.focusExcerpt='';
+ const c=context({...s,researchWork:w},'discussion',title),now=new Date().toISOString(),task:ResearchTask={id:randomID(),kind:'discussion',...c,digest:sha256Text(c.basis),createdAt:now,prompt:'本機接續既有 B 完整回覆。此任務只記錄接續時文章及研究，不能認定原回覆由本任務或目前來源產生；原回覆的研究及來源仍待核對。',discussion:{question:w.question,answerTo:'',focusMode:w.focusMode,focusPointIds:[],excerpt:w.focusExcerpt,roundIds:[]}};
+ const round:ResearchRound={id:randomID(),taskId:task.id,stage:'imported-b',question:'接續既有 B 回覆（原產生任務與來源待核對）',raw:s.b,createdAt:now};w.tasks.push(task);w.rounds.push(round);w.answerTo=round.id;return w;
+}
+export function appendResearchAnswer(s:StudioData):ResearchWork{
+ const w=structuredClone(s.researchWork),target=w.rounds.find(r=>r.id===w.answerTo&&r.stage!=='author-answer'&&r.stage!=='integration-adopt');
+ if(!target||!w.authorAnswer.trim())throw Error('請選對應的討論並填寫我的接續回答');
+ w.rounds.push({id:randomID(),taskId:target.taskId,stage:'author-answer',question:'',raw:w.authorAnswer,answerTo:target.id,createdAt:new Date().toISOString()});w.authorAnswer='';return w;
+}
+function jsonBlock(raw:string,heading:string):unknown{
+ if(raw.length>80000)throw Error('回覆過長，請分輪整理，原文仍保留');
+ const title=heading.replace(/^#+\s*/,''),at=raw.indexOf(title),part=at<0?raw:raw.slice(at+title.length),found:unknown[]=[];let budget=400000;
+ for(let i=0;i<part.length;i++){
+  if(part[i]!=='['&&part[i]!=='{')continue;const start=i,stack=[part[i]],quoted={value:false},state={escaped:false};let end=-1;
+  for(let j=i+1;j<part.length;j++){if(--budget<0)throw Error('回覆結構過於複雜，請重新整理JSON；原文仍保留');const c=part[j];if(quoted.value){if(state.escaped)state.escaped=false;else if(c==='\\')state.escaped=true;else if(c==='"')quoted.value=false;continue;}if(c==='"'){quoted.value=true;continue;}if(c==='['||c==='{')stack.push(c);else if(c===']'||c==='}'){if((c===']'&&stack.at(-1)!=='[')||(c==='}'&&stack.at(-1)!=='{'))break;stack.pop();if(!stack.length){end=j;break;}}}
+  if(end<0)continue;
+  try{const v=JSON.parse(part.slice(start,end+1)),match=heading.includes('整合')?v&&typeof v==='object'&&!Array.isArray(v)&&Array.isArray(v.changes):Array.isArray(v)?v.length>0&&v.every(x=>x&&typeof x==='object'&&'studyId'in x):v&&typeof v==='object'&&(Array.isArray(v.points)||Array.isArray(v.conclusions));if(match)found.push(v);i=end;}catch{/* ordinary discussion text is retained, not executed */}
+ }
+ if(found.length>1)throw Error('辨識到多份研究JSON，請保留這輪要整理的一份再預覽；原回覆不變');if(!found.length)throw Error('尚未辨識到完整JSON格式；可先保存自然討論，或用整理目前討論取得結論');return found[0];
+}
+export type PointPreview={taskId:string;raw:string;digest:string;points:ResearchPoint[];conclusions:ResearchConclusion[]};
+export function previewResearchPoints(s:StudioData,taskId:string,raw:string,title:string):PointPreview{
+ const task=s.researchWork.tasks.find(t=>t.id===taskId);if(!task||task.kind==='integration')throw Error('請選擇這份回覆對應的研究討論任務');if(researchTaskStale(s,task,title))throw Error('文章或研究已更新，請建立新一輪研究任務；舊回覆保留');
+ const data=jsonBlock(raw,'## 研究採用判讀'),rows=Array.isArray(data)?data:object(data).points??[];
+ const points=list(rows).map((x,i)=>{const r=object(x),studyId=text(r.studyId,120);if(!task.studies.some(s=>s.id===studyId))throw Error('判讀包含不屬於本輪的研究ID，請重新核對');const p={id:'point-'+sha256Text(JSON.stringify([taskId,raw,i])).slice(0,32),taskId,studyId,title:text(r.title),status:text(r.status),claim:text(r.claim),evidence:text(r.evidence),locator:text(r.locator??''),limitation:text(r.limitation),relation:text(r.relation),placement:text(r.placement??''),sentence:text(r.sentence),decision:'undecided',checked:false};return point(p);});const conclusions=(Array.isArray(data)?[]:list(object(data).conclusions??[])).map((x,i)=>{const v=object(x),c=conclusion({id:'conclusion-'+sha256Text(JSON.stringify([taskId,raw,i])).slice(0,32),taskId,kind:v.kind,text:v.text,reason:v.reason??'',studyIds:v.studyIds??[],pointIds:v.pointIds??[],decision:'undecided'});if(c.studyIds.some(id=>!task.studies.some(r=>r.id===id))||c.pointIds.some(id=>!task.points.some(p=>p.id===id)))throw Error('結論包含不屬於本輪的來源ID');return c;});if(!points.length&&!conclusions.length)throw Error('沒有可整理的重點或結論，原回覆仍保留');return{taskId,raw,digest:task.digest,points,conclusions};
+}
+export function confirmResearchPoints(s:StudioData,p:PointPreview,title:string):ResearchWork{if(p.raw!==s.researchWork.reply||p.taskId!==s.researchWork.replyTaskId)throw Error('回覆或對應任務已變更，請重新預覽');const fresh=previewResearchPoints(s,p.taskId,p.raw,title);if(JSON.stringify(fresh)!==JSON.stringify(p))throw Error('預覽已變更');const w=appendResearchRound(s,p.taskId,'judgement');for(const item of p.points)if(!w.points.some(x=>x.id===item.id))w.points.push(item);for(const item of p.conclusions)if(!w.conclusions.some(c=>c.id===item.id))w.conclusions.push(item);return w;}
+export type IntegrationPreview={taskId:string;raw:string;article:string;candidate:string;changes:{before:string;after:string;reason:string;pointIds:string[]}[];structureProposal:string;references:string[];unusedPointIds:string[]};
+export function previewResearchIntegration(s:StudioData,taskId:string,raw:string,title:string):IntegrationPreview{
+ const task=s.researchWork.tasks.find(t=>t.id===taskId);if(!task||task.kind!=='integration')throw Error('請選對應的研究整合任務');if(researchTaskStale(s,task,title))throw Error('文章、研究或採用決定已更新，請產生新一輪整合指令');
+ const data=object(jsonBlock(raw,'## 研究整合變更')),spans:{start:number;end:number;after:string}[]=[];
+ const changes=list(data.changes).map(x=>{const r=object(x),before=text(r.before),after=text(r.after),reason=text(r.reason),pointIds=list(r.pointIds).map(x=>text(x,120));if(!before.trim()||!after.trim()||!reason.trim()||!pointIds.length||pointIds.some(id=>!task.points.some(p=>p.id===id)))throw Error('每個變更需有原段落、新段落、理由及本輪已採用重點ID');const start=task.article.indexOf(before);if(start<0||task.article.indexOf(before,start+1)>=0||!task.article.split(/\n\s*\n/).includes(before))throw Error('原段落不精確、重複或跨段，請重排變更；未改動正文');if(spans.some(p=>start<p.end&&start+before.length>p.start))throw Error('同一段落不能重複改寫');spans.push({start,end:start+before.length,after});return{before,after,reason,pointIds};});if(!changes.length)throw Error('沒有段落變更，請先繼續討論');
+ let candidate=task.article;for(const p of spans.sort((a,b)=>b.start-a.start))candidate=candidate.slice(0,p.start)+p.after+candidate.slice(p.end);
+ const used=new Set(changes.flatMap(c=>c.pointIds)),unusedPointIds=task.points.filter(p=>!used.has(p.id)).map(p=>p.id);
+ const references=[...new Set(task.points.filter(p=>used.has(p.id)).flatMap(p=>task.studies.filter(r=>r.id===p.studyId).map(r=>r.title+'：'+r.source)))].filter(ref=>!candidate.includes(ref));if(references.length)candidate+='\n\n'+(candidate.includes('參考來源')?'':'參考來源\n')+references.map(x=>'－'+x).join('\n');if(candidate.length>80000)throw Error('整合稿超出文字長度，請先拆分');
+ return{taskId,raw,article:task.article,candidate,changes,structureProposal:text(data.structureProposal??''),references,unusedPointIds};
+}
+export function assertResearchHistory(prev:ResearchWork,next:ResearchWork){for(const c of prev.conclusions){const n=next.conclusions.find(x=>x.id===c.id);if(!n||JSON.stringify({...n,decision:c.decision})!==JSON.stringify(c))throw Error('已保存結論原文及來源不可改寫或刪除');}for(const t of prev.tasks)if(!next.tasks.some(x=>JSON.stringify(x)===JSON.stringify(t)))throw Error('已保存研究任務不可改寫或刪除');if(JSON.stringify(next.rounds.slice(0,prev.rounds.length))!==JSON.stringify(prev.rounds))throw Error('已保存研究回覆不可覆寫');for(const p of prev.points){const q=next.points.find(x=>x.id===p.id);if(!q||q.taskId!==p.taskId||q.studyId!==p.studyId)throw Error('研究重點的原始來源不可改掛或刪除');}}

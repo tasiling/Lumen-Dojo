@@ -1,0 +1,247 @@
+{
+  "date": "2026-11-05",
+  "timeZone": "Australia/Melbourne",
+  "scope": "draft implementation and standalone simulation; production and user phone acceptance pending",
+  "checks": [
+    {
+      "name": "domain_regression",
+      "passGroups": 105,
+      "results": [
+        "PASS G01/G05 raw AI remains candidate; stale adoption rejects and explicit reuse retains V1 task, source and author answers",
+        "PASS G05 C modes bind independent tasks and source changes warn without rewriting prior response",
+        "PASS G03 previous native imports backfill missing editable fields once without overwriting author edits or fixed versions",
+        "PASS G02/G03/G04 loose directions, legacy answers/history/platforms and time zone migrate into usable records; preview is read-only with create/resume and unconverted manifest",
+        "PASS G03 imported platform copy explicitly transfers into a fresh publication draft with fixed source and no automatic publishing",
+        "PASS G06 partial C0 capture joins same work without a topic; canonical identity/version retained, permissions stay off and changed source rejects",
+        "PASS G07 Liaojie shared pages preserve realm rather than linking back to hardcoded Weaving",
+        "PASS prototype selections use global segment indices, latest correction and independently pasted text",
+        "PASS imported editable works retain each selected source ID, segment locator and revision without granting external permission",
+        "PASS prototype real experiences retain experience type and author adoption",
+        "PASS private material retains its private reading policy after migration",
+        "PASS missing native backup retains archived/completed protection, independent source link and current fixed version across repeated restore",
+        "PASS graphics-only prototype restores its real fixed version and editable pages without requiring a separate text manuscript",
+        "PASS D restore resumes existing original without overwriting",
+        "PASS D restore maps exact fixed version, saves, preserves snapshot and retries: old-completion-present {",
+        "PASS D restore maps exact fixed version, saves, preserves snapshot and retries: all-missing {",
+        "PASS D restore maps exact fixed version, saves, preserves snapshot and retries: interrupted {",
+        "PASS D restore blocks unverifiable source and preserves original data: wrong-text",
+        "PASS D restore blocks unverifiable source and preserves original data: wrong-core",
+        "PASS D restore blocks unverifiable source and preserves original data: wrong-id",
+        "PASS D restore blocks unverifiable source and preserves original data: wrong-work",
+        "PASS D restore blocks unverifiable source and preserves original data: duplicate-id",
+        "PASS D restore blocks unverifiable source and preserves original data: missing-version",
+        "PASS C retains original story positioning, framework comparison and framework-specific expansion rules",
+        "PASS A preserves material-first exploration and routing; B and D retain operational framework specifications",
+        "PASS fixed source retains its author meaning while carrying this round’s explicit research, example and task choices",
+        "PASS original A JSON and D four-axis replies preview editable candidates without changing raw reply or manuscript",
+        "PASS Chinese reply sections parse into research/examples/manuscript without adopting AI recommendations",
+        "PASS repeated section application retains author use choices and rejects stale reply/mode",
+        "PASS unknown example types remain in original reply rather than becoming personal experiences",
+        "PASS reply preview cannot stamp old quotes with a newly selected fixed version or edited base text",
+        "PASS explicit adoption records full reply and prior saved body; repeated request does not duplicate history",
+        "PASS research and example adoption requirements apply at the actual server command",
+        "PASS adopting a supported long manuscript leaves readable complete round settings",
+        "PASS C source snapshots remain independent and historical record display does not change preview digest",
+        "PASS all prototype templates, story size, text frames and footers convert without dropping text or image bytes",
+        "PASS graphic preview makes zero writes, restore creates editable version and images with public permission reset",
+        "PASS graphic restore requires correct work/version and fresh existing-deck confirmation",
+        "PASS reply/graphic integration 11/11",
+        "PASS candidate routing resumes after lost reply without duplicate topics/directions",
+        "PASS routing appends existing direction version without automatically adopting it into the work",
+        "PASS stale candidate routing rejects before target records are created",
+        "PASS routing reuses candidate-owned target after unrelated edits and a new client operation",
+        "PASS actual wrapped prototype backup retains editable answers, both C modes and structured research",
+        "PASS legacy rounds and candidates become usable; merging appends without rewriting or duplicating versions",
+        "PASS prompt carries author decisions, research use and example adoption; reply parsing separates manuscript",
+        "PASS C transfer creates linked independent work, leaves parent untouched and retries without duplicates",
+        "PASS archival is visible in archive inventory and does not cascade to related original",
+        "PASS rounds cannot be erased, note saves retain completion state, explicit revision keeps fixed version",
+        "PASS wrapped backup imports end to end and repeats resume same IDs",
+        "PASS archived works require restoration before completion or revision",
+        "PASS standalone exploration survives native work normalization",
+        "PASS raw source and independent modules/research roundtrip without trimming",
+        "PASS oversized or forged source correction and publication permission rejected",
+        "PASS 14 independent directions and V1 snapshot survive V2",
+        "PASS only same work completion can seed D analysis",
+        "PASS draft catalog bounded independently of saved data count",
+        "PASS HTML migration retains IDs, raw corrections, separate modules and fixed versions",
+        "PASS same import resumes identities; same title with changed text is never deleted",
+        "PASS original-tool backup stays explicitly unconverted with byte-equivalent payload",
+        "PASS creative studio domain 9/9",
+        "PASS same create operation reopens exact work without new records",
+        "PASS save and fresh store read preserve independent modules and source",
+        "PASS stale window rejected without overwriting persisted text",
+        "PASS raw original immutable; corrections appended separately",
+        "PASS completion rejects unreviewed closing checks",
+        "PASS standalone work uses existing immutable completion and selected source",
+        "PASS fixed handoff works without fabricated shuttle and survives new draft",
+        "PASS all source context uses fixed adoption even if current work direction changes",
+        "PASS topic holds 14 independently versioned directions",
+        "PASS reimport with new operation preserves canonical native ID",
+        "PASS actual API enforces owner auth and returns cache-private response",
+        "PASS oversized import is rejected as HTTP failure before storage writes",
+        "PASS studio integration 12/12",
+        "PASS completed operation can replay through studio wrapper after revision advances",
+        "PASS direct existing handoff API cannot bypass fixed studio public permission",
+        "PASS legacy completion context is never read from newer studio draft",
+        "PASS private reading setting rejects contradictory public/external grants",
+        "PASS story PNG output matches saved 1080x1920 layout",
+        "PASS D external context uses selected fixed understanding, never current draft angle",
+        "PASS HTML topic/direction/fixed-text migration, immutable adoption and exact reimport",
+        "PASS native graphic layout accepts independent title/body controls and story dimensions",
+        "PASS legacy deck retains original layout before explicit adjustment",
+        "PASS overlapping title/body blocks and off-canvas text are blocked",
+        "PASS invalid numeric settings and unknown control properties fail without truncation",
+        "PASS graphic v2 4/4",
+        "PASS Melbourne wall time uses correct date and UTC offset",
+        "PASS blank question accepted; capacity enforced before write",
+        "PASS sync creates three distinct milestones and retries same event IDs",
+        "PASS reschedule moves same calendar record into new month without duplicate",
+        "PASS private delivery contains collective and exactly one recipient",
+        "PASS activity work resumes same native draft without customer question leakage",
+        "PASS service API blocks unauthenticated recipient reads",
+        "PASS service integration 7/7",
+        "PASS voice samples require actual published text and preserve exact version; planned/private excluded",
+        "PASS Canva: separate external permission, fixed minimal snapshot, canonical source version, replay, exact-domain and result URL validation",
+        "PASS browser operation identity: known SHA256 vectors, Unicode/long payload, UUID",
+        "PASS denied clipboard uses selection fallback; total failure remains explicit and cleans up",
+        "PASS first native save preserves exact original multi-source IDs/versions/kinds",
+        "PASS different variants sharing old ID both survive partial reimport",
+        "PASS stable pending create/direction identity survives retry then rotates after ack",
+        "PASS service work reopens after brief update with original UI operation",
+        "PASS D requires selected fixed text grant instead of newer draft permission",
+        "PASS native backup reopens existing canonical work and can restore missing work",
+        "PASS native source return: canonical work ID, new fixed version/draft distinction, legacy access"
+      ]
+    },
+    {
+      "name": "targeted_gaps",
+      "passGroups": 7,
+      "results": [
+        "PASS G01/G05 raw AI remains candidate; stale adoption rejects and explicit reuse retains V1 task, source and author answers",
+        "PASS G05 C modes bind independent tasks and source changes warn without rewriting prior response",
+        "PASS G03 previous native imports backfill missing editable fields once without overwriting author edits or fixed versions",
+        "PASS G02/G03/G04 loose directions, legacy answers/history/platforms and time zone migrate into usable records; preview is read-only with create/resume and unconverted manifest",
+        "PASS G03 imported platform copy explicitly transfers into a fresh publication draft with fixed source and no automatic publishing",
+        "PASS G06 partial C0 capture joins same work without a topic; canonical identity/version retained, permissions stay off and changed source rejects",
+        "PASS G07 Liaojie shared pages preserve realm rather than linking back to hardcoded Weaving"
+      ]
+    },
+    {
+      "name": "native_ui",
+      "passGroups": 26,
+      "results": [
+        "PASS Liaojie creates same native work data with its own route, header and realm skin",
+        "PASS paste previews structured content, preserves raw reply and copies author-controlled research/example choices",
+        "PASS C modes retain independent source/reply/candidate; transfer creates linked child without replacing original",
+        "PASS completed works leave active list; archive/restore retains independent state and source links",
+        "PASS legacy graphics preview/restore preserves templates, editable footer/typography and marks image origin unverified",
+        "PASS restored graph pages generate and persist PNG outputs after explicit image/source review",
+        "PASS no uncaught browser errors",
+        "PASS empty home has usable starting action",
+        "PASS empty home renders without overflow at 320/375/390/430/1024px",
+        "PASS catalog remains five rows per page; search and pagination work",
+        "PASS B/C/D are independent editable text; research stays outside manuscript",
+        "PASS failed save preserves editable text; same-intent retry saves",
+        "PASS unsaved navigation offers stay and retains inputs",
+        "PASS lost response replays saved operation without duplicate work",
+        "PASS conflict compares remote and reapplies local edit with fresh revision",
+        "PASS review creates fixed version and selects it for D/handoff",
+        "PASS nonempty review renders at five required widths",
+        "PASS D records chosen fixed text and can save analysis",
+        "PASS fixed version enters existing Liaojie publication workbench",
+        "PASS Liaojie has distinct publishing/service/Sanko entrance",
+        "PASS owner activity saves blank question and enforces capacity",
+        "PASS no uncaught browser errors",
+        "PASS native weaving: B starts without A, uses author decisions, saves and reloads; switching retains work and sources",
+        "PASS native liaojie: B starts without A, uses author decisions, saves and reloads; switching retains work and sources",
+        "PASS native A generates material exploration instructions without a complete draft",
+        "PASS native legacy v9 boundary, import entry and same-realm new B route; no uncaught browser errors"
+      ]
+    },
+    {
+      "name": "html_new_workflows",
+      "passGroups": 7,
+      "results": [
+        "PASS G06 raw C0 clip partial selection joins same Liaojie B work with identity, version and character range; permissions remain off",
+        "PASS G01/G05 actual copy/paste UI binds frozen task; changed author intent blocks adoption and explicit reuse keeps original source",
+        "PASS G03/G04 UI previews original-to-native work/fixed-version mapping, editable migrated fields and unconverted items; repeats resume same work",
+        "PASS G02 loose direction edits, three immutable understandings and metadata survive assignment into a real existing topic",
+        "PASS G03/G07 migrated platform copy hands off as independent draft and returns to same Liaojie source work",
+        "PASS G07 both realms open and return from shared topics/import/voice/sources without duplicating works",
+        "PASS offline reload retains new migration/task/source data with no uncaught errors or network calls"
+      ]
+    },
+    {
+      "name": "html_existing_workflows",
+      "passGroups": 10,
+      "results": [
+        "PASS offline home and both realm entrances render with native palettes",
+        "PASS original A JSON and B research/example/manuscript preview preserve raw replies and require explicit adoption",
+        "PASS C modes retain separate bases and replies; story is a separate linked work",
+        "PASS fixed completion, D analysis and archive/restore preserve the completed state",
+        "PASS completed child leaves active list and remains independently accessible",
+        "PASS five native templates restore, accept an image, keep text controls, and generate persistent PNGs offline",
+        "PASS Canva handoff snapshots and returned result links can be reviewed without calling Canva",
+        "PASS fixed graphic source hands off to native publishing workspace and an independent platform text draft",
+        "PASS original Sanko tool remains embedded with its method names and no external asset dependency",
+        "PASS local reload keeps preview work; no uncaught browser errors or HTTP requests"
+      ]
+    },
+    {
+      "name": "html_entry_guidance",
+      "passGroups": 4,
+      "results": [
+        "PASS weaving: draft starts directly in B, generates instructions without A, saves and reloads",
+        "PASS liaojie: draft starts directly in B, generates instructions without A, saves and reloads",
+        "PASS A accepts an unfinished idea; switching this work to B preserves the same work and selected text",
+        "PASS legacy diamond route clearly explains v9, exposes migration and enters the new B in the same realm"
+      ]
+    },
+    {
+      "name": "html_backup_restore",
+      "passGroups": 2,
+      "results": [
+        "PASS native preview backup roundtrip replaces only local simulation and refreshes the visible catalog",
+        "PASS reset refreshes source links; simulated failed save retains input and retries successfully"
+      ]
+    }
+  ],
+  "gaps": {
+    "G01": {
+      "status": "implemented_and_isolated_tested",
+      "userPhoneAccepted": false
+    },
+    "G02": {
+      "status": "implemented_and_isolated_tested",
+      "userPhoneAccepted": false
+    },
+    "G03": {
+      "status": "implemented_and_isolated_tested",
+      "userPhoneAccepted": false
+    },
+    "G04": {
+      "status": "implemented_and_isolated_tested",
+      "userPhoneAccepted": false
+    },
+    "G05": {
+      "status": "implemented_and_isolated_tested",
+      "userPhoneAccepted": false
+    },
+    "G06": {
+      "status": "implemented_and_isolated_tested",
+      "userPhoneAccepted": false
+    },
+    "G07": {
+      "status": "implemented_and_isolated_tested",
+      "userPhoneAccepted": false
+    }
+  },
+  "limitations": [
+    "No production deployment or live data migration in this task.",
+    "Actual iPhone Safari storage/clipboard and real user backup still require acceptance.",
+    "External AI, Canva automation, social scheduling and automatic publication are not implemented.",
+    "Unknown/media-only legacy fields remain archived with explicit preview manifest.",
+    "Native import UI limit remains 3.5 MB; API request limit remains 4,000,000 characters."
+  ]
+}

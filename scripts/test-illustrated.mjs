@@ -11,7 +11,9 @@ try {
   assert.throws(() => m.parseDeckDraft({ ...draft, pages: Array(13).fill(page) }), /12/);
   assert.throws(() => m.parseDeckDraft({ ...draft, pages: [page, page] }), /重複/);
   assert.throws(() => m.parseDeckDraft({ ...draft, pages: [{ ...page, image: { assetId: '../file', publicConfirmed: true } }] }), /圖片/);
-  assert.throws(() => m.parseDeckDraft({ ...draft, pages: [{ ...page, body: '長'.repeat(601) }] }), /600/);
+  assert.equal(m.parseDeckDraft({ ...draft, pages: [{ ...page, body: '長'.repeat(601) }] }).pages[0].body.length,601,'legacy text is retained for editing; layout validation controls output');
+  assert.throws(() => m.parseDeckDraft({ ...draft, pages: [{ ...page, body: '長'.repeat(80001) }] }), /80000/);
+  assert(m.layoutPage({ ...page, body: '長'.repeat(601) }).overflow, 'long text remains editable but cannot silently overflow generated output');
   assert(m.layoutPage({ ...page, title: '很長'.repeat(100) }).overflow, 'overflow must block output');
   assert(m.wrapCardText('m'.repeat(23),15).length>=2,'wide Latin title must wrap');
   assert.equal(m.wrapCardText('a\t  b',24)[0],'a      b','tabs have fixed shared whitespace semantics');

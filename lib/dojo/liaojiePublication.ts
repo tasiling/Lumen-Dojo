@@ -9,7 +9,7 @@ export type LiaojiePublicationProject = {
   comicOutputRefs: string[];
   longVideoOutputRefs: string[];
   videoOutputRefs: string[];
-  revision: number; sourceCompletionVersionId: string | null; handoffOperationId: string | null;
+  sourceReturnRealm?:'weaving'|'liaojie'; revision: number; sourceCompletionVersionId: string | null; handoffOperationId: string | null;
   sourceFormat: "text" | "comic" | "video" | "legacy";
   version: 2; recordType: "liaojie-publication-project"; id: string;
   weavingProjectId: string; weavingShuttleId: string; weavingWorkId: string; sourceCoreVersionId: string;
@@ -36,6 +36,7 @@ export function normalizeLiaojieProject(value: unknown, options: { id: string; t
     longVideoOutputRefs: Array.isArray(source.longVideoOutputRefs) ? [...new Set(source.longVideoOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     illustratedOutputRefs: Array.isArray(source.illustratedOutputRefs) ? [...new Set(source.illustratedOutputRefs.filter((v): v is string => typeof v === 'string' && v.length <= 300))] : [],
     revision: typeof source.revision === "number" && Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
+    sourceReturnRealm:source.sourceReturnRealm==='liaojie'?'liaojie':'weaving',
     sourceCompletionVersionId: text(source.sourceCompletionVersionId, 300) || null, handoffOperationId: text(source.handoffOperationId, 120) || null,
     sourceFormat: source.sourceFormat === "text" || source.sourceFormat === "comic" || source.sourceFormat === "video" ? source.sourceFormat : "legacy",
     version: 2, recordType: "liaojie-publication-project", id: options.id,

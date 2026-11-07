@@ -1,5 +1,7 @@
 /* Native creative workspaces use the shared realm palette and control primitives. */
 .studio,.studio-home {color:var(--ink,#253c5c);min-width:0}
+.studio-graphic-preview {min-width:0;max-width:100%}
+.studio-graphic-preview svg {display:block;width:100%;height:auto;max-width:100%}
 .studio {max-width:1000px;margin:auto;padding-bottom:24px}
 .studio p,.studio-home p {line-height:1.75;overflow-wrap:anywhere}
 .studio .ritual-card,.studio-home .ritual-card {margin:24px 0;padding:24px;min-width:0}
@@ -57,3 +59,107 @@
 @media(min-width:900px) {.studio-home {grid-template-columns:1fr 1fr;align-items:start}.studio-home .ritual-card {padding:28px}.studio-workspace .ritual-card {padding:28px}}
 @media(max-height:600px) {.studio-save {position:static;inset:auto}}
 .studio-home .studio-tools-entry {grid-column:1/-1;}
+
+.studio-choice{margin:18px 0}.studio-choice .studio-actions{justify-content:flex-start;margin-top:8px}.studio button[aria-pressed=true]{background:var(--creative-accent,#8b3f68);color:white}.studio-collaboration{border-block:1px solid var(--border,#ddd);padding-block:16px}.studio pre.studio-manuscript{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.studio-writing-guide {margin:20px 0;min-width:0;color:var(--ink,#253c5c)}
+.studio-writing-guide h2 {font-size:1.25rem;font-weight:700;line-height:1.5;text-wrap:balance}
+.studio-writing-guide p {margin:10px 0;line-height:1.75;overflow-wrap:anywhere}
+.studio-writing-choices {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0;min-width:0}
+.studio-writing-choices article {min-width:0;padding:16px;border:1px solid var(--creative-line,#ebddec);border-radius:16px;background:var(--creative-soft,#f8e7f4);display:flex;flex-direction:column}
+.studio-writing-choices h3 {font-size:1.0625rem;font-weight:700;line-height:1.6}
+.studio-writing-choices small {display:block;font-size:.875rem;line-height:1.75;color:var(--muted,#58677c);margin-bottom:16px}
+.studio-writing-choices button {min-height:48px;width:100%;margin-top:auto!important;white-space:normal!important;line-height:1.5!important;padding:12px!important;color:var(--creative-accent,#8b3f68);background:var(--paper,#fff);border:1px solid var(--creative-line,#ebddec);border-radius:12px;cursor:pointer}
+.studio-writing-choices button:disabled {opacity:.55;cursor:wait}
+.studio-writing-guide :focus-visible {outline:3px solid var(--creative-accent,#8b3f68);outline-offset:3px}
+.studio-writing-guide .studio-writing-next {font-size:.9375rem}
+.studio-entry-input {padding:16px;border:1px solid var(--creative-line,#ebddec);border-radius:16px;margin:16px 0}
+.original-legacy-boundary {padding:16px;margin:0;background:var(--creative-soft,#f8e7f4);border-block:1px solid var(--creative-line,#ebddec);font-weight:650}
+@media(max-width:599px) {.studio-writing-choices {grid-template-columns:1fr}}
+
+.studio-targets {display:grid;gap:24px;margin:24px 0;padding:20px 0;border-block:1px solid var(--creative-line,#e5d9e9)}
+.studio-target-group {min-width:0}.studio-target-group>b {display:block;margin-bottom:10px}
+.studio-target-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-width:0}
+.studio .studio-target-grid button {width:100%;min-width:0;min-height:48px;margin:0!important;padding:10px 4px!important;white-space:normal!important;overflow-wrap:anywhere;line-height:1.5!important}
+.studio-target-group p {margin:10px 0 0;font-size:.9375rem}
+.studio-b-intake,.studio-research {margin:24px 0;padding-block:20px;border-top:1px solid var(--creative-line,#e5d9e9);min-width:0}
+.studio-reply-actions {display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;align-items:stretch}
+.studio .studio-reply-actions button {flex:1 1 12rem;min-height:48px;white-space:normal!important;line-height:1.6!important;margin:0!important}
+.studio-reply-preview {margin:20px 0;padding:16px;border:1px solid var(--creative-accent,#8b3f68);border-radius:12px;background:var(--creative-soft,#f8e7f4)}
+
+/* Scoped controls: equal columns and stable gaps, including research and secondary actions. */
+.studio-choice .studio-actions,.studio-collaboration-tools,.studio-transfer-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.studio .studio-choice .studio-actions button,.studio .studio-collaboration-tools button,.studio .studio-transfer-actions button {width:100%;min-width:0;min-height:48px;white-space:normal!important;overflow-wrap:anywhere;text-wrap:balance;line-height:1.6!important;padding:12px 8px!important;margin:0!important}
+.studio-collaboration-tools {margin:24px 0;padding-top:20px;border-top:1px solid var(--creative-line,#e5d9e9)}
+.studio-instruction-transfer {margin:24px 0;padding:20px 0;border-top:1px solid var(--creative-line,#e5d9e9);min-width:0}
+.studio-instruction-transfer h3 {font-size:1.125rem;line-height:1.6;margin-bottom:12px}
+.studio .studio-copy-primary {display:block;width:100%;min-height:52px;white-space:normal!important;margin:0!important}
+.studio-instruction-transfer textarea[readonly] {user-select:text;-webkit-user-select:text;min-height:180px}
+.studio-instruction-transfer [role=status],.studio-instruction-transfer [role=alert] {margin:12px 0}
+.studio-transfer-actions {margin:16px 0}
+
+.studio-collaboration-tools button>span,.studio-collaboration-tools button>small {display:block}.studio-collaboration-tools button>small {font-size:.8125rem;font-weight:400;margin-top:4px}
+
+.studio-research-workbench {min-width:0}.studio-research-step {margin:20px 0;padding:16px;border:1px solid var(--creative-line,#e5d9e9);border-radius:12px;min-width:0}.studio-research-step h3 {font-size:1.125rem;line-height:1.6;text-wrap:balance}.studio-study-card {padding:12px 0;border-bottom:1px solid var(--creative-line,#e5d9e9);min-width:0}.studio-study-card .studio-check {display:flex;gap:10px;align-items:flex-start}.studio-study-card input[type=checkbox] {flex-shrink:0;margin-top:6px}.studio-study-source {font-size:.875rem;overflow-wrap:anywhere}.studio-point-card {margin:12px 0;border:1px solid var(--creative-line,#e5d9e9);border-radius:12px;padding:12px!important}.studio-research-step>button {min-height:48px;white-space:normal!important;width:100%;margin:12px 0!important}.studio-research-step .studio-transfer-actions button {min-height:48px}.studio-research-workbench pre {white-space:pre-wrap;overflow-wrap:anywhere}.studio-research-workbench .studio-reply-preview {padding:12px}.studio-research-workbench h4 {line-height:1.6;margin-top:16px}.studio-research-workbench textarea {font-weight:400}
+
+/* Research dialogue: author and GPT turns remain separate and readable on phones. */
+.studio-discussion-context,.studio-discussion-timeline {min-width:0;margin:20px 0}
+.studio-discussion-turn,.studio-discussion-conclusion {min-width:0;padding:16px 0;border-top:1px solid var(--creative-line,#e5d9e9)}
+.studio-discussion-turn-head {display:grid;gap:8px;margin-bottom:16px}
+.studio-discussion-author {padding:16px;margin:16px 0;background:var(--creative-soft,#f8e7f4);border:1px solid var(--creative-line,#e5d9e9);border-radius:10px;min-width:0}
+.studio-discussion-turn .studio-manuscript,.studio-discussion-author .studio-manuscript {margin:8px 0 20px;white-space:pre-wrap;overflow-wrap:anywhere}
+.studio-research-workbench .studio-check {display:flex;gap:10px;align-items:flex-start;min-height:44px;line-height:1.7}
+.studio-research-workbench .studio-check input {flex:0 0 22px;width:22px;height:22px;margin-top:3px}
+.studio-discussion-turn>button,.studio-discussion-author>button {min-height:48px;width:100%;white-space:normal!important;margin:12px 0!important}
+#research-discussion,#research-author-answer,#research-author-question {scroll-margin-top:24px;scroll-margin-bottom:110px}
+
+.studio-research-shortcut {padding:16px;margin:20px 0;border:1px solid var(--creative-accent,#8b3f68);background:var(--creative-soft,#f8e7f4);border-radius:12px}
+.studio-research-shortcut h2 {font-size:1.125rem;line-height:1.6}.studio-research-shortcut button {display:block;width:100%;min-height:48px;white-space:normal!important}
+.studio-discussion-settings>summary,.studio-discussion-timeline>summary {cursor:pointer;min-height:48px;line-height:1.7;padding:12px 0;font-weight:600}
+.studio-discussion-settings[open] {padding-bottom:16px}.studio-research-workbench .studio-reply-preview>button {width:100%;min-height:48px;white-space:normal!important}
+
+/* B handoff: show complete fields and article choice without stretching the mobile card. */
+.studio-b-intake .studio-reply-preview article {padding:12px 0;border-bottom:1px solid var(--creative-line,#e5d9e9);min-width:0;overflow-wrap:anywhere}
+.studio-b-intake .studio-reply-preview button {white-space:normal!important;min-height:48px;max-width:100%;overflow-wrap:anywhere}
+.studio-article-choice {margin-top:16px}.studio-article-choice select {width:100%;min-width:0}.studio-article-choice p {overflow-wrap:anywhere}
+
+/* Layout audit: preserve realm styling while making every local action reachable. */
+.studio .studio-steps {gap:8px}
+.studio details[open]>summary {margin-bottom:12px}
+.studio .studio-reply-preview>button {display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:12px 0!important;white-space:normal!important;line-height:1.6!important}
+.studio .ritual-card>a:not(.button-link),.studio-collaboration>a:not(.button-link) {display:inline-flex;align-items:center;min-height:44px;margin-block:8px;line-height:1.6;overflow-wrap:anywhere}
+.studio .studio-point-card>button {display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin-block:12px;white-space:normal!important;line-height:1.6!important}
+.dojo.creative-shell.creative-shell #view .studio .studio-visible-research>h3 {margin-top:0}
+.studio .studio-visible-research .studio-study-card:last-child {border-bottom:0;padding-bottom:0}
+.studio .studio-reply-preview>article {padding-block:16px;border-bottom:1px solid var(--creative-line,#e5d9e9);min-width:0;overflow-wrap:anywhere}
+.studio .studio-reply-preview>article:last-of-type {border-bottom:0}
+
+/* Writing usability: preserve realm colors, give each task a clear local action. */
+.studio-workspace .studio-work-state {padding:12px 16px;background:var(--creative-soft,#f8e7f4)}
+.studio-workspace .studio-work-state>p {margin:0}
+.studio-workspace .studio-work-state summary {min-height:44px;display:flex;align-items:center}
+.studio-workspace .studio-work-state details>button {margin:8px 8px 8px 0!important}
+.studio-workspace .studio-use-article {margin-block:24px;padding-block:20px;border-block:1px solid var(--creative-line,#e5d9e9)}
+.studio-workspace .studio-use-article>button {width:100%;min-height:48px;white-space:normal!important}
+.studio-workspace .studio-research-workbench>.studio-research-step {padding:20px 0;border:0;border-top:1px solid var(--creative-line,#e5d9e9);border-radius:0;background:transparent}
+.studio-workspace .studio-later-step>summary {font-size:1.125rem;font-weight:650;line-height:1.6;padding-block:12px;min-height:48px}
+.studio-workspace .studio-later-step[open]>summary {margin-bottom:16px}
+.studio-workspace .studio-research-workbench .studio-reply-preview {margin-block:16px}
+.studio-workspace .studio-discussion-author {padding:12px 0!important;border:0!important;background:transparent!important}
+.studio-workspace .studio-reply-actions,.studio-workspace .studio-transfer-actions {justify-content:flex-start;gap:12px}
+.studio-workspace .studio-reply-actions button,.studio-workspace .studio-transfer-actions button {padding:12px 16px!important}
+.studio-workspace .studio-instruction-transfer details[open] {margin-top:16px}
+.studio-workspace .studio-secondary>summary {min-height:44px;padding-block:12px}
+.studio-workspace .studio-collaboration>p {max-width:64ch}
+@media(max-width:430px){
+ .studio-workspace .studio-modules {gap:8px}
+ .studio-workspace .studio-modules button {padding:10px 4px!important}
+ .studio-workspace .studio-modules small {font-size:.875rem;line-height:1.5}
+ .studio-workspace .studio-reply-actions>button {flex-basis:100%}
+}
+@media(max-width:430px) {
+ .studio .studio-research-step,.studio .studio-discussion-author {padding:12px}
+}
+
+.studio.mp-workspace .mp-head>a,.studio.mp-workspace .mp-source>a {display:inline-flex;align-items:center;min-height:44px;margin-block:4px;line-height:1.6}
+.studio :is(input,textarea)::placeholder {color:var(--muted,#58677c);opacity:1}
+.studio.mp-workspace button[aria-pressed=true] {background:var(--creative-soft,#f8e7f4);color:var(--ink,#253c5c);border-color:var(--creative-accent,#8b3f68);box-shadow:inset 0 -2px var(--creative-accent,#8b3f68)}

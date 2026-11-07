@@ -1,0 +1,9 @@
+import React,{useSyncExternalStore}from'react';
+const subscribe=(f:()=>void)=>{addEventListener('hashchange',f);return()=>removeEventListener('hashchange',f)};
+export const current=()=>location.hash.slice(1)||'/weaving';
+export function navigate(href:string){if(!href.startsWith('/'))return;location.hash=href;scrollTo({top:0});}
+export function usePathname(){return useSyncExternalStore(subscribe,current).split('?')[0]}
+export function useSearchParams(){const route=useSyncExternalStore(subscribe,current);return new URLSearchParams(route.split('?')[1]||'')}
+export function useRouter(){return{push:navigate,replace:navigate,back:()=>history.back(),refresh:()=>dispatchEvent(new HashChangeEvent('hashchange'))}}
+export function Link({href,children,onClick,...props}:any){return <a {...props} href={'#'+href} onClick={e=>{onClick?.(e);if(!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey){e.preventDefault();navigate(href)}}}>{children}</a>}
+export function notFound(){throw Error('這份預覽找不到此頁面')}
