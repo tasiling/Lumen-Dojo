@@ -33,8 +33,8 @@ async function focusAudit(realm){
  const problems=[];
  for(const [width,height] of [[390,844],[390,500],[844,390]]){
   await p.setViewportSize({width,height});
-  for(const name of ['這次要討論哪份文章？','我想問 ChatGPT','我的回答或補充','貼上 ChatGPT 加入研究後的修改建議','保存']){
-   const target=name==='保存'?btn(name):p.getByLabel(name,{exact:true});if(!await target.count())continue;
+  for(const name of ['這次要討論哪份文章？','我想問 ChatGPT','我的回答或補充','貼上 ChatGPT 加入研究後的修改建議','儲存草稿']){
+   const target=name==='儲存草稿'?btn(name):p.getByLabel(name,{exact:true});if(!await target.count())continue;
    await target.scrollIntoViewIfNeeded();await target.focus();
    const x=await target.evaluate(el=>{const r=el.getBoundingClientRect(),cx=r.x+r.width/2,cy=r.y+Math.min(r.height/2,25),hit=document.elementFromPoint(cx,cy);return {name:el.labels?.[0]?.textContent||el.textContent,rect:{y:r.y,b:r.bottom,h:r.height},hit:hit?.closest('.nav,.studio-save,.top')?.className||'',visible:cy>=0&&cy<innerHeight&&(!hit||el===hit||el.contains(hit))};});
    if(!x.visible)problems.push({width,height,...x});

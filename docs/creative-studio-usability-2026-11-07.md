@@ -35,8 +35,17 @@ Use plain action-and-result language, one primary action per local task, existin
 - HTML supported suites passed: usability 8; research recovery 10; natural return 10; discussion entry 10; discussion 13; research integration/backup 13; clipboard 7; B repair/backup 11; retained media/backup 3. Three native-only test scripts were initially attempted against file mode and rejected connection to their required fixture server; they were subsequently run in the native environment, not counted as HTML results.
 - Final HTML layout audit: 210 realm/state/viewport cases, 0 undersized controls, 0 spacing/label gaps, 0 horizontal overflows, 0 unnamed fields, no uncaught errors or covered focus targets; tested text/placeholder contrast passed. It covers 320/375/390/430 px, 150% type, landscape and desktop, plus existing media views.
 - Reviewed actual Chinese screenshots using Noto Sans CJK TC in the test runtime. Existing realm colors/navigation remain in place. This does not substitute for the user's iPhone/Safari or prove subjective ease of use.
-- All updates remain draft-only. Existing media adapters, eight named creation methods, private material, authored prose and external ChatGPT copy/paste remain intact. No publication or automatic AI was added.
+- All updates remain draft-only. Existing media adapters, eight named creation methods, private material, authored prose and external ChatGPT copy/paste remain intact. This UI revision adds no automatic publishing or automatic AI.
 
 ## Scoped correction retained
 
 A technically working action can still mislead when its label describes an eventual AI task instead of the immediate website result. Name the immediate action, distinguish selecting content from changing the article, and preserve user edits when adding a review screen. A spacing audit alone is not an ease-of-use review.
+
+
+## Concurrent preview merge
+
+The first Library replacement correctly rejected the expected version 16 because another conversation had saved version 17 with a review/publication workspace. Materialized and reviewed that newer file (SHA-256 `89e37af8023f2b6bf06c4e59107f3cae53c18852a21e699f55f6e77c0abe674a`) before reapplying changes. All UI modules targeted by this revision were unchanged between the two bases. The updater now requires that reviewed version 17 and emits version 18.
+
+The newer local adapter, router, publication UI/model and styles are retained. All 91 non-target compiled modules compare byte-for-byte with version 17; no full-bundle rebuild was used. The source branch covers the studio UI changes; publication additions remain in the authoritative preview and are not represented as a native migration by this revision.
+
+Merged HTML rechecks passed: usability 8/8, research recovery 10/10, research integration/backup 13/13 and existing media/backup 3/3. A separate smoke test passed 4/4 for the retained publication workspace: draft create/save/reopen, explicit review and fixed version, platform preview/confirmation without actual publication, and full backup/restore. The merged layout audit again passed 210 cases. No deployment or phone acceptance has occurred.
