@@ -42,6 +42,12 @@ R2｜研究二的中文名稱
 // Chinese enumerated headings from natural GPT output; manuscript remains synthetic.
 export const chineseResearch = natural.replace('R1｜研究一的中文名稱','一、研究一的中文名稱').replace('R2｜研究二的中文名稱','二、研究二的中文名稱');
 
+export const proseJsonStudies = [
+ {title:'Synthetic study one',source:'Demo（2020），Example Journal。論文 DOI⁠￼。',mechanism:'第一項研究的機制。',scope:'目前只有摘要，不能套用個人因果。',relation:'對應文章的第二段。'},
+ {title:'Synthetic study two',source:'https://example.org/study-two',mechanism:'第二項機制。',scope:'只供虛構測試。',relation:'對應文章的第三段。'}
+];
+export const proseJsonResearch = natural.replace(/研究參考\n[\s\S]*?\n例子提案/, '研究參考\n研究僅供背景，不能推論個人動機。\n\n'+JSON.stringify(proseJsonStudies,null,2)+'\n\n可核對原文：論文連結。\n\n例子提案');
+
 // Same field structure as the user's next GPT response, with a synthetic manuscript.
 export const bareResearch = `討論回覆
 本輪先討論文章。

@@ -18,18 +18,40 @@ export type ReplyPreview = {
     candidates: StudioData['collaboration']['candidates'];
     platformDrafts: { platform: string; text: string }[];
     warnings: string[];
+    /** Extraction failed, not a queued background job or an empty result. */
+    researchFailure?: string;
 };
 const obj = (v: unknown): Record<string, unknown> | null => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : null;
 const str = (v: unknown) => typeof v === 'string' ? v : '';
-function array(text: string): unknown[] | null {
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i), data = fenced?.[1] ?? text.trim();
-    try {
-        const v = JSON.parse(data);
-        return Array.isArray(v) ? v : null;
+function array(text: string, prefix: string, warnings: string[]): unknown[] | null {
+    // Scan balanced arrays inside this section only. Quotes/escapes protect brackets
+    // in source text; do not execute content, repair invalid JSON or guess fields.
+    const found: unknown[][] = [];
+    let budget = 400000;
+    if (text.length > 80000) { warnings.push('資料段落過長，未解析；請分批整理，完整原文仍保留。'); return null; }
+    for (let i=0;i<text.length;i++) {
+        if(text[i]!=='[')continue;
+        const stack=['['];let quoted=false,escaped=false,end=-1;
+        for(let j=i+1;j<text.length;j++) {
+            if(--budget<0){warnings.push('資料結構過於複雜，未解析；完整原文仍保留。');return null;}
+            const c=text[j];
+            if(quoted){if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"')quoted=false;continue;}
+            if(c==='"'){quoted=true;continue;}
+            if(c==='['||c==='{')stack.push(c);
+            else if(c===']'||c==='}'){
+                if((c===']'&&stack.at(-1)!=='[')||(c==='}'&&stack.at(-1)!=='{'))break;
+                stack.pop();if(!stack.length){end=j;break;}
+            }
+        }
+        if(end<0)continue;
+        try {
+            const v:unknown=JSON.parse(text.slice(i,end+1));
+            if(Array.isArray(v)&&v.every(x=>{const r=obj(x);return !!r&&(prefix==='E'?['kind','種類','類型']:['title','名稱','標題']).some(k=>typeof r[k]==='string');}))found.push(v);
+            i=end;
+        }catch{/* Invalid input stays verbatim for preview/manual correction. */}
     }
-    catch {
-        return null;
-    }
+    if(found.length>1){warnings.push('同一段落有多份資料陣列，尚未選定；請保留本輪要使用的一份再預覽，原文仍保留。');return null;}
+    return found[0]??null;
 }
 const value = (row: Record<string, unknown>, ...keys: string[]) => keys.map(k => str(row[k])).find(Boolean) || '';
 function labelled(text: string): Record<string, string> {
@@ -46,8 +68,8 @@ function labelled(text: string): Record<string, string> {
     }
     return row;
 }
-function entries(text: string, prefix: string): Record<string, unknown>[] {
-    const parsed = array(text);
+function entries(text: string, prefix: string, warnings: string[] = []): Record<string, unknown>[] {
+    const parsed = array(text,prefix,warnings);
     if (parsed)
         return parsed.map(obj).filter((x): x is Record<string, unknown> => !!x);
     // Natural research replies also use Chinese/Arabic enumeration, not only R1.
@@ -152,7 +174,7 @@ export function replySource(s: StudioData) {
 export function previewReply(s: StudioData, source = replySource(s)): ReplyPreview {
     const reply = replyText(s), sections = parseReply(reply), warnings: string[] = [], research: Research[] = [], examples: StudioData['examples'] = [], candidates: ReplyPreview['candidates'] = [];
     const rs = sections['研究參考'] || '';
-    for (const r of entries(rs, 'R')) {
+    for (const r of entries(rs, 'R', warnings)) {
         const academic = value(r, 'title', '名稱', '標題'), heading=value(r,'heading'), title=heading&&heading!==academic?heading+'\n'+academic:academic, source = value(r, 'source', '出處', '來源', '連結');
         if (!title) {
             warnings.push('一筆研究缺少名稱，保留在完整回覆中。');
@@ -164,8 +186,11 @@ export function previewReply(s: StudioData, source = replySource(s)): ReplyPrevi
         if(missing.length)warnings.push('「'+(heading||title)+'」缺少'+missing.join('、')+'；完整原文仍保留，可手動補齊。');
         if(!/https?:\/\/\S+|10\.\d{4,9}\/[^\s。]+/i.test(source))warnings.push('「'+(heading||title)+'」未附可複製的 DOI 或完整網址；僅書目或「論文 DOI」標籤不代表已核對來源。');
     }
-    if (rs.trim() && !research.length)
-        warnings.push('研究段落未能逐筆辨識，請手動整理或請 AI 按固定欄位重排。');
+    const researchFailure = rs.trim() && !research.length && array(rs, 'R', [])?.length !== 0
+        ? warnings.find(w => /資料段落過長|資料結構過於複雜|多份資料陣列/.test(w)) || '沒有找到完整且符合研究欄位的資料，請檢查是否貼漏內容或使用了不同格式。'
+        : undefined;
+    if (researchFailure)
+        warnings.push('研究辨識失敗，原文已保留。原因：'+researchFailure+' 網站不會在背景繼續辨識。請修改完整回覆後重新辨識，或手動整理研究。');
     for (const r of [...entries(sections['例子提案'] || '', 'E'),...experienceBullets(sections['例子提案']||'')]) {
         const type = value(r, 'kind', '種類', '類型'), kind = ({ experience: 'experience', original: 'experience', '本人真實經驗': 'experience', '原始經歷': 'experience', external: 'external', '外部案例': 'external', hypothetical: 'hypothetical', '假設例子': 'hypothetical', metaphor: 'metaphor', '比喻': 'metaphor' } as const)[type];
         const text = value(r, 'text', '文字', '內容');
@@ -189,7 +214,7 @@ export function previewReply(s: StudioData, source = replySource(s)): ReplyPrevi
         warnings.push('沒有辨識到固定段落標題；完整回覆仍可保存，不會自動改動主稿。');
     if(sections['例子提案']?.trim()&&!examples.length&&!/不另加|未新增|不新增|無案例/.test(sections['例子提案']))warnings.push('例子提案未能逐筆辨識，請保留原文並手動整理。');
     const platformDrafts = s.module === 'B' ? writingPlatforms.flatMap(platform => sections['平台稿：' + platform]?.trim() ? [{ platform, text: sections['平台稿：' + platform].trim() }] : []) : [];
-    return { module: s.module, mode: s.collaboration.cMode, reply, source: { ...source }, sections, research, examples, candidates, platformDrafts, warnings };
+    return { module: s.module, mode: s.collaboration.cMode, reply, source: { ...source }, sections, research, examples, candidates, platformDrafts, warnings, researchFailure };
 }
 export function applyReplyPreview(s: StudioData, p: ReplyPreview, sourceVersion: string, include: {research: boolean; examples: boolean; candidates: boolean; platforms?: boolean} = { research: true, examples: true, candidates: true, platforms: true }, sourceText = replySource(s).text, confirmedManuscript?: string): Partial<StudioData> {
     if (p.module !== s.module || p.mode !== s.collaboration.cMode || p.reply !== replyText(s) || p.source.versionId !== sourceVersion || p.source.text !== sourceText)
@@ -242,7 +267,7 @@ export function applyReplyPreview(s: StudioData, p: ReplyPreview, sourceVersion:
 export function bResearchRecovery(s:StudioData){
     const preview=previewReply(s),raw=preview.sections['研究參考']||'';
     const pending=preview.research.some(r=>!s.collaboration.research.some(x=>(x.title===r.title||x.title===r.title.split('\n')[0])&&(!x.source||x.source===r.source)&&(['source','mechanism','scope','relation'] as const).every(k=>!!x[k].trim()||!r[k].trim())))||(!preview.research.length&&/^(?:[ \t]*R[0-9０-９]+)|"title"/mi.test(raw));
-    return{preview,pending:s.module==='B'&&pending};
+    return{preview,pending:s.module==='B'&&(!!preview.researchFailure||pending)};
 }
 export function confirmBResearchRecovery(s:StudioData,p:ReplyPreview):Partial<StudioData>{
     if(s.module!=='B'||!p.research.length)throw Error('尚未辨識到研究，完整 B 原文保留；請手動整理研究欄位');
