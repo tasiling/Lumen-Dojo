@@ -1,7 +1,7 @@
 /** Browser and fixture server share the same isolated network; no production credentials. */
 import {spawn} from 'node:child_process';
 
-for (const script of ['test-studio-usability-ui.mjs','audit-studio-layout.mjs','test-studio-research-recovery-ui.mjs','test-studio-natural-handoff-ui.mjs','test-studio-discussion-entry-ui.mjs','test-studio-discussion-ui.mjs','test-studio-research-ui.mjs','test-studio-copy-ui.mjs','test-studio-b-repair-ui.mjs','test-studio-integration-ui.mjs','test-creative-studio-ui.mjs','test-studio-entry-ui.mjs']) {
+for (const script of ['test-studio-discussion-handoff-ui.mjs','test-studio-usability-ui.mjs','audit-studio-layout.mjs','test-studio-research-recovery-ui.mjs','test-studio-natural-handoff-ui.mjs','test-studio-discussion-entry-ui.mjs','test-studio-discussion-ui.mjs','test-studio-research-ui.mjs','test-studio-copy-ui.mjs','test-studio-b-repair-ui.mjs','test-studio-integration-ui.mjs','test-creative-studio-ui.mjs','test-studio-entry-ui.mjs']) {
  const server=spawn(process.execPath,['scripts/creative-studio-preview.mjs'],{stdio:['ignore','pipe','pipe']});
  try {
   await new Promise((resolve,reject)=>{
