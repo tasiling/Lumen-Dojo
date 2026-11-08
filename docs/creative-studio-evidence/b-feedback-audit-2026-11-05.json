@@ -1,0 +1,558 @@
+{
+  "date": "2026-11-05",
+  "source": {
+    "bytes": 7877551,
+    "sha256": "d525c8cf08b491bc5b48bab91292324e58efbc8be279580181bfcb67ce425c42",
+    "code": "tasiling/Lumen-Dojo PR114@a5f7327ba500580381c21f0e5f0b022d38134e61",
+    "libraryFileId": "libfile_2d2c0cb2d8f481919cad19d650d95cae",
+    "libraryVersion": 2
+  },
+  "pure": {
+    "plainReply": {
+      "sections": [],
+      "warnings": [
+        "沒有辨識到固定段落標題；完整回覆仍可保存，不會自動改動主稿。"
+      ],
+      "manuscript": "",
+      "canAdopt": false
+    },
+    "headingVariants": [
+      {
+        "heading": "## 候選主文",
+        "recognizedMain": true
+      },
+      {
+        "heading": "## 主文調整版",
+        "recognizedMain": false
+      },
+      {
+        "heading": "第三部分：主文調整版",
+        "recognizedMain": false
+      }
+    ],
+    "platforms": {
+      "IGequalsThreads": true,
+      "ThreadsEqualsPlurk": true,
+      "selectedPlatformAppearsInInstruction": false,
+      "sameTaskSignature": true,
+      "storageType": "string"
+    },
+    "research": {
+      "count": 0,
+      "text": "",
+      "use": "background",
+      "searchStatePresent": false,
+      "explicitActiveResearchTask": false
+    }
+  },
+  "realms": [
+    {
+      "realm": "weaving",
+      "layout": [
+        {
+          "width": 320,
+          "kind": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "文章",
+                "x": 33,
+                "y": 5125.734375,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "限動",
+                "x": 132.984375,
+                "y": 5125.734375,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "圖文",
+                "x": 232.96875,
+                "y": 5125.734375,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "platform": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "未指定平台",
+                "x": 33,
+                "y": 5173.734375,
+                "width": 99.015625,
+                "height": 48
+              },
+              {
+                "label": "IG",
+                "x": 147.203125,
+                "y": 5173.734375,
+                "width": 44,
+                "height": 48
+              },
+              {
+                "label": "Threads",
+                "x": 206.390625,
+                "y": 5173.734375,
+                "width": 80.59375,
+                "height": 48
+              },
+              {
+                "label": "噗浪",
+                "x": 33,
+                "y": 5233.734375,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "betweenGroups": 0,
+          "overflow": false
+        },
+        {
+          "width": 390,
+          "kind": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "文章",
+                "x": 41,
+                "y": 5010.140625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "限動",
+                "x": 167.984375,
+                "y": 5010.140625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "圖文",
+                "x": 294.96875,
+                "y": 5010.140625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "platform": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "未指定平台",
+                "x": 41,
+                "y": 5058.140625,
+                "width": 99.015625,
+                "height": 48
+              },
+              {
+                "label": "IG",
+                "x": 182.203125,
+                "y": 5058.140625,
+                "width": 44,
+                "height": 48
+              },
+              {
+                "label": "Threads",
+                "x": 268.390625,
+                "y": 5058.140625,
+                "width": 80.59375,
+                "height": 48
+              },
+              {
+                "label": "噗浪",
+                "x": 41,
+                "y": 5118.140625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "betweenGroups": 0,
+          "overflow": false
+        },
+        {
+          "width": 430,
+          "kind": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "文章",
+                "x": 41,
+                "y": 4789.515625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "限動",
+                "x": 187.984375,
+                "y": 4789.515625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "圖文",
+                "x": 334.96875,
+                "y": 4789.515625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "platform": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "未指定平台",
+                "x": 41,
+                "y": 4837.515625,
+                "width": 99.015625,
+                "height": 48
+              },
+              {
+                "label": "IG",
+                "x": 163.46875,
+                "y": 4837.515625,
+                "width": 44,
+                "height": 48
+              },
+              {
+                "label": "Threads",
+                "x": 230.921875,
+                "y": 4837.515625,
+                "width": 80.59375,
+                "height": 48
+              },
+              {
+                "label": "噗浪",
+                "x": 334.96875,
+                "y": 4837.515625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "betweenGroups": 0,
+          "overflow": false
+        }
+      ],
+      "paste": {
+        "rawLength": 39,
+        "candidateLength": 0,
+        "adoptDisabled": true,
+        "visibleDisabledReason": null,
+        "disabledAfterPlainParse": true,
+        "fieldPositions": [
+          {
+            "label": "B 完整 AI 回覆（含研究與編輯說明）",
+            "y": 4209.28125
+          },
+          {
+            "label": "候選主文（只放文章，採用才更新正文）",
+            "y": 3116.78125
+          }
+        ]
+      },
+      "platforms": {
+        "IGselectedAfterThreads": "false",
+        "ThreadsSelected": "true",
+        "savedValue": "Threads",
+        "promptHashes": [
+          "cbddf1e8339335b70dd8258eecb7eb674ebbfda1811c2736810905f3ae1ecd26",
+          "cbddf1e8339335b70dd8258eecb7eb674ebbfda1811c2736810905f3ae1ecd26"
+        ],
+        "generatedPromptsIdentical": true,
+        "explicitResearchSearchInGeneratedPrompt": false
+      },
+      "structuredRecovery": {
+        "disabledBeforeSplit": true,
+        "enabledAfterSplit": true,
+        "bodyMatches": true
+      }
+    },
+    {
+      "realm": "liaojie",
+      "layout": [
+        {
+          "width": 320,
+          "kind": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "文章",
+                "x": 33,
+                "y": 5125.734375,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "限動",
+                "x": 132.984375,
+                "y": 5125.734375,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "圖文",
+                "x": 232.96875,
+                "y": 5125.734375,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "platform": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "未指定平台",
+                "x": 33,
+                "y": 5173.734375,
+                "width": 99.015625,
+                "height": 48
+              },
+              {
+                "label": "IG",
+                "x": 147.203125,
+                "y": 5173.734375,
+                "width": 44,
+                "height": 48
+              },
+              {
+                "label": "Threads",
+                "x": 206.390625,
+                "y": 5173.734375,
+                "width": 80.59375,
+                "height": 48
+              },
+              {
+                "label": "噗浪",
+                "x": 33,
+                "y": 5233.734375,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "betweenGroups": 0,
+          "overflow": false
+        },
+        {
+          "width": 390,
+          "kind": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "文章",
+                "x": 41,
+                "y": 5010.140625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "限動",
+                "x": 167.984375,
+                "y": 5010.140625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "圖文",
+                "x": 294.96875,
+                "y": 5010.140625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "platform": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "未指定平台",
+                "x": 41,
+                "y": 5058.140625,
+                "width": 99.015625,
+                "height": 48
+              },
+              {
+                "label": "IG",
+                "x": 182.203125,
+                "y": 5058.140625,
+                "width": 44,
+                "height": 48
+              },
+              {
+                "label": "Threads",
+                "x": 268.390625,
+                "y": 5058.140625,
+                "width": 80.59375,
+                "height": 48
+              },
+              {
+                "label": "噗浪",
+                "x": 41,
+                "y": 5118.140625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "betweenGroups": 0,
+          "overflow": false
+        },
+        {
+          "width": 430,
+          "kind": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "文章",
+                "x": 41,
+                "y": 4789.515625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "限動",
+                "x": 187.984375,
+                "y": 4789.515625,
+                "width": 54.015625,
+                "height": 48
+              },
+              {
+                "label": "圖文",
+                "x": 334.96875,
+                "y": 4789.515625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "platform": {
+            "justify": "space-between",
+            "rowGap": "12px",
+            "buttons": [
+              {
+                "label": "未指定平台",
+                "x": 41,
+                "y": 4837.515625,
+                "width": 99.015625,
+                "height": 48
+              },
+              {
+                "label": "IG",
+                "x": 163.46875,
+                "y": 4837.515625,
+                "width": 44,
+                "height": 48
+              },
+              {
+                "label": "Threads",
+                "x": 230.921875,
+                "y": 4837.515625,
+                "width": 80.59375,
+                "height": 48
+              },
+              {
+                "label": "噗浪",
+                "x": 334.96875,
+                "y": 4837.515625,
+                "width": 54.015625,
+                "height": 48
+              }
+            ]
+          },
+          "betweenGroups": 0,
+          "overflow": false
+        }
+      ],
+      "paste": {
+        "rawLength": 39,
+        "candidateLength": 0,
+        "adoptDisabled": true,
+        "visibleDisabledReason": null,
+        "disabledAfterPlainParse": true,
+        "fieldPositions": [
+          {
+            "label": "B 完整 AI 回覆（含研究與編輯說明）",
+            "y": 4209.28125
+          },
+          {
+            "label": "候選主文（只放文章，採用才更新正文）",
+            "y": 3116.78125
+          }
+        ]
+      },
+      "platforms": {
+        "IGselectedAfterThreads": "false",
+        "ThreadsSelected": "true",
+        "savedValue": "Threads",
+        "promptHashes": [
+          "cbddf1e8339335b70dd8258eecb7eb674ebbfda1811c2736810905f3ae1ecd26",
+          "cbddf1e8339335b70dd8258eecb7eb674ebbfda1811c2736810905f3ae1ecd26"
+        ],
+        "generatedPromptsIdentical": true,
+        "explicitResearchSearchInGeneratedPrompt": false
+      },
+      "structuredRecovery": {
+        "disabledBeforeSplit": true,
+        "enabledAfterSplit": true,
+        "bodyMatches": true
+      }
+    }
+  ],
+  "browserErrors": [],
+  "httpRequests": [],
+  "productionModified": false,
+  "environment": {
+    "browser": "Chromium headless with touch/viewport emulation; not Safari on the user device",
+    "widths": [
+      320,
+      390,
+      430
+    ],
+    "font": "Noto Sans CJK TC for real Chinese glyph metrics",
+    "fixtures": "Synthetic text in fresh browser contexts; no user drafts read"
+  },
+  "findings": [
+    {
+      "id": "B01",
+      "issue": "Unequal button layout and zero spacing between groups",
+      "status": "reproduced_unfixed"
+    },
+    {
+      "id": "B02",
+      "issue": "Raw reply cannot be adopted before a separate manuscript is prepared; unrecognized headings keep it disabled",
+      "status": "reproduced_unfixed"
+    },
+    {
+      "id": "B03",
+      "issue": "Old B active research-discovery task omitted from native prompt",
+      "status": "source_comparison_confirmed_unfixed"
+    },
+    {
+      "id": "B04",
+      "issue": "Platform is a single string and selected platforms do not affect generated B prompt or task signature",
+      "status": "reproduced_unfixed",
+      "note": "User proposes multi-target output; detailed UI remains a proposed adjustment"
+    }
+  ]
+}

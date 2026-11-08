@@ -1,0 +1,59 @@
+{
+  "caseCount": 210,
+  "errors": [],
+  "focus": [
+    {
+      "realm": "weaving",
+      "problems": []
+    },
+    {
+      "realm": "liaojie",
+      "problems": []
+    }
+  ],
+  "contrast": [
+    {
+      "realm": "weaving",
+      "samples": 373,
+      "issues": [],
+      "scheme": "light"
+    },
+    {
+      "realm": "weaving",
+      "samples": 373,
+      "issues": [],
+      "scheme": "dark-preference"
+    },
+    {
+      "realm": "liaojie",
+      "samples": 373,
+      "issues": [],
+      "scheme": "light"
+    },
+    {
+      "realm": "liaojie",
+      "samples": 373,
+      "issues": [],
+      "scheme": "dark-preference"
+    },
+    {
+      "realm": "weaving",
+      "samples": 55,
+      "issues": [],
+      "state": "media-plan"
+    },
+    {
+      "realm": "liaojie",
+      "samples": 68,
+      "issues": [],
+      "state": "media-plan"
+    }
+  ],
+  "counts": {
+    "small": 0,
+    "gaps": 0,
+    "labels": 0,
+    "overflow": 0,
+    "unnamed": 0
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "discussion-unit": {
+    "passLines": 7,
+    "last": "PASS discussion 6/6",
+    "failures": []
+  },
+  "discussion-previous-unit": {
+    "passLines": 12,
+    "last": "PASS research workflow 11/11",
+    "failures": []
+  },
+  "discussion-regression": {
+    "passLines": 138,
+    "last": "PASS native source return: canonical work ID, new fixed version/draft distinction, legacy access",
+    "failures": []
+  },
+  "discussion-ui-native": {
+    "passLines": 71,
+    "last": "PASS native legacy v9 boundary, import entry and same-realm new B route; no uncaught browser errors",
+    "failures": []
+  },
+  "discussion-ui-html-final": {
+    "passLines": 14,
+    "last": "PASS discussion browser 13/13",
+    "failures": []
+  },
+  "discussion-research-html": {
+    "passLines": 14,
+    "last": "PASS research browser 13/13",
+    "failures": []
+  },
+  "discussion-copy-html": {
+    "passLines": 8,
+    "last": "PASS clipboard UI 7/7",
+    "failures": []
+  },
+  "discussion-b-html": {
+    "passLines": 12,
+    "last": "PASS B repair browser 11/11",
+    "failures": []
+  },
+  "discussion-media": {
+    "passLines": 3,
+    "last": "PASS updated discussion HTML full backup restores existing media production tasks without replacing article work data",
+    "failures": []
+  },
+  "bundle": {
+    "baseHash": "05e6e8d5c78df984a070fd685b16d15b5a328fce43e5402cc999e0b2bb24d5d9",
+    "baseVersion": 8,
+    "source": "local-review",
+    "changed": [
+      {
+        "id": 7,
+        "file": "lib/dojo/creativeStudio/researchWorkflow.ts",
+        "oldHash": "19c3b2e2b9d23545e956a7a6fe96a241a246eb331d14593ee479c1db47ca56ca",
+        "newHash": "c063f4a30ef1b70eb8c4586f5056baef29c27ff7331fedad1f9765b4d7323acb"
+      },
+      {
+        "id": 62,
+        "file": "app/components/creativeStudio/ResearchWorkbench.tsx",
+        "oldHash": "470f1c08d18b88b2659e1a8f8915dc9134e2025028dddc754cf9259f6fd466aa",
+        "newHash": "6044f6ef8b3e891dde7ae5c55f4a68061631114851e309be86bd8b909dcc0cc1"
+      }
+    ],
+    "preservedModules": 99,
+    "bytes": 8172762,
+    "sha256": "65aea8fbcc87403175653bbf604f9a80c53da7e61f92ce2c9035d448c50f2435"
+  },
+  "finalBundle": {
+    "baseHash": "05e6e8d5c78df984a070fd685b16d15b5a328fce43e5402cc999e0b2bb24d5d9",
+    "baseVersion": 8,
+    "source": "60c5e233c3996b63500fe3442abd3bef5273ce41",
+    "changed": [
+      {
+        "id": 7,
+        "file": "lib/dojo/creativeStudio/researchWorkflow.ts",
+        "oldHash": "19c3b2e2b9d23545e956a7a6fe96a241a246eb331d14593ee479c1db47ca56ca",
+        "newHash": "c063f4a30ef1b70eb8c4586f5056baef29c27ff7331fedad1f9765b4d7323acb"
+      },
+      {
+        "id": 62,
+        "file": "app/components/creativeStudio/ResearchWorkbench.tsx",
+        "oldHash": "470f1c08d18b88b2659e1a8f8915dc9134e2025028dddc754cf9259f6fd466aa",
+        "newHash": "6044f6ef8b3e891dde7ae5c55f4a68061631114851e309be86bd8b909dcc0cc1"
+      }
+    ],
+    "preservedModules": 99,
+    "bytes": 8172790,
+    "sha256": "3d332753dfb099e10f504be7c91094a76a4b698bfc6d135836869fd18bea792b"
+  },
+  "finalNativeDiscussion": {
+    "checks": 12,
+    "errors": [],
+    "network": []
+  },
+  "finalHTMLDiscussion": {
+    "checks": 13,
+    "errors": [],
+    "network": []
+  },
+  "media": {
+    "checks": 3,
+    "errors": []
+  }
+}

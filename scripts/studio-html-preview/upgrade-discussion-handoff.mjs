@@ -1,0 +1,14 @@
+/** Apply only the reviewed discussion handoff delta to the current authoritative HTML. */
+import fs from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';import ts from 'typescript';
+const base=process.env.STUDIO_DISCUSSION_BASE,out=process.env.STUDIO_DISCUSSION_OUT,source=process.env.STUDIO_DISCUSSION_SOURCE||'local-review';if(!base||!out)throw Error('Set STUDIO_DISCUSSION_BASE and STUDIO_DISCUSSION_OUT');
+const hash=s=>createHash('sha256').update(s).digest('hex'),before=fs.readFileSync(base,'utf8');let html=before;
+if(hash(before)!=='1dea259eaf80b7289fccaaec6d440f1ae2baa60ee51167f7b43cc76d9f506546')throw Error('Review the newer authoritative HTML before applying this version 18 patch');
+const changed=[];for(const [id,file,marker] of [[7,'lib/dojo/creativeStudio/researchWorkflow.ts','function makeResearchTask('],[62,'app/components/creativeStudio/ResearchWorkbench.tsx','function ResearchWorkbench(']]){
+ const re=new RegExp('(^'+id+':\\[function\\(require,module,exports\\)\\{\\n)([\\s\\S]*?)(\\n\\},(\\{[^\\n]*\\})\\])','m'),m=html.match(re);if(!m||!m[2].includes(marker))throw Error('Module identity mismatch: '+file);const map=JSON.parse(m[4]);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
+ for(const dep of code.matchAll(/\brequire\(["']([^"']+)["']\)/g))if(!(dep[1] in map))throw Error('New dependency requires explicit merge: '+dep[1]);html=html.slice(0,m.index)+m[1]+code+m[3]+html.slice(m.index+m[0].length);changed.push({id,file,oldHash:hash(m[2]),newHash:hash(code)});
+}
+const css=fs.readFileSync('app/components/creativeStudio/studio.css','utf8').split('/* Immediate discussion purpose')[1];if(!css)throw Error('Missing purpose styles');html=html.replace('</head>','<meta name="lumen-discussion-handoff-source" content="'+source+'"><style id="discussion-handoff-update">/* Immediate discussion purpose'+css+'</style></head>');
+const header='草稿第 18 版 · 2026.11.07｜介面用字與操作整理';if(!html.includes(header))throw Error('Unexpected preview header');html=html.replace(header,'草稿第 19 版 · 2026.11.08｜清楚接續文章與研究討論');
+const modules=s=>new Map([...s.matchAll(/^(\d+):\[function\(require,module,exports\)\{\n([\s\S]*?)\n\},(\{[^\n]*\})\]/gm)].map(m=>[Number(m[1]),m[2]+m[3]])),prior=modules(before),next=modules(html);if(prior.size!==next.size)throw Error('Module count changed');for(const [id,body] of prior)if(!changed.some(x=>x.id===id)&&body!==next.get(id))throw Error('Unrelated module changed: '+id);
+for(const m of before.matchAll(/<style\b[^>]*>[\s\S]*?<\/style>/g))if(!html.includes(m[0]))throw Error('Existing CSS changed');
+fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,html);console.log(JSON.stringify({baseVersion:18,version:19,source,changed,preservedModules:prior.size-changed.length,bytes:Buffer.byteLength(html),sha256:hash(html)}));

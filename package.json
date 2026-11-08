@@ -62,8 +62,10 @@
     "test:long-video": "node scripts/test-long-video.mjs && node scripts/test-long-video-api.mjs",
     "test:long-video-ui": "node scripts/test-long-video-ui.mjs",
     "test:reading-visual": "node scripts/test-reading-visual.mjs",
-    "test:creative-studio": "node scripts/test-creative-studio-domain.mjs && node scripts/test-creative-studio-api.mjs && node scripts/test-studio-boundaries.mjs && node scripts/test-studio-import-versions.mjs && node scripts/test-creative-graphics-v2.mjs && node scripts/test-studio-services.mjs && node scripts/test-studio-voice.mjs && node scripts/test-studio-canva.mjs && node scripts/test-studio-client-identity.mjs && node scripts/test-studio-review-fixes.mjs && node scripts/test-studio-source-return.mjs",
-    "preview:creative-studio": "node scripts/creative-studio-preview.mjs"
+    "test:creative-studio": "node scripts/test-studio-discussion-handoff.mjs && node scripts/test-studio-natural-handoff.mjs && node scripts/test-studio-discussion.mjs && node scripts/test-studio-research-workflow.mjs && node scripts/test-studio-clipboard.mjs && node scripts/test-studio-b-repair.mjs && node scripts/test-studio-five-gaps.mjs && node scripts/test-studio-source-migration.mjs && node scripts/test-studio-recovery.mjs && node scripts/test-studio-instructions.mjs && node scripts/test-studio-reply-graphics.mjs && node scripts/test-studio-candidate-routing.mjs && node scripts/test-studio-collaboration.mjs && node scripts/test-creative-studio-domain.mjs && node scripts/test-creative-studio-api.mjs && node scripts/test-studio-boundaries.mjs && node scripts/test-studio-import-versions.mjs && node scripts/test-creative-graphics-v2.mjs && node scripts/test-studio-services.mjs && node scripts/test-studio-voice.mjs && node scripts/test-studio-canva.mjs && node scripts/test-studio-client-identity.mjs && node scripts/test-studio-review-fixes.mjs && node scripts/test-studio-source-return.mjs",
+    "preview:creative-studio-html": "node scripts/studio-html-preview/build.mjs",
+    "preview:creative-studio": "node scripts/creative-studio-preview.mjs",
+    "test:creative-studio-ui": "node scripts/test-studio-ui-isolated.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",

@@ -1,0 +1,212 @@
+{
+  "baseline": {
+    "libraryVersion": 12,
+    "sha256": "45827299c57bf1b2f468ea6d775a9f8e42dd2d8acd782294ddec15e04ab82e93",
+    "cases": 210,
+    "counts": {
+      "small": 124,
+      "gaps": 770,
+      "labels": 0,
+      "overflow": 0,
+      "unnamed": 0
+    },
+    "contrast": [
+      {
+        "realm": "weaving",
+        "samples": 366,
+        "issues": [
+          {
+            "name": "輸入書名、章節或內容關鍵字",
+            "kind": "placeholder",
+            "color": "oklab(0.353275 -0.0143675 -0.061535 / 0.5)",
+            "opacity": "1",
+            "ratio": 2.741821168149102,
+            "threshold": 4.5
+          },
+          {
+            "name": "例如：我想談興趣與收入並存，不想比較產量，可以怎麼用？",
+            "kind": "placeholder",
+            "color": "oklab(0.353275 -0.0143675 -0.061535 / 0.5)",
+            "opacity": "1",
+            "ratio": 2.741821168149102,
+            "threshold": 4.5
+          },
+          {
+            "name": "回答 GPT 的追問、提出不同意見，或補充自己的經驗。",
+            "kind": "placeholder",
+            "color": "oklab(0.353275 -0.0143675 -0.061535 / 0.5)",
+            "opacity": "1",
+            "ratio": 2.741821168149102,
+            "threshold": 4.5
+          }
+        ]
+      },
+      {
+        "realm": "liaojie",
+        "samples": 366,
+        "issues": [
+          {
+            "name": "輸入書名、章節或內容關鍵字",
+            "kind": "placeholder",
+            "color": "oklab(0.353275 -0.0143675 -0.061535 / 0.5)",
+            "opacity": "1",
+            "ratio": 2.741821168149102,
+            "threshold": 4.5
+          },
+          {
+            "name": "例如：我想談興趣與收入並存，不想比較產量，可以怎麼用？",
+            "kind": "placeholder",
+            "color": "oklab(0.353275 -0.0143675 -0.061535 / 0.5)",
+            "opacity": "1",
+            "ratio": 2.741821168149102,
+            "threshold": 4.5
+          },
+          {
+            "name": "回答 GPT 的追問、提出不同意見，或補充自己的經驗。",
+            "kind": "placeholder",
+            "color": "oklab(0.353275 -0.0143675 -0.061535 / 0.5)",
+            "opacity": "1",
+            "ratio": 2.741821168149102,
+            "threshold": 4.5
+          }
+        ]
+      }
+    ]
+  },
+  "html": {
+    "caseCount": 210,
+    "counts": {
+      "small": 0,
+      "gaps": 0,
+      "labels": 0,
+      "overflow": 0,
+      "unnamed": 0
+    },
+    "focus": [
+      {
+        "realm": "weaving",
+        "problems": []
+      },
+      {
+        "realm": "liaojie",
+        "problems": []
+      }
+    ],
+    "contrast": [
+      {
+        "realm": "weaving",
+        "samples": 366,
+        "issues": [],
+        "scheme": "light"
+      },
+      {
+        "realm": "weaving",
+        "samples": 366,
+        "issues": [],
+        "scheme": "dark-preference"
+      },
+      {
+        "realm": "liaojie",
+        "samples": 366,
+        "issues": [],
+        "scheme": "light"
+      },
+      {
+        "realm": "liaojie",
+        "samples": 366,
+        "issues": [],
+        "scheme": "dark-preference"
+      },
+      {
+        "realm": "weaving",
+        "samples": 55,
+        "issues": [],
+        "state": "media-plan"
+      },
+      {
+        "realm": "liaojie",
+        "samples": 68,
+        "issues": [],
+        "state": "media-plan"
+      }
+    ],
+    "errors": []
+  },
+  "scope": "Both realms; A/B/C-condense/C-expand/D, source/direction/completion/handoff; HTML image/Motion plan/transfer/production/completion. Synthetic text only.",
+  "thresholds": {
+    "siblingGapCSSpx": 8,
+    "touchComfortCSSpx": 44,
+    "labelGapCSSpx": 8,
+    "textContrast": 4.5
+  },
+  "pending": [
+    "real iPhone/Safari",
+    "VoiceOver",
+    "actual OS keyboard/native picker behavior",
+    "private user data"
+  ],
+  "warnings": [
+    "Case counts repeat the same controls across viewports; they are not distinct bugs.",
+    "Contrast checks cover tested solid/composited surfaces; gradient/opacity-affected text is excluded from automated ratios."
+  ],
+  "native": {
+    "caseCount": 154,
+    "counts": {
+      "small": 0,
+      "gaps": 0,
+      "labels": 0,
+      "overflow": 0,
+      "unnamed": 0
+    },
+    "focus": [
+      {
+        "realm": "weaving",
+        "problems": []
+      },
+      {
+        "realm": "liaojie",
+        "problems": []
+      }
+    ],
+    "contrast": [
+      {
+        "realm": "weaving",
+        "samples": 365,
+        "issues": [],
+        "scheme": "light"
+      },
+      {
+        "realm": "weaving",
+        "samples": 365,
+        "issues": [],
+        "scheme": "dark-preference"
+      },
+      {
+        "realm": "liaojie",
+        "samples": 365,
+        "issues": [],
+        "scheme": "light"
+      },
+      {
+        "realm": "liaojie",
+        "samples": 365,
+        "issues": [],
+        "scheme": "dark-preference"
+      }
+    ],
+    "errors": []
+  },
+  "functional": {
+    "dataApiSuite": "npm run test:creative-studio: exit 0",
+    "fullNativeUI": "node scripts/test-studio-ui-isolated.mjs: exit 0",
+    "htmlResearchRecovery": 10,
+    "htmlNaturalHandoff": 8,
+    "htmlDiscussionWithBackup": 13,
+    "htmlResearchIntegrationWithBackup": 13,
+    "htmlMediaPreservation": 3,
+    "finalBuild": "exit 0",
+    "finalTypes": "exit 0",
+    "changedScriptsLint": "exit 0"
+  },
+  "additionalObservedIssue": "Liaojie media selected labels mixed white text with light-blue background: measured ratio ~1.13 before the selected-state correction."
+}

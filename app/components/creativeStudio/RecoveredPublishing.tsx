@@ -1,0 +1,13 @@
+'use client';
+import { useState } from 'react';
+import type { StudioData } from '@/lib/dojo/creativeStudio/model';
+import type { CompletionVersion } from '@/lib/dojo/weavingWorkflow/completions';
+export default function RecoveredPublishing({s,edit,completions,handoff}:{s:StudioData;edit:(p:Partial<StudioData>)=>void;completions:CompletionVersion[];handoff:(id:string)=>void}){
+ const [confirmed,setConfirmed]=useState<Record<string,boolean>>({});
+ if(!s.platformDrafts.length&&!s.publicationHistory.length)return null;
+ return <section className="ritual-card"><h2>平台草稿與發布紀錄</h2><p>各平台稿獨立編輯，與共用主稿互不覆寫。先核對來源固定版，再另建發文企劃；不會自動發布。</p>{s.platformDrafts.map((d,i)=>{
+ const versions=completions.filter(c=>d.sourceText===undefined||!!d.sourceText.trim()&&c.text===d.sourceText),valid=versions.some(c=>c.id===d.sourceVersionId);
+ function change(p:Partial<typeof d>){setConfirmed({...confirmed,[d.id]:false});edit({platformDrafts:s.platformDrafts.map((x,j)=>j===i?{...x,...p}:x)});}
+ return <details key={d.id}><summary>{d.platform} 配文</summary><label>平台名稱<input value={d.platform} onChange={e=>change({platform:e.target.value})}/></label><label>{d.rawReply===undefined?'已恢復的配文':'平台草稿（與共用主稿分開）'}<textarea rows={8} value={d.text} onChange={e=>change({text:e.target.value})}/></label>{d.sourceText!==undefined&&<details><summary>這份平台稿的來源正文與 AI 原回覆</summary><p>任務：{d.taskId||'來源未核對的手動回覆'}</p><p className="studio-manuscript">{d.sourceText||'當輪未辨識主稿，請保留本稿並由已確認主稿重新生成平台稿。'}</p><pre className="studio-manuscript">{d.rawReply}</pre></details>}<label>配文來源完成版<select value={d.sourceVersionId} onChange={e=>change({sourceVersionId:e.target.value})}><option value="">來源待核對</option>{!valid&&d.sourceVersionId&&<option value={d.sourceVersionId}>舊來源 {d.sourceVersionId}（待對應）</option>}{versions.map(c=><option key={c.id} value={c.id}>{c.title} · {c.createdAt}</option>)}</select></label>{d.sourceText!==undefined&&!versions.length&&<p>尚無與這份平台稿來源正文相同的完成版。請先確認對應主稿完稿；若主稿已修改，從新版重新整理平台稿，舊稿仍保留。</p>}<label className="studio-check"><input type="checkbox" checked={!!confirmed[d.id]} onChange={e=>setConfirmed({...confirmed,[d.id]:e.target.checked})}/>已核對所選來源與這份配文可用於公開作品</label><button disabled={!confirmed[d.id]||!valid} onClick={()=>handoff(d.id)}>另存用途確認版並交接配文</button></details>;
+ })}{s.publicationHistory.map((r,i)=><details key={r.id}><summary>舊發布紀錄 · {r.platform||'平台待核對'}</summary>{(['platform','url','publishedOn','timeZone','note'] as const).map(k=><label key={k}>{{platform:'發布平台',url:'發布連結',publishedOn:'原發布日期與時間',timeZone:'時區',note:'原紀錄與核對筆記'}[k]}<textarea value={r[k]} onChange={e=>edit({publicationHistory:s.publicationHistory.map((x,j)=>i===j?{...x,[k]:e.target.value}:x)})}/></label>)}<p>這是可核對的舊紀錄；尚未自動認定為新版的實際發布。</p></details>)}</section>;
+}
