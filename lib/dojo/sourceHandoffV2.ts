@@ -30,7 +30,7 @@ export function sourceContent(entry: EnglishImageEntry) {
     source: {
       system: "lumen-dojo",
       recordId: entry.id,
-      type: entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image",
+      type: entry.route === "field" ? "field_image" : entry.route === "video" ? "video_image" : entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image",
       title: entry.title,
       sourceLabel: entry.sourceLabel,
       groupId: entry.lineImageSetId,

@@ -132,10 +132,10 @@ function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total:
   const route = entry.route === "game"
     ? "英文遊戲畫面"
     : entry.route === "classroom"
-      ? "英文課堂教材或白板畫面"
+      ? "英文課堂或工作任務紀錄"
       : entry.route === "reading"
         ? "英文書頁或文章"
-        : "英文日常畫面";
+        : entry.route === "video" ? "影音字幕或逐字稿截圖，只整理可見文字，不推測未提供的聲音或對白" : entry.route === "field" ? "現場經歷的照片或對話截圖" : "英文日常畫面";
   const group = entry.attachments.length > 1
     ? `這是同一段情境的 ${entry.attachments.length} 張連續圖片${part ? `，目前是第 ${part.index}/${part.total} 批` : ""}，請依畫面順序合併理解。`
     : "";

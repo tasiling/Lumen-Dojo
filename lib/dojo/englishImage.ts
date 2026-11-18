@@ -1,6 +1,6 @@
 export const ENGLISH_IMAGE_TITLE_PREFIX = "行光英文影像-";
 
-export type EnglishImageRoute = "pending" | "game" | "daily" | "classroom" | "reading";
+export type EnglishImageRoute = "pending" | "game" | "daily" | "classroom" | "reading" | "field" | "video";
 export type EnglishImageLearningRoute = Exclude<EnglishImageRoute, "pending">;
 export type EnglishImageStatus = "inbox" | "organized";
 export type EnglishImageAnalysisStatus = "idle" | "processing" | "completed" | "needs-review" | "failed";
@@ -147,7 +147,7 @@ export type EnglishImageEntry = {
 };
 
 export function isEnglishImageLearningRoute(value: unknown): value is EnglishImageLearningRoute {
-  return value === "game" || value === "daily" || value === "classroom" || value === "reading";
+  return value === "game" || value === "daily" || value === "classroom" || value === "reading" || value === "field" || value === "video";
 }
 
 export function withEnglishImageStatus(entry: EnglishImageEntry, status: EnglishImageStatus): EnglishImageEntry {
@@ -156,10 +156,12 @@ export function withEnglishImageStatus(entry: EnglishImageEntry, status: English
 }
 
 export function englishImageRouteLabel(route: EnglishImageRoute): string {
-  if (route === "game") return "遊戲英文";
+  if (route === "game") return "遊戲事件";
+  if (route === "field") return "現場經歷";
+  if (route === "video") return "影音／逐字稿";
   if (route === "daily") return "英文日常";
-  if (route === "classroom") return "課堂英文";
-  if (route === "reading") return "閱讀英文";
+  if (route === "classroom") return "課堂／工作回收";
+  if (route === "reading") return "閱讀內容";
   return "待分類";
 }
 

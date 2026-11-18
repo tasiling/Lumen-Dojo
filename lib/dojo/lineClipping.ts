@@ -237,10 +237,11 @@ export function forageQuickReply(url: string) {
 
 export function imageRouteQuickReply(entryId: string) {
   return { items: [
-    quickReplyItem("遊戲英文", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
-    quickReplyItem("英文日常", new URLSearchParams({ action: "imageRoute", entryId, route: "daily" }).toString()),
-    quickReplyItem("課堂英文", new URLSearchParams({ action: "imageRoute", entryId, route: "classroom" }).toString()),
-    quickReplyItem("閱讀英文", new URLSearchParams({ action: "imageRoute", entryId, route: "reading" }).toString()),
+    quickReplyItem("遊戲事件", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
+    quickReplyItem("現場經歷", new URLSearchParams({ action: "imageRoute", entryId, route: "field" }).toString()),
+    quickReplyItem("影音／逐字稿", new URLSearchParams({ action: "imageRoute", entryId, route: "video" }).toString()),
+    quickReplyItem("課堂／工作回收", new URLSearchParams({ action: "imageRoute", entryId, route: "classroom" }).toString()),
+    quickReplyItem("閱讀內容", new URLSearchParams({ action: "imageRoute", entryId, route: "reading" }).toString()),
     quickReplyItem("一般剪藏", new URLSearchParams({ action: "imageRoute", entryId, route: "capture" }).toString()),
   ] };
 }

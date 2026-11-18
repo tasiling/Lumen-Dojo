@@ -52,6 +52,7 @@ function routeFocusDeck(entry: EnglishImageEntry, sourceName: string): string {
   if (/chinese parents|中國式家長|animal crossing|動森|星露谷|stardew|火山的女兒/.test(value)) return "生活模擬遊戲";
   if (entry.route === "game") return "JRPG／冒險遊戲";
   if (entry.route === "daily") return "日常啟動";
+  if (entry.route === "video") return "影音口語";
   if (entry.route === "reading") return "故事閱讀";
   return "日常啟動";
 }
@@ -203,7 +204,7 @@ function contextRoomSecret(): string {
 }
 
 function contextSourceType(entry: EnglishImageEntry): string {
-  return entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image";
+  return entry.route === "field" ? "field_image" : entry.route === "video" ? "video_image" : entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image";
 }
 
 function comparableProjectTitle(value: string): string {
@@ -285,7 +286,7 @@ export async function prepareEnglishImageForContextRoom(id: string): Promise<Eng
   const params = new URLSearchParams({
     create: "forage",
     title: entry.title,
-    materialType: entry.route === "game" ? "game" : entry.route === "classroom" ? "classroom" : entry.route === "reading" ? "reading" : "daily",
+    materialType: entry.route === "field" ? "field" : entry.route === "video" ? "video" : entry.route === "game" ? "game" : entry.route === "classroom" ? "classroom" : entry.route === "reading" ? "reading" : "daily",
     sourceRecordId: entry.id,
   });
   const url = `${contextRoomBaseUrl().replace(/\/$/, "")}/?${params.toString()}`;
@@ -343,7 +344,7 @@ export async function exportEnglishImageContext(params: {
     source: { ...source, revision: sourceRevision, contentFingerprint },
     target: {
       projectMode, projectId: materialId, projectTitle: materialTitle,
-      projectType: params.projectType?.trim().slice(0, 100) || (entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom"),
+      projectType: params.projectType?.trim().slice(0, 100) || (entry.route === "field" ? "field_experience" : entry.route === "video" ? "video" : entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom"),
       unitMode, unitId, unitTitle: eventTitle,
       learningPathId: params.learningPathId?.trim().slice(0, 200) || "",
       crossTypeConfirmed: params.crossTypeConfirmed === true,
@@ -408,7 +409,7 @@ async function exportEnglishImageContextV1(params: {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
     body: JSON.stringify({
       sourceRecordId: entry.id,
-      sourceType: entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image",
+      sourceType: entry.route === "field" ? "field_image" : entry.route === "video" ? "video_image" : entry.route === "game" ? "game_image" : entry.route === "classroom" ? "classroom_image" : entry.route === "reading" ? "reading_image" : "daily_image",
       materialId: params.materialId?.trim().slice(0, 200) || undefined,
       materialTitle,
       eventTitle,
@@ -583,7 +584,7 @@ export async function exportEnglishImageVocabs(
       body: JSON.stringify({
         contextContractVersion: 2,
         sourceSystem: "Lumen Dojo",
-        sourceType: entry.route === "game" ? "野採・遊戲英文" : entry.route === "classroom" ? "野採・課堂英文" : entry.route === "reading" ? "野採・閱讀英文" : "野採・英文日常",
+        sourceType: entry.route === "field" ? "野採・現場經歷" : entry.route === "video" ? "野採・影音／逐字稿" : entry.route === "game" ? "野採・遊戲事件" : entry.route === "classroom" ? "野採・課堂英文" : entry.route === "reading" ? "野採・閱讀英文" : "野採・英文日常",
         sourceDate: entry.capturedAt.slice(0, 10),
         sourceRecordId: entry.id,
         topicTitle: entry.title,
