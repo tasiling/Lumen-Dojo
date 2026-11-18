@@ -19,6 +19,7 @@ export type LearningEntity = {
   stageId: string | null;
   legacyKey: LearningTrackKey | null;
   seedKey: string | null;
+  curriculumKey?: string;
   name: string;
   description: string;
   vision: string;
@@ -52,17 +53,10 @@ export const SEEDS: Seed[] = [
     legacyKey: key,
   })),
   {
-    key: "tarot",
-    name: "塔羅",
-    description: "已有解牌能力；著重英文閱讀、闡述與實戰，依需要選擇語言。",
-    vision: "深化既有解牌能力與英文閱讀、闡述及實戰。",
-    legacyKey: null,
-  },
-  {
-    key: "lenormand",
-    name: "雷諾曼",
-    description: "已有解牌能力；著重英文閱讀、闡述與實戰，依需要選擇語言。",
-    vision: "深化既有解牌能力與英文閱讀、闡述及實戰。",
+    key: "cards",
+    name: "塔羅及雷諾曼",
+    description: "已有解牌能力，分別依牌種選擇案例，中文或英文皆可。",
+    vision: "深化既有解牌能力，以自己的話說清楚判讀與牌面依據。",
     legacyKey: null,
   },
   {
@@ -97,6 +91,7 @@ export function missingSeeds(entities: LearningEntity[]): Seed[] {
         (e) =>
           e.kind === "item" &&
           (e.seedKey === seed.key ||
+            (seed.key === "cards" && (e.seedKey === "tarot" || e.seedKey === "lenormand")) ||
             (e.legacyKey === seed.legacyKey && seed.legacyKey !== null)),
       ),
   );

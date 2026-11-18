@@ -62,6 +62,7 @@ export type ReadingNoteMetadata = {
   changedUnderstanding?: string;
   openQuestion?: string;
   nextStep?: string;
+  reviewCompleted?: boolean;
 };
 
 export type ReadingNote = {

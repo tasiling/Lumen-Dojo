@@ -3,6 +3,7 @@ import { LearningItemIcon } from "./PracticeArt";
 import PracticeLearningPath from "./PracticeLearningPath";
 import PracticeItemOverview from "./PracticeItemOverview";
 import LearningRecordWorkspace from "./LearningRecordWorkspace";
+import ReadingDiscussionQueue from "./ReadingDiscussionQueue";
 import Link from "./PracticeRouteLink";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import {
   type FoundationSnapshot,
 } from "@/lib/dojo/learningFoundation/model";
 import type { LearningTrackRecord } from "@/lib/dojo/learning";
+import { plannedStages } from "@/lib/dojo/learningFoundation/curriculum";
 const sorted = (e: LearningEntity[]) =>
   [...e].sort((a, b) => a.order - b.order);
 export default function PracticeLearning() {
@@ -24,6 +26,8 @@ export default function PracticeLearning() {
   const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
   const [error, setError] = useState("");
   const [legacyError, setLegacyError] = useState("");
+  const [changeNotice, setChangeNotice] = useState("");
+  const [changing, setChanging] = useState(false);
   const { entries, entriesLoading, entriesError, openQuickAdd } = useDojo();
   useEffect(() => {
     let live = true;
@@ -74,6 +78,45 @@ export default function PracticeLearning() {
       [],
   );
   const toolsReturn = item ? href(item.id, "tools") : "/practice/learning";
+  const pathMissing = items.some(entity => {
+    if (entity.status === "archived") return false;
+    return plannedStages(entity.seedKey ?? entity.legacyKey ?? "").some(stage => {
+      const path = data?.entities.find(candidate => candidate.kind === "stage" && candidate.itemId === entity.id
+        && (candidate.curriculumKey === stage.key || candidate.name === stage.name));
+      return !path || (path.status !== "archived" && stage.topics.some(topic => !data?.entities.some(candidate =>
+        candidate.kind === "topic" && candidate.itemId === entity.id
+        && (candidate.curriculumKey === topic.key || (candidate.stageId === path.id && candidate.name === topic.name)))));
+    });
+  });
+  async function installCurriculum() {
+    setChanging(true);
+    setChangeNotice("");
+    try {
+      const response = await fetch("/api/dojo/learning/foundation", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "install-curriculum" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error || "學習路徑尚未補齊。");
+      setData(result);
+      setChangeNotice(result.conflicts?.length ? result.conflicts.join("。") : "學習項目與路徑已更新。");
+    } catch (caught) { setChangeNotice(caught instanceof Error ? caught.message : "暫時無法建立學習路徑。"); }
+    finally { setChanging(false); }
+  }
+  async function updateTopic(topic: LearningEntity) {
+    setChanging(true);
+    setChangeNotice("");
+    try {
+      const response = await fetch("/api/dojo/learning/foundation", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: topic.id, revision: topic.revision, input: { status: topic.status === "completed" ? "active" : "completed" } }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error || "完成狀態尚未保存。");
+      setData(current => current && { ...current, entities: current.entities.map(entity => entity.id === topic.id ? result.entity : entity) });
+      setChangeNotice("單元狀態已保存。");
+    } catch (caught) { setChangeNotice(caught instanceof Error ? caught.message : "暫時無法更新單元。"); }
+    finally { setChanging(false); }
+  }
   return (
     <div className="practice-learning">
       <div className="learning-heading">
@@ -89,6 +132,8 @@ export default function PracticeLearning() {
           管理學習項目
         </Link>
       </div>
+      {!item && <ReadingDiscussionQueue />}
+      {changeNotice && <p role="status">{changeNotice}</p>}
       {error ? (
         <p role="alert">{error}</p>
       ) : !data ? (
@@ -97,6 +142,7 @@ export default function PracticeLearning() {
         <>
           {!item && (
             <>
+              {(!!data.missing.length || pathMissing) && <button disabled={changing} onClick={() => void installCurriculum()}>{changing ? "正在補齊學習項目與路徑…" : "補齊學習項目與路徑"}</button>}
               <h2>本期專注</h2>
               <div className="practice-shortcuts">
                 {items
@@ -161,7 +207,10 @@ export default function PracticeLearning() {
               )}
               {tab === "path" && (
                 <>
-                  <PracticeLearningPath key={item.id} stages={stages} topics={topics} />
+                  {item.legacyKey === "english" && !stages.length && !topics.length
+                    ? <p>近期以 B2 為目標，長期達到 C1。<Link href={toolsReturn}>開啟英文修習工具</Link></p>
+                    : <PracticeLearningPath key={item.id} stages={stages} topics={topics}
+                      readingReturn={href(item.id, "path")} busy={changing} onChangeStatus={topic => void updateTopic(topic)} />}
                   <button onClick={record}>留下修習紀錄</button>
                 </>
               )}
@@ -184,6 +233,7 @@ export default function PracticeLearning() {
                         {label}
                       </Link>
                     ))}
+                  {item.legacyKey === "english" && <a className="card practice-link" href="https://lumen-context-room-production-4a2c.up.railway.app/writing" target="_blank" rel="noreferrer">寫作修習室 ↗</a>}
                   {item.name === "書寫修習" && (
                     <Link className="card practice-link" href="/practice/handwriting">
                       書寫修習・字型與連筆

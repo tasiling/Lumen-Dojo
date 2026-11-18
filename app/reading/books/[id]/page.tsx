@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ReadingQuickCapture from "@/app/components/ReadingQuickCapture";
 import ClaimCandidateComposer from "@/app/components/ClaimCandidateComposer";
+import ReadingDiscussionWorkspace from "@/app/components/ReadingDiscussion";
 import type { InsightActionType, InsightCard, ReadingBook, ReadingNote, ReadingNoteKind, ReadingNoteMetadata } from "@/lib/reading/types";
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -17,7 +18,7 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 type EditorNote = ReadingNote & { clientKey: string };
-type ReadingStage = "before" | "during" | "after";
+type ReadingStage = "before" | "during" | "discussion" | "after";
 type CardDraft = { noteId: string; text: string };
 
 function newNote(): EditorNote {
@@ -60,6 +61,7 @@ export default function ReadingBookPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [cardDraft, setCardDraft] = useState<CardDraft | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [discussionTarget, setDiscussionTarget] = useState({ note: "", discussion: "", round: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,10 +74,15 @@ export default function ReadingBookPage() {
       setNotes(loaded);
       setCards(json.cards ?? []);
       const hasReadingRecord = loaded.some((note) => note.kind !== "review");
-      const wanted=new URLSearchParams(location.search).get('note');
+      const query = new URLSearchParams(location.search);
+      const wanted = query.get("note");
       const selected=loaded.find(n=>n.id===wanted);
-      setStage(selected ? selected.kind==='preview'?'before':selected.kind==='review'?'after':'during' : json.book.status === "閱讀中" ? (hasReadingRecord ? "during" : "before") : "after");
-      if(wanted&&!selected)setNotice('指定的筆記已不可用；其餘閱讀紀錄仍保留。');
+      const openDiscussion = query.has("discussion");
+      const recapComplete = loaded.filter(note => note.kind === "review").at(-1)?.metadata.reviewCompleted;
+      setDiscussionTarget({ note: selected?.id ?? "", discussion: query.get("discussion") ?? "", round: query.get("round") ?? "" });
+      setStage(openDiscussion ? "discussion" : selected ? selected.kind === "preview" ? "before" : selected.kind === "review" ? "after" : "during"
+        : json.book.status === "閱讀中" && !recapComplete ? (hasReadingRecord ? "during" : "before") : "after");
+      if (wanted && !selected && !openDiscussion) setNotice("指定的筆記已不可用；其餘閱讀紀錄仍保留。");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -90,6 +97,22 @@ export default function ReadingBookPage() {
 
   function updateNote(clientKey: string, patch: Partial<EditorNote>) {
     setNotes((current) => current.map((note) => note.clientKey === clientKey ? { ...note, ...patch } : note));
+  }
+
+  function discuss(noteId: string) {
+    setDiscussionTarget({ note: noteId, discussion: "", round: "" });
+    setStage("discussion");
+    requestAnimationFrame(() => document.getElementById("reading-discussion")?.scrollIntoView({ block: "start" }));
+  }
+
+  async function registerInsight(cardId: string) {
+    try {
+      const response = await fetch("/api/dojo/reading/cards/" + encodeURIComponent(cardId), { cache: "no-store" });
+      const { card } = await readJson<{ card: InsightCard }>(response);
+      if (card) setCards(current => current.some(item => item.id === card.id) ? current : [...current, card]);
+    } catch {
+      setNotice("洞察卡已保存，可從洞察卡片庫查看。");
+    }
   }
 
   function addOrReplaceNote(note: ReadingNote) {
@@ -167,11 +190,13 @@ export default function ReadingBookPage() {
       <aside className="reading-question-anchor">
         <span>這輪帶著什麼問題讀</span>
         <p>{book.question}</p>
+        <ReadingQuestionEditor key={book.id} book={book} onSaved={setBook} />
       </aside>
 
       <nav className="reading-stage-tabs" aria-label="閱讀筆記階段">
         <button className={stage === "before" ? "on" : ""} onClick={() => setStage("before")}><span>讀前</span><small>小預習</small></button>
         <button className={stage === "during" ? "on" : ""} onClick={() => setStage("during")}><span>閱讀中</span><small>摘錄與想法</small></button>
+        <button className={stage === "discussion" ? "on" : ""} aria-current={stage === "discussion" ? "page" : undefined} onClick={() => setStage("discussion")}><span>GPT 討論</span><small>問答與成果</small></button>
         <button className={stage === "after" ? "on" : ""} onClick={() => setStage("after")}><span>讀後</span><small>復盤與洞察</small></button>
       </nav>
 
@@ -205,6 +230,7 @@ export default function ReadingBookPage() {
                     note={note}
                     onDelete={() => void removeNote(note)}
                     onMakeCard={() => setCardDraft({ noteId: note.id, text: note.text })}
+                    onDiscuss={() => discuss(note.id)}
                   /></LocatedContent>
                 ))}
               </div>
@@ -223,6 +249,7 @@ export default function ReadingBookPage() {
                   onSaved={(id) => updateNote(note.clientKey, { id })}
                   onDelete={() => setNotes((current) => current.filter((item) => item.clientKey !== note.clientKey))}
                   onMakeCard={(text) => setCardDraft({ noteId: note.id, text })}
+                  onDiscuss={() => discuss(note.id)}
                 /></LocatedContent>
               ))}
             </div>
@@ -233,6 +260,17 @@ export default function ReadingBookPage() {
         </>
       )}
 
+      {stage === "discussion" && <div id="reading-discussion">
+        <ReadingDiscussionWorkspace
+          key={book.id + ":" + discussionTarget.note + ":" + discussionTarget.discussion}
+          bookId={book.id} notes={notes}
+          initialNoteId={discussionTarget.note}
+          initialDiscussionId={discussionTarget.discussion}
+          initialRoundId={discussionTarget.round}
+          onInsightCreated={cardId => void registerInsight(cardId)}
+        />
+      </div>}
+
       {stage === "after" && (
         <>
           <ReadingReviewPanel
@@ -240,10 +278,9 @@ export default function ReadingBookPage() {
             note={latestReview}
             excerptCount={grouped.reading.filter((note) => note.kind === "excerpt").length}
             thoughtCount={grouped.reading.filter((note) => note.kind === "thought").length}
-            onSaved={(note, nextBook) => {
+            onSaved={note => {
               addOrReplaceNote(note);
-              if (nextBook) setBook(nextBook);
-              setNotice(nextBook ? "讀後復盤已完成，這輪閱讀已收束。" : "讀後復盤已保存。");
+              setNotice(note.metadata.reviewCompleted ? "這輪讀後復盤已完成。" : "讀後復盤已保存，可繼續補充。");
             }}
           />
 
@@ -299,6 +336,33 @@ export default function ReadingBookPage() {
   );
 }
 
+function ReadingQuestionEditor({ book, onSaved }: { book: ReadingBook; onSaved: (book: ReadingBook) => void }) {
+  const [question, setQuestion] = useState(book.question);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  async function save() {
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/dojo/reading/books/" + encodeURIComponent(book.id), {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: question.trim() }),
+      });
+      const value = await readJson<{ book: ReadingBook }>(response);
+      onSaved(value.book);
+      setMessage("讀前問題已保存。");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "讀前問題尚未保存。"); }
+    finally { setSaving(false); }
+  }
+  return <details className="reading-discussion-fold">
+    <summary>編輯讀前問題</summary>
+    <label>這輪想弄懂什麼？
+      <textarea className="field" rows={2} value={question} maxLength={2000} onChange={event => setQuestion(event.target.value)} />
+    </label>
+    <button type="button" disabled={saving || !question.trim()} onClick={() => void save()}>保存讀前問題</button>
+    {message && <p role="status">{message}</p>}
+  </details>;
+}
+
 function ReadingPreviewPanel({ book, note, onSaved, onContinue }: { book: ReadingBook; note: EditorNote | null; onSaved: (note: ReadingNote) => void; onContinue: () => void }) {
   const [understanding, setUnderstanding] = useState(note?.metadata.currentUnderstanding ?? "");
   const [focus, setFocus] = useState(note?.metadata.verificationFocus ?? "");
@@ -350,24 +414,21 @@ function ReadingPreviewPanel({ book, note, onSaved, onContinue }: { book: Readin
   </section>;
 }
 
-function ReadingReviewPanel({ book, note, excerptCount, thoughtCount, onSaved }: { book: ReadingBook; note: EditorNote | null; excerptCount: number; thoughtCount: number; onSaved: (note: ReadingNote, book?: ReadingBook) => void }) {
+function ReadingReviewPanel({ book, note, excerptCount, thoughtCount, onSaved }: { book: ReadingBook; note: EditorNote | null; excerptCount: number; thoughtCount: number; onSaved: (note: ReadingNote) => void }) {
   const [changed, setChanged] = useState(note?.metadata.changedUnderstanding ?? "");
   const [question, setQuestion] = useState(note?.metadata.openQuestion ?? "");
   const [nextStep, setNextStep] = useState(note?.metadata.nextStep ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const completed = note?.metadata.reviewCompleted ?? Boolean(note && ["已萃取", "已製作成內容"].includes(book.status));
 
   async function save(finish: boolean) {
     if (!changed.trim() && !question.trim() && !nextStep.trim()) { setError("至少先留下一項讀後發現"); return; }
     setSaving(true); setError(null);
     try {
-      const saved = await saveStructuredNote({ bookId: book.id, noteId: note?.id, kind: "review", text: changed, metadata: { changedUnderstanding: changed, openQuestion: question, nextStep } });
-      let nextBook: ReadingBook | undefined;
-      if (finish && book.status === "閱讀中") {
-        const response = await fetch(`/api/dojo/reading/books/${book.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "已萃取" }) });
-        nextBook = (await readJson<{ book: ReadingBook }>(response)).book;
-      }
-      onSaved({ ...saved, createdAt: saved.createdAt || note?.createdAt || "" }, nextBook);
+      const saved = await saveStructuredNote({ bookId: book.id, noteId: note?.id, kind: "review", text: changed,
+        metadata: { changedUnderstanding: changed, openQuestion: question, nextStep, reviewCompleted: finish } });
+      onSaved({ ...saved, createdAt: saved.createdAt || note?.createdAt || "" });
     } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setSaving(false); }
   }
@@ -383,14 +444,14 @@ function ReadingReviewPanel({ book, note, excerptCount, thoughtCount, onSaved }:
     <textarea id="reading-review-next" className="field" rows={3} value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="這可以成為洞察卡的行動化，但不會自動立卡。" />
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="reading-review-actions">
-      <button type="button" disabled={saving} onClick={() => void save(false)}>{saving ? "儲存中…" : note ? "更新復盤" : "先保存復盤"}</button>
-      {book.status === "閱讀中" && <button type="button" className="primary" disabled={saving} onClick={() => void save(true)}>完成讀後復盤</button>}
+      <button type="button" disabled={saving} onClick={() => void save(false)}>{saving ? "儲存中…" : completed ? "保存為待確認" : "先保存復盤"}</button>
+      <button type="button" className="primary" disabled={saving} onClick={() => void save(true)}>{completed ? "更新已完成的復盤" : "完成讀後復盤"}</button>
     </div>
-    {book.status !== "閱讀中" && <p className="reading-review-complete">這輪已收束；復盤仍可繼續修改。</p>}
+    {completed && <p className="reading-review-complete">讀後復盤已完成。</p>}
   </section>;
 }
 
-function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard }: { book: ReadingBook; note: EditorNote; onDelete: () => void; onMakeCard: () => void }) {
+function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard, onDiscuss }: { book: ReadingBook; note: EditorNote; onDelete: () => void; onMakeCard: () => void; onDiscuss: () => void }) {
   return <article className={`reading-source-note kind-${note.kind}`}>
     <div className="reading-source-note-meta">
       <span>{note.kind === "excerpt" ? note.metadata.source || "摘錄" : "我的想法"}</span>
@@ -400,7 +461,7 @@ function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard }: { book: Rea
     {note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
     {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection"><div className="reading-source-reflection"><small>我的理解片段</small><p>{note.metadata.reflection}</p>{note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id,fragment:'reflection'}} />}</div></LocatedContent>}
     {note.id&&<div><small>原筆記的來源與分類</small><RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} /></div>}
-    <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button className="reading-make-card" disabled={!note.id} onClick={onMakeCard}>提煉洞察</button></div>
+    <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button><button className="reading-make-card" disabled={!note.id} onClick={onMakeCard}>提煉洞察</button></div>
     {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
       source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}
       defaultStatement={note.kind === "thought" ? note.text : note.metadata.reflection || ""}
@@ -410,7 +471,7 @@ function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard }: { book: Rea
   </article>;
 }
 
-function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onMakeCard }: { bookId: string; note: EditorNote; onText: (text: string) => void; onSaved: (id: string) => void; onDelete: () => void; onMakeCard: (text: string) => void }) {
+function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onMakeCard, onDiscuss }: { bookId: string; note: EditorNote; onText: (text: string) => void; onSaved: (id: string) => void; onDelete: () => void; onMakeCard: (text: string) => void; onDiscuss: () => void }) {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedText, setSavedText] = useState(note.id ? note.text : "");
   const lastSaved = useRef(note.id ? note.text : "");
@@ -473,6 +534,7 @@ function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onMakeCard
       {saveState === "error" && <button onClick={() => void save(note.text)}>重試</button>}
       {note.editable && <button className="reading-delete-note" disabled={saveState === "saving"} onClick={() => void remove()}>刪除</button>}
       {note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:bookId}} />}
+      <button disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={onDiscuss}>和 GPT 討論</button>
       <button className="reading-make-card" disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={() => onMakeCard(note.text)}>提煉洞察</button>
     </div>
   </article>;

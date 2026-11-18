@@ -4,10 +4,12 @@ import {
   FOUNDATION_PREFIX,
   LearningError,
   missingSeeds,
+  SEEDS,
   type EntityInput,
   type EntityKind,
   type LearningEntity,
 } from "./model";
+import { CURRICULUM, plannedStages } from "./curriculum";
 export type RecordRow = { id: string; title: string; value: unknown };
 export type FoundationRepository = {
   owner: string;
@@ -41,6 +43,7 @@ export function foundationService(repository: FoundationRepository) {
     entities: LearningEntity[],
     seedKey: string | null = null,
     legacyKey: LearningEntity["legacyKey"] = null,
+    curriculumKey?: string,
   ) {
     if (!["item", "stage", "topic"].includes(kind))
       throw new LearningError("學習資料類型不正確");
@@ -62,6 +65,7 @@ export function foundationService(repository: FoundationRepository) {
         stageId: null,
         legacyKey,
         seedKey,
+        ...(curriculumKey ? { curriculumKey } : {}),
         name: "",
         description: "",
         vision: "",
@@ -84,39 +88,34 @@ export function foundationService(repository: FoundationRepository) {
     await repository.create(`${FOUNDATION_PREFIX}${entity.id}`, entity);
     return entity;
   }
+  async function initializeItems(entities: LearningEntity[], useCurriculum = false) {
+    const created: string[] = [];
+    const conflicts: string[] = [];
+    for (const seed of missingSeeds(entities)) {
+      if (entities.some(entity => entity.kind === "item" && entity.name === seed.name)) {
+        conflicts.push(seed.name + " 有未對照的同名項目，保留原項目。");
+        continue;
+      }
+      const existingVision = seed.legacyKey ? await repository.legacyVision(seed.legacyKey) : null;
+      const plan = useCurriculum ? CURRICULUM[seed.key] : undefined;
+      const entity = await createEntity("item", {
+        name: seed.name,
+        description: seed.description,
+        vision: existingVision ?? seed.vision,
+        ...(plan ? { goal: plan.goal, expectedOutcome: plan.expectedOutcome } : {}),
+      }, null, entities, seed.key, seed.legacyKey);
+      entities.push(entity);
+      created.push(entity.id);
+    }
+    return { created, conflicts };
+  }
+
   return {
     snapshot,
     initialize: () =>
       repository.exclusive(async () => {
         const { entities } = await rows();
-        const created: string[] = [];
-        const conflicts: string[] = [];
-        // Sequential independent records: partial failure is visible and retry discovers committed seed keys.
-        for (const seed of missingSeeds(entities)) {
-          if (entities.some((e) => e.kind === "item" && e.name === seed.name)) {
-            conflicts.push(
-              `${seed.name} 有未對照的同名項目，請先改名或人工確認；未自動建立或覆蓋`,
-            );
-            continue;
-          }
-          const existingVision = seed.legacyKey
-            ? await repository.legacyVision(seed.legacyKey)
-            : null;
-          const entity = await createEntity(
-            "item",
-            {
-              name: seed.name,
-              description: seed.description,
-              vision: existingVision ?? seed.vision,
-            },
-            null,
-            entities,
-            seed.key,
-            seed.legacyKey,
-          );
-          entities.push(entity);
-          created.push(entity.id);
-        }
+        const { created, conflicts } = await initializeItems(entities);
         return {
           entities,
           missing: missingSeeds(entities),
@@ -124,6 +123,44 @@ export function foundationService(repository: FoundationRepository) {
           conflicts,
         };
       }),
+    installCurriculum: () => repository.exclusive(async () => {
+      const { entities } = await rows();
+      const { created, conflicts } = await initializeItems(entities, true);
+      const items = entities.filter(entity => entity.kind === "item" && entity.status !== "archived");
+      async function ensure(kind: "stage" | "topic", item: LearningEntity, key: string, input: EntityInput) {
+        const matches = entities.filter(entity => entity.kind === kind && entity.itemId === item.id
+          && (entity.curriculumKey === key || (entity.name === input.name && (kind === "stage" || entity.stageId === input.stageId))));
+        if (matches.length > 1) {
+          conflicts.push(item.name + "有重複的「" + input.name + "」，請在管理頁查看。");
+          return null;
+        }
+        if (matches[0]) return matches[0];
+        const entity = await createEntity(kind, input, item.id, entities, null, null, key);
+        entities.push(entity);
+        created.push(entity.id);
+        return entity;
+      }
+      for (const item of items) {
+        const sameNameSeed = SEEDS.find(seed => seed.name === item.name
+          && items.filter(entity => entity.name === item.name).length === 1
+          && !items.some(entity => entity.seedKey === seed.key || (seed.legacyKey && entity.legacyKey === seed.legacyKey)));
+        const key = item.seedKey ?? item.legacyKey ?? sameNameSeed?.key;
+        if (!key) continue;
+        for (const route of plannedStages(key)) {
+          const stage = await ensure("stage", item, route.key, { name: route.name });
+          if (!stage || stage.status === "archived") continue;
+          for (const topic of route.topics) {
+            await ensure("topic", item, topic.key, {
+              stageId: stage.id,
+              name: topic.name,
+              description: topic.description,
+              expectedOutcome: topic.expectedOutcome,
+            });
+          }
+        }
+      }
+      return { entities, missing: missingSeeds(entities), created, conflicts };
+    }),
     create: (kind: EntityKind, input: EntityInput, itemId: string | null) =>
       repository.exclusive(async () => {
         const { entities } = await rows();
