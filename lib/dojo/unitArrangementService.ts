@@ -94,7 +94,7 @@ export async function createUnitArrangement(params: {
     throw new Error("語境修習室尚未啟用素材編排能力；原本逐筆派送仍可使用");
   const project = catalog.projects.find((item) => item.id === params.projectId);
   if (!project || project.catalogRole !== "learning_project") throw new Error("請選擇接收端目錄中的正式長期學習專案");
-  const expectedTypes = new Set(entries.map((entry) => entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom"));
+  const expectedTypes = new Set(entries.map((entry) => entry.route === "field" ? "field_experience" : entry.route === "video" ? "video" : entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom"));
   const crossType = [...expectedTypes].some((type) => type !== project.type);
   if (crossType && !params.crossTypeConfirmed) throw new Error("來源分類與目標專案類型不同，請明確確認跨類型派送");
   const fullIds = new Set(params.fullTextSourceIds);
