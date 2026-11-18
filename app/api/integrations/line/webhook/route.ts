@@ -427,7 +427,7 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
     externalEventId: event.webhookEventId ?? "",
     lineBatchState: "closed",
   });
-  await replyLineMessage(event.replyToken ?? "", "圖片已獨立保存到野採。若還有相關畫面，請按「繼續補這組」；否則直接選擇素材類型。系統不會再自動合併上一張。", imageDraftQuickReply(entry.id));
+  await replyLineMessage(event.replyToken ?? "", "圖片已獨立保存到野採。若還有相關畫面，請按「繼續補這組」；這張圖記錄的是哪種素材？系統不會再自動合併上一張。", imageDraftQuickReply(entry.id));
 }
 
 async function handlePostback(event: LineWebhookEvent, userId: string): Promise<void> {
@@ -474,7 +474,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageAnalyze") {
       if (entry.route === "pending") {
-        await replyLineMessage(event.replyToken ?? "", "請先選擇遊戲英文、英文日常、課堂英文或閱讀英文。", imageRouteQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", "請選擇這張圖記錄的素材類型。", imageRouteQuickReply(entry.id));
         return;
       }
       const analyzed = await analyzeEnglishImage(entry.id, { force: true });
