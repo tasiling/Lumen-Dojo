@@ -630,7 +630,7 @@ export async function createInsightCard(params: {
   action: string;
   actionType: InsightActionType;
   todayISO: string;
-  nextVisitISO: string;
+  nextVisitISO: string | null;
   sourceNoteId?: string;
   sourceText?: string;
 }) {
@@ -644,7 +644,7 @@ export async function createInsightCard(params: {
         行動型態: selectProp(params.actionType),
         行動化: richTextProp(params.action.trim()),
         狀態: selectProp(status),
-        下次回訪日: dateProp(params.nextVisitISO),
+        ...(params.nextVisitISO ? { 下次回訪日: dateProp(params.nextVisitISO) } : {}),
         節目應用: selectProp("未定"),
         萃取日期: dateProp(params.todayISO),
         順延次數: numberProp(0),

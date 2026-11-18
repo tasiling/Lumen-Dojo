@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     if (body.action === "initialize")
       return NextResponse.json(await learningFoundation.initialize());
+    if (body.action === "install-curriculum")
+      return NextResponse.json(await learningFoundation.installCurriculum());
     if (body.action !== "create") throw new LearningError("操作不正確");
     const entity = await learningFoundation.create(
       body.kind,

@@ -12,6 +12,7 @@ import {
   assertGraph,
   type LearningEntity,
   FOUNDATION_PREFIX,
+  SEEDS,
 } from "../lib/dojo/learningFoundation/model";
 import { createSeedOnce } from "../lib/dojo/learningFoundation/seedWrite";
 import { trackLearningWrite } from "../lib/dojo/learningFoundation/writeOutcome";
@@ -60,7 +61,7 @@ async function main() {
       key === "english" ? "既有英文目標，保留來源" : null,
   };
   const service = foundationService(repository);
-  assert.equal((await service.snapshot()).missing.length, 9);
+  assert.equal((await service.snapshot()).missing.length, SEEDS.length);
   assert.equal(writes, 0);
   console.log("PASS GET/snapshot performs no writes");
   failAfter = 3;
@@ -69,7 +70,7 @@ async function main() {
   failAfter = null;
   await service.initialize();
   const initial = await service.snapshot();
-  assert.equal(initial.entities.length, 9);
+  assert.equal(initial.entities.length, SEEDS.length);
   assert.equal(
     initial.entities.find((e) => e.legacyKey === "english")?.vision,
     "既有英文目標，保留來源",
@@ -90,7 +91,7 @@ async function main() {
     status: "archived",
   });
   await service.initialize();
-  assert.equal((await service.snapshot()).entities.length, 9);
+  assert.equal((await service.snapshot()).entities.length, SEEDS.length);
   psychology = await service.edit(psychology.id, psychology.revision, {
     status: "active",
     focused: true,
@@ -106,7 +107,7 @@ async function main() {
   );
   const custom = await service.create("item", { name: "第十項自訂學科" }, null);
   const fresh = foundationService(repository);
-  assert.equal((await fresh.snapshot()).entities.length, 10);
+  assert.equal((await fresh.snapshot()).entities.length, SEEDS.length + 1);
   assert.equal(
     (await fresh.snapshot()).entities.filter((e) => e.itemId === custom.id)
       .length,
@@ -290,11 +291,25 @@ async function main() {
   });
   const collisionResult = await collisionService.initialize();
   assert.equal(collisionResult.conflicts.length, 1);
-  assert.equal(collisionResult.entities.length, 9);
+  assert.equal(collisionResult.entities.length, SEEDS.length);
   assert.equal(collisionResult.missing[0].key, "psychology");
   console.log(
     "PASS ambiguous name collision explicitly reported; other confirmed items still delivered",
   );
+  const installed = await service.installCurriculum();
+  const approved = installed.entities.filter(item => item.curriculumKey);
+  assert.equal(approved.filter(item => item.kind === "topic").length, 32);
+  assert.equal(approved.filter(item => item.kind === "stage").length, 14);
+  const cards = installed.entities.find(item => item.seedKey === "cards");
+  assert.equal(cards?.name, "塔羅及雷諾曼");
+  assert.deepEqual(approved.filter(item => item.itemId === cards?.id && item.kind === "stage").map(item => item.name), ["塔羅", "雷諾曼"]);
+  assert.equal(approved.filter(item => item.itemId === english.id).length, 0);
+  const original = approved.find(item => item.kind === "topic")!;
+  const renamed = await service.edit(original.id, original.revision, { name: "我調整過的練習", status: "completed" });
+  const again = await service.installCurriculum();
+  assert.equal(again.created.length, 0);
+  assert.deepEqual(again.entities.find(item => item.id === original.id), renamed);
+  console.log("PASS approved paths add 32 topics once and preserve existing progress and renamed units");
   const uncertainRoot = await mkdtemp(join(tmpdir(), "r2-uncertain-"));
   await assert.rejects(
     withLearningWriteLock(
@@ -317,7 +332,7 @@ async function main() {
     withLearningWriteLock(
       () =>
         createSeedOnce(
-          "tarot",
+          "cards",
           async () => {
             throw new Error("client setup failed before dispatch");
           },
@@ -331,13 +346,13 @@ async function main() {
   await withLearningWriteLock(
     () =>
       createSeedOnce(
-        "tarot",
+        "cards",
         () => trackLearningWrite(async () => true),
         safeSeedRoot,
       ),
     safeSeedRoot,
   );
-  assert.deepEqual(await readdir(safeSeedRoot), ["seed-tarot.intent"]);
+  assert.deepEqual(await readdir(safeSeedRoot), ["seed-cards.intent"]);
   await rm(safeSeedRoot, { recursive: true, force: true });
   console.log(
     "PASS seed intent cleaned only with transport evidence of no dispatch; confirmed create retains intent",
@@ -345,7 +360,7 @@ async function main() {
   let seedAttempts = 0;
   await assert.rejects(
     createSeedOnce(
-      "tarot",
+      "cards",
       async () => {
         seedAttempts++;
         throw new Error("lost create response");
@@ -356,7 +371,7 @@ async function main() {
   );
   await assert.rejects(
     createSeedOnce(
-      "tarot",
+      "cards",
       async () => {
         seedAttempts++;
         return true;

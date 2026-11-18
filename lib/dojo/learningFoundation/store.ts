@@ -8,6 +8,8 @@ import { FOUNDATION_PREFIX, LearningError } from "./model";
 import { foundationService } from "./service";
 import { withLearningWriteLock } from "./fileLock";
 import { createSeedOnce } from "./seedWrite";
+import { createPracticeOnce } from "./practiceWrite";
+import { sourceIdentity } from "../practiceEvents/service";
 
 // The current app has one access-key owner and one server-configured DB14.
 // No caller can select a data source, owner, page ID or legacy mapping.
@@ -22,6 +24,7 @@ export const learningFoundation = foundationService({
         { retryCreate: false },
       );
     if (entity.seedKey) await createSeedOnce(entity.seedKey, create);
+    else if (entity.curriculumKey) await createPracticeOnce(sourceIdentity(learningOwner, "curriculum", entity.itemId!, entity.curriculumKey), create);
     else await create();
   },
   update: async (id, title, entity) => {

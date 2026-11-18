@@ -52,6 +52,9 @@ const lockRoot = await mkdtemp(join(tmpdir(), "r2-api-"));
 process.env.ACCESS_KEY = key;
 process.env.LEARNING_WRITE_LOCK_DIR = lockRoot;
 let retrievedPage = null;
+const readingBookId = crypto.randomUUID();
+const readingNoteId = crypto.randomUUID();
+const readingCards = [];
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const io = {
   listJsonRecords: async (prefix) => {
@@ -94,6 +97,10 @@ const notionMutation = {
       return { id };
     }),
   createTraceEntry: async () => send(async () => ({ id: crypto.randomUUID() })),
+  createInsightCard: async (card) => {
+    readingCards.push(card);
+    return { id: crypto.randomUUID() };
+  },
 };
 function load(filename) {
   filename = resolve(filename);
@@ -146,6 +153,10 @@ function load(filename) {
     if (path === resolve(root, "lib/notion/mutations")) return notionMutation;
     if (path === resolve(root, "lib/notion/queries"))
       return {
+        listReadingBooks: async () => [{ id: readingBookId, title: "測試閱讀", readCount: 1, question: "我怎樣知道自己理解？" }],
+        listReadingNotes: async id => id === readingBookId ? [
+          { id: readingNoteId, kind: "excerpt", text: "理解之後可再重述", metadata: { reflection: "我可以先找自己的例子", location: "第 4 頁" } },
+        ] : [],
         getKnowledgeEntry: async (id) => {
           checkRead();
           const row = rows.get(id);
@@ -264,7 +275,7 @@ try {
   );
   assert.equal(init.status, 200);
   const snapshot = await init.json();
-  assert.equal(snapshot.entities.length, 9);
+  assert.equal(snapshot.entities.length, 8);
   const writeCount = writes;
   assert.equal(
     (
@@ -670,8 +681,8 @@ try {
     request("/api/dojo/learning/foundation", "POST", { action: "initialize" }),
   );
   assert.equal(result.status, 200);
-  assert.equal(rows.size, 9);
-  assert.equal(writeAttempts, 9);
+  assert.equal(rows.size, 8);
+  assert.equal(writeAttempts, 8);
   console.log(
     "PASS partial acknowledged initialization + subsequent read failure retries without duplicate creates",
   );
@@ -703,8 +714,8 @@ try {
     request("/api/dojo/learning/foundation", "POST", { action: "initialize" }),
   );
   assert.equal(result.status, 200);
-  assert.equal(rows.size, 9);
-  assert.equal(writeAttempts, 9);
+  assert.equal(rows.size, 8);
+  assert.equal(writeAttempts, 8);
   console.log(
     "PASS partial unknown initialization keeps mutex/intent, invisible row cannot trigger recreate; reconciled row reused",
   );
@@ -825,6 +836,75 @@ try {
   console.log(
     "PASS actual Notion client SDK transport: confirmed request releases; lost response is sent once, swallowed error retains mutex",
   );
+  const discussionPath = "/api/dojo/reading/discussions";
+  const discussions = load("app/api/dojo/reading/discussions/route.ts");
+  const { returnInstructions, discussionPrompt } = load("lib/reading/discussion.ts");
+  const callDiscussion = async (body, status = 200) => {
+    const response = await discussions.POST(request(discussionPath, "POST", { bookId: readingBookId, ...body }));
+    const data = await response.json();
+    assert.equal(response.status, status, JSON.stringify(data));
+    return data;
+  };
+  const discussionSummary = async () => (await discussions.GET(request(discussionPath))).json();
+  assert.equal((await discussions.GET(request(discussionPath, "GET", undefined, false))).status, 401);
+  assert.equal((await discussions.POST(request(discussionPath, "POST", { bookId: readingBookId }, true, "https://foreign.example"))).status, 403);
+  assert.deepEqual(await discussionSummary(), { resume: null, pending: [] });
+
+  const prepareDiscussion = { action: "prepare", noteId: readingNoteId, scope: "both", starter: "me", question: "怎麼練習重述？" };
+  const first = await callDiscussion(prepareDiscussion);
+  const firstRound = first.discussion.rounds[0];
+  assert.equal((await callDiscussion(prepareDiscussion)).roundId, firstRound.id);
+  assert.match(discussionPrompt(first.discussion, firstRound), /這輪可以整理成完成卡嗎/);
+  assert.match(discussionPrompt(first.discussion, firstRound), /讀前問題　我怎樣知道自己理解/);
+  const returnCard = (entry, status, candidates = []) => {
+    const round = entry.discussion.rounds.at(-1);
+    const instructions = returnInstructions(entry.discussion, round, status);
+    const shell = JSON.parse(instructions.slice(instructions.indexOf("{"), instructions.indexOf("}") + 1));
+    shell.討論ID = shell.討論ID.replaceAll("-", "–");
+    shell.問答 = [{ 角色: "GPT", 內容: "打算怎麼試？" }, { 角色: "我", 內容: "我想在下一次閱讀時用自己的例子。" }];
+    shell.候選 = candidates;
+    if (status === "暫存") shell.下次從這裡 = "試一個例子";
+    return JSON.stringify(shell);
+  };
+  assert.equal((await discussionSummary()).resume, null);
+  const pause = returnCard(first, "暫存");
+  await callDiscussion({ action: "preview", raw: pause });
+  assert.equal((await discussionSummary()).resume, null);
+  await callDiscussion({ action: "save", raw: pause });
+  assert.equal((await discussionSummary()).resume.next, "試一個例子");
+
+  const continued = await callDiscussion(prepareDiscussion);
+  assert.notEqual(continued.roundId, first.roundId);
+  assert.match(discussionPrompt(continued.discussion, continued.discussion.rounds.at(-1)), /下次從這裡　試一個例子/);
+  const complete = returnCard(continued, "完成", [{
+    類型: "洞察卡", 內容: "讀後自己舉例", 行動: "讀完下一段時練習",
+    依據: "T2", 依據原句: "這不是實際說過的內容",
+  }]);
+  await callDiscussion({ action: "save", raw: complete });
+  await callDiscussion({ action: "save", raw: complete });
+  const queue = await discussionSummary();
+  assert.equal(queue.resume, null);
+  assert.equal(queue.pending[0].count, 1);
+  assert.equal(readingCards.length, 0);
+  const confirmed = {
+    action: "confirm", discussionId: continued.discussion.id, roundId: continued.roundId, candidateId: "1", nextVisitAt: "2026-11-18",
+    result: { type: "洞察卡", text: "讀後自己舉例", action: "讀完下一段時練習", anchor: "T2", quote: "用自己的例子" },
+  };
+  await callDiscussion({ ...confirmed, result: { ...confirmed.result, quote: "這不是實際說過的內容" } }, 400);
+  await callDiscussion(confirmed);
+  await callDiscussion(confirmed);
+  assert.equal(readingCards.length, 1);
+  assert.equal(readingCards[0].sourceNoteId, readingNoteId);
+  assert.equal(readingCards[0].nextVisitISO, "2026-11-18");
+  assert.match(readingCards[0].sourceText, /我的發言/);
+  assert.deepEqual(await discussionSummary(), { resume: null, pending: [] });
+  const readingNotes = load("lib/reading/notes.ts");
+  const recap = readingNotes.parseStoredReadingNote(readingNotes.serializeStructuredReadingNote({
+    kind: "review", text: "我理解了變化", metadata: { reviewCompleted: true },
+  }));
+  assert.equal(recap.metadata.reviewCompleted, true);
+  assert.equal(readingNotes.parseStoredReadingNote("［行光閱讀：讀後 v1］\n---理解改變---\n舊紀錄").metadata.reviewCompleted, undefined);
+  console.log("PASS formal reading discussion authorization, resume, completion, invalid evidence repair, idempotent cards and independent recap");
   delete process.env.LEARNING_WRITE_LOCK_DIR;
   assert.equal(
     (

@@ -24,21 +24,36 @@ export default function ReadingShelfPage() {
   const [books, setBooks] = useState<ReadingBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
   const [form, setForm] = useState<{ mode: FormMode; book?: ReadingBook } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/dojo/reading/books", { cache: "no-store" });
-      const json = await readJson<{ books: ReadingBook[] }>(response);
+      const params = new URLSearchParams(window.location.search);
+      const focused = params.get("focus") === "anxiety-effort";
+      const response = await fetch("/api/dojo/reading/books" + (focused ? "?focus=anxiety-effort" : ""), { cache: "no-store" });
+      const json = await readJson<{ books: ReadingBook[]; selection?: { bookId: string; noteId: string } | null }>(response);
       setBooks(json.books ?? []);
+      if (focused && json.selection) {
+        const query = new URLSearchParams({ note: json.selection.noteId });
+        const returnTo = params.get("returnTo");
+        if (returnTo?.startsWith("/practice/learning?")) query.set("returnTo", returnTo);
+        router.replace("/reading/books/" + encodeURIComponent(json.selection.bookId) + "?" + query);
+      } else if (focused) setNotice("可在書架選擇這次想討論的閱讀紀錄。");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
+
+  function openBook(book: ReadingBook) {
+    const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+    const query = returnTo?.startsWith("/practice/learning?") ? "?" + new URLSearchParams({ returnTo }) : "";
+    router.push("/reading/books/" + encodeURIComponent(book.id) + query);
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -77,6 +92,7 @@ export default function ReadingShelfPage() {
 
       {loading && <div className="empty">正在打開書架…</div>}
       {error && <p className="form-error" role="alert">{error}<button className="text-link" onClick={() => void load()}>重新讀取</button></p>}
+      {notice && <p role="status">{notice}</p>}
 
       {!loading && (
         <>
@@ -86,7 +102,7 @@ export default function ReadingShelfPage() {
             books={groups.reading}
             empty="目前沒有正在閱讀的書。"
             actionLabel="繼續閱讀"
-            onAction={(book) => router.push(`/reading/books/${book.id}`)}
+            onAction={openBook}
           />
           <ShelfSection
             title="待讀"
@@ -104,13 +120,13 @@ export default function ReadingShelfPage() {
             actionLabel="再讀一次"
             onAction={(book) => setForm({ mode: "reread", book })}
             secondaryLabel="查看筆記"
-            onSecondary={(book) => router.push(`/reading/books/${book.id}`)}
+            onSecondary={openBook}
           />
           {groups.abandoned.length > 0 && (
             <details className="reading-shelf-section reading-abandoned">
               <summary>已放棄的閱讀 <span>{groups.abandoned.length}</span></summary>
               <div className="reading-book-list">
-                {groups.abandoned.map((book) => <BookCard key={book.id} book={book} secondaryLabel="查看筆記" onSecondary={(item) => router.push(`/reading/books/${item.id}`)} />)}
+                {groups.abandoned.map((book) => <BookCard key={book.id} book={book} secondaryLabel="查看筆記" onSecondary={openBook} />)}
               </div>
             </details>
           )}
@@ -125,7 +141,7 @@ export default function ReadingShelfPage() {
           onCreated={(book) => {
             setForm(null);
             if (book.status === "待讀") void load();
-            else router.push(`/reading/books/${book.id}`);
+            else openBook(book);
           }}
         />
       )}

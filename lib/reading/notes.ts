@@ -33,6 +33,7 @@ export function readingNoteMetadataFromUnknown(value: unknown): ReadingNoteMetad
     changedUnderstanding: clean(source.changedUnderstanding),
     openQuestion: clean(source.openQuestion),
     nextStep: clean(source.nextStep),
+    ...(typeof source.reviewCompleted === "boolean" ? { reviewCompleted: source.reviewCompleted } : {}),
   };
 }
 
@@ -74,6 +75,7 @@ export function serializeStructuredReadingNote(input: StructuredReadingNoteInput
     ...section("理解改變", metadata.changedUnderstanding || input.text),
     ...section("仍想查證", metadata.openQuestion),
     ...section("接下來", metadata.nextStep),
+    ...(metadata.reviewCompleted === undefined ? [] : section("復盤狀態", metadata.reviewCompleted ? "已完成" : "待確認")),
   ].join("\n");
 }
 
@@ -142,6 +144,7 @@ export function parseStoredReadingNote(text: string): {
       changedUnderstanding,
       openQuestion: sections.get("仍想查證") ?? "",
       nextStep: sections.get("接下來") ?? "",
+      ...(sections.has("復盤狀態") ? { reviewCompleted: sections.get("復盤狀態") === "已完成" } : {}),
     },
   };
 }
