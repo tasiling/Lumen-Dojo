@@ -241,9 +241,16 @@ export function imageRouteQuickReply(entryId: string) {
     quickReplyItem("現場經歷", new URLSearchParams({ action: "imageRoute", entryId, route: "field" }).toString()),
     quickReplyItem("影音／逐字稿", new URLSearchParams({ action: "imageRoute", entryId, route: "video" }).toString()),
     quickReplyItem("課堂／工作回收", new URLSearchParams({ action: "imageRoute", entryId, route: "classroom" }).toString()),
-    quickReplyItem("閱讀內容", new URLSearchParams({ action: "imageRoute", entryId, route: "reading" }).toString()),
+    quickReplyItem("心知閱讀截圖", new URLSearchParams({ action: "imageRoute", entryId, route: "xinzhi" }).toString()),
+    quickReplyItem("英文閱讀內容", new URLSearchParams({ action: "imageRoute", entryId, route: "reading" }).toString()),
     quickReplyItem("一般剪藏", new URLSearchParams({ action: "imageRoute", entryId, route: "capture" }).toString()),
   ] };
+}
+
+export function readingClipQuickReply(entryId: string) {
+  const url = new URL("/reading/clips", process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://lumen-dojo.up.railway.app");
+  url.searchParams.set("batch", entryId);
+  return {items:[uriQuickReplyItem("到心知核對書頁",url.href),messageQuickReplyItem("選單","選單")]};
 }
 
 export function imageDraftQuickReply(entryId: string) {

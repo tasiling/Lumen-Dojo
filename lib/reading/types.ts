@@ -54,6 +54,8 @@ export type ReadingNoteKind = (typeof READING_NOTE_KINDS)[number];
 export type ReadingNoteMetadata = {
   source?: string;
   sourceBookTitle?: string;
+  clipPageId?: string;
+  selectionLabel?: string;
   chapter?: string;
   location?: string;
   reflection?: string;

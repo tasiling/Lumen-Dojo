@@ -120,3 +120,117 @@
 .dojo.reading-shell .modal {justify-content:center}
 .dojo.reading-shell :is(.reading-capture-book-chip span,.reading-capture-book-chip b,.reading-screenshot-note p,.reading-source-warning,.reading-parse-preview p,.reading-parse-preview span,.reading-parse-preview b,.reading-postpone-count,.reading-weaving-composer p,.reading-project-sources p,.reading-project-sources b) {font-size:.875rem;line-height:1.8}
 .dojo.reading-shell button:active:not(:disabled) {filter:brightness(.96)}
+
+.reading-clips-screen .clip-form,
+.reading-manual-more .clip-form {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.reading-clips-screen .clip-upload,
+.reading-clips-screen .clip-batch-label,
+.clip-form label {
+  display: grid;
+  gap: 6px;
+}
+.clip-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: start;
+  gap: 16px;
+}
+.clip-review-grid > * {
+  min-width: 0;
+}
+.clip-original img {
+  display: block;
+  width: 100%;
+  max-height: 64vh;
+  object-fit: contain;
+  margin: 10px auto;
+  background: #faf6ed;
+}
+.clip-original a,
+.reading-manual-more summary,
+.reading-manual-list summary,
+.clip-form summary {
+  display: block;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 0;
+  color: var(--ink, #264156);
+  font-weight: 650;
+}
+.reading-manual-more summary,
+.reading-manual-list summary,
+.clip-form summary {
+  display: list-item;
+}
+.clip-form .field,
+.clip-batch-label .field {
+  width: 100%;
+  font-size: 16px;
+}
+.clip-form small,
+.clip-original small {
+  color: #53626b;
+}
+.clip-form-actions,
+.clip-page-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.clip-form-actions button,
+.clip-page-nav button,
+.clip-upload input::file-selector-button,
+.clip-form details button,
+.reading-manual-list button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+.clip-page-nav [aria-pressed="true"] {
+  border-color: #9d783e;
+  background: #faeccf;
+}
+.clip-upload input,
+.clip-form textarea {
+  max-width: 100%;
+}
+.reading-manual-more[open] {
+  flex: 1 0 100%;
+  min-width: 0;
+}
+.reading-manual-more details,
+.reading-manual-list article {
+  padding: 12px 0;
+  border-top: 1px solid #dfded6;
+}
+.reading-manual-more label,
+.reading-manual-list label {
+  font-weight: 500;
+  color: #253c4a;
+}
+.reading-manual-list article p,
+.reading-manual-list blockquote {
+  white-space: pre-wrap;
+}
+.reading-manual-list label {
+  display: block;
+  margin: 8px 0;
+}
+@media (max-width: 700px) {
+  .clip-review-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .clip-original img {
+    max-height: 40vh;
+  }
+  .clip-form-actions {
+    display: grid;
+  }
+  .clip-form-actions button {
+    width: 100%;
+  }
+}

@@ -79,6 +79,7 @@ export default function ReadingShelfPage() {
           <button onClick={() => setForm({ mode: "wait" })}>先放入待讀</button>
         </div>
       </div>
+      <button className="reading-capture-entry" onClick={()=>router.push("/reading/clips")}><span>行光剪藏</span><b>心知閱讀截圖 · 核對書頁 →</b></button>
       <button className="reading-capture-entry" onClick={() => router.push("/add?mode=reading")}>
           <span>正在 Readmoo 閱讀？</span>
           <b>貼上摘錄／記下想法 <i>→</i></b>

@@ -1,6 +1,9 @@
 "use client";
 import { ReadingHeaderArt, ReadingIcon } from "@/app/components/ReadingArt";
 
+import Link from "next/link";
+import {ManualCardEntry} from "@/app/components/ReadingManualCards";
+import {originalHref} from "@/lib/reading/clips";
 import {readingNoteContent} from "@/lib/reading/content";
 import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
 import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
@@ -9,7 +12,7 @@ import { useParams, useRouter } from "next/navigation";
 import ReadingQuickCapture from "@/app/components/ReadingQuickCapture";
 import ClaimCandidateComposer from "@/app/components/ClaimCandidateComposer";
 import ReadingDiscussionWorkspace from "@/app/components/ReadingDiscussion";
-import type { InsightActionType, InsightCard, ReadingBook, ReadingNote, ReadingNoteKind, ReadingNoteMetadata } from "@/lib/reading/types";
+import type { InsightCard, ReadingBook, ReadingNote, ReadingNoteKind, ReadingNoteMetadata } from "@/lib/reading/types";
 
 async function readJson<T>(response: Response): Promise<T> {
   const json = await response.json().catch(() => ({}));
@@ -19,7 +22,6 @@ async function readJson<T>(response: Response): Promise<T> {
 
 type EditorNote = ReadingNote & { clientKey: string };
 type ReadingStage = "before" | "during" | "discussion" | "after";
-type CardDraft = { noteId: string; text: string };
 
 function newNote(): EditorNote {
   return {
@@ -59,7 +61,6 @@ export default function ReadingBookPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [cardDraft, setCardDraft] = useState<CardDraft | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [discussionTarget, setDiscussionTarget] = useState({ note: "", discussion: "", round: "" });
 
@@ -167,7 +168,6 @@ export default function ReadingBookPage() {
   if (loading) return <section className="screen reading-screen"><div className="empty">正在打開閱讀頁…</div></section>;
   if (!book) return <section className="screen reading-screen"><p className="form-error">{error ?? "找不到這輪閱讀"}</p></section>;
 
-  const executionCount = cards.filter((card) => card.actionType === "執行型" && card.status !== "放棄").length;
   const latestPreview = grouped.preview.at(-1) ?? null;
   const latestReview = grouped.review.at(-1) ?? null;
 
@@ -185,6 +185,7 @@ export default function ReadingBookPage() {
         {book.author && <p>{book.author}</p>}
       </div>
 
+      <Link className="reading-capture-entry" href={"/reading/clips?book="+encodeURIComponent(book.id)}>從行光剪藏加入這一讀的書頁 →</Link>
       <RelationsPanel target={{kind:'book',recordId:book.id}} />
       {notes.filter(n=>n.id===new URLSearchParams(typeof window==='undefined'?'':location.search).get('note')&&(n.kind==='preview'||n.kind==='review')).map(n=><LocatedContent key={n.id} parameter="note" id={n.id}><section className="ritual-card"><h2>指定的閱讀紀錄</h2><p style={{whiteSpace:'pre-wrap'}}>{readingNoteContent(n)}</p><RelationsPanel target={{kind:'reading_note',recordId:n.id,parentBookId:book.id}} /></section></LocatedContent>)}
       <aside className="reading-question-anchor">
@@ -229,7 +230,7 @@ export default function ReadingBookPage() {
                     book={book}
                     note={note}
                     onDelete={() => void removeNote(note)}
-                    onMakeCard={() => setCardDraft({ noteId: note.id, text: note.text })}
+                    onInsightCreated={id=>void registerInsight(id)}
                     onDiscuss={() => discuss(note.id)}
                   /></LocatedContent>
                 ))}
@@ -248,7 +249,7 @@ export default function ReadingBookPage() {
                   onText={(text) => updateNote(note.clientKey, { text })}
                   onSaved={(id) => updateNote(note.clientKey, { id })}
                   onDelete={() => setNotes((current) => current.filter((item) => item.clientKey !== note.clientKey))}
-                  onMakeCard={(text) => setCardDraft({ noteId: note.id, text })}
+                  onInsightCreated={id=>void registerInsight(id)}
                   onDiscuss={() => discuss(note.id)}
                 /></LocatedContent>
               ))}
@@ -286,11 +287,11 @@ export default function ReadingBookPage() {
 
           <section className="reading-cards-section">
             <div className="reading-section-heading">
-              <div><h2>本輪洞察卡</h2><p>由你親自寫下與確認；每輪保留 3–5 張，執行型最多一張。</p></div>
+              <div><h2>本輪洞察卡</h2><p>回看這一讀親自確認的洞察與行動。</p></div>
               <button onClick={() => router.push("/reading/cards")}>卡片庫</button>
             </div>
             {cards.length > 5 && <p className="reading-gentle-warning">已超過五張。可以回看哪些只是摘錄，哪些真的值得持續追蹤。</p>}
-            {cards.length === 0 ? <div className="reading-soft-empty">回到上方摘錄，選擇真正改變你理解的一則，再按「提煉洞察」。</div> : (
+            {cards.length === 0 ? <div className="reading-soft-empty">回到上方摘錄，從「更多」手動留卡，也可以從 GPT 討論成果挑選洞察。</div> : (
               <div className="reading-insight-list">
                 {cards.map((card) => (
                   <article key={card.id} className="reading-insight-card">
@@ -306,7 +307,10 @@ export default function ReadingBookPage() {
               <details className="reading-review-sources">
                 <summary>從摘錄與想法中選擇來源</summary>
                 <div className="reading-review-source-list">
-                  {grouped.reading.map((note) => <button key={note.id} onClick={() => setCardDraft({ noteId: note.id, text: note.text })}><span>{note.kind === "excerpt" ? "摘錄" : "想法"}</span><b>{note.text.slice(0, 90)}</b></button>)}
+                  {grouped.reading.map((note) => <button key={note.id} onClick={() => {
+                    setStage("during");requestAnimationFrame(()=>{const fold=document.getElementById("manual-"+note.id) as HTMLDetailsElement|null;if(!fold)return;
+                      fold.open=true;const inner=fold.querySelector("details");if(inner)inner.open=true;fold.scrollIntoView({block:"center"});});
+                  }}><span>{note.kind === "excerpt" ? "摘錄" : "想法"}</span><b>{note.text.slice(0, 90)}</b></button>)}
                 </div>
               </details>
             )}
@@ -322,16 +326,7 @@ export default function ReadingBookPage() {
         </details>
       )}
 
-      {cardDraft && (
-        <InsightCardSheet
-          bookId={bookId}
-          sourceNoteId={cardDraft.noteId}
-          sourceText={cardDraft.text}
-          executionCount={executionCount}
-          onClose={() => setCardDraft(null)}
-          onCreated={(card) => { setCards((current) => [...current, card]); setCardDraft(null); setNotice("洞察卡已建立，來源摘錄與回訪日都保存好了。"); }}
-        />
-      )}
+
     </section>
   );
 }
@@ -451,17 +446,19 @@ function ReadingReviewPanel({ book, note, excerptCount, thoughtCount, onSaved }:
   </section>;
 }
 
-function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard, onDiscuss }: { book: ReadingBook; note: EditorNote; onDelete: () => void; onMakeCard: () => void; onDiscuss: () => void }) {
+function ReadingSourceNoteCard({ book, note, onDelete, onInsightCreated, onDiscuss }: { book: ReadingBook; note: EditorNote; onDelete: () => void; onInsightCreated:(id:string)=>void; onDiscuss: () => void }) {
   return <article className={`reading-source-note kind-${note.kind}`}>
     <div className="reading-source-note-meta">
       <span>{note.kind === "excerpt" ? note.metadata.source || "摘錄" : "我的想法"}</span>
       {note.metadata.chapter && <span>{note.metadata.chapter}</span>}
       {note.metadata.location && <span>{note.metadata.location}</span>}
     </div>
+    {note.metadata.selectionLabel&&<h3>{note.metadata.selectionLabel}</h3>}
+    {note.metadata.clipPageId&&<a href={originalHref(note.metadata.clipPageId)} target="_blank" rel="noreferrer">查看剪藏原圖 ↗</a>}
     {note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
     {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection"><div className="reading-source-reflection"><small>我的理解片段</small><p>{note.metadata.reflection}</p>{note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id,fragment:'reflection'}} />}</div></LocatedContent>}
     {note.id&&<div><small>原筆記的來源與分類</small><RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} /></div>}
-    <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button><button className="reading-make-card" disabled={!note.id} onClick={onMakeCard}>提煉洞察</button></div>
+    <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button><ManualCardEntry bookId={book.id} note={note} disabled={!note.id} onInsightCreated={onInsightCreated}/></div>
     {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
       source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}
       defaultStatement={note.kind === "thought" ? note.text : note.metadata.reflection || ""}
@@ -471,7 +468,7 @@ function ReadingSourceNoteCard({ book, note, onDelete, onMakeCard, onDiscuss }: 
   </article>;
 }
 
-function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onMakeCard, onDiscuss }: { bookId: string; note: EditorNote; onText: (text: string) => void; onSaved: (id: string) => void; onDelete: () => void; onMakeCard: (text: string) => void; onDiscuss: () => void }) {
+function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onInsightCreated, onDiscuss }: { bookId: string; note: EditorNote; onText: (text: string) => void; onSaved: (id: string) => void; onDelete: () => void; onInsightCreated:(id:string)=>void; onDiscuss: () => void }) {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedText, setSavedText] = useState(note.id ? note.text : "");
   const lastSaved = useRef(note.id ? note.text : "");
@@ -535,49 +532,7 @@ function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onMakeCard
       {note.editable && <button className="reading-delete-note" disabled={saveState === "saving"} onClick={() => void remove()}>刪除</button>}
       {note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:bookId}} />}
       <button disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={onDiscuss}>和 GPT 討論</button>
-      <button className="reading-make-card" disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={() => onMakeCard(note.text)}>提煉洞察</button>
+      <ManualCardEntry bookId={bookId} note={note} disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onInsightCreated={onInsightCreated}/>
     </div>
   </article>;
-}
-
-function InsightCardSheet({ bookId, sourceNoteId, sourceText, executionCount, onClose, onCreated }: { bookId: string; sourceNoteId: string; sourceText: string; executionCount: number; onClose: () => void; onCreated: (card: InsightCard) => void }) {
-  const [insight, setInsight] = useState("");
-  const [action, setAction] = useState("");
-  const [actionType, setActionType] = useState<InsightActionType>("觀察型");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit() {
-    if (!insight.trim()) { setError("先用自己的話寫下：這段內容讓你想到什麼？"); return; }
-    if (!action.trim()) { setError("暫時寫不出行動，就先留在閱讀紀錄"); return; }
-    if (actionType === "執行型" && executionCount >= 1) { setError("這輪已經有一張執行型洞察；這張可以先改為觀察型"); return; }
-    setSaving(true); setError(null);
-    try {
-      const response = await fetch("/api/dojo/reading/cards", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookId, sourceNoteId, insight, action, actionType }) });
-      const json = await readJson<{ card: InsightCard }>(response);
-      onCreated(json.card);
-    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
-    finally { setSaving(false); }
-  }
-
-  return <div className="modal show" onClick={(event) => event.target === event.currentTarget && !saving && onClose()}>
-    <div className="sheet reading-card-sheet" role="dialog" aria-modal="true" aria-labelledby="insight-form-title">
-      <div className="toolbar"><div><span className="eyebrow">從來源紀錄提煉</span><h2 id="insight-form-title">這段讓我想到什麼？</h2></div><button onClick={onClose} disabled={saving}>關閉</button></div>
-      <details className="reading-card-source"><summary><span>來源紀錄</span><small>會隨卡片保存</small></summary><p>{sourceText}</p></details>
-      <label>我的洞察 *</label>
-      <textarea className="field" rows={4} value={insight} onChange={(event) => setInsight(event.target.value)} placeholder="我如何理解這段內容？我同意、質疑，或連結到哪些經驗？" autoFocus />
-      <p className="reading-field-help">請用自己的話留下想法；來源內容只作為依據。</p>
-      <label>我能拿它做什麼？ *</label>
-      <textarea className="field" rows={3} value={action} onChange={(event) => setAction(event.target.value)} placeholder="接下來要觀察什麼，或實際做出什麼改變？" />
-      <p className="reading-field-help">暫時寫不出行動，就先留在閱讀紀錄。</p>
-      <label>行動型態</label>
-      <div className="segmented">
-        <button className={actionType === "觀察型" ? "on" : ""} onClick={() => setActionType("觀察型")}>觀察型<small>兩週後回訪</small></button>
-        <button disabled={executionCount >= 1} className={actionType === "執行型" ? "on" : ""} onClick={() => setActionType("執行型")}>執行型<small>{executionCount >= 1 ? "本輪已有一張" : "一週後回訪"}</small></button>
-      </div>
-      {executionCount >= 1 && <p className="reading-gentle-warning">每輪只保留一張執行型洞察，避免同時增加太多行動。</p>}
-      {error && <p className="form-error" role="alert">{error}</p>}
-      <button className="primary" disabled={saving || !insight.trim() || !action.trim()} onClick={() => void submit()}>{saving ? "正在立卡…" : "建立洞察卡"}</button>
-    </div>
-  </div>;
 }

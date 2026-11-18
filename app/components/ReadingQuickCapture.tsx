@@ -161,7 +161,7 @@ export default function ReadingQuickCapture({
           </div>
           <label htmlFor="reading-reflection">我當時想到（選填）</label>
           <textarea id="reading-reflection" className="field" rows={3} value={reflection} onChange={(event) => setReflection(event.target.value)} placeholder="Readmoo 不會把個人註記一起輸出，想法在這裡另外留下。" maxLength={4000} />
-          <details className="reading-screenshot-note"><summary>手上只有截圖？</summary><p>先用 iPhone 的「複製文字」取得反白段落，再貼到上方確認。圖片不會上傳或保存。</p></details>
+          <details className="reading-screenshot-note"><summary>手上只有截圖？</summary><p>從 LINE 行光剪藏傳書頁後選「心知閱讀截圖」，也能直接從相簿加入。 <Link href={"/reading/clips"+(bookId?"?book="+encodeURIComponent(bookId):"")}>打開截圖核對 →</Link></p></details>
         </>
       ) : (
         <>
