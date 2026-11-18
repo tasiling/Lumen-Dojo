@@ -77,7 +77,7 @@ export function platformFromUrl(value: string): string {
     if (host === "douyin.com" || host.endsWith(".douyin.com")) return "抖音";
     if (host === "youtube.com" || host.endsWith(".youtube.com") || host === "youtu.be") return "YouTube";
     if (host === "instagram.com" || host.endsWith(".instagram.com")) return "Instagram";
-    if (host === "threads.net" || host.endsWith(".threads.net")) return "Threads";
+    if (host === "threads.net" || host.endsWith(".threads.net") || host === "threads.com" || host.endsWith(".threads.com")) return "Threads";
     return host;
   } catch { return "網頁"; }
 }
@@ -330,7 +330,7 @@ export function contextRoomQuickReply(entryId: string, url: string) {
   ] };
 }
 
-export function clipQuickReply(captureId: string, includeScreenshot: boolean) {
+export function clipQuickReply(captureId: string, includeScreenshot: boolean, retryThreads = false) {
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://lumen-dojo.up.railway.app";
   let explorationUrl = `${base.replace(/\/$/, "")}/forage/captures?captureId=${encodeURIComponent(captureId)}`;
   try {
@@ -347,6 +347,7 @@ export function clipQuickReply(captureId: string, includeScreenshot: boolean) {
     new URLSearchParams({ action: "purpose", captureId, purpose: purpose.key }).toString()
     )),
   ];
+  if (retryThreads) items.unshift(quickReplyItem("重新擷取原文", new URLSearchParams({ action: "retryThreads", captureId }).toString()));
   if (includeScreenshot) {
     items.push(quickReplyItem("補截圖", new URLSearchParams({ action: "awaitScreenshot", captureId }).toString()));
   }

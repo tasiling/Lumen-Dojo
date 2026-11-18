@@ -298,6 +298,7 @@ export type CaptureAttachment = {
 };
 
 export type CaptureClipMeta = {
+  threadsPost?: import("./threadsReader").ThreadsPost;
   origin: CaptureOrigin;
   purpose: CaptureClipPurpose;
   sourceKind: CaptureSourceKind;
@@ -1112,6 +1113,8 @@ export function normalizeCaptureEntry(
       origin: clipOrigin,
       purpose: clipPurpose,
       sourceKind,
+      ...(sourceClip.threadsPost && typeof sourceClip.threadsPost.text === "string" && sourceClip.threadsPost.text.trim()
+        ? { threadsPost: { text: sourceClip.threadsPost.text.slice(0, 12000), canonicalUrl: normalizedCaptureSourceUrl(sourceClip.threadsPost.canonicalUrl), partial: sourceClip.threadsPost.partial === true } } : {}),
       platform: stringValue(sourceClip.platform).trim().slice(0, 100),
       externalEventId: stringValue(sourceClip.externalEventId).trim().slice(0, 200),
       externalMessageId: stringValue(sourceClip.externalMessageId).trim().slice(0, 200),
