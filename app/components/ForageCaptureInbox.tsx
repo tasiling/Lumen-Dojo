@@ -397,7 +397,8 @@ function ForageCard({ detail,hidden,activeTab,onTab,onView,capture, learningItem
       {detail?<h1>{displayTitle}</h1>:<h3>{displayTitle}</h3>}{detail&&<ForageTabs items={CAPTURE_DETAIL_TABS} value={activeTab} label="一般素材分區" onChange={key=>{onTab(key);if(key==="organize"||key==="claims")onEdit();}} />}<div hidden={detail&&activeTab!=="content"}>
       {capture.clip.origin === "line" && <div className="forage-clip-source"><span>{capture.clip.sourceKind === "screenshot" ? "截圖" : "網頁"}</span><span>{capture.clip.platform || "LINE"}</span>{capture.clip.webPreview.status === "unavailable" && <span>僅保存網址</span>}</div>}
       {capture.clip.attachments.length > 0 && <div className="forage-clip-images">{capture.clip.attachments.map((attachment) => <a key={attachment.id} href={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} target="_blank" rel="noreferrer"><Image src={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} alt="LINE 剪藏原始截圖" width={720} height={480} unoptimized /></a>)}</div>}
-      {displayExcerpt && <p className="weaving-excerpt">{displayExcerpt}</p>}
+      {capture.clip.threadsPost && <details open><summary>{capture.clip.threadsPost.partial ? "已擷取的部分原文" : "Threads 貼文原文"}</summary><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{capture.clip.threadsPost.text}</p></details>}
+      {displayExcerpt && capture.excerpt !== capture.clip.threadsPost?.text && <p className="weaving-excerpt">{displayExcerpt}</p>}
       {capture.forageReason && !editing && <div className="capture-initial-reflection"><b>最初想記錄的原因</b><p>{capture.forageReason}</p></div>}
       {capture.note && capture.note !== capture.forageReason && <div className="weaving-original-note"><b>擷取時的其他補充</b><p>{capture.note}</p></div>}
       {capture.sourceUrl && <a className="weaving-source" href={capture.sourceUrl} target="_blank" rel="noreferrer">↗ {sourceHost(capture.sourceUrl)}</a>}
