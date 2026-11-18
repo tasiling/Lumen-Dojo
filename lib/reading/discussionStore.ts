@@ -14,7 +14,9 @@ import {
   type DiscussionRound, type DiscussionScope, type DiscussionShortcut, type DiscussionSummary, type ReadingDiscussion,
 } from "./discussion";
 
-type Notebook = { version: 1; bookId: string; discussions: ReadingDiscussion[] };
+import {makeManualCard,type ManualReadingCard} from "./manual";
+
+type Notebook = { version: 1; bookId: string; discussions: ReadingDiscussion[]; manualCards?:ManualReadingCard[] };
 
 function id(value: unknown) {
   if (typeof value !== "string" || !uuidPattern.test(value)) throw new LearningError("閱讀識別不正確。");
@@ -258,5 +260,74 @@ export async function updateDiscussion(body: Record<string, unknown>) {
     }
     await saveNotebook(book);
     return { discussion, roundId };
+  });
+}
+
+export async function listManualCards(bookId?: string) {
+  const ids = bookId ? [id(bookId)] : await storedBookIds();
+  const lists = await Promise.all(ids.map(async (b) => (await notebook(b)).manualCards ?? []));
+  return lists.flat().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+export async function saveManualCard(body: Record<string, unknown>) {
+  const bookId = id(body.bookId),
+    noteId = id(body.noteId),
+    cardKey = id(body.id);
+  return withLearningWriteLock(async () => {
+    const book = await notebook(bookId);
+    const stored = book.manualCards?.find((c) => c.id === cardKey);
+    if (stored) {
+      if (stored.noteId !== noteId) throw new LearningError("這張卡的來源不同。", 409);
+      if (body.action === "sharing" && typeof body.share === "boolean") {
+        stored.share = body.share;
+        await saveNotebook(book);
+      }
+      return stored;
+    }
+    if (body.action !== "create") throw new LearningError("找不到這張卡。", 404);
+    const [books, notes] = await Promise.all([listReadingBooks(), listReadingNotes(bookId)]);
+    const sourceBook = books.find((b) => b.id === bookId),
+      note = notes.find((n) => n.id === noteId);
+    if (!sourceBook || !note) throw new LearningError("找不到這本書的已存選段。", 404);
+    let card: ManualReadingCard;
+    try {
+      card = makeManualCard(sourceBook, note, body, cardKey);
+    } catch (e) {
+      throw new LearningError((e as Error).message);
+    }
+    if (card.type === "洞察卡") {
+      const date = body.nextVisitAt;
+      if (
+        date != null &&
+        (typeof date !== "string" ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+          !Number.isFinite(Date.parse(date)) ||
+          new Date(date).toISOString().slice(0, 10) !== date)
+      )
+        throw new LearningError("請選擇有效的回訪日期。");
+      const created = await createPracticeOnce(
+        sourceIdentity("dojo", "reading-manual", bookId, cardKey),
+        () =>
+          createInsightCard({
+            bookId,
+            insight: card.text,
+            action: card.action,
+            actionType: body.actionType === "執行型" ? "執行型" : "觀察型",
+            todayISO: taipeiTodayISO(),
+            nextVisitISO: typeof date === "string" ? date : null,
+            sourceNoteId: noteId,
+            sourceText: [
+              card.bookTitle + " · 第 " + card.readCount + " 讀",
+              card.locator,
+              card.quoteLabel + "　" + card.quote,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          }),
+      );
+      card.cardId = created.id;
+    }
+    (book.manualCards ??= []).push(card);
+    await saveNotebook(book);
+    return card;
   });
 }

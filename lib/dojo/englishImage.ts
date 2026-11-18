@@ -87,6 +87,7 @@ export type EnglishImageEntry = {
   recordType: "english-image-entry";
   id: string;
   route: EnglishImageRoute;
+  readingClip?: true;
   status: EnglishImageStatus;
   title: string;
   sourceLabel: string;
@@ -229,6 +230,7 @@ export function normalizeEnglishImageEntry(
     version: 2,
     recordType: "english-image-entry",
     id: params.id,
+    ...(source.readingClip === true ? {readingClip:true as const} : {}),
     route,
     status: source.status === "organized" ? "organized" : "inbox",
     title: text(source.title, 300) || (route === "pending" ? "待分類英文影像" : englishImageRouteLabel(route)),

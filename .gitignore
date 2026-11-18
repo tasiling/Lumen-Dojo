@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Per-plan execution scratch
 /.superpowers/
+
+# Generated from pinned OCR packages at build time
+/public/reading-ocr/

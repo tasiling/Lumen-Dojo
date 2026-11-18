@@ -25,6 +25,8 @@ export function readingNoteMetadataFromUnknown(value: unknown): ReadingNoteMetad
   return {
     source: clean(source.source),
     sourceBookTitle: clean(source.sourceBookTitle),
+    ...(clean(source.clipPageId) ? {clipPageId:clean(source.clipPageId)} : {}),
+    ...(clean(source.selectionLabel) ? {selectionLabel:clean(source.selectionLabel)} : {}),
     chapter: clean(source.chapter),
     location: clean(source.location),
     reflection: clean(source.reflection),
@@ -54,6 +56,8 @@ export function serializeStructuredReadingNote(input: StructuredReadingNoteInput
       MARKERS.excerpt,
       ...label("來源", metadata.source || "Readmoo"),
       ...label("來源書名", metadata.sourceBookTitle),
+      ...label("剪藏原圖", metadata.clipPageId),
+      ...label("選段名稱", metadata.selectionLabel),
       ...label("章節", metadata.chapter),
       ...label("位置", metadata.location),
       ...section("原文", input.text),
@@ -110,14 +114,19 @@ export function parseStoredReadingNote(text: string): {
   const [kind] = entry;
   const sections = parseSections(normalized);
   if (kind === "excerpt") {
+    const header = normalized.split("---原文---", 1)[0];
+    const clipPageId = readLabel(header, "剪藏原圖");
+    const selectionLabel = readLabel(header, "選段名稱");
     return {
       kind,
       text: sections.get("原文") ?? "",
       metadata: {
-        source: readLabel(normalized, "來源"),
-        sourceBookTitle: readLabel(normalized, "來源書名"),
-        chapter: readLabel(normalized, "章節"),
-        location: readLabel(normalized, "位置"),
+        source: readLabel(header, "來源"),
+        sourceBookTitle: readLabel(header, "來源書名"),
+        ...(clipPageId ? { clipPageId } : {}),
+        ...(selectionLabel ? { selectionLabel } : {}),
+        chapter: readLabel(header, "章節"),
+        location: readLabel(header, "位置"),
         reflection: sections.get("我的想法") ?? "",
       },
     };

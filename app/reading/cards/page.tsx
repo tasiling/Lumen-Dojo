@@ -1,4 +1,5 @@
 "use client";
+import {ManualCardLibrary} from "@/app/components/ReadingManualCards";
 import { ReadingHeaderArt } from "@/app/components/ReadingArt";
 import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
 import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
@@ -113,6 +114,7 @@ export default function ReadingCardsPage() {
         <p>看見現在需要回訪、可成為內容線索，以及已經卡住的洞察。</p>
       </div>
 
+      <ManualCardLibrary/>
       {!loading&&view==='located'&&<section><h2>指定的洞察</h2>{cards.some(c=>c.id===locatedId)?cards.filter(c=>c.id===locatedId).map(card=><LocatedContent parameter="card" id={card.id} key={card.id}><LibraryCard card={card} onUpdated={updateCard} /></LocatedContent>):<p role="status">指定的洞察已不可用；可以切換下方分區查看其他內容。</p>}</section>}
       <div className="reading-library-tabs" role="tablist">
         <button className={view === "due" ? "on" : ""} onClick={() => setView("due")}><span>{dueCards.length}</span>今日待回訪</button>

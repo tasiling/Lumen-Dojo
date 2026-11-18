@@ -49,12 +49,12 @@ async function repairPendingAttachments(entry: EnglishImageEntry, title: string)
   return repaired;
 }
 
-export async function listEnglishImageEntries(options: { includeMerged?: boolean } = {}): Promise<EnglishImageEntry[]> {
+export async function listEnglishImageEntries(options: { includeMerged?: boolean; includeReadingClips?: boolean } = {}): Promise<EnglishImageEntry[]> {
   const rows = await listJsonRecords(ENGLISH_IMAGE_TITLE_PREFIX);
   return rows.flatMap((row) => {
     const entry = normalizeEnglishImageEntry(row.value, { id: row.id });
     return entry ? [entry] : [];
-  }).filter((entry) => options.includeMerged || !entry.mergedIntoId).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+  }).filter((entry) => (options.includeMerged || !entry.mergedIntoId) && (options.includeReadingClips || !entry.readingClip)).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
 }
 
 export async function getEnglishImageEntry(id: string): Promise<{ entry: EnglishImageEntry; title: string }> {

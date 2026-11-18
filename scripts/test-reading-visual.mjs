@@ -11,7 +11,7 @@ const card={id:'44444444-4444-4444-8444-444444444444',insight:'留意每天讓�
 const out=process.env.READING_VISUAL_EVIDENCE_DIR??'/tmp/reading-visual-evidence';mkdirSync(out,{recursive:true});
 let browser,page;const errors=[];let writes=0;
 try {
- browser=await chromium.launch({headless:true});const context=await browser.newContext({viewport:{width:390,height:844}});
+ browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});const context=await browser.newContext({viewport:{width:390,height:844}});
  await context.addCookies([{name:'dsc_access_key',value:'reading-visual-fixture',url:server.base}]);
  await context.route('**/api/**',async route=>{
   const req=route.request(),p=new URL(req.url()).pathname;
@@ -46,9 +46,13 @@ try {
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${out}/book-form-390.png`,fullPage:true});await page.getByRole('button',{name:'關閉',exact:true}).click();
  await page.getByRole('button',{name:'繼續閱讀',exact:true}).click();await page.getByRole('heading',{name:book.title,exact:true}).waitFor();
  await page.getByRole('button',{name:/讀前/}).click();await page.getByRole('heading',{name:'先做一點小預習'}).waitFor();await page.getByRole('button',{name:'進入閱讀中',exact:true}).click();await page.getByRole('heading',{name:'自由筆記',exact:true}).waitFor();
- await page.getByRole('button',{name:'提煉洞察',exact:true}).first().click();await page.getByRole('dialog').waitFor();await page.screenshot({path:`${out}/insight-form-390.png`,fullPage:true});await page.getByRole('button',{name:'關閉',exact:true}).click();
+ const source=page.locator('.reading-source-note').first();
+ await source.getByText('更多',{exact:true}).click();await source.getByText('手動留卡',{exact:true}).click();
+ await source.getByLabel('卡片類型').selectOption('洞察卡');await source.getByLabel('我想觀察或執行的事').waitFor();
+ assert(await source.getByRole('button',{name:'確認留卡'}).isDisabled());await page.screenshot({path:`${out}/insight-form-390.png`,fullPage:true});
+ await source.getByText('更多',{exact:true}).click();
  await page.getByRole('button',{name:'前往讀後復盤',exact:true}).click();await page.getByRole('heading',{name:'收束這輪閱讀',exact:true}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  await page.goto(server.base+'/reading/visits');await page.getByRole('button',{name:'留下本次觀察',exact:true}).click();await page.getByText('這一輪觀察到什麼？',{exact:true}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${out}/visit-observation-390.png`,fullPage:true});
  await page.goto(server.base+'/forage/records');await page.locator('.forage-shell').waitFor();assert.equal(await page.locator('.reading-shell').count(),0);assert.equal(await page.locator('.forage-shell').count(),1);
- assert.equal(writes,0);assert.deepEqual(errors,[]);console.log('PASS reading routes × widths 320/375/390/430/1024; honey hero, centered navigation, 44px buttons, book form validation, all reading stages, insight modal, visit panel, route isolation; zero data writes/page errors');
+ assert.equal(writes,0);assert.deepEqual(errors,[]);console.log('PASS reading routes × widths 320/375/390/430/1024; honey hero, centered navigation, 44px buttons, book form validation, all reading stages, manual insight form, visit panel, route isolation; zero data writes/page errors');
 } catch(error) {if(page)console.error(page.url(),(await page.locator('body').innerText()).slice(0,1200));throw error;} finally {await browser?.close();server.stop();}
