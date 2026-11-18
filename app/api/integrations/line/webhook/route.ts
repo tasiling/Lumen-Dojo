@@ -1,8 +1,10 @@
+import { readThreadsPost, threadsPostUrl } from "@/lib/dojo/threadsReader";
 import { after, NextRequest, NextResponse } from "next/server";
 import {
   appendCaptureImage,
   createCaptureEntry,
   listCaptureEntries,
+  updateCaptureEntry,
   saveCaptureInitialReflection,
   saveCaptureEntry,
 } from "@/lib/dojo/captureStore";
@@ -259,6 +261,14 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
     capture.clip.externalMessageId === messageId ||
     (capture.clip.origin === "line" && capture.sourceUrl === sourceUrl)
   );
+  if (threadsPostUrl(sourceUrl)) {
+    const capture = duplicate || await createCaptureEntry({
+      sourceUrl, title: "Threads", note: text.replace(foundUrl, "").trim(),
+      clip: emptyClip({ sourceKind: "webpage", platform: "Threads", externalMessageId: messageId, externalEventId: event.webhookEventId || "" }),
+    });
+    await replyWithThreadsPost(capture, event.replyToken || "");
+    return;
+  }
   if (duplicate) {
     await replyLineMessage(
       event.replyToken ?? "",
@@ -300,6 +310,33 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
     clipQuickReply(capture.id, true)
   );
   void userId;
+}
+
+async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCaptureEntry>>, token: string, refresh = false) {
+  let saved = capture;
+  let post = capture.clip.threadsPost;
+  let failed = false;
+  let invalid = false;
+  if (!post || refresh || post.partial) {
+    const found = await readThreadsPost(capture.sourceUrl);
+    invalid = found === "invalid_post";
+    if (found && found !== "invalid_post") {
+      saved = await updateCaptureEntry(capture.id, current => {
+        if (current.sourceUrl !== capture.sourceUrl) throw new Error("素材來源已變更");
+        if (!found.partial || !current.clip.threadsPost || current.clip.threadsPost.partial) {
+          const autoExcerpt = !current.excerpt || current.excerpt === current.clip.webPreview.description || current.excerpt === current.clip.threadsPost?.text;
+          const autoTitle = ["Threads", "threads.com", "threads.net", "網頁", current.clip.threadsPost?.text.split("\n")[0].slice(0, 80)].includes(current.title);
+          return { title: autoTitle ? found.text.split("\n")[0].slice(0,80) : current.title,
+            excerpt: autoExcerpt ? found.text : current.excerpt, clip: { ...current.clip, platform: "Threads", threadsPost: found } };
+        }
+        return {};
+      });
+      post = saved.clip.threadsPost;
+    } else failed = true;
+  }
+  const status = failed && post ? "本次未能更新，已保留之前的文字。" : !post ? (invalid ? "網址已存，原文待補。Threads 將這條連結導向無效貼文頁。若 App 裡仍可開啟，請從原貼文重新複製連結。" : "網址已存，原文待補。可點「重新擷取原文」。") :
+    post.partial ? "已取得部分貼文文字，請核對原文。" : "已取得貼文原文。";
+  await replyLineMessage(token, `已剪藏｜Threads\n${status}${post ? "\n\n" + post.text.slice(0, 320) : ""}`, clipQuickReply(saved.id, !saved.clip.attachments.length, true));
 }
 
 async function handleImage(event: LineWebhookEvent, userId: string): Promise<void> {
@@ -683,6 +720,10 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     return;
   }
 
+  if (action === "retryThreads" && threadsPostUrl(capture.sourceUrl)) {
+    await replyWithThreadsPost(capture, event.replyToken || "", true);
+    return;
+  }
   if (action === "purpose") {
     const purpose = params.get("purpose") as CaptureClipPurpose | null;
     if (!purpose || !(purpose in CAPTURE_CLIP_PURPOSES)) return;
