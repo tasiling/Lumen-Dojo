@@ -144,7 +144,7 @@ function readingBlockText(block: ReadingBlock): string {
   return (value?.rich_text ?? []).map((item) => item.plain_text ?? "").join("");
 }
 
-export async function listReadingNotes(bookId: string): Promise<ReadingNote[]> {
+export async function listReadingNotes(bookId: string, archivedDiscussions?: { id: string; title: string }[]): Promise<ReadingNote[]> {
   const notes: ReadingNote[] = [];
   let cursor: string | undefined;
   do {
@@ -153,6 +153,10 @@ export async function listReadingNotes(bookId: string): Promise<ReadingNote[]> {
     );
     for (const raw of response.results) {
       const block = raw as unknown as ReadingBlock;
+      if (archivedDiscussions && block.type === "child_page") {
+        const title = (block.child_page as { title?: string }).title || "";
+        if (title.includes("已完成的閱讀討論")) archivedDiscussions.push({ id: block.id, title });
+      }
       if (!NOTE_BLOCK_TYPES.has(block.type)) continue;
       const text = readingBlockText(block);
       if (!text.trim()) continue;

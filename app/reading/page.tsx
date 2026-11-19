@@ -11,6 +11,7 @@ import {
   shelfGroups, toggleFacet, writeShelfView, type ShelfSelection, type ShelfView,
 } from "@/lib/reading/shelf";
 import ShelfFilters, { groupLabels } from "./ShelfFilters";
+import { openedAt } from "./readerShelf";
 import ShelfGrid from "./ShelfGrid";
 import "./shelf.css";
 
@@ -86,7 +87,11 @@ export default function ReadingShelfPage() {
     }
   }
 
-  const found = useMemo(() => matchBooks(books, view), [books, view]);
+  const found = useMemo(() => {
+    const result = matchBooks(books, view);
+    const times = openedAt();
+    return view.sort === "name" ? result : result.sort((a,b) => (times[b.id] || 0) - (times[a.id] || 0));
+  }, [books, view]);
   const context = writeShelfView(view);
   if (parent) context.set("returnTo", parent);
   const count = shelfGroups.reduce((sum, group) => sum + view[group].length, 0);
@@ -126,7 +131,7 @@ export default function ReadingShelfPage() {
     {loading ? <p className="shelf-empty" role="status">正在打開書架…</p> : error ? <p className="form-error" role="alert">{error} <button onClick={() => void load()}>重新讀取</button></p> : <>
       <div className="shelf-meta"><span aria-live="polite" aria-atomic="true">{count || view.q.trim() ? found.length + "／" + books.length + " 本" : "共 " + books.length + " 本"}</span>
         <select aria-label="排列書籍" value={view.sort} onChange={e => change({ ...view, sort: e.target.value === "name" ? "name" : "added" })}>
-          <option value="added">最近加入</option><option value="name">依書名</option>
+          <option value="added">最近開啟</option><option value="name">依書名</option>
         </select>
       </div>
       {found.length ? <ShelfGrid books={found} context={context.toString()} /> : <div className="shelf-empty">

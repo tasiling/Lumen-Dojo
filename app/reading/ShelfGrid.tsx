@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState } from "react";
+import { coverFor, markOpened } from "./readerShelf";
 import type { ReadingBook } from "@/lib/reading/types";
 import { displayFacet } from "@/lib/reading/shelf";
 
@@ -9,12 +10,13 @@ const scrollKey = "reading-shelf-position";
 
 function Cover({ book, eager }: { book: ReadingBook; eager: boolean }) {
   const [failedUrl, setFailedUrl] = useState("");
+  const cover = coverFor(book);
   return <span className="shelf-cover" aria-hidden="true">
-    {book.coverUrl && book.coverUrl !== failedUrl
+    {cover && cover !== failedUrl
       // Notion rotates signed cover URLs. Request the small original directly from the private shelf.
       // eslint-disable-next-line @next/next/no-img-element
-      ? <img alt="" src={book.coverUrl} loading={eager ? "eager" : "lazy"} referrerPolicy="no-referrer"
-          decoding="async" onError={() => setFailedUrl(book.coverUrl || "")} />
+      ? <img alt="" src={cover} loading={eager ? "eager" : "lazy"} referrerPolicy="no-referrer"
+          decoding="async" onError={() => setFailedUrl(cover)} />
       : <span className="shelf-type-cover">{book.title}</span>}
   </span>;
 }
@@ -71,10 +73,11 @@ export default function ShelfGrid({ books, context }: { books: ReadingBook[]; co
   return <ul className="shelf-grid" ref={ref} aria-label="書籍">
     {books.map((book, index) => <li key={book.id}>
       <Link className="shelf-book" data-book-id={book.id} prefetch={false}
-        href={"/reading/books/" + encodeURIComponent(book.id) + "?" + query}
+        href={"/reading/reader/" + encodeURIComponent(book.id) + "?" + query}
         onClick={event => {
           if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
           try {
+            markOpened(book.id);
             sessionStorage.setItem(scrollKey, JSON.stringify({ id: book.id, context, offset: event.currentTarget.getBoundingClientRect().top }));
           } catch { /* Browser Back remains available. */ }
         }}>
