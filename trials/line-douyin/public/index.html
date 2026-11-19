@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#fefbf9"><title>野採｜抖音剪藏測試</title><link rel="stylesheet" href="/site.css"><script type="module" src="/site.js"></script></head>
+<body>
+<header><div class="mast"><div><span class="realm">行光道場</span><h1>野採</h1></div><span class="tag">抖音剪藏測試</span></div></header>
+<main>
+<p role="alert" id="notice" hidden></p>
+<section id="lock" class="panel" hidden><h2>進入測試匣</h2><form id="login"><label for="key">行光道場預覽站金鑰</label><input type="password" id="key" autocomplete="current-password" required><button class="primary">登入</button></form></section>
+<div id="home" hidden>
+<div class="top"><h2>採集匣</h2><a href="#connection" id="connectLink">連線設定</a></div>
+<p class="connection" id="online"></p>
+<section class="panel"><h3>收下抖音影片</h3><form id="capture"><label for="share">抖音分享文字或作品網址</label><textarea id="share" rows="3" placeholder="貼上從抖音複製的整段文字…" maxlength="10000" required></textarea>
+<details><summary>我為什麼想留下它</summary><label class="sr" for="comment">我的筆記</label><textarea id="comment" rows="2" maxlength="5000" placeholder="可補一句自己的想法"></textarea></details>
+<button class="primary">剪藏並排入轉錄</button></form></section>
+<section><h2>回看所拾</h2><div id="cards"></div></section>
+<details id="connection" class="panel"><summary>連接 Mac 與 LINE</summary>
+<h3>Mac 轉錄</h3><p id="macStatus"></p><p>在安裝 BiliNote 的 Mac 登入這個測試站，下載配對檔。配對檔十分鐘內有效。</p><button type="button" id="install">下載 Mac 配對檔</button><details><summary>在 Mac 執行</summary><p>下載到「下載項目」後，在終端機貼上這一行。</p><code>bash "$HOME/Downloads/YeCai-Connect-Mac.command"</code><p>配對完成後，請開著 Docker 與原來的 BiliNote。Mac 登入後會自動領取工作。</p></details>
+<h3>LINE 測試頻道</h3><p id="lineStatus"></p><button id="pairLine" hidden>取得 LINE 配對碼</button><p id="pairCode" aria-live="polite"></p>
+<details><summary>設定測試頻道</summary><p>在這個 Railway 測試服務的 Variables 設定測試頻道的 <code>TRIAL_LINE_CHANNEL_SECRET</code> 與 <code>TRIAL_LINE_ACCESS_TOKEN</code>，並套用設定。再到同一個測試頻道的 LINE Developers 後台填入下方 Webhook URL，按 Verify 並開啟 Use webhook。</p><code id="hook"></code><p>重新整理本頁，取得配對碼，在測試帳號的一對一聊天室送出。配對後即可直接分享影片。</p></details>
+</details></div>
+<div id="detail" hidden><a href="/" class="back">← 回看所拾</a><article class="panel"><div class="meta"><span class="tag">抖音</span><span id="state" class="status"></span></div><h2 id="title"></h2><p id="sub"></p><div id="problem" hidden class="problem"><p id="error"></p><button id="retry" type="button">重試轉錄</button></div>
+<section id="transBlock" hidden><h3>逐字稿</h3><div id="intro" class="prose"></div><details id="more"><summary>展開全文</summary><div class="prose" id="remaining"></div></details><button id="copy" type="button">複製完整逐字稿</button><details id="times"><summary id="timeLabel">查看時間戳</summary><ol id="parts"></ol></details></section>
+<details id="original"><summary>分享文字</summary><p class="prose" id="raw"></p></details><p><a id="source" target="_blank" rel="noopener noreferrer">開啟抖音作品 ↗</a></p>
+<section><h3>我為什麼想留下它</h3><p class="note prose" id="noteRead"></p><button id="edit">編輯筆記</button><form id="noteForm" hidden><label class="sr" for="noteInput">我的筆記</label><textarea id="noteInput" rows="3" maxlength="10000"></textarea><div class="actions"><button>保存筆記</button><button type="button" id="cancelEdit">取消</button></div></form></section></article></div>
+</main><noscript>請開啟 JavaScript 以使用私人測試匣。</noscript></body></html>
