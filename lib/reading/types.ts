@@ -55,6 +55,10 @@ export type ReadingNoteMetadata = {
   source?: string;
   sourceBookTitle?: string;
   clipPageId?: string;
+  highlightColor?: string;
+  highlightId?: string;
+  clipSourceIds?: string[];
+  sourceFiles?: string[];
   selectionLabel?: string;
   chapter?: string;
   location?: string;

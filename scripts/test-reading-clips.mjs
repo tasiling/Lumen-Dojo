@@ -271,6 +271,20 @@ try {
     Buffer.from(await (await original(req(api + "/original?id=" + web.pages[0].id))).arrayBuffer()),
     photo,
   );
+  const selections=[
+    {parts:[first.id+":1:2:3:4",second.id+":4:5:6:7"],color:"黃色",text:"跨圖原句。",label:"跨圖"},
+    {parts:[second.id+":4:12:6:7"],color:"綠色",text:"另一段。",label:""},
+  ];
+  const payload={action:"highlights",batchId,bookId,selections};
+  const response=await post(payload);
+  assert.equal(Object.keys(response.batch.highlightNotes).length,2);
+  await post(payload);
+  const savedHighlights=notes.get(bookId).filter(n=>n.metadata.highlightId);
+  assert.equal(savedHighlights.length,2);
+  assert.deepEqual(savedHighlights[0].metadata.clipSourceIds,[first.id,second.id]);
+  assert.equal(savedHighlights[1].metadata.highlightColor,"綠色");
+  assert.equal((await clips.POST(req(api,{...payload,selections:[{...selections[0],parts:[selections[0].parts[0]]}]}))).status,409);
+  assert.equal((await clips.POST(req(api,{...payload,selections:[{...selections[0],parts:["fake:1:2:3:4"]}]}))).status,400);
   console.log(
     "PASS signed LINE image set, classification and retries, protected original, drafts and concurrency, canonical note and read, manual cards, deduplicated album upload.",
   );

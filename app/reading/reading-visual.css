@@ -234,3 +234,11 @@
     width: 100%;
   }
 }
+
+.reading-highlight-note summary {cursor:pointer;padding:.6rem 0;}
+.reading-highlight-note summary strong {margin-inline-start:.6rem;}
+.reading-highlight-note summary small {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+.reading-highlight-note[open] summary small {display:none;}
+.reading-highlight-note [data-ink] {border-radius:.4em;padding:.12em .35em;}
+.reading-highlight-note [data-ink="黃色"] {background:#f8f4d9;}
+.reading-highlight-note [data-ink="綠色"] {background:#d9f7d3;}

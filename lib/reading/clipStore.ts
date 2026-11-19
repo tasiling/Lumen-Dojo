@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import sharp from "sharp";
+import {colors} from "./highlights";
 import { LearningError, uuidPattern } from "@/lib/dojo/learningFoundation/model";
 import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
 import { createPracticeOnce } from "@/lib/dojo/learningFoundation/practiceWrite";
@@ -150,7 +151,7 @@ export async function listClipBatches(): Promise<ClipListRow[]> {
           origin: b.origin,
           createdAt: b.createdAt,
           total: b.pages.length,
-          pending: b.pages.filter((p) => !p.saved).length,
+          pending: b.pages.filter((p) => !p.saved && !Object.values(b.highlightNotes ?? {}).some(r => r.parts.some(k => k.startsWith(p.id + ":")))).length,
         };
       }),
   );
@@ -257,5 +258,48 @@ export async function chooseOrCreateClipBook(title: unknown, readCount: unknown)
       lockFor(key),
     );
     return created.id;
+  });
+}
+
+export async function confirmHighlights(batchId:string,bookId:string,input:unknown) {
+  if(!uuidPattern.test(bookId)||!Array.isArray(input)||!input.length||input.length>300)
+    throw new LearningError("請選擇書籍並核對畫線。");
+  return locked(batchId,async()=>{
+    const batch=await loadBatch(batchId);
+    const book=(await listReadingBooks()).find(b=>b.id===bookId);
+    if(!book)throw new LearningError("找不到這一讀。",404);
+    const occupied=new Set<string>();
+    const selections=input.map(item=>{
+      if(!item||!Array.isArray(item.parts)||!item.parts.length||item.parts.length>300||!colors.includes(item.color)||
+          typeof item.text!=="string"||!item.text.trim()||item.text.length>40000||
+          typeof item.label!=="string"||item.label.length>120||/[\r\n]/.test(item.label))
+        throw new LearningError("請核對每段原文、色筆和標題。");
+      const parts:string[]=item.parts,ids:string[]=[];
+      for(const key of parts){
+        if(typeof key!=="string"||key.length>110)throw new LearningError("色筆位置不正確。");
+        const [page,...box]=key.split(":");
+        if(!batch.pages.includes(page)||box.length!==4||!box.every(v=>/^\d{1,5}$/.test(v))||occupied.has(key))throw new LearningError("選段來源不符或重疊。");
+        occupied.add(key);if(!ids.includes(page))ids.push(page);
+      }
+      const identity=hash(JSON.stringify(["reading-highlight",bookId,parts]));
+      return {identity,parts,ids,text:item.text.trim() as string,label:item.label.trim() as string,color:item.color as string};
+    });
+    const existing=await listReadingNotes(bookId);
+    const receipts=batch.highlightNotes??={};
+    for(const s of selections){
+      if(receipts[s.identity])continue;
+      const conflict=Object.values(receipts).some(r=>r.bookId===bookId && r.parts.some(k=>s.parts.includes(k)));
+      if(conflict)throw new LearningError("部分畫線已存成其他選段，請回到原筆記核對。",409);
+      const prior=existing.find(n=>n.metadata.highlightId===s.identity);
+      const text=serializeStructuredReadingNote({kind:"excerpt",text:s.text,metadata:{
+        source:"電子書色筆畫線",sourceBookTitle:book.title,highlightColor:s.color,highlightId:s.identity,
+        clipSourceIds:s.ids,selectionLabel:s.label||s.text.slice(0,18),location:s.ids.map(id=>"圖 "+(batch.pages.indexOf(id)+1)).join("、"),
+      }});
+      const noteId=prior?.id??(await createPracticeOnce(s.identity,()=>appendReadingNote(bookId,text),lockFor(batchId))).id;
+      receipts[s.identity]={bookId,noteId,parts:s.parts,label:s.label||s.text.slice(0,18)};
+      batch.lastBookId=bookId;
+      await putJson(pathFor("batches",batchId),batch);
+    }
+    return clipBatch(batchId);
   });
 }

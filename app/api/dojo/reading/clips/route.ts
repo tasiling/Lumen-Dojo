@@ -3,6 +3,7 @@ import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import {
   chooseOrCreateClipBook,
+  confirmHighlights,
   clipBatch,
   listClipBatches,
   receiveWebPage,
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ batchId: id });
     }
     const data = await req.json().catch(() => null);
+    if (data?.action === "highlights") return NextResponse.json({batch:await confirmHighlights(data.batchId,data.bookId,data.selections)});
     if (data?.action === "book")
       return NextResponse.json({ bookId: await chooseOrCreateClipBook(data.title, data.readCount) });
     if (

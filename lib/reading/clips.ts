@@ -26,6 +26,7 @@ export type ClipBatch = {
   createdAt: string;
   pages: string[];
   lastBookId?: string;
+  highlightNotes?: Record<string,ClipReceipt & {parts:string[];label:string}>;
 };
 export type ClipBatchDetail = Omit<ClipBatch, "pages"> & { pages: ClipPage[] };
 export type ClipListRow = {
