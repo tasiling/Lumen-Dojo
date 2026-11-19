@@ -2,6 +2,8 @@
 import { ReadingHeaderArt, ReadingIcon } from "@/app/components/ReadingArt";
 
 import Link from "next/link";
+import BookFormSheet, { type FormMode } from "@/app/components/BookFormSheet";
+import { shelfContext } from "@/lib/reading/shelf";
 import {ManualCardEntry} from "@/app/components/ReadingManualCards";
 import {originalHref} from "@/lib/reading/clips";
 import {readingNoteContent} from "@/lib/reading/content";
@@ -61,6 +63,7 @@ export default function ReadingBookPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [bookForm, setBookForm] = useState<FormMode | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [discussionTarget, setDiscussionTarget] = useState({ note: "", discussion: "", round: "" });
 
@@ -138,6 +141,21 @@ export default function ReadingBookPage() {
     }
   }
 
+  async function markFinished(finished: boolean) {
+    setUpdatingStatus(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/dojo/reading/books/" + encodeURIComponent(bookId), {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ finished }),
+      });
+      const json = await readJson<{ book: ReadingBook }>(response);
+      setBook(json.book);
+      setNotice(finished ? "已標記讀完。" : "已取消讀完標記。");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally { setUpdatingStatus(false); }
+  }
+
   async function abandonReading() {
     if (!window.confirm("確定放下這輪閱讀嗎？既有摘錄、想法與復盤都會保留。")) return;
     setUpdatingStatus(true);
@@ -178,13 +196,32 @@ export default function ReadingBookPage() {
         <div className="reading-book-meta">
           {book.subject && <span>{book.subject}</span>}
           {book.readCount > 1 && <span>第 {book.readCount} 讀</span>}
-          <span>{book.status}</span>
+          {(!book.finished || book.status !== "閱讀中") && <span>{book.status}</span>}
+          {book.finished && <span>已讀完</span>}
         </div>
         <h1>{book.title}</h1>
         <a href={`/weaving?book=${encodeURIComponent(bookId)}`}>將已保存筆記選摘到織光堂 →</a>
         {book.author && <p>{book.author}</p>}
       </div>
 
+      <details className="reading-state-actions" open={book.status === "待讀" || undefined}>
+        <summary>閱讀狀態</summary>
+        {book.status === "待讀" ? <button onClick={() => setBookForm("start")}>開始這本書</button> :
+          <button disabled={updatingStatus} onClick={() => void markFinished(!book.finished)}>
+            {book.finished ? "取消已讀完標記" : "標記為已讀完"}
+          </button>}
+        {(book.finished || book.status === "已萃取" || book.status === "已製作成內容") &&
+          <button onClick={() => setBookForm("reread")}>再讀一次</button>}
+      </details>
+      {bookForm && <BookFormSheet mode={bookForm} book={book} onClose={() => setBookForm(null)} onCreated={nextBook => {
+        setBookForm(null);
+        if (nextBook.id === book.id) { setBook(nextBook); setStage("before"); return; }
+        const params = new URLSearchParams(window.location.search);
+        const context = shelfContext(params);
+        if (params.get("from") === "shelf") context.set("from", "shelf");
+        const query = context.toString();
+        router.push("/reading/books/" + encodeURIComponent(nextBook.id) + (query ? "?" + query : ""));
+      }} />}
       <Link className="reading-capture-entry" href={"/reading/clips?book="+encodeURIComponent(book.id)}>從行光剪藏加入這一讀的書頁 →</Link>
       <RelationsPanel target={{kind:'book',recordId:book.id}} />
       {notes.filter(n=>n.id===new URLSearchParams(typeof window==='undefined'?'':location.search).get('note')&&(n.kind==='preview'||n.kind==='review')).map(n=><LocatedContent key={n.id} parameter="note" id={n.id}><section className="ritual-card"><h2>指定的閱讀紀錄</h2><p style={{whiteSpace:'pre-wrap'}}>{readingNoteContent(n)}</p><RelationsPanel target={{kind:'reading_note',recordId:n.id,parentBookId:book.id}} /></section></LocatedContent>)}

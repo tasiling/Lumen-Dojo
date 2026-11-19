@@ -37,6 +37,10 @@ export type ReadingBook = {
   id: string;
   title: string;
   author: string;
+  subtitle?: string;
+  category?: string;
+  coverUrl?: string | null;
+  finished?: boolean;
   readCount: number;
   subject: ReadingSubject | null;
   reason: BookReason | null;

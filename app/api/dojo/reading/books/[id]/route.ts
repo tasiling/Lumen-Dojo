@@ -29,14 +29,15 @@ export async function PATCH(req: NextRequest, context: RouteContext<"/api/dojo/r
     const question = typeof body.question === "string" ? body.question.trim() : undefined;
     const subject = isReadingSubject(body.subject) ? body.subject : undefined;
     const reason = isBookReason(body.reason) ? body.reason : undefined;
+    const finished = typeof body.finished === "boolean" ? body.finished : undefined;
     const finalQuestion = question ?? current.question;
     if (status === "閱讀中" && !finalQuestion) {
       return NextResponse.json({ error: "開始閱讀前，請先寫下這次想找的問題" }, { status: 400 });
     }
-    if (!status && question === undefined && subject === undefined && reason === undefined) {
+    if (!status && question === undefined && subject === undefined && reason === undefined && finished === undefined) {
       return NextResponse.json({ error: "沒有可更新的內容" }, { status: 400 });
     }
-    await updateReadingBook(id, { status, question, subject, reason, todayISO: taipeiTodayISO() });
+    await updateReadingBook(id, { status, question, subject, reason, finished, todayISO: taipeiTodayISO() });
     return NextResponse.json({ ok: true, book: await getReadingBook(id) });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });

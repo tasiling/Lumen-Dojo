@@ -1,5 +1,6 @@
 "use client";
 
+import { shelfContext } from "@/lib/reading/shelf";
 import { contextualAdd } from "@/lib/dojo/contextualAdd";
 import PracticeField from "./PracticeField";
 import CreativeIcon from './creative/CreativeIcon';
@@ -48,6 +49,11 @@ function BackButton({ pathname }: { pathname: string }) {
     }
     const query = new URLSearchParams(window.location.search);
     if(pathname === "/add" && query.get("mode") === "reading"){router.push("/reading");return}
+    if (pathname.startsWith("/reading/books/") && query.get("from") === "shelf") {
+      const search = shelfContext(query).toString();
+      router.push("/reading" + (search ? "?" + search : ""));
+      return;
+    }
     const returnTo = query.get("returnTo");
     if (returnTo?.startsWith("/practice/learning?")) {router.push(returnTo);return;}
     if (pathname === "/practice/manage" || pathname === "/practice/records") {

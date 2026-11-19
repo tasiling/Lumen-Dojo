@@ -69,12 +69,18 @@ export async function queryAll(
 // blocks；DB-22 只承載已通過「能否行動」門檻的洞察卡片。
 export function mapReadingBook(p: NotionPage): ReadingBook {
   const subject = readSelect(p, "學科");
+  const cover = p.properties?.["書封"]?.files?.[0] ?? p.cover;
+  const coverUrl = cover?.file?.url ?? cover?.external?.url;
   const reason = readSelect(p, "選書理由");
   const status = readSelect(p, "狀態");
   return {
     id: p.id,
     title: readTitle(p, "書名"),
     author: readRichText(p, "作者"),
+    category: readRichText(p, "電子書分類").trim(),
+    subtitle: readRichText(p, "副標題").trim(),
+    coverUrl: typeof coverUrl === "string" && coverUrl.startsWith("https://") ? coverUrl : null,
+    finished: p.properties?.["已讀完"]?.checkbox === true,
     readCount: Math.max(1, readNumber(p, "讀次") ?? 1),
     subject: isReadingSubject(subject) ? subject : null,
     reason: isBookReason(reason) ? reason : null,
@@ -89,7 +95,14 @@ export function mapReadingBook(p: NotionPage): ReadingBook {
 
 export async function listReadingBooks(): Promise<ReadingBook[]> {
   const pages = await queryAll(DATA_SOURCES.DB21_書籍庫);
-  return pages.map(mapReadingBook).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const books = pages.map(mapReadingBook).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  // A new read has its own notes. Use the same edition's cover without copying an expiring signed URL into Notion.
+  const edition = (book: ReadingBook) => JSON.stringify([book.title.trim(), book.author.trim()]);
+  const covers = new Map(books.filter(book => book.coverUrl).map(book => [edition(book), book.coverUrl]));
+  for (const book of books) {
+    if (book.readCount > 1 && !book.coverUrl) book.coverUrl = covers.get(edition(book)) ?? null;
+  }
+  return books;
 }
 
 export async function getReadingBook(bookId: string): Promise<ReadingBook> {

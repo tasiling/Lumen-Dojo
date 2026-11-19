@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
     const created = await createReadingBook({
       title,
       author,
+      subtitle: typeof body.subtitle === "string" ? body.subtitle.trim() : undefined,
+      category: typeof body.category === "string" ? body.category.trim() : undefined,
       subject,
       reason,
       question,
