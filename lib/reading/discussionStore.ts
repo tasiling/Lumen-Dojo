@@ -14,6 +14,8 @@ import {
   type DiscussionRound, type DiscussionScope, type DiscussionShortcut, type DiscussionSummary, type ReadingDiscussion,
 } from "./discussion";
 
+import { archivedDiscussionIndex, bookArchives } from "./archiveStore";
+import { mergeArchivedDiscussions } from "./archive";
 import {makeManualCard,type ManualReadingCard} from "./manual";
 
 type Notebook = { version: 1; bookId: string; discussions: ReadingDiscussion[]; manualCards?:ManualReadingCard[] };
@@ -101,9 +103,11 @@ async function locateReturn(raw: string, preferredBook: string) {
 export async function discussionSummary(): Promise<DiscussionSummary> {
   const pointer = await resumePointer();
   const summary: DiscussionSummary = { resume: null, pending: [] };
-  for (const bookId of await storedBookIds()) {
+  const [ids, archives] = await Promise.all([storedBookIds(), archivedDiscussionIndex().catch(() => null)]);
+  if (!archives) summary.archivesUnavailable = true;
+  for (const bookId of new Set([...ids, ...(archives?.keys() ?? [])])) {
     const book = await notebook(bookId);
-    for (const discussion of book.discussions) {
+    for (const discussion of mergeArchivedDiscussions(book.discussions, archives?.get(bookId) ?? [])) {
       const latest = discussion.rounds.at(-1);
       for (const round of discussion.rounds) {
         const ref = roundRef(book, discussion, round);
@@ -121,12 +125,13 @@ export async function discussionSummary(): Promise<DiscussionSummary> {
   return summary;
 }
 
-export async function listBookDiscussions(bookId: string) {
+export async function listBookDiscussions(bookId: string, archived?: ReadingDiscussion[]) {
   const book = await notebook(id(bookId));
   const pointer = await resumePointer();
   const latest = book.discussions.find(thread => thread.id === pointer?.discussionId)?.rounds.at(-1);
   const pinnedRoundId = pointer?.bookId === book.bookId && latest?.id === pointer.roundId && latest?.result?.status !== "完成" ? pointer.roundId : null;
-  return { discussions: book.discussions, pinnedRoundId };
+  const recovered = archived ?? (await bookArchives(bookId)).recovered;
+  return { discussions: mergeArchivedDiscussions(book.discussions, recovered), pinnedRoundId };
 }
 
 export async function updateDiscussion(body: Record<string, unknown>) {
@@ -140,14 +145,18 @@ export async function updateDiscussion(body: Record<string, unknown>) {
       throw new LearningError("請核對帶入內容與這輪想提的問題。");
     const sourceBook = (await listReadingBooks()).find(book => book.id.toLowerCase() === bookId);
     if (!sourceBook) throw new LearningError("找不到這輪閱讀。", 404);
-    const note = (await listReadingNotes(bookId)).find(item => item.id.toLowerCase() === noteId);
+    const children: { id: string; title: string }[] = [];
+    const notes = await listReadingNotes(bookId, children);
+    const note = notes.find(item => item.id.toLowerCase() === noteId);
     if (!note) throw new LearningError("請先保存選段，再開始討論。", 404);
     const excerpt = note.kind === "excerpt" ? note.text : "";
     const reflection = note.kind === "excerpt" ? note.metadata.reflection ?? "" : readingNoteContent(note);
     if ((scope !== "reflection" && !excerpt) || (scope !== "excerpt" && !reflection))
       throw new LearningError("選段裡沒有這次選取的原文或想法。");
+    const { recovered } = await bookArchives(bookId, { book: sourceBook, notes, children });
     return withLearningWriteLock(async () => {
       const book = await notebook(bookId);
+      book.discussions = mergeArchivedDiscussions(book.discussions, recovered);
       let discussion = book.discussions.find(item => item.scope === scope && item.rounds[0]?.source.noteId === noteId);
       const last = discussion?.rounds.at(-1);
       if (discussion && last && !last.result) return { discussion, roundId: last.id };
@@ -210,8 +219,12 @@ export async function updateDiscussion(body: Record<string, unknown>) {
     throw new LearningError("不支援這項閱讀操作。");
   const discussionId = id(body.discussionId);
   const roundId = id(body.roundId);
+  const existing = await notebook(bookId);
+  const archived = existing.discussions.some(thread => thread.id === discussionId && thread.rounds.some(round => round.id === roundId))
+    ? [] : (await bookArchives(bookId)).recovered.filter(thread => thread.id === discussionId);
   return withLearningWriteLock(async () => {
     const book = await notebook(bookId);
+    book.discussions = mergeArchivedDiscussions(book.discussions, archived);
     const discussion = book.discussions.find(item => item.id === discussionId);
     const round = discussion?.rounds.find(item => item.id === roundId);
     if (!discussion || !round) throw new LearningError("找不到這輪討論。", 404);

@@ -38,8 +38,9 @@ function BackButton({ pathname }: { pathname: string }) {
   if (NO_BACK_BUTTON.has(pathname)) return null;
 
   const useBrowserBack = USE_BROWSER_BACK.has(pathname);
-  const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/practice/") ? "/practice" : pathname.startsWith("/reading/books/") ? "/reading" : pathname.startsWith("/weaving/") ? "/weaving" : pathname.startsWith("/liaojie/") ? "/liaojie" : "/");
-  const label = useBrowserBack || pathname === "/add" ? "返回" : (pathname === "/practice/manage" || pathname === "/practice/records") ? "學習項目" : (ROUTE_LABEL[parent] ?? "今天");
+  const readingBook = pathname.startsWith("/reading/reader/") || pathname.startsWith("/reading/books/");
+  const parent = PARENT_ROUTE[pathname] ?? (pathname.startsWith("/practice/") ? "/practice" : readingBook ? "/reading" : pathname.startsWith("/weaving/") ? "/weaving" : pathname.startsWith("/liaojie/") ? "/liaojie" : "/");
+  const label = useBrowserBack || pathname === "/add" ? "返回" : (pathname === "/practice/manage" || pathname === "/practice/records") ? "學習項目" : readingBook ? "閱讀書架" : (ROUTE_LABEL[parent] ?? "今天");
 
   function handleClick() {
     if (!canLeavePractice()) return;
@@ -49,7 +50,7 @@ function BackButton({ pathname }: { pathname: string }) {
     }
     const query = new URLSearchParams(window.location.search);
     if(pathname === "/add" && query.get("mode") === "reading"){router.push("/reading");return}
-    if (pathname.startsWith("/reading/books/") && query.get("from") === "shelf") {
+    if (readingBook && query.get("from") === "shelf") {
       const search = shelfContext(query).toString();
       router.push("/reading" + (search ? "?" + search : ""));
       return;

@@ -1,0 +1,14 @@
+.dojo.reading-shell .reading-outcomes {color:#243a33;margin:22px 0;padding:15px 0 0;border-top:1px solid #cfd7ce}
+.dojo.reading-shell .reading-outcomes h2 {font-size:1.15rem;margin:0 0 13px}
+.dojo.reading-shell .reading-outcomes h3 {font-size:1rem;margin:6px 0}
+.reading-outcomes .outcome-group {border:0;border-bottom:1px solid #d8dfd8}
+.reading-outcomes .outcome-group>summary {font-weight:650;color:#305f51;cursor:pointer;padding:12px 0}
+.reading-outcomes ul {list-style:none;margin:0;padding:0}
+.reading-outcomes li {margin:0;padding:9px 0;border-top:1px solid #e0e5df}
+.dojo.reading-shell .reading-outcomes p {font-size:.96rem;line-height:1.6;margin:3px 0;color:#263931}
+.reading-outcomes small,.reading-outcomes .outcome-evidence {color:#53665c;font-size:.84rem}
+.dojo.reading-shell .reading-outcomes .outcome-evidence {border:0;padding:0}
+.reading-outcomes .outcome-evidence summary {cursor:pointer;padding:5px 0}
+.reading-outcomes .outcome-evidence blockquote {white-space:pre-line;margin:4px 0 10px;padding-left:9px;border-left:2px solid #a2b3a5}
+.dojo.reading-shell .reading-outcomes .outcome-action {font-size:.9rem}
+.reading-outcomes .outcome-round>a {color:#285c4e;display:inline-block;padding:10px 0}

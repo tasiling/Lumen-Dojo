@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ReadingNote } from "@/lib/reading/types";
 import { manualCardText, type ManualReadingCard } from "@/lib/reading/manual";
 import { noteHref } from "@/lib/reading/clips";
@@ -23,11 +23,13 @@ export function ManualCardEntry({
   note,
   disabled,
   onInsightCreated,
+  children,
 }: {
   bookId: string;
   note: ReadingNote;
   disabled?: boolean;
   onInsightCreated: (id: string) => void;
+  children?: ReactNode;
 }) {
   const [type, setType] = useState("觀點"),
     [text, setText] = useState(""),
@@ -162,6 +164,7 @@ export function ManualCardEntry({
           </p>
         )}
       </details>
+      {children}
     </details>
   );
 }

@@ -166,7 +166,7 @@ function load(filename) {
       };
     if (path === resolve(root, "lib/notion/client") && !realClientMode)
       return {
-        notion: () => ({ pages: { retrieve: async () => retrievedPage } }),
+        notion: () => ({ pages: { retrieve: async () => retrievedPage }, search: async () => ({ results: [], next_cursor: null }) }),
         withNotionRateLimit: async (fn) => fn(),
       };
     if (path) return load(`${path}.ts`);
@@ -833,6 +833,7 @@ try {
   assert.equal(await lockPresent(), true);
   await rm(join(lockRoot, "learning-writer.lock"), { recursive: true });
   transportFailure = false;
+  realClientMode = false;
   console.log(
     "PASS actual Notion client SDK transport: confirmed request releases; lost response is sent once, swallowed error retains mutex",
   );
@@ -849,6 +850,34 @@ try {
   assert.equal((await discussions.GET(request(discussionPath, "GET", undefined, false))).status, 401);
   assert.equal((await discussions.POST(request(discussionPath, "POST", { bookId: readingBookId }, true, "https://foreign.example"))).status, 403);
   assert.deepEqual(await discussionSummary(), { resume: null, pending: [] });
+
+  // A completed Notion child page has legacy selection IDs and must survive round-trip review.
+  const { discussionFromArchive, mergeArchivedDiscussions } = load("lib/reading/archive.ts");
+  const archiveThreadId = crypto.randomUUID(), archiveRoundId = crypto.randomUUID();
+  const archiveBook = { id: readingBookId, title: "測試閱讀", readCount: 1, question: "" };
+  const archiveNote = { id: readingNoteId, kind: "excerpt", text: "書中一句", metadata: { reflection: "我想試試。" } };
+  const archivePage = { id: crypto.randomUUID(), title: "練習｜已完成的閱讀討論", lines: [
+    "選段「書中一句」｜第 1 次閱讀｜本輪已完成", "討論小結與待查問題", "尚待試用。",
+    "候選成果（待本人挑選）", "1．觀點 · T1（GPT 延伸）", "可以再試一次。", "依據原句　可以再試一次。",
+    "2．洞察卡 · T2", "先試一分鐘。", "依據原句　先試一分鐘。", "行動　試一分鐘。",
+    "逐字問答", "T1 · GPT", "可以再試一次。", "T2 · 我", "先試一分鐘。", "原討論識別",
+    ["格式　心知閱讀討論/v1", "討論 ID　" + archiveThreadId, "討論包 ID　" + archiveRoundId, "選段 ID　example-r1"].join("\n"),
+  ] };
+  const recovered = discussionFromArchive(archivePage, archiveBook, [archiveNote]);
+  assert.equal(recovered.id, archiveThreadId);
+  const archivedRound = recovered.rounds[0];
+  assert.equal(archivedRound.source.noteId, readingNoteId);
+  assert.equal(archivedRound.id, archiveRoundId);
+  assert.deepEqual(archivedRound.result.candidates.map(c => [c.type, c.anchor, c.state, c.evidenceError]),
+    [["觀點", "T1", "pending", undefined], ["洞察卡", "T2", "pending", undefined]]);
+  assert.equal(archivedRound.result.turns[0].role, "GPT");
+  const kept = structuredClone(recovered);
+  kept.rounds[0].result.candidates[1].state = "confirmed";
+  const mergedArchive = mergeArchivedDiscussions([kept], [recovered]);
+  assert.equal(mergedArchive.length, 1); assert.equal(mergedArchive[0].rounds.length, 1);
+  assert.equal(mergedArchive[0].rounds[0].result.candidates[1].state, "confirmed");
+  assert.equal(discussionFromArchive(archivePage, archiveBook, [archiveNote, { ...archiveNote, id: crypto.randomUUID() }]), null);
+  console.log("PASS archived v1 source, evidence, pending/retained separation and duplicate wording");
 
   const prepareDiscussion = { action: "prepare", noteId: readingNoteId, scope: "both", starter: "me", question: "怎麼練習重述？" };
   const first = await callDiscussion(prepareDiscussion);

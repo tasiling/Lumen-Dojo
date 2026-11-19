@@ -19,23 +19,24 @@ try {
   assert.equal(req.method(),'GET',`Visual check must not write: ${p}`);
   if(req.method()!=='GET')writes++;
   if(p===`/api/dojo/reading/books/${bookId}`)return route.fulfill({json:{book,notes:[note],cards:[card]}});
+  if(p===`/api/dojo/reading/reader/${bookId}`)return route.fulfill({json:{book,notes:[note],archives:[],discussions:[],discussionUnavailable:false}});
   if(p==='/api/dojo/reading/books')return route.fulfill({json:{books:[book,otherBook]}});
   if(p==='/api/dojo/reading/cards')return route.fulfill({json:{cards:[card],todayISO:'2026-10-22'}});
   if(p.endsWith('/annotations'))return route.fulfill({json:{annotation:null,subjects:[],effective:{topics:[],learningItemIds:[],inheritedLearningItemIds:[]}}});
   return route.fulfill({json:{entries:[],books:[],cards:[],bundles:[],items:[],warnings:[],complete:true,cursor:null}});
  });
  page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(12000);
- for(const [path,heading] of [['/reading','閱讀書架'],[`/reading/books/${bookId}`,book.title],['/reading/cards','洞察卡片庫'],['/reading/visits','今日回訪']]) {
+ for(const [path,heading] of [['/reading','閱讀書架'],[`/reading/books/${bookId}?manage=1`,book.title],['/reading/cards','洞察卡片庫'],['/reading/visits','今日回訪']]) {
   await page.goto(server.base+path);await page.getByRole('heading',{name:heading,exact:true}).waitFor();
   await page.locator(path==='/reading'?'.shelf-book':path==='/reading/cards'?'.reading-library-card':path==='/reading/visits'?'.reading-visit-card':'.reading-source-note').first().waitFor();
   for(const width of [320,375,390,430,1024]) {
    await page.setViewportSize({width,height:844});
    const result=await page.evaluate(()=>{
-    const hero=document.querySelector('.shelf-head,.reading-page-intro,.reading-session-head');
+    const hero=document.querySelector('.shelf-head,.reading-page-intro,.rw-header');
     const nav=document.querySelector('.nav'),r=nav.getBoundingClientRect();
     return {overflow:document.documentElement.scrollWidth>innerWidth+1,gradient:getComputedStyle(hero).backgroundImage,color:getComputedStyle(hero.querySelector('h1')).color,navCentered:Math.abs(r.x+r.width/2-innerWidth/2)<2,navWidth:r.width,smallButtons:[...document.querySelectorAll('.reading-ui button')].filter(b=>b.getBoundingClientRect().height>0&&b.getBoundingClientRect().height<43).map(b=>b.textContent)};
    });
-   assert.equal(result.overflow,false,`${path} overflows ${width}`);if(path!=='/reading')assert.match(result.gradient,/linear-gradient/);assert.equal(result.color,'rgb(37, 60, 92)');assert(result.navCentered);assert(result.navWidth<=560);assert.deepEqual(result.smallButtons,[],`${path} small targets at ${width}`);
+   assert.equal(result.overflow,false,`${path} overflows ${width}`);if(path.includes('/cards')||path.includes('/visits')){assert.match(result.gradient,/linear-gradient/);assert.equal(result.color,'rgb(37, 60, 92)');}else{assert.equal(result.gradient,'none');assert.equal(result.color,'rgb(33, 51, 49)');}assert(result.navCentered);assert(result.navWidth<=560);assert.deepEqual(result.smallButtons,[],`${path} small targets at ${width}`);
   }
   await page.setViewportSize({width:390,height:844});
   if(path==='/reading'||path.includes('/books/')) await page.screenshot({path:`${out}/${path==='/reading'?'shelf':'book'}-preview.jpg`,type:'jpeg',quality:80});
@@ -43,7 +44,7 @@ try {
  }
  await page.goto(server.base+'/reading');
  const search=page.getByRole('searchbox',{name:'搜尋書名、作者或副標題'});
- await search.fill('測試作者');await page.getByRole('button',{name:'篩選',exact:true}).click();
+ await search.fill('測試作者');await page.getByRole('button',{name:'更多分類',exact:true}).click();
  const filters=page.getByRole('dialog',{name:'篩選書籍'});
  await filters.getByRole('button',{name:/創作/}).click();
  await filters.getByRole('button',{name:'顯示 1 本書'}).click();
@@ -59,8 +60,10 @@ try {
  await page.locator('.reading-form-sheet input').first().fill('新的測試書');await page.locator('.reading-question-input').fill('我想理解什麼？');assert.equal(await page.getByRole('button',{name:'開始閱讀',exact:true}).isEnabled(),true);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${out}/book-form-390.png`,fullPage:true});await page.getByRole('button',{name:'關閉',exact:true}).click();
  await page.locator('.shelf-book').filter({hasText:book.title}).click();await page.getByRole('heading',{name:book.title,exact:true}).waitFor();
+ await page.getByRole('link',{name:/新增筆記與閱讀管理/}).click();
  await page.getByRole('button',{name:/讀前/}).click();await page.getByRole('heading',{name:'先做一點小預習'}).waitFor();await page.getByRole('button',{name:'進入閱讀中',exact:true}).click();await page.getByRole('heading',{name:'自由筆記',exact:true}).waitFor();
  const source=page.locator('.reading-source-note').first();
+ await source.locator('.rw-passage>summary').click();
  await source.getByText('更多',{exact:true}).click();await source.getByText('手動留卡',{exact:true}).click();
  await source.getByLabel('卡片類型').selectOption('洞察卡');await source.getByLabel('我想觀察或執行的事').waitFor();
  assert(await source.getByRole('button',{name:'確認留卡'}).isDisabled());await page.screenshot({path:`${out}/insight-form-390.png`,fullPage:true});

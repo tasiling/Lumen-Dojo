@@ -37,6 +37,7 @@ export default function ReadingDiscussionQueue() {
       <Link className="card practice-link" href="/reading/cards">洞察卡片庫</Link>
       <Link className="card practice-link" href="/reading/visits">今日回訪</Link>
     </div>
+    {summary?.archivesUnavailable && <p role="status">封存的閱讀討論暫時無法載入。</p>}
     {!!summary?.pending.length && <details className="practice-item-picker">
       <summary>待挑選的成果（{summary.pending.reduce((sum, entry) => sum + entry.count, 0)}）</summary>
       <div className="practice-shortcuts">{summary.pending.map(entry => <Link className="card practice-link" href={discussionHref(entry)} key={entry.roundId}>

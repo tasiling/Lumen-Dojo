@@ -40,7 +40,7 @@ export default function ReadingShelfPage() {
       if (focused && json.selection) {
         const query = shelfContext(params);
         query.set("note", json.selection.noteId);
-        router.replace("/reading/books/" + encodeURIComponent(json.selection.bookId) + "?" + query);
+        router.replace("/reading/reader/" + encodeURIComponent(json.selection.bookId) + "?" + query);
       } else if (focused) setNotice("可在書架選擇這次想討論的閱讀紀錄。");
     } catch (e) {
       if (!signal?.aborted) setError(e instanceof Error ? e.message : String(e));
@@ -149,6 +149,7 @@ export default function ReadingShelfPage() {
       setForm(null);
       if (book.status === "待讀") { void load(); return; }
       context.set("from", "shelf");
+      context.set("manage", "1");
       router.push("/reading/books/" + encodeURIComponent(book.id) + "?" + context);
     }} />}
   </section>;

@@ -1,16 +1,19 @@
 "use client";
-import { ReadingHeaderArt, ReadingIcon } from "@/app/components/ReadingArt";
+import { BookReadingOutcomes } from "../../ReadingOutcomes";
+import { ReadingIcon } from "@/app/components/ReadingArt";
 
 import Link from "next/link";
+import { coverFor, markOpened, shelfAuthor, shelfTitle } from "../../readerShelf";
+import "./workspace.css";
 import BookFormSheet, { type FormMode } from "@/app/components/BookFormSheet";
 import { shelfContext } from "@/lib/reading/shelf";
 import {ManualCardEntry} from "@/app/components/ReadingManualCards";
 import {originalHref} from "@/lib/reading/clips";
-import {readingNoteContent} from "@/lib/reading/content";
+import {readingNoteContent, readingSelectionLabel} from "@/lib/reading/content";
 import RelationsPanel from "@/app/components/readingKnowledge/RelationsPanel";
 import {LocatedContent} from "@/app/components/readingKnowledge/LocatedContent";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ReadingQuickCapture from "@/app/components/ReadingQuickCapture";
 import ClaimCandidateComposer from "@/app/components/ClaimCandidateComposer";
 import ReadingDiscussionWorkspace from "@/app/components/ReadingDiscussion";
@@ -24,6 +27,15 @@ async function readJson<T>(response: Response): Promise<T> {
 
 type EditorNote = ReadingNote & { clientKey: string };
 type ReadingStage = "before" | "during" | "discussion" | "after";
+
+// A completed trial discussion has a linked child page and a short pointer paragraph.
+function archivedExcerpt(note: ReadingNote): string | undefined {
+  if (note.kind !== "free") return;
+  const [heading, selection, counts, repeat] = note.text.trim().split(/\r?\n/);
+  if (!heading.endsWith("｜已完成的閱讀討論") || repeat !== heading ||
+      !/^\d+ 則發言，\d+ 則候選觀點、\d+ 張候選洞察卡。$/.test(counts || "")) return;
+  return /^選段「(.+)」$/.exec(selection || "")?.[1];
+}
 
 function newNote(): EditorNote {
   return {
@@ -53,9 +65,14 @@ async function saveStructuredNote(params: {
 }
 
 export default function ReadingBookPage() {
+  return <Suspense fallback={<p className="screen">正在打開閱讀頁…</p>}><BookWorkspace /></Suspense>;
+}
+
+function BookWorkspace() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const bookId = params.id;
+  const search = useSearchParams().toString();
   const [book, setBook] = useState<ReadingBook | null>(null);
   const [notes, setNotes] = useState<EditorNote[]>([]);
   const [cards, setCards] = useState<InsightCard[]>([]);
@@ -75,12 +92,20 @@ export default function ReadingBookPage() {
       const json = await readJson<{ book: ReadingBook; notes: ReadingNote[]; cards: InsightCard[] }>(response);
       setBook(json.book);
       const loaded = (json.notes ?? []).map((note) => ({ ...note, clientKey: note.id }));
-      setNotes(loaded);
+      const editableNotes = loaded.filter(note => !archivedExcerpt(note));
+      setNotes(editableNotes);
       setCards(json.cards ?? []);
       const hasReadingRecord = loaded.some((note) => note.kind !== "review");
-      const query = new URLSearchParams(location.search);
+      const query = new URLSearchParams(search);
       const wanted = query.get("note");
-      const selected=loaded.find(n=>n.id===wanted);
+      const target = loaded.find(n => n.id === wanted);
+      const archivedQuote = target && archivedExcerpt(target);
+      const selected = archivedQuote ? editableNotes.find(n => n.text === archivedQuote) : target;
+      if (!query.has("discussion") && archivedQuote) {
+        if (selected) query.set("note", selected.id); else query.delete("note");
+        router.replace("/reading/reader/" + encodeURIComponent(bookId) + "?" + query);
+        return;
+      }
       const openDiscussion = query.has("discussion");
       const recapComplete = loaded.filter(note => note.kind === "review").at(-1)?.metadata.reviewCompleted;
       setDiscussionTarget({ note: selected?.id ?? "", discussion: query.get("discussion") ?? "", round: query.get("round") ?? "" });
@@ -92,12 +117,18 @@ export default function ReadingBookPage() {
     } finally {
       setLoading(false);
     }
-  }, [bookId]);
+  }, [bookId, router, search]);
 
   useEffect(() => {
+    const query = new URLSearchParams(search);
+    if (!["manage", "note", "discussion", "round"].some(key => query.has(key))) {
+      router.replace("/reading/reader/" + encodeURIComponent(bookId) + window.location.search);
+      return;
+    }
+    markOpened(bookId);
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [bookId, load, router, search]);
 
   function updateNote(clientKey: string, patch: Partial<EditorNote>) {
     setNotes((current) => current.map((note) => note.clientKey === clientKey ? { ...note, ...patch } : note));
@@ -191,19 +222,17 @@ export default function ReadingBookPage() {
 
   return (
     <section className="screen reading-screen reading-session-screen">
-      <div className="reading-session-head">
-        <ReadingHeaderArt kind="book" />
-        <div className="reading-book-meta">
-          {book.subject && <span>{book.subject}</span>}
-          {book.readCount > 1 && <span>第 {book.readCount} 讀</span>}
-          {(!book.finished || book.status !== "閱讀中") && <span>{book.status}</span>}
-          {book.finished && <span>已讀完</span>}
+      <header className="rw-header">
+        <div className="rw-topline"><small>修習所・心知</small><Link href={"/reading/reader/" + encodeURIComponent(book.id)}>看閱讀筆記</Link></div>
+        <div className="rw-book">
+          {coverFor(book) && <img alt="" src={coverFor(book)} />}
+          <div><h1>{shelfTitle(book)}</h1><p>{[shelfAuthor(book), "第 " + (book.readCount || 1) + " 次閱讀"].filter(Boolean).join(" · ")}</p></div>
         </div>
-        <h1>{book.title}</h1>
-        <a href={`/weaving?book=${encodeURIComponent(bookId)}`}>將已保存筆記選摘到織光堂 →</a>
-        {book.author && <p>{book.author}</p>}
-      </div>
-
+      </header>
+      <details className="rw-settings" open={book.status === "待讀" || undefined}>
+        <summary>書籍設定與來源</summary>
+        <p>{[book.subject, book.finished ? "已讀完" : book.status].filter(Boolean).join(" · ")}</p>
+        <Link href={`/weaving?book=${encodeURIComponent(bookId)}`}>將已保存筆記選摘到織光堂</Link>
       <details className="reading-state-actions" open={book.status === "待讀" || undefined}>
         <summary>閱讀狀態</summary>
         {book.status === "待讀" ? <button onClick={() => setBookForm("start")}>開始這本書</button> :
@@ -219,23 +248,25 @@ export default function ReadingBookPage() {
         const params = new URLSearchParams(window.location.search);
         const context = shelfContext(params);
         if (params.get("from") === "shelf") context.set("from", "shelf");
+        context.set("manage", "1");
         const query = context.toString();
         router.push("/reading/books/" + encodeURIComponent(nextBook.id) + (query ? "?" + query : ""));
       }} />}
       <Link className="reading-capture-entry" href={"/reading/clips?book="+encodeURIComponent(book.id)}>從行光剪藏加入這一讀的書頁 →</Link>
       <RelationsPanel target={{kind:'book',recordId:book.id}} />
+      </details>
       {notes.filter(n=>n.id===new URLSearchParams(typeof window==='undefined'?'':location.search).get('note')&&(n.kind==='preview'||n.kind==='review')).map(n=><LocatedContent key={n.id} parameter="note" id={n.id}><section className="ritual-card"><h2>指定的閱讀紀錄</h2><p style={{whiteSpace:'pre-wrap'}}>{readingNoteContent(n)}</p><RelationsPanel target={{kind:'reading_note',recordId:n.id,parentBookId:book.id}} /></section></LocatedContent>)}
-      <aside className="reading-question-anchor">
-        <span>這輪帶著什麼問題讀</span>
+      <details className="rw-question">
+        <summary>這輪的閱讀問題</summary>
         <p>{book.question}</p>
         <ReadingQuestionEditor key={book.id} book={book} onSaved={setBook} />
-      </aside>
+      </details>
 
       <nav className="reading-stage-tabs" aria-label="閱讀筆記階段">
-        <button className={stage === "before" ? "on" : ""} onClick={() => setStage("before")}><span>讀前</span><small>小預習</small></button>
-        <button className={stage === "during" ? "on" : ""} onClick={() => setStage("during")}><span>閱讀中</span><small>摘錄與想法</small></button>
-        <button className={stage === "discussion" ? "on" : ""} aria-current={stage === "discussion" ? "page" : undefined} onClick={() => setStage("discussion")}><span>GPT 討論</span><small>問答與成果</small></button>
-        <button className={stage === "after" ? "on" : ""} onClick={() => setStage("after")}><span>讀後</span><small>復盤與洞察</small></button>
+        <button className={stage === "before" ? "on" : ""} onClick={() => setStage("before")}>讀前預習</button>
+        <button className={stage === "during" ? "on" : ""} onClick={() => setStage("during")}>摘錄與想法</button>
+        <button className={stage === "discussion" ? "on" : ""} aria-current={stage === "discussion" ? "page" : undefined} onClick={() => setStage("discussion")}>GPT 討論</button>
+        <button className={stage === "after" ? "on" : ""} onClick={() => setStage("after")}>讀後復盤</button>
       </nav>
 
       {error && <p className="form-error" role="alert">{error}</p>}
@@ -252,18 +283,21 @@ export default function ReadingBookPage() {
 
       {stage === "during" && (
         <>
+          <details className="rw-capture" open={!grouped.reading.length || undefined}><summary>新增摘錄或想法</summary>
           <ReadingQuickCapture fixedBook={book} embedded onSaved={(note) => { addOrReplaceNote(note); setNotice(note.kind === "excerpt" ? "摘錄已存入這本書。" : "想法已存入這本書。"); }} />
 
+          </details>
           <section className="reading-notes-section">
             <div className="reading-section-heading">
-              <div><h2>這輪留下的內容</h2><p>作者原文與你的想法會清楚分開，之後仍能回到來源。</p></div>
-              <span>{grouped.reading.length}</span>
+              <h2>本輪選段</h2>
+              <small>{grouped.reading.length} 則</small>
             </div>
             {grouped.reading.length === 0 ? <div className="reading-soft-empty">還沒有摘錄或零碎想法。從上方貼入第一段 Readmoo 文字即可。</div> : (
               <div className="reading-source-note-list">
                 {grouped.reading.map((note) => (
                   <LocatedContent key={note.clientKey} parameter="note" id={note.id}><ReadingSourceNoteCard
                     key={note.clientKey}
+                    initialOpen={discussionTarget.note === note.id}
                     book={book}
                     note={note}
                     onDelete={() => void removeNote(note)}
@@ -275,6 +309,7 @@ export default function ReadingBookPage() {
             )}
           </section>
 
+          <BookReadingOutcomes bookId={book.id} />
           <section className="reading-notes-section reading-free-notes">
             <div className="reading-section-heading"><div><h2>自由筆記</h2><p>這裡保持完全自由，不要求套用格式。</p></div></div>
             <div className="reading-note-list">
@@ -311,6 +346,7 @@ export default function ReadingBookPage() {
 
       {stage === "after" && (
         <>
+          <BookReadingOutcomes bookId={book.id} />
           <ReadingReviewPanel
             book={book}
             note={latestReview}
@@ -324,11 +360,11 @@ export default function ReadingBookPage() {
 
           <section className="reading-cards-section">
             <div className="reading-section-heading">
-              <div><h2>本輪洞察卡</h2><p>回看這一讀親自確認的洞察與行動。</p></div>
+              <div><h2>已保留的洞察卡</h2><p>回看這一讀親自確認的洞察與行動。</p></div>
               <button onClick={() => router.push("/reading/cards")}>卡片庫</button>
             </div>
             {cards.length > 5 && <p className="reading-gentle-warning">已超過五張。可以回看哪些只是摘錄，哪些真的值得持續追蹤。</p>}
-            {cards.length === 0 ? <div className="reading-soft-empty">回到上方摘錄，從「更多」手動留卡，也可以從 GPT 討論成果挑選洞察。</div> : (
+            {cards.length === 0 ? <div className="reading-soft-empty">這一讀還沒有保留的洞察卡。</div> : (
               <div className="reading-insight-list">
                 {cards.map((card) => (
                   <article key={card.id} className="reading-insight-card">
@@ -346,6 +382,7 @@ export default function ReadingBookPage() {
                 <div className="reading-review-source-list">
                   {grouped.reading.map((note) => <button key={note.id} onClick={() => {
                     setStage("during");requestAnimationFrame(()=>{const fold=document.getElementById("manual-"+note.id) as HTMLDetailsElement|null;if(!fold)return;
+                      const passage = fold.closest(".rw-passage");if (passage instanceof HTMLDetailsElement) passage.open = true;
                       fold.open=true;const inner=fold.querySelector("details");if(inner)inner.open=true;fold.scrollIntoView({block:"center"});});
                   }}><span>{note.kind === "excerpt" ? "摘錄" : "想法"}</span><b>{note.text.slice(0, 90)}</b></button>)}
                 </div>
@@ -483,30 +520,48 @@ function ReadingReviewPanel({ book, note, excerptCount, thoughtCount, onSaved }:
   </section>;
 }
 
-function ReadingSourceNoteCard({ book, note, onDelete, onInsightCreated, onDiscuss }: { book: ReadingBook; note: EditorNote; onDelete: () => void; onInsightCreated:(id:string)=>void; onDiscuss: () => void }) {
-  return <article className={`reading-source-note kind-${note.kind}`}>
-    <div className="reading-source-note-meta">
-      <span>{note.kind === "excerpt" ? note.metadata.source || "摘錄" : "我的想法"}</span>
-      {note.metadata.chapter && <span>{note.metadata.chapter}</span>}
-      {note.metadata.location && <span>{note.metadata.location}</span>}
-    </div>
-    {note.metadata.selectionLabel&&!note.metadata.highlightColor&&<h3>{note.metadata.selectionLabel}</h3>}
-    {note.metadata.clipPageId&&<a href={originalHref(note.metadata.clipPageId)} target="_blank" rel="noreferrer">查看剪藏原圖 ↗</a>}
-    {note.metadata.highlightColor ? <details className="reading-highlight-note">
-      <summary><span data-ink={note.metadata.highlightColor}>{note.metadata.highlightColor}畫線</span><strong>{note.metadata.selectionLabel||"閱讀選段"}</strong><small>{note.text}</small></summary>
-      <blockquote>{note.text}</blockquote>
-      {note.metadata.sourceFiles?.map((id,i)=><a key={id} href={"https://chatgpt.com/library?file_id="+encodeURIComponent(id)+"&account_id=personal"} target="_blank" rel="noreferrer">來源截圖 {i+1} ↗　</a>)}
-      {note.metadata.clipSourceIds?.map((id,i)=><a key={id} href={originalHref(id)} target="_blank" rel="noreferrer">來源圖 {i+1} ↗ </a>)}
-    </details> : note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
-    {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection"><div className="reading-source-reflection"><small>我的理解片段</small><p>{note.metadata.reflection}</p>{note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id,fragment:'reflection'}} />}</div></LocatedContent>}
-    {note.id&&<div><small>原筆記的來源與分類</small><RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} /></div>}
-    <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button><ManualCardEntry bookId={book.id} note={note} disabled={!note.id} onInsightCreated={onInsightCreated}/></div>
-    {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
-      source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}
-      defaultStatement={note.kind === "thought" ? note.text : note.metadata.reflection || ""}
-      defaultType="understanding"
-      buttonLabel="整理成知識候選"
-    />}
+function ReadingSourceNoteCard({ book, note, initialOpen, onDelete, onInsightCreated, onDiscuss }: {
+  book: ReadingBook; note: EditorNote; initialOpen: boolean; onDelete: () => void;
+  onInsightCreated: (id: string) => void; onDiscuss: () => void;
+}) {
+  const [fragment, setFragment] = useState<"" | "reflection">(() => initialOpen &&
+    new URLSearchParams(window.location.search).get("fragment") === "reflection" ? "reflection" : "");
+  const m = note.metadata;
+  const isExcerpt = note.kind === "excerpt";
+  const title = readingSelectionLabel(book, note);
+  const originalIds = [...new Set([...(m.clipSourceIds || []), m.clipPageId].filter((id): id is string => Boolean(id)))];
+  return <article className="reading-source-note">
+    <details className="rw-passage" open={initialOpen || undefined}>
+      <summary><strong>{title}</strong><span className="rw-preview">{note.text}</span>
+        {(m.highlightColor || m.reflection) && <small>{[m.highlightColor && m.highlightColor + "畫線", m.reflection && "有我的想法"].filter(Boolean).join(" · ")}</small>}
+      </summary>
+      <div className="rw-detail">
+        <small>{[isExcerpt ? "書中原文" : "我的想法", m.source, m.chapter, m.location].filter(Boolean).join(" · ")}</small>
+        {isExcerpt ? <blockquote data-ink={m.highlightColor}>{note.text}</blockquote> : <p>{note.text}</p>}
+        {m.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection">
+          <div className="reading-source-reflection"><small>我當時的想法</small><p>{m.reflection}</p></div>
+        </LocatedContent>}
+        {m.sourceFiles?.map((id,i) => <a className="rw-original" key={id} href={"https://chatgpt.com/library?file_id="+encodeURIComponent(id)+"&account_id=personal"} target="_blank" rel="noreferrer">來源截圖 {i+1} ↗</a>)}
+        {originalIds.map((id,i) => <a className="rw-original" key={id} href={originalHref(id)} target="_blank" rel="noreferrer">剪藏原圖 {i+1} ↗</a>)}
+        <div className="reading-source-note-actions">
+          <button disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button>
+          <ManualCardEntry bookId={book.id} note={note} disabled={!note.id} onInsightCreated={onInsightCreated}>
+            {note.id && <details><summary>分類與來源</summary>
+              {m.reflection && <label>管理對象
+                <select value={fragment} onChange={event => setFragment(event.target.value === "reflection" ? "reflection" : "")}>
+                  <option value="">原筆記</option><option value="reflection">我當時的想法</option>
+                </select>
+              </label>}
+              <RelationsPanel key={fragment} target={{kind:"reading_note", recordId:note.id, parentBookId:book.id, fragment: fragment || undefined}} />
+            </details>}
+            {note.id && (!isExcerpt || m.reflection) && <ClaimCandidateComposer
+              source={{sourceType:"reading_note",sourceId:note.id,label:book.title+"・閱讀筆記",locator:[m.chapter,m.location].filter(Boolean).join("・"),url:"",snapshot:[isExcerpt ? "來源摘錄："+note.text : "我的想法："+note.text,m.reflection && "當時理解："+m.reflection].filter(Boolean).join("\n")}}
+              defaultStatement={isExcerpt ? m.reflection || "" : note.text} defaultType="understanding" buttonLabel="整理成知識候選" />}
+            <button className="reading-delete-note" onClick={onDelete}>刪除這則筆記</button>
+          </ManualCardEntry>
+        </div>
+      </div>
+    </details>
   </article>;
 }
 

@@ -89,6 +89,7 @@ const load = loader({
       englishAnalysis++;
     },
   },
+  "@/lib/notion/client": { notion: () => ({ search: async () => ({ results: [], next_cursor: null }) }), withNotionRateLimit: fn => fn() },
   "@/lib/notion/queries": {
     listReadingBooks: async () => books,
     listReadingNotes: async (id) => notes.get(id) || [],

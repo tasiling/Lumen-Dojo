@@ -33,6 +33,7 @@ export type DiscussionReturn = {
   candidates: DiscussionCandidate[];
 };
 export type DiscussionRound = {
+  archiveId?: string;
   id: string;
   source: DiscussionSource;
   starter: "gpt" | "me";
@@ -48,6 +49,7 @@ export type ReadingDiscussion = {
 };
 export type DiscussionShortcut = { bookId: string; discussionId: string; roundId: string };
 export type DiscussionSummary = {
+  archivesUnavailable?: boolean;
   resume: (DiscussionShortcut & { bookTitle: string; noteLabel: string; next: string }) | null;
   pending: (DiscussionShortcut & { bookTitle: string; noteLabel: string; count: number })[];
 };
