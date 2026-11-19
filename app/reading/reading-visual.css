@@ -242,3 +242,18 @@
 .reading-highlight-note [data-ink] {border-radius:.4em;padding:.12em .35em;}
 .reading-highlight-note [data-ink="黃色"] {background:#f8f4d9;}
 .reading-highlight-note [data-ink="綠色"] {background:#d9f7d3;}
+
+.dojo.reading-shell .reading-note-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+.reading-note-tools > details[open] {
+  grid-column: 1 / -1;
+}
+.reading-note-tools > details[open] > summary {
+  width: fit-content;
+}
+.reading-note-tools .field {
+  max-width: 100%;
+}

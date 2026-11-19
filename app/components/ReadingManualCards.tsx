@@ -66,8 +66,6 @@ export function ManualCardEntry({
     }
   }
   return (
-    <details className="reading-manual-more" id={note.id ? "manual-" + note.id : undefined}>
-      <summary>更多</summary>
       <details>
         <summary>手動留卡</summary>
         {saved ? (
@@ -162,7 +160,6 @@ export function ManualCardEntry({
           </p>
         )}
       </details>
-    </details>
   );
 }
 export function ManualCardLibrary() {
