@@ -525,6 +525,8 @@ export async function createFeedback(params: {
 export async function createReadingBook(params: {
   title: string;
   author?: string;
+  subtitle?: string;
+  category?: string;
   readCount?: number;
   subject?: ReadingSubject | null;
   reason?: BookReason | null;
@@ -539,6 +541,8 @@ export async function createReadingBook(params: {
         書名: titleProp(params.title.trim()),
         讀次: numberProp(Math.max(1, params.readCount ?? 1)),
         狀態: selectProp(params.status),
+        ...(params.subtitle?.trim() ? { 副標題: richTextProp(params.subtitle.trim()) } : {}),
+        ...(params.category?.trim() ? { 電子書分類: richTextProp(params.category.trim()) } : {}),
         ...(params.author?.trim() ? { 作者: richTextProp(params.author.trim()) } : {}),
         ...(params.subject ? { 學科: selectProp(params.subject) } : {}),
         ...(params.reason ? { 選書理由: selectProp(params.reason) } : {}),
@@ -556,6 +560,8 @@ export async function rereadBook(params: { sourceBookId: string; question: strin
   return createReadingBook({
     title: source.title,
     author: source.author,
+    subtitle: source.subtitle,
+    category: source.category,
     readCount,
     subject: source.subject,
     reason: params.reason,
@@ -569,6 +575,7 @@ export async function updateReadingBook(
   bookId: string,
   patch: {
     status?: BookStatus;
+    finished?: boolean;
     question?: string;
     subject?: ReadingSubject | null;
     reason?: BookReason | null;
@@ -579,6 +586,7 @@ export async function updateReadingBook(
     notion().pages.update({
       page_id: bookId,
       properties: {
+        ...(patch.finished !== undefined ? { 已讀完: { checkbox: patch.finished } } : {}),
         ...(patch.question !== undefined ? { 帶著什麼問題讀: richTextProp(patch.question.trim()) } : {}),
         ...(patch.subject ? { 學科: selectProp(patch.subject) } : {}),
         ...(patch.reason ? { 選書理由: selectProp(patch.reason) } : {}),
