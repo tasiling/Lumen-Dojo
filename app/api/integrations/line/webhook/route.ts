@@ -1,4 +1,6 @@
 import { readThreadsPost, threadsPostUrl } from "@/lib/dojo/threadsReader";
+import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
+import { InputError, readShare as readDouyinShare, sourceUrl as douyinSourceUrl } from "@/lib/dojo/douyin/share.mjs";
 import { after, NextRequest, NextResponse } from "next/server";
 import {
   appendCaptureImage,
@@ -61,14 +63,14 @@ export const runtime = "nodejs";
 const IMAGE_BATCH_WINDOW_MS = 30 * 60_000;
 type ManualImageBatch = { entryId: string; expiresAt: number };
 const manualImageBatches = new Map<string, ManualImageBatch>();
-const imageSetLocks = new Map<string, Promise<void>>();
+const lineWriteLocks = new Map<string, Promise<void>>();
 
-async function withImageSetLock(key: string, task: () => Promise<void>): Promise<void> {
-  const previous = imageSetLocks.get(key) ?? Promise.resolve();
+async function withLineWriteLock(key: string, task: () => Promise<void>): Promise<void> {
+  const previous = lineWriteLocks.get(key) ?? Promise.resolve();
   const current = previous.catch(() => undefined).then(task);
-  imageSetLocks.set(key, current);
+  lineWriteLocks.set(key, current);
   try { await current; }
-  finally { if (imageSetLocks.get(key) === current) imageSetLocks.delete(key); }
+  finally { if (lineWriteLocks.get(key) === current) lineWriteLocks.delete(key); }
 }
 
 function emptyClip(overrides: Partial<CaptureClipMeta>): CaptureClipMeta {
@@ -261,6 +263,14 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
     return;
   }
 
+  if (douyinSourceUrl(foundUrl)) {
+    try { await withLineWriteLock(`douyin:${userId}`, () => handleDouyinShare(event, text)); }
+    catch {
+      await replyLineMessage(event.replyToken ?? "", "這支抖音影片暫時未能排入轉錄，請再貼一次。", basicLineMenuQuickReply());
+    }
+    return;
+  }
+
   const sourceUrl = normalizeClipUrl(foundUrl);
   const captures = await listCaptureEntries();
   const duplicate = captures.find((capture) =>
@@ -316,6 +326,52 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
     clipQuickReply(capture.id, true)
   );
   void userId;
+}
+
+async function handleDouyinShare(event: LineWebhookEvent, text: string): Promise<void> {
+  const token = event.replyToken ?? "";
+  let share;
+  try { share = readDouyinShare(text); }
+  catch (error) {
+    if (!(error instanceof InputError)) throw error;
+    await replyLineMessage(token, error.message, basicLineMenuQuickReply());
+    return;
+  }
+
+  const queue = douyinQueue();
+  const previous = [...await listCaptureEntries()].reverse();
+  const ids = queue.matchingIds(share);
+  const messageId = event.message?.id || "";
+  const existing = ids.map(id => previous.find(capture => capture.id === id)).find(Boolean)
+    ?? previous.find(capture => capture.clip.origin === "line" &&
+      ((messageId && capture.clip.externalMessageId === messageId) || douyinSourceUrl(capture.sourceUrl)?.url === share.url));
+  const capture = existing ?? await createCaptureEntry({
+    sourceUrl: share.url,
+    title: share.title,
+    forageReason: share.note,
+    clip: emptyClip({
+      sourceKind: "webpage",
+      platform: "抖音",
+      externalMessageId: messageId,
+      externalEventId: event.webhookEventId ?? "",
+    }),
+  });
+  queue.enqueue(capture.id, share);
+
+  const note = share.note.slice(0, 3000);
+  const alreadyNoted = (reason: string) => `\n\n${reason}\n\n`.includes(`\n\n${note}\n\n`);
+  if (existing && note && !alreadyNoted(existing.forageReason)) {
+    await updateCaptureEntry(capture.id, current => alreadyNoted(current.forageReason) ? {} : ({
+      forageReason: [current.forageReason, note].filter(Boolean).join("\n\n").slice(0, 3000),
+      processingDepth: current.processingDepth === "raw" ? "light" : current.processingDepth,
+    }));
+  }
+  const job = queue.view(capture.id);
+  const status = job?.status === "done" ? "已有逐字稿"
+    : job?.status === "failed" ? "轉錄未完成，可在素材內重試"
+    : job?.status === "running" ? "Mac 正在轉錄" : "等待 Mac 轉錄";
+  await replyLineMessage(token, ["已剪藏｜抖音", `「${job?.title || capture.title}」`, status].join("\n"),
+    clipQuickReply(capture.id, false, false, "查看這筆素材"));
 }
 
 async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCaptureEntry>>, token: string, refresh = false) {
@@ -390,7 +446,7 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
   // image sets; the explicit user action is the reliable grouping boundary.
   const manualBatch = manualImageBatches.get(userId);
   if (manualBatch && manualBatch.expiresAt > Date.now()) {
-    await withImageSetLock(`manual:${userId}`, async () => {
+    await withLineWriteLock(`manual:${userId}`, async () => {
       const currentBatch = manualImageBatches.get(userId) ?? manualBatch;
       let entry: EnglishImageEntry | null = null;
       if (currentBatch.entryId) {
@@ -439,7 +495,7 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
   manualImageBatches.delete(userId);
 
   if (imageSetId && imageSetTotal > 1) {
-    await withImageSetLock(imageSetId, async () => {
+    await withLineWriteLock(imageSetId, async () => {
       const currentEntries = await listEnglishImageEntries({ includeMerged: true, includeReadingClips: true });
       let entry = currentEntries.find((item) => item.lineImageSetId === imageSetId && !item.mergedIntoId);
       if (entry) {

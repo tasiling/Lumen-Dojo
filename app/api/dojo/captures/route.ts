@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import {
   CAPTURE_TITLE_PREFIX,
   captureContent,
@@ -148,6 +149,10 @@ export async function DELETE(req: NextRequest) {
     const id = req.nextUrl.searchParams.get("id");
     if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
     await archiveJsonRecordById(id, CAPTURE_TITLE_PREFIX);
+    if (process.env.RAILWAY_VOLUME_MOUNT_PATH || process.env.LEARNING_WRITE_LOCK_DIR) {
+      try { douyinQueue().remove(id); }
+      catch { console.warn("野採素材已移除，無法同步移除抖音轉錄任務"); }
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(

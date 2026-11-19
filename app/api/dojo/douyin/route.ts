@@ -1,0 +1,61 @@
+import { type NextRequest } from "next/server";
+import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
+import { captureIdPattern, douyinError, douyinJson, douyinJsonBody } from "@/lib/dojo/douyin/http";
+import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
+import { InputError, sourceUrl } from "@/lib/dojo/douyin/share.mjs";
+import { douyinInstallFile } from "@/lib/dojo/douyinInstall";
+import { getCaptureEntry } from "@/lib/dojo/captureStore";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function view(captureId?: string) {
+  const queue = douyinQueue();
+  return douyinJson({ connection: queue.connection(), job: captureId ? queue.view(captureId) : null });
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    requireLearningOwner(req);
+    const id = req.nextUrl.searchParams.get("captureId");
+    if (id && !captureIdPattern.test(id)) throw new InputError("素材編號格式不符。");
+    return view(id ?? undefined);
+  } catch (error) {
+    return douyinError(error);
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    requireLearningOwner(req);
+    const { action, captureId } = await douyinJsonBody(req);
+    const queue = douyinQueue();
+    if (action === "install") {
+      // The authenticated browser's origin was validated against Host and TLS by requireLearningOwner.
+      const origin = req.headers.get("origin") || "https://lumen-dojo.up.railway.app";
+      if (!origin.startsWith("https://")) throw new InputError("請從行光道場的 HTTPS 網址下載。", 403);
+      const file = douyinInstallFile(origin, queue.issue());
+      return new Response(file, {
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Content-Disposition": 'attachment; filename="YeCai-Connect-Mac-Production.command"',
+          "Cache-Control": "private, no-store",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    }
+    if (action !== "retry" || typeof captureId !== "string" || !captureIdPattern.test(captureId))
+      throw new InputError("請選擇一筆野採素材。");
+    const { capture } = await getCaptureEntry(captureId);
+    const source = sourceUrl(capture.sourceUrl);
+    if (!source) throw new InputError("這筆素材需要一個可讀取的抖音影片網址。", 422);
+    if (!queue.view(captureId)) {
+      const match = queue.matchingIds(source)[0] || null;
+      queue.enqueue(captureId, { ...source, raw: "", title: capture.title }, match);
+    }
+    queue.retry(captureId);
+    return view(captureId);
+  } catch (error) {
+    return douyinError(error);
+  }
+}
