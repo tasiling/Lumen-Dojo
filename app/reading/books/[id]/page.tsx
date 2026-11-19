@@ -453,9 +453,14 @@ function ReadingSourceNoteCard({ book, note, onDelete, onInsightCreated, onDiscu
       {note.metadata.chapter && <span>{note.metadata.chapter}</span>}
       {note.metadata.location && <span>{note.metadata.location}</span>}
     </div>
-    {note.metadata.selectionLabel&&<h3>{note.metadata.selectionLabel}</h3>}
+    {note.metadata.selectionLabel&&!note.metadata.highlightColor&&<h3>{note.metadata.selectionLabel}</h3>}
     {note.metadata.clipPageId&&<a href={originalHref(note.metadata.clipPageId)} target="_blank" rel="noreferrer">查看剪藏原圖 ↗</a>}
-    {note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
+    {note.metadata.highlightColor ? <details className="reading-highlight-note">
+      <summary><span data-ink={note.metadata.highlightColor}>{note.metadata.highlightColor}畫線</span><strong>{note.metadata.selectionLabel||"閱讀選段"}</strong><small>{note.text}</small></summary>
+      <blockquote>{note.text}</blockquote>
+      {note.metadata.sourceFiles?.map((id,i)=><a key={id} href={"https://chatgpt.com/library?file_id="+encodeURIComponent(id)+"&account_id=personal"} target="_blank" rel="noreferrer">來源截圖 {i+1} ↗　</a>)}
+      {note.metadata.clipSourceIds?.map((id,i)=><a key={id} href={originalHref(id)} target="_blank" rel="noreferrer">來源圖 {i+1} ↗ </a>)}
+    </details> : note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
     {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection"><div className="reading-source-reflection"><small>我的理解片段</small><p>{note.metadata.reflection}</p>{note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id,fragment:'reflection'}} />}</div></LocatedContent>}
     {note.id&&<div><small>原筆記的來源與分類</small><RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} /></div>}
     <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button><ManualCardEntry bookId={book.id} note={note} disabled={!note.id} onInsightCreated={onInsightCreated}/></div>

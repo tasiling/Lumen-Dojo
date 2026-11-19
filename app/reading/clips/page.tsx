@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import ReadingHighlightReview from "@/app/components/ReadingHighlightReview";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ReadingHeaderArt } from "@/app/components/ReadingArt";
@@ -37,6 +38,7 @@ const selectQuery = (id: string) => {
 };
 
 export default function ReadingClipInbox() {
+  const [wholePage,setWholePage]=useState(false);
   const [rows, setRows] = useState<ClipListRow[]>([]),
     [batch, setBatch] = useState<ClipBatchDetail | null>(null),
     [books, setBooks] = useState<ReadingBook[]>([]);
@@ -195,6 +197,8 @@ export default function ReadingClipInbox() {
       )}
       {batch && page && (
         <>
+          <div className="clip-page-nav" role="group" aria-label="摘錄方式"><button aria-pressed={!wholePage} onClick={()=>setWholePage(false)}>色筆選段</button><button aria-pressed={wholePage} onClick={()=>setWholePage(true)}>整頁摘錄</button></div>
+          {!wholePage ? <ReadingHighlightReview key={batch.id+batch.pages.length} batch={batch} books={books} initialBook={batch.lastBookId||defaultBook} onSaved={b=>changed(b,"","已更新閱讀筆記。")}/> : <>
           <nav aria-label="這組的書頁" className="clip-page-nav">
             {batch.pages.map((p, i) => (
               <button
@@ -218,7 +222,7 @@ export default function ReadingClipInbox() {
             defaultBook={batch.lastBookId || defaultBook}
             reloadBooks={reloadBooks}
             changed={changed}
-          />
+          /></>}
         </>
       )}
     </section>

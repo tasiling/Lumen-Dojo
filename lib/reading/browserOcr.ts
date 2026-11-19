@@ -14,7 +14,7 @@ declare global {
   }
 }
 let script: Promise<Engine> | undefined;
-async function engine(): Promise<Engine> {
+export async function engine(): Promise<Engine> {
   if (window.Tesseract) return window.Tesseract;
   if (!script)
     script = new Promise((resolve, reject) => {
