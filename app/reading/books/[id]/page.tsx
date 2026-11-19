@@ -447,6 +447,7 @@ function ReadingReviewPanel({ book, note, excerptCount, thoughtCount, onSaved }:
 }
 
 function ReadingSourceNoteCard({ book, note, onDelete, onInsightCreated, onDiscuss }: { book: ReadingBook; note: EditorNote; onDelete: () => void; onInsightCreated:(id:string)=>void; onDiscuss: () => void }) {
+  const [relationScope, setRelationScope] = useState<"note" | "reflection">("note");
   return <article className={`reading-source-note kind-${note.kind}`}>
     <div className="reading-source-note-meta">
       <span>{note.kind === "excerpt" ? note.metadata.source || "摘錄" : "我的想法"}</span>
@@ -461,15 +462,34 @@ function ReadingSourceNoteCard({ book, note, onDelete, onInsightCreated, onDiscu
       {note.metadata.sourceFiles?.map((id,i)=><a key={id} href={"https://chatgpt.com/library?file_id="+encodeURIComponent(id)+"&account_id=personal"} target="_blank" rel="noreferrer">來源截圖 {i+1} ↗　</a>)}
       {note.metadata.clipSourceIds?.map((id,i)=><a key={id} href={originalHref(id)} target="_blank" rel="noreferrer">來源圖 {i+1} ↗ </a>)}
     </details> : note.kind === "excerpt" ? <blockquote>{note.text}</blockquote> : <p className="reading-thought-text">{note.text}</p>}
-    {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection"><div className="reading-source-reflection"><small>我的理解片段</small><p>{note.metadata.reflection}</p>{note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id,fragment:'reflection'}} />}</div></LocatedContent>}
-    {note.id&&<div><small>原筆記的來源與分類</small><RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:book.id}} /></div>}
-    <div className="reading-source-note-actions"><button className="reading-delete-note" onClick={onDelete}>刪除</button><button disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button><ManualCardEntry bookId={book.id} note={note} disabled={!note.id} onInsightCreated={onInsightCreated}/></div>
-    {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
-      source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}
-      defaultStatement={note.kind === "thought" ? note.text : note.metadata.reflection || ""}
-      defaultType="understanding"
-      buttonLabel="整理成知識候選"
-    />}
+    {note.metadata.reflection && <LocatedContent parameter="note" id={note.id} fragment="reflection">
+      <div className="reading-source-reflection"><small>我的想法</small><p>{note.metadata.reflection}</p></div>
+    </LocatedContent>}
+    <div className="reading-source-note-actions reading-note-tools">
+      <button type="button" className="primary" disabled={!note.id} onClick={onDiscuss}>和 GPT 討論</button>
+      <details className="reading-manual-more" id={note.id ? "manual-" + note.id : undefined}>
+        <summary>更多</summary>
+        <ManualCardEntry bookId={book.id} note={note} disabled={!note.id} onInsightCreated={onInsightCreated}/>
+        {note.id && <details>
+          <summary>分類與關聯</summary>
+          {note.metadata.reflection && <label>設定對象
+            <select className="field" value={relationScope} onChange={event => setRelationScope(event.target.value === "reflection" ? "reflection" : "note")}>
+              <option value="note">整則筆記</option>
+              <option value="reflection">我的想法</option>
+            </select>
+          </label>}
+          <RelationsPanel key={relationScope} target={{kind: "reading_note", recordId: note.id, parentBookId: book.id,
+            ...(relationScope === "reflection" ? {fragment: "reflection" as const} : {})}}/>
+        </details>}
+        {note.id && (note.kind === "thought" || Boolean(note.metadata.reflection)) && <ClaimCandidateComposer
+          source={{ sourceType: "reading_note", sourceId: note.id, label: `${book.title}・閱讀筆記`, locator: [note.metadata.chapter, note.metadata.location].filter(Boolean).join("・"), url: "", snapshot: [note.kind === "excerpt" ? `來源摘錄：${note.text}` : `我的想法：${note.text}`, note.metadata.reflection && `當時理解：${note.metadata.reflection}`].filter(Boolean).join("\n") }}
+          defaultStatement={note.kind === "thought" ? note.text : note.metadata.reflection || ""}
+          defaultType="understanding"
+          buttonLabel="整理成知識候選"
+        />}
+        <button type="button" className="reading-delete-note" onClick={onDelete}>刪除這則筆記</button>
+      </details>
+    </div>
   </article>;
 }
 
@@ -534,10 +554,13 @@ function ReadingNoteEditor({ bookId, note, onText, onSaved, onDelete, onInsightC
     <div className="reading-note-actions">
       <span className={`reading-save-state ${saveState}`}>{saveState === "saving" ? "儲存中…" : saveState === "saved" ? "已自動儲存" : saveState === "error" ? "尚未存入" : note.id ? "已存入 Notion" : "輸入後自動儲存"}</span>
       {saveState === "error" && <button onClick={() => void save(note.text)}>重試</button>}
-      {note.editable && <button className="reading-delete-note" disabled={saveState === "saving"} onClick={() => void remove()}>刪除</button>}
-      {note.id&&<RelationsPanel target={{kind:'reading_note',recordId:note.id,parentBookId:bookId}} />}
       <button disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onClick={onDiscuss}>和 GPT 討論</button>
-      <ManualCardEntry bookId={bookId} note={note} disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onInsightCreated={onInsightCreated}/>
+      <details className="reading-manual-more" id={note.id ? "manual-" + note.id : undefined}>
+        <summary>更多</summary>
+        <ManualCardEntry bookId={bookId} note={note} disabled={!note.id || !note.text.trim() || note.text !== savedText || saveState === "saving"} onInsightCreated={onInsightCreated}/>
+        {note.id && <details><summary>分類與關聯</summary><RelationsPanel target={{kind:"reading_note",recordId:note.id,parentBookId:bookId}}/></details>}
+        {note.editable && <button className="reading-delete-note" disabled={saveState === "saving"} onClick={() => void remove()}>刪除這則筆記</button>}
+      </details>
     </div>
   </article>;
 }
