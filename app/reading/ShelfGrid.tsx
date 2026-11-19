@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState } from "react";
-import { coverFor, markOpened } from "./readerShelf";
+import { coverFor, markOpened, shelfTitle, shelfAuthor } from "./readerShelf";
 import type { ReadingBook } from "@/lib/reading/types";
-import { displayFacet } from "@/lib/reading/shelf";
 
 const scrollKey = "reading-shelf-position";
 
@@ -17,7 +16,7 @@ function Cover({ book, eager }: { book: ReadingBook; eager: boolean }) {
       // eslint-disable-next-line @next/next/no-img-element
       ? <img alt="" src={cover} loading={eager ? "eager" : "lazy"} referrerPolicy="no-referrer"
           decoding="async" onError={() => setFailedUrl(cover)} />
-      : <span className="shelf-type-cover">{book.title}</span>}
+      : <span className="shelf-type-cover">{shelfTitle(book)}</span>}
   </span>;
 }
 
@@ -83,11 +82,9 @@ export default function ShelfGrid({ books, context }: { books: ReadingBook[]; co
         }}>
         <Cover book={book} eager={index < 2} />
         <span className="shelf-book-info">
-          <strong>{book.title}</strong>
-          {book.author && <span className="shelf-byline">{book.author.replaceAll("｜", " · ")}</span>}
-          {(book.category || book.readCount > 1 || book.finished) && <span className="shelf-topic">
-            {[book.category && displayFacet(book.category), book.readCount > 1 && "第 " + book.readCount + " 讀", book.finished && "已讀完"].filter(Boolean).join(" · ")}
-          </span>}
+          <strong>{shelfTitle(book)}</strong>
+          {shelfAuthor(book) && <span className="shelf-byline">{shelfAuthor(book).replaceAll("｜", " · ")}</span>}
+
         </span>
       </Link>
     </li>)}

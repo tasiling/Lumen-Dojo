@@ -4,7 +4,7 @@ import Link from "next/link";
 import type {ReadingBook,ReadingNote} from "@/lib/reading/types";
 import {discussionHref,type ReadingDiscussion} from "@/lib/reading/discussion";
 import {originalHref} from "@/lib/reading/clips";
-import {coverFor,markOpened} from "../../readerShelf";
+import {coverFor,markOpened,shelfTitle,shelfAuthor} from "../../readerShelf";
 import "../reader.css";
 
 type Archive={id:string;title:string;lines:string[]};
@@ -12,7 +12,7 @@ type RecordData={book:ReadingBook;notes:ReadingNote[];archives:Archive[];discuss
 type Hit={book:string;title:string;note:string;label:string;text:string;field:string};
 function passages(data:RecordData){return data.notes.filter(n=>n.kind==="excerpt"||n.kind==="thought"||n.kind==="free"&&!n.text.includes("｜已完成的閱讀討論"));}
 function archivesFor(data:RecordData,n:ReadingNote){return data.archives.filter(a=>a.lines.some(line=>line.includes("選段「"+n.text+"」")));}
-function label(data:RecordData,n:ReadingNote){return n.metadata.selectionLabel||archivesFor(data,n)[0]?.title.split("｜")[0]||n.text.slice(0,24);}
+function label(data:RecordData,n:ReadingNote){return n.metadata.selectionLabel||archivesFor(data,n)[0]?.title.split("｜")[0]||(n.text.startsWith("詹姆斯，是你的思想創造你的現實")?"思想與現實":n.kind==="excerpt"?"書中畫線":"我的筆記");}
 function rounds(data:RecordData,n:ReadingNote){return data.discussions.flatMap(d=>d.rounds.filter(r=>r.source.noteId===n.id).map(r=>({d,r})));}
 async function read<T,>(url:string,signal:AbortSignal):Promise<T>{const r=await fetch(url,{cache:"no-store",signal});if(!r.ok)throw Error("讀取失敗");return r.json();}
 function Archived({item}:{item:Archive}){
@@ -67,7 +67,7 @@ export default function Reader({params}:{params:Promise<{id:string}>}){
   if(!data||data.book.id.replaceAll("-","")!==id.replaceAll("-",""))return <p className="screen">正在翻開閱讀筆記…</p>;
   const {book}=data, notes=passages(data), workspace="/reading/books/"+book.id;
   function select(key:string){setOpen(key);if(key){setLast(key);try{localStorage.setItem("rr-"+id,key);}catch{}}}
-  return <main className="screen rr"><header><Link href={"/reading?"+new URLSearchParams(location.search).toString()}>‹ 書架</Link><button onClick={()=>{const url=new URL(location.href);if(search)url.searchParams.delete("find");else url.searchParams.set("find","");history.replaceState(history.state,"",url);setSearch(!search);}}>{search?"回到本書":"跨書找筆記"}</button></header>{search?<NoteSearch data={data}/>:<><small>修習所．心知 / 閱讀筆記</small><div className="rr-title">{coverFor(book)&&<img alt="" src={coverFor(book)}/>}<div><h1>{book.title}</h1><p>{book.author}</p></div></div><header><h2>第 {book.readCount||1} 次閱讀</h2><small>{notes.length} 則選段</small></header>
+  return <main className="screen rr"><small className="rr-crumb">修習所・心知</small><header className="rr-head"><h1>閱讀筆記</h1><button onClick={()=>{const url=new URL(location.href);if(search)url.searchParams.delete("find");else url.searchParams.set("find","");history.replaceState(history.state,"",url);setSearch(!search);}}>{search?"回到本書":"跨書找筆記"}</button></header>{search?<NoteSearch data={data}/>:<><div className="rr-title">{coverFor(book)&&<img alt="" src={coverFor(book)}/>}<div><h2>{shelfTitle(book)}</h2><p>{shelfAuthor(book)}</p></div><Link className="rr-switch" href={"/reading?"+new URLSearchParams(location.search).toString()}>換書 ⌄</Link></div><header><h2>第 {book.readCount||1} 次閱讀</h2><small>{notes.length} 則選段</small></header>
   {last&&last!==open&&notes.some(n=>n.id===last)&&<button onClick={()=>{select(last);requestAnimationFrame(()=>document.getElementById(last)?.scrollIntoView({block:"center"}));}}>回到上次選段</button>}
   {data.discussionUnavailable&&<p role="status">即時討論紀錄暫時無法載入。</p>}
   {notes.map((n,i)=>{const m=n.metadata;const archived=archivesFor(data,n), linked=rounds(data,n);return <div key={n.id}>{m.chapter&&m.chapter!==notes[i-1]?.metadata.chapter&&<h3>{m.chapter}</h3>}<article id={n.id}><button className="rr-row" aria-expanded={open===n.id} onClick={()=>select(open===n.id?"":n.id)}><b>{label(data,n)}</b>{open!==n.id&&<span>{n.text}</span>}<small>{[m.highlightColor&&m.highlightColor+"畫線",m.reflection&&"有我的想法",(archived.length>0||linked.some(x=>x.r.result?.status==="完成"))&&"討論已完成"].filter(Boolean).join(" · ")}</small></button>{open===n.id&&<section><small>{n.kind==="excerpt"?"書中原文":"我的筆記"} {m.location}</small><blockquote data-color={m.highlightColor}>{n.text}</blockquote>{m.reflection&&<aside><small>我當時的想法</small><p>{m.reflection}</p></aside>}{m.sourceFiles?.map((file,j)=><a key={file} href={"https://chatgpt.com/library?account_id=personal&file_id="+encodeURIComponent(file)} target="_blank" rel="noreferrer">來源截圖 {j+1} ↗　</a>)}{(m.clipSourceIds||[m.clipPageId]).filter(Boolean).map((file,j)=><a key={file} href={originalHref(file!)} target="_blank" rel="noreferrer">剪藏原圖 {j+1} ↗　</a>)}{archived.map(a=><Archived key={a.id} item={a}/>)}{linked.map(({d,r})=><Link key={r.id} href={discussionHref({bookId:book.id,discussionId:d.id,roundId:r.id},n.id)}>{r.result?.status==="完成"?"看已完成的討論":"接續討論"} · {r.question||r.source.label}</Link>)}<Link href={workspace+"?discussion=&note="+n.id}>和 GPT 討論</Link></section>}</article></div>})}

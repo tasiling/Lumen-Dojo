@@ -101,3 +101,25 @@
 @container reading-shelf (min-width: 38rem) { .shelf-grid { --shelf-cols: 3; } }
 @container reading-shelf (min-width: 58rem) { .shelf-grid { --shelf-cols: 4; } }
 @media (min-width: 42rem) { .shelf-filters { margin: auto; border-radius: 16px; } }
+
+.dojo.reading-shell:has(.reading-shelf, .screen.rr) {
+  --ink:#213331; --muted:#52645e; --paper:#faf9f5; background:var(--paper);
+}
+.dojo.reading-shell .reading-shelf .shelf-head {border:0;padding:0}
+.reading-shelf .shelf-head::after {display:none}
+.dojo.reading-shell .reading-shelf .shelf-head h1 {font-family:inherit;font-size:2.05rem;font-weight:700;letter-spacing:-.04em}
+.reading-shelf .shelf-find {display:block;margin-top:20px}
+.dojo.reading-shell .reading-shelf .shelf-search {border-radius:5px;background:#fffefa}
+.shelf-tabs,.shelf-tabs>div {display:flex;align-items:stretch}
+.shelf-tabs {justify-content:space-between;border-bottom:1px solid #cfd6ce}
+.shelf-tabs>div {min-width:0;overflow-x:auto;scrollbar-width:none}
+.dojo.reading-shell .reading-shelf .shelf-tabs button {flex:none;white-space:nowrap;padding:6px clamp(4px,1.25vw,10px);background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:#52645e;font-size:.85rem}
+.dojo.reading-shell .reading-shelf .shelf-tabs button[aria-pressed=true] {border-color:#286054;color:#21594d;font-weight:700}
+.reading-shelf .shelf-meta {margin:11px 0 15px}
+.dojo.reading-shell .reading-shelf .shelf-book {background:none;border:0;border-radius:0;box-shadow:none;color:#213331}
+.reading-shelf .shelf-grid li:nth-child(n) .shelf-cover {display:block;padding:0;background:transparent;aspect-ratio:auto}
+.reading-shelf .shelf-cover img {width:100%;height:auto;border:1px solid #d3d8d0;filter:none}
+.reading-shelf .shelf-type-cover {aspect-ratio: .71;box-shadow:none}
+.reading-shelf .shelf-book-info {padding:8px 0}
+.reading-shelf .shelf-tools {justify-content:flex-end;margin:22px 0}
+.reading-shelf .shelf-tools details>div {top:auto;bottom:100%}

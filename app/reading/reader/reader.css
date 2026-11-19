@@ -1,1 +1,21 @@
 .rr{max-width:42rem;margin:auto;color:#263e39}.rr header,.rr-title{display:flex;align-items:center;justify-content:space-between;gap:.8rem}.rr header{margin:1rem 0}.rr button,.rr a,.rr summary{min-height:44px;color:#265d51}.rr header button,.rr-row{background:transparent;border:0}.rr-title{justify-content:flex-start;border-block:1px solid #d5dad1;padding:1rem 0;margin-top:.6rem}.rr-title img{width:3.4rem;height:4.8rem;object-fit:contain}.rr h1,.rr blockquote{font-family:"Songti TC",serif}.rr h1{font-size:1.35rem}.rr h2,.rr h3{font-size:1.05rem}.rr article,.rr details,.rr-hit{border-top:1px solid #d5dad1}.rr-row,.rr-hit{display:grid;text-align:left;width:100%;gap:.2rem;padding:.9rem 0}.rr-row span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.rr small{color:#55675e}.rr section p,.rr blockquote{white-space:pre-line;overflow-wrap:anywhere}.rr blockquote{margin:.3rem 0 .8rem;border-left:3px solid #b49b64;padding-left:.7rem}.rr blockquote[data-color="綠色"]{border-color:#76a57b}.rr aside{background:#e9f1eb;padding:.7rem}.rr section>a,.rr-work,.rr summary{display:block;padding:.55rem 0}.rr input{width:100%;min-height:44px;font:inherit}.rr details details{padding-left:.65rem}.rr-work{margin-top:1rem}
+
+.dojo.reading-shell:has(.screen.rr) {--ink:#213331;--muted:#52645e;--paper:#faf9f5;background:var(--paper)}
+.dojo.reading-shell .screen.rr {padding:0 0 30px;color:var(--ink)}
+.dojo.reading-shell .rr .rr-crumb {display:block;color:#52645e;letter-spacing:.08em}
+.dojo.reading-shell .rr .rr-head {margin:5px 0 18px}
+.dojo.reading-shell .rr .rr-head h1 {font-family:inherit;font-size:2rem;line-height:1.35;margin:0;letter-spacing:-.04em}
+.dojo.reading-shell .rr .rr-head button,.dojo.reading-shell .rr .rr-row {border:0;box-shadow:none;background:transparent;border-radius:0}
+.dojo.reading-shell .rr .rr-head button {color:#205c50;font-weight:650;padding:4px 0}
+.dojo.reading-shell .rr .rr-title {margin:0;padding:14px 0;gap:.65rem}
+.rr .rr-title>div {min-width:0;flex:1}
+.dojo.reading-shell .rr .rr-title img {width:3rem;height:auto;max-height:4.5rem;border:1px solid #d3d8d0}
+.dojo.reading-shell .rr .rr-title h2 {font-size:1.12rem;line-height:1.45;margin:0}
+.dojo.reading-shell .rr .rr-title p {margin:3px 0 0;color:var(--muted);font-size:.9rem}
+.rr .rr-switch {display:inline-flex;align-items:center;white-space:nowrap;text-decoration:none}
+.dojo.reading-shell .rr article {border:0;border-top:1px solid #d3d8d0;border-radius:0;background:none;margin:0;padding:0;box-shadow:none}
+.dojo.reading-shell .rr .rr-row {position:relative;display:grid;gap:6px;padding:16px 0;text-align:start;color:#213331}
+.rr .rr-row>b {padding-right:25px;font-size:1.04rem}
+.rr .rr-row>span {color:#52645e;font-size:.96rem;line-height:1.6}
+.rr .rr-row::after {content:"";position:absolute;right:4px;top:21px;width:8px;height:8px;border:solid #52645e;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+.rr .rr-row[aria-expanded=true]::after {transform:rotate(225deg)}

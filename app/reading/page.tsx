@@ -88,9 +88,9 @@ export default function ReadingShelfPage() {
   }
 
   const found = useMemo(() => {
-    const result = matchBooks(books, view);
+    const result = matchBooks(books, { ...view, sort: "added" });
     const times = openedAt();
-    return view.sort === "name" ? result : result.sort((a,b) => (times[b.id] || 0) - (times[a.id] || 0));
+    return result.sort((a,b) => (times[b.id] || 0) - (times[a.id] || 0));
   }, [books, view]);
   const context = writeShelfView(view);
   if (parent) context.set("returnTo", parent);
@@ -103,6 +103,37 @@ export default function ReadingShelfPage() {
   return <section className="screen reading-screen reading-shelf">
     <header className="shelf-head">
       <div><p className="shelf-crumb">修習所・心知</p><h1>閱讀書架</h1></div>
+
+    </header>
+    <div className="shelf-find" role="search">
+      <label className="shelf-search"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+        <input type="search" enterKeyHint="search" value={view.q} placeholder="搜尋書名、作者或副標題" aria-label="搜尋書名、作者或副標題"
+          onChange={e => change({ ...view, q: e.target.value })} />
+      </label>
+    </div>
+    <nav className="shelf-tabs" aria-label="書籍分類">
+      <div>{["", "新時代 New age", "職場工作", "成功法"].map(category =>
+        <button key={category} type="button" aria-pressed={category ? view.category.includes(category) : count === 0}
+          onClick={() => change(category ? { ...view, category: [category] } : { ...view, ...emptySelection })}>
+          {category ? displayFacet(category) : "全部"}
+        </button>)}</div>
+      <button onClick={openFilters} aria-haspopup="dialog" aria-expanded={filtersOpen}>更多分類</button>
+    </nav>
+    {count > 0 && <div className="shelf-applied" aria-label="已套用的篩選">{shelfGroups.flatMap(group => view[group].map(value =>
+      <button key={group + value} aria-label={"移除" + groupLabels[group] + "「" + displayFacet(value) + "」"}
+        onClick={() => change({ ...view, ...toggleFacet(view, group, value) })}>{displayFacet(value)} ×</button>))}</div>}
+    {notice && <p role="status">{notice}</p>}
+    {loading ? <p className="shelf-empty" role="status">正在打開書架…</p> : error ? <p className="form-error" role="alert">{error} <button onClick={() => void load()}>重新讀取</button></p> : <>
+      <div className="shelf-meta"><span aria-live="polite" aria-atomic="true">{count || view.q.trim() ? found.length + "／" + books.length + " 本" : "共 " + books.length + " 本"}</span>
+        <span>最近開啟優先</span>
+      </div>
+      {found.length ? <ShelfGrid books={found} context={context.toString()} /> : <div className="shelf-empty">
+        <ForageIcon name="i-book"/><h2>{books.length ? "找不到符合的書" : "書架上還沒有書"}</h2>
+        {view.q && <button onClick={() => change({ ...view, q: "" })}>清除搜尋</button>}
+        {count > 0 && <button onClick={() => change({ ...view, ...emptySelection })}>清除篩選</button>}
+        {!books.length && <button onClick={() => openForm("start")}>開始一本書</button>}
+      </div>}
+    </>}
       <div className="shelf-tools">
         <details name="shelf-actions"><summary>記閱讀</summary><div>
           <Link href="/reading/clips">上傳書頁</Link><Link href="/add?mode=reading">貼文字／寫想法</Link>
@@ -113,34 +144,6 @@ export default function ReadingShelfPage() {
           <Link href="/dao/explore">閱讀與知識總覽</Link><Link href="/dao/knowledge">知識庫</Link>
         </div></details>
       </div>
-    </header>
-    <div className="shelf-find" role="search">
-      <label className="shelf-search"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
-        <input type="search" enterKeyHint="search" value={view.q} placeholder="搜尋書名或作者" aria-label="搜尋書名、作者或副標題"
-          onChange={e => change({ ...view, q: e.target.value })} />
-      </label>
-      <button className="shelf-filter-trigger" type="button" onClick={openFilters} aria-haspopup="dialog" aria-expanded={filtersOpen}>
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 7h7m4 0h7M3 17h11m4 0h3"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></svg>
-        篩選{count > 0 && <span>{count}</span>}
-      </button>
-    </div>
-    {count > 0 && <div className="shelf-applied" aria-label="已套用的篩選">{shelfGroups.flatMap(group => view[group].map(value =>
-      <button key={group + value} aria-label={"移除" + groupLabels[group] + "「" + displayFacet(value) + "」"}
-        onClick={() => change({ ...view, ...toggleFacet(view, group, value) })}>{displayFacet(value)} ×</button>))}</div>}
-    {notice && <p role="status">{notice}</p>}
-    {loading ? <p className="shelf-empty" role="status">正在打開書架…</p> : error ? <p className="form-error" role="alert">{error} <button onClick={() => void load()}>重新讀取</button></p> : <>
-      <div className="shelf-meta"><span aria-live="polite" aria-atomic="true">{count || view.q.trim() ? found.length + "／" + books.length + " 本" : "共 " + books.length + " 本"}</span>
-        <select aria-label="排列書籍" value={view.sort} onChange={e => change({ ...view, sort: e.target.value === "name" ? "name" : "added" })}>
-          <option value="added">最近開啟</option><option value="name">依書名</option>
-        </select>
-      </div>
-      {found.length ? <ShelfGrid books={found} context={context.toString()} /> : <div className="shelf-empty">
-        <ForageIcon name="i-book"/><h2>{books.length ? "找不到符合的書" : "書架上還沒有書"}</h2>
-        {view.q && <button onClick={() => change({ ...view, q: "" })}>清除搜尋</button>}
-        {count > 0 && <button onClick={() => change({ ...view, ...emptySelection })}>清除篩選</button>}
-        {!books.length && <button onClick={() => openForm("start")}>開始一本書</button>}
-      </div>}
-    </>}
     {filtersOpen && <ShelfFilters books={books} view={view} onClose={closeFilters} />}
     {form && <BookFormSheet mode={form} onClose={() => setForm(null)} onCreated={book => {
       setForm(null);
