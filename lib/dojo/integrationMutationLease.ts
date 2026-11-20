@@ -28,7 +28,7 @@ async function mutationLeaseRequest(body: Record<string, unknown>) {
     signal: AbortSignal.timeout(10_000),
   });
   const result = await response.json().catch(() => ({})) as { fence?: number; error?: string; code?: string };
-  if (!response.ok || !result.fence) throw new Error(result.error || result.code || "資料更新租約操作失敗");
+  if (!response.ok || !result.fence) throw Object.assign(new Error(result.error || result.code || "資料更新租約操作失敗"), { code: result.code });
   return result;
 }
 
