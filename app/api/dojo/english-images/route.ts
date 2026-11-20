@@ -81,8 +81,12 @@ export async function POST(req: NextRequest) {
     if (body.action === "routeAndAnalyze") {
       const route = isEnglishImageLearningRoute(body.route) ? body.route : null;
       if (!route) return NextResponse.json({ error: "請選擇遊戲英文、英文日常、課堂英文或閱讀英文" }, { status: 400 });
+      const mode: unknown = body.gameLearningMode;
+      if (mode !== undefined && (route !== "game" || (mode !== "auto" && mode !== "interface" && mode !== "story"))) {
+        return NextResponse.json({ error: "請選擇自動判讀、遊戲介面或劇情對白。" }, { status: 400 });
+      }
       const { entry } = await getEnglishImageEntry(id);
-      const routed = await routeEnglishImage(entry, route);
+      const routed = await routeEnglishImage(entry, route, mode);
       return NextResponse.json({ entry: await analyzeEnglishImage(routed.id) });
     }
     if (body.action === "moveToCapture") {

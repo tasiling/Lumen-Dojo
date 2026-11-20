@@ -237,9 +237,15 @@ export function forageQuickReply(url: string) {
   ] };
 }
 
+function gameLearningActions(entryId: string) {
+  const action = (label: string, mode: "auto" | "interface" | "story") =>
+    quickReplyItem(label, new URLSearchParams({ action: "imageRoute", entryId, route: "game", mode }).toString());
+  return [action("遊戲（自動判讀）", "auto"), action("遊戲介面學習", "interface"), action("遊戲劇情／對白", "story")];
+}
+
 export function imageRouteQuickReply(entryId: string) {
   return { items: [
-    quickReplyItem("遊戲事件", new URLSearchParams({ action: "imageRoute", entryId, route: "game" }).toString()),
+    ...gameLearningActions(entryId),
     quickReplyItem("現場經歷", new URLSearchParams({ action: "imageRoute", entryId, route: "field" }).toString()),
     quickReplyItem("影音／逐字稿", new URLSearchParams({ action: "imageRoute", entryId, route: "video" }).toString()),
     quickReplyItem("課堂／工作回收", new URLSearchParams({ action: "imageRoute", entryId, route: "classroom" }).toString()),
@@ -263,7 +269,7 @@ export function imageDraftQuickReply(entryId: string) {
   ] };
 }
 
-export function englishImageOrganizeQuickReply(entryId: string) {
+export function englishImageOrganizeQuickReply(entryId: string, route?: string) {
   return { items: [
     quickReplyItem("補充情境", new URLSearchParams({ action: "imageInput", entryId, mode: "context" }).toString()),
     quickReplyItem("修正原文", new URLSearchParams({ action: "imageInput", entryId, mode: "ocr" }).toString()),
@@ -273,6 +279,7 @@ export function englishImageOrganizeQuickReply(entryId: string) {
     quickReplyItem("送 VocabForge", new URLSearchParams({ action: "imageDispatch", entryId, target: "vocab" }).toString()),
     quickReplyItem("兩邊都送", new URLSearchParams({ action: "imageDispatch", entryId, target: "both" }).toString()),
     quickReplyItem("先留野採", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
+    ...(route === "game" ? gameLearningActions(entryId) : []),
   ] };
 }
 
