@@ -55,6 +55,7 @@ function cardForgeEntry(f) {
   const [parent,parentName]=f?sfReturning(f):['home','織光堂'];
   return page('打造織光杼',m?'為這次'+TYPES[m.type].action+'選一個起點':'',panel('想從哪裡開始？',
     row('從觀點或洞察開始','選一張卡，看看它能接上哪個想法。','book','go',[cardIndexPath(fid)])+
+    row('與 GPT 討論織光杼','帶上想法或來源，先釐清題目','chat','openForgeDiscussion',[fid])+
     row('我已有想探討的題目','先留下題目，經線可以日後再整理。','pen',f?.touched?'freshCardTopic':'cardTopic',[fid]))+
     (f?.touched?panel('接續題目草稿',row(f.title||f.note||'未命名草稿','回到上次的整理','pen','cardTopic',[fid])):'')+
     recentReadings(fid),parent,parentName);
@@ -74,13 +75,22 @@ function cardListRows(fid,anchor,query='',type='') {
     anchor?'pairCards':'go',anchor?[anchor,c.id,fid]:[readingPath('card',c.id,fid)]);}).join('')||
     '<p>找不到符合的卡片。可以換一個詞或選擇全部類型。</p>';
 }
+function materialReadingEntry(fid) {
+  const cards=[...sourceCards.values()];
+  const reading=cards.find(c=>/magic shop/i.test(c.source)&&/不得不做|照護自己/.test(c.idea+' '+c.quote));
+  const interview=cards.find(c=>c.type==='訪談重點'&&/全零回歸/.test(c.source+' '+c.location+' '+c.title));
+  if(reading&&interview)return panel('從實際材料試讀',
+    row('「不得不做」與「先照護自己」',reading.source+' 與 '+interview.title,'layers','pairCards',[reading.id,interview.id,fid]));
+  const first=cards.find(c=>c.type==='觀點'||c.type==='洞察')||cards[0];
+  return panel('從實際材料試讀',first?row(first.title,first.source+' '+first.location,'book','go',[readingPath('card',first.id,fid)]):'<p>目前沒有可取用的卡片。</p>');
+}
 function cardIndexPage(fid,anchorId) {
   const anchor=sourceCards.get(anchorId);
   if(anchorId&&!anchor) return missing();
   const parent=anchor?readingPath('card',anchor.id,fid):fid?'forge/'+fid:'home';
   return page(anchor?'選另一張卡':'觀點與洞察',anchor?'和「'+anchor.title+'」一起讀':'',
     (anchor?'':'<div class="rel-index-action">'+btn('替織光杼找相關卡片','chooseRelatedShuttle',[fid],'light')+'</div>'+
-      recentReadings(fid))+
+      recentReadings(fid)+materialReadingEntry(fid))+
     panel(anchor?'可以接哪一張？':'從一張卡開始','<div class="card-filters">'+
       field('找卡片或來源','cardQuery','',false,'type="search" placeholder="輸入原話、書名或想法"')+
       shuttleSelect('cardKind','類型',[['','全部'],...['觀點','洞察','訪談重點','待追問'].map(t=>[t,t])],'')+

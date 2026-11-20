@@ -196,13 +196,13 @@ const sfDiscussionGoals = {
   '作品完成後的理解':'當你能指到作品裡的一處或一次實際運用，說出它讓你保留、修正或仍想驗證的理解，就可以收尾。也可以說明目前還看不出變化。'
 };
 
-function sfDiscussion(f) {
+function sfDiscussion(f, expanded=false) {
   const history=f.rounds.length ? '<h3>本次打造的討論</h3>'+f.rounds.slice().reverse().map(r=>more(r.task+' · '+(r.applied?'已收錄':r.candidate?'待本人選取':'等待回覆'),
     '<p>本輪問題 · '+esc(r.question||r.task)+'</p><p>帶出的本人想法 · '+esc(r.note||'尚未填寫')+'</p>'+
     (r.source?'<p>來源 · '+esc(r.sourceName)+'<br>'+esc(r.source)+'</p>':'')+
     '<div data-round-review="'+esc(r.id)+'">'+sfReviewRound(f,r)+'</div>')).join(''):'';
-  return panel('與 GPT 討論',history+more('準備新一輪討論',
-    materialPicker('forge',availableMaterials,'從已有素材挑選')+
+  return panel('與 GPT 討論',history+'<details'+(expanded?' open':'')+'><summary>準備新一輪討論</summary>'+
+    '<div id="forgeMaterials">'+materialPicker('forge',availableMaterials,'從已有素材挑選')+'</div>'+
     pick('這輪想釐清什麼','sfTask',Object.keys(sfDiscussionGoals),f.task,'data-sf="task"')+
     '<p class="note" aria-live="polite"><strong>這輪談到哪裡就夠了？</strong><br><span id="sfGoal">'+esc(sfDiscussionGoals[f.task]||'')+'</span></p>'+
     field('我目前的想法','sfNote',f.note,true,'data-sf="note"')+
@@ -212,7 +212,7 @@ function sfDiscussion(f) {
     field('我選定的片段','sfSource',f.source,true,'data-sf="source"')+'</div>'+
     pick('怎麼開始？','sfStart',['讓 GPT 先問我','從我的問題開始'],f.start,'data-sf="start"')+
     field('我想談的問題（選填）','sfQ',f.question,true,'data-sf="question"')+
-    btn('產生討論包','sfGenerate',[f.id],'primary')));
+    btn('產生討論包','sfGenerate',[f.id],'primary')+'</details>');
 }
 
 function forgePage(f) {
@@ -225,6 +225,7 @@ function forgePage(f) {
   const label=f.target?'整理織光杼':'打造織光杼';
   const confirm=f.target?(m?'保存並'+TYPES[m.type].action:'確認保存這次整理'):m?'建立織光杼並'+TYPES[m.type].action:'建立織光杼';
   return page(label,m?'用於這次的'+TYPES[m.type].name+'創作':f.target?findS(f.target)?.title:'留下你想持續探討的題目。',
+    btn('與 GPT 討論織光杼','go',['discussion/'+f.id],'light')+
     panel(f.target?'目前整理稿':'我想持續探討什麼？',
       field('織光杼名稱','sfTitle',f.title,false,f.target?'readonly':'data-sf="title"')+
       '<details class="optional-core"'+(f.target||f.core||f.cardDrafts?.some(u=>u.supportsCore)?' open':'')+
@@ -238,6 +239,13 @@ function forgePage(f) {
 }
 
 function renderShuttleFlow(name, params) {
+  if(name==='discussion') {
+    const f=shuttleForges()[params[0]];
+    if(f&&!f.done)return page('織光杼 GPT 討論',f.title||'',sfDiscussion(f,true),'forge/'+f.id,'立杼草稿');
+    const drafts=Object.values(shuttleForges()).filter(x=>!x.done&&x.rounds.length);
+    return page('織光杼 GPT 討論','',panel('討論題目',btn('準備新一輪討論','openForgeDiscussion',[],'primary'))+
+      (drafts.length?panel('接續討論',drafts.map(x=>row(x.title||x.note||x.task,x.rounds.length+' 輪','chat','go',['discussion/'+x.id])).join('')):''),'home','織光堂');
+  }
   if (name==='match') return matchPage(shuttleMatches()[params[0]]);
   if (name==='forge') return params[0]?forgePage(shuttleForges()[params[0]]):cardForgeEntry(null);
   return renderCardRoute(name,params);
@@ -377,7 +385,7 @@ function sfCommit(fid) {
 }
 
 document.addEventListener('input',e=>{
-  if(route!=='forge')return;
+  if(route!=='forge'&&route!=='discussion')return;
   const f=shuttleForges()[args[0]],el=e.target;
   if(!f||f.done)return;
   if(el.dataset.sf){f[el.dataset.sf]=el.value;f.touched=true;save();}
@@ -400,6 +408,11 @@ Object.assign(handlers,{
   sfExisting:id=>{const w=findW(id);if(w)beginShuttleMatch({type:w.type,workId:id,kind:'existing'});},
   sfConfirm:confirmMatch,sfDirection:sfChooseDirection,
   sfConfirmDirection:(mid,sid)=>confirmMatch(mid,sid,val('sfDirectionSelect'),val('sfVersionSelect')),
+  openForgeDiscussion:fid=>{
+    let f=shuttleForges()[fid];
+    if(!f||f.done)f=getMatchesForge('','',{cardMode:'topic'});
+    f.cardMode='topic';save();go('discussion/'+f.id);
+  },
   forgeShuttle:()=>enterForge(),addShuttle:()=>enterForge(),sfNewForge:mid=>enterForge(mid),
   forgeFromNode:(title,sourceTitle,origin={})=>beginForgeFromNode({title,body:sourceTitle,version:origin.n,...origin}),
   sfDiscussExisting:sid=>{getMatchesForge('',sid);const f=Object.values(shuttleForges()).find(x=>x.target===sid&&!x.done);if(f&&f.baseCore===undefined){f.baseCore=findS(sid).core;save();}},

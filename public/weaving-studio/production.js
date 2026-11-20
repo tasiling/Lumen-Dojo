@@ -190,7 +190,8 @@ async function loadCatalog(key){
     const result=await request(api+'?list='+key);
     if(key==='cards'){
       sourceCards.clear();for(const c of result.cards)sourceCards.set(c.id,c);
-      availableMaterials.splice(0,availableMaterials.length,...result.cards.map(c=>({name:c.title,source:c.quote,note:c.idea===c.quote?'':c.idea,url:c.url})));
+      availableMaterials.splice(0,availableMaterials.length,...result.cards.map(c=>({name:[c.source,c.location,c.title].filter(Boolean).join('｜'),source:[c.quoteLabel||c.author,c.quote,c.idea!==c.quote?'卡片整理 · '+c.idea:''].filter(Boolean).join('\n'),note:'',url:c.url})));
+      const picker=$('forgeMaterials');if(picker)picker.innerHTML=materialPicker('forge',availableMaterials,'從已有素材挑選');
     }else{
       for(const w of result.works)worksFromCatalog.set(w.id,loadedNativeWork(w));
       if(key==='catalog')for(const t of result.topics){
