@@ -1,0 +1,15 @@
+'use strict';
+const TYPES={
+ text:{name:'文字',action:'寫文字',hint:'從第一句開始',icon:'pen',tone:'#9a5270',wash:'#f8e9ef',modes:['文章','短文','口播稿']},
+ page:{name:'圖文',action:'做圖文',hint:'編排第一頁',icon:'image',tone:'#a36945',wash:'#fbefe4',modes:['自由圖卡','分頁輪播','對話圖文']},
+ comic:{name:'漫畫',action:'畫漫畫',hint:'排出第一格',icon:'comic',tone:'#597a66',wash:'#e9f2e9',modes:['短漫','四格漫畫']},
+ film:{name:'影片／動畫',action:'做影片／動畫',hint:'從鏡頭或章節開始',icon:'film',tone:'#62598d',wash:'#efebfa',modes:['Motion 小動畫','直式短片（Reels）','短片','分章長片']},
+ audio:{name:'音檔',action:'做音檔',hint:'錄音或製作 Podcast',icon:'mic',tone:'#43728a',wash:'#e8f3f6',modes:['單段音檔','Podcast 單集']}
+};
+const PATHS={sun:'M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.5 1.5 M17.6 17.6l1.5 1.5 M4.9 19.1l1.5-1.5 M17.6 6.4l1.5-1.5 M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0',pen:'M3 21l4.5-1 13-13a2.8 2.8 0 0 0-4-4l-13 13L3 21z M14.5 5.5l4 4 M10 21h11',image:'M3 4h18v16H3z M3 16l5-5 4 4 3-3 6 6 M15.5 8a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0',comic:'M3 4h18v16H3z M11 4v16 M11 11h10 M5 7h3',film:'M3 9h18v11H3z M3 9 2 5l18-3 1 4-18 3 M7 4l3 3 M13 3l3 3 M10 12l5 3-5 3z',mic:'M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0z M5 11v1a7 7 0 1 0 14 0v-1 M12 19v3 M8 22h8',layers:'M12 3 2 8l10 5 10-5-10-5z M3 12l9 5 9-5 M3 16l9 5 9-5',clock:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0 M12 6v6l4 2',calendar:'M3 5h18v16H3z M7 3v4 M17 3v4 M3 10h18',plus:'M12 3v18 M3 12h18',week:'M4 4h16v16H4z M4 10h16 M10 4v16',history:'M3 11a9 9 0 1 1 2 7 M2 5v6h6 M12 7v5l4 3',book:'M3 4q4-1 9 2 5-3 9-2v15q-5-1-9 2-5-3-9-2z M12 6v14',send:'M2 11l20-8-6 18-5-7-9-3z M11 14l11-11',chat:'M3 4h18v13H9l-6 4z M7 9h10 M7 13h7',compass:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0 M15.5 8.5l-2 5-5 2 2-5z',folder:'M3 6h6l2 2h10v12H3z',left:'M15 4l-8 8 8 8',play:'M7 3l13 9-13 9z',check:'M3 12l6 6L21 5',list:'M8 5h13 M8 12h13 M8 19h13 M3 5h1 M3 12h1 M3 19h1',person:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M3 21a9 9 0 0 1 18 0'};
+const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2);
+const unit=()=>({heading:'',body:'',layout:'引句',tone:'粉紫',speaker:'',image:'',ok:false});
+const work=(type,id=uid())=>({id,type,mode:TYPES[type].modes[0],title:'',body:'',units:[unit()],cursor:0,shuttle:'',direction:'',understanding:null,source:null,versions:[],research:[],candidate:'',frame:'橫式',duration:'',use:'',loop:false,media:'',mediaName:'',listened:false,episode:'',updated:Date.now(),review:false});
+const fieldsnap=w=>({title:w.title,type:w.type,mode:w.mode,body:w.body,units:structuredClone(w.units),shuttle:w.shuttle,direction:w.direction,understanding:w.understanding,source:w.source,frame:w.frame,duration:w.duration||'',use:w.use||'',loop:w.loop,media:w.media,mediaName:w.mediaName,episode:w.episode,...(w.coreSnapshot?{coreSnapshot:structuredClone(w.coreSnapshot)}:{}),...(w.cardIds?.length?{cardIds:[...w.cardIds]}:{})});
+function snapshot(w){const data=fieldsnap(w);return {n:w.versions.length+1,time:Date.now(),data};}
+const CHANNELS=['Instagram 貼文','Instagram Reels','Facebook Reels','Threads','噗浪','Podcast 平台','其他影片平台'];

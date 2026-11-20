@@ -271,6 +271,7 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
           <p>{evidenceFor(shown)[candidate.anchor]?.label}　{candidate.quote}</p>
         </details>
         <div className="reading-discussion-actions">
+          <a href={`/weaving/studio#card/discussion:${encodeURIComponent(shown.id)}:${encodeURIComponent(candidate.id)}`}>查看連結的織光杼</a>
           <button onClick={() => {
             const href = discussionHref({ bookId, discussionId: current.id, roundId: shown.id }, shown.source.noteId);
             const text = discussionProductText(shown, current.rounds.indexOf(shown) + 1, candidate);

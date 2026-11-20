@@ -234,6 +234,7 @@ export function ManualCardLibrary() {
             <input type="checkbox" checked={c.share} onChange={(e) => void sharing(c, e.target.checked)} />{" "}
             開放給其他場域取用
           </label>
+          {c.share && <a href={`/weaving/studio#card/manual:${encodeURIComponent(c.id)}`}>查看連結的織光杼</a>}
           {c.share && (
             <button
               onClick={() => {
