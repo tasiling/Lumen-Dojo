@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import type { CaptureClipPurpose } from "./formal";
@@ -15,6 +15,8 @@ import {
 export type LineWebhookEvent = {
   type: "message" | "postback" | string;
   webhookEventId?: string;
+  timestamp?: number;
+  deliveryContext?: { isRedelivery?: boolean };
   replyToken?: string;
   source?: { type?: string; userId?: string };
   message?: {
@@ -203,7 +205,7 @@ export function captureImageQuickReply() {
   ] };
 }
 
-export function imageBatchCollectQuickReply(entryId?: string) {
+export function imageBatchCollectQuickReply(entryId?: string, sessionId?: string) {
   const items: LineQuickReplyItem[] = [
     { type: "action", action: { type: "cameraRoll", label: "繼續選圖" } },
     { type: "action", action: { type: "camera", label: "繼續拍照" } },
@@ -211,7 +213,7 @@ export function imageBatchCollectQuickReply(entryId?: string) {
   if (entryId) {
     items.push(quickReplyItem("完成這組", new URLSearchParams({ action: "imageBatchFinish", entryId }).toString()));
   } else {
-    items.push(quickReplyItem("停止收圖", new URLSearchParams({ action: "imageBatchCancel" }).toString()));
+    items.push(quickReplyItem("停止收圖", new URLSearchParams({ action: "imageBatchCancel", ...(sessionId ? { sessionId } : {}) }).toString()));
   }
   return { items };
 }
@@ -386,34 +388,40 @@ export function splitLineText(text: string): string[] {
   return chunks;
 }
 
-export async function replyLineMessage(replyToken: string, text: string, quickReply?: LineQuickReply): Promise<void> {
+export async function replyLineMessage(replyToken: string, text: string, quickReply?: LineQuickReply, imageEvent?: LineWebhookEvent): Promise<void> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token || !replyToken) return;
-  const response = await fetch("https://api.line.me/v2/bot/message/reply", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      replyToken,
-      messages: splitLineText(text).map((chunk, index, chunks) => ({
-        type: "text",
-        text: chunk,
-        ...(quickReply && index === chunks.length - 1 ? { quickReply } : {}),
-      })),
-    }),
-  });
-  if (!response.ok) {
-    const responseText = (await response.text()).slice(0, 1500);
-    console.error(`[LINE] Reply failed (${response.status}): ${responseText || "No response body"}`);
-    let detail = "";
-    try {
-      const payload = JSON.parse(responseText) as { message?: string; details?: Array<{ message?: string; property?: string }> };
-      detail = payload.details?.map((item) => [item.property, item.message].filter(Boolean).join("：")).filter(Boolean).join("；")
-        || payload.message
-        || "";
-    } catch {
-      detail = responseText;
+  const messages = splitLineText(text).map((chunk, index, chunks) => ({
+    type: "text", text: chunk, ...(quickReply && index === chunks.length - 1 ? { quickReply } : {}),
+  }));
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  try {
+    const response = await fetch("https://api.line.me/v2/bot/message/reply", {
+      method: "POST", headers, body: JSON.stringify({ replyToken, messages }), signal: AbortSignal.timeout(10_000),
+    });
+    if (response.ok) return;
+    const detail = (await response.text()).slice(0, 1500);
+    const recipient = imageEvent?.source?.userId;
+    const eventId = imageEvent?.webhookEventId || imageEvent?.message?.id;
+    if (response.status === 400 && /invalid reply token/i.test(detail) && recipient &&
+        recipient === process.env.LINE_ALLOWED_USER_ID && imageEvent?.source?.type === "user" &&
+        !imageEvent.deliveryContext?.isRedelivery && eventId) {
+      const hash = createHash("sha256").update("line-image-receipt:" + eventId).digest();
+      hash[6] = (hash[6] & 15) | 0x40;
+      hash[8] = (hash[8] & 63) | 0x80;
+      const retryKey = hash.subarray(0, 16).toString("hex").replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, "$1-$2-$3-$4-$5");
+      const pushed = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST", headers: { ...headers, "X-Line-Retry-Key": retryKey },
+        body: JSON.stringify({ to: recipient, messages }), signal: AbortSignal.timeout(10_000),
+      });
+      if (pushed.ok || (pushed.status === 409 && pushed.headers.has("x-line-accepted-request-id"))) return;
+      throw new Error(`LINE 圖片通知傳送失敗（${pushed.status}）`);
     }
-    throw new Error(`LINE 回覆失敗（${response.status}）${detail ? `：${detail}` : ""}`);
+    throw new Error(`LINE 回覆失敗（${response.status}）：${detail}`);
+  } catch (cause) {
+    const error = new Error(cause instanceof Error ? cause.message : "LINE 通知尚未送達", { cause });
+    error.name = "LineReplyDeliveryError";
+    throw error;
   }
 }
 

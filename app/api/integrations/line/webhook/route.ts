@@ -10,6 +10,8 @@ import {
   saveCaptureInitialReflection,
   saveCaptureEntry,
 } from "@/lib/dojo/captureStore";
+import { readLineImageBatch, setLineImageBatch, withLineImageBatchLock } from "@/lib/dojo/lineImageBatch";
+import { randomUUID } from "node:crypto";
 import { receiveLinePages } from "@/lib/reading/clipStore";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
 import {
@@ -20,6 +22,7 @@ import {
   moveEnglishImageToCapture,
   routeEnglishImage,
   saveEnglishImageEntry,
+  updateEnglishImageEntry,
   undoLatestEnglishImageMerge,
 } from "@/lib/dojo/englishImageStore";
 import { routingEntryUrl, normalizeRoutingSelection } from "@/lib/dojo/englishImageRouting";
@@ -61,8 +64,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const IMAGE_BATCH_WINDOW_MS = 30 * 60_000;
-type ManualImageBatch = { entryId: string; expiresAt: number };
-const manualImageBatches = new Map<string, ManualImageBatch>();
 const lineWriteLocks = new Map<string, Promise<void>>();
 
 async function withLineWriteLock(key: string, task: () => Promise<void>): Promise<void> {
@@ -146,20 +147,24 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
     return true;
   }
   if (command === "最近一筆") {
-    const [images, captures] = await Promise.all([listEnglishImageEntries({includeReadingClips:true}), listCaptureEntries()]);
-    const image = images[0];
+    const [images, captures, batch] = await Promise.all([
+      listEnglishImageEntries({includeReadingClips:true}), listCaptureEntries(), readLineImageBatch(userId),
+    ]);
+    const activeImage = batch?.entryId ? images.find(item => item.id === batch.entryId && item.lineBatchState === "open") : undefined;
+    const image = activeImage || images[0];
     const capture = captures[0];
     if (!image && !capture) {
       await replyLineMessage(replyToken, "野採目前還沒有素材。可以先傳一張圖片或貼上一個網址。", captureImageQuickReply());
       return true;
     }
-    if (image && (!capture || image.capturedAt >= capture.capturedAt)) {
-      if (image.readingClip) {
-        await replyLineMessage(replyToken,"最近一筆是心知閱讀截圖，可開啟這組書頁繼續核對。",readingClipQuickReply(image.id));
+    if (image && (activeImage || !capture || image.capturedAt >= capture.capturedAt)) {
+      const { entry: saved } = await getEnglishImageEntry(image.id);
+      if (saved.readingClip) {
+        await replyImage(event,"最近一筆是心知閱讀截圖，可開啟這組書頁繼續核對。",readingClipQuickReply(saved.id));
         return true;
       }
-      const status = image.route === "pending" ? "待分類" : image.analysisStatus === "completed" ? "AI 已完成" : image.analysisStatus === "needs-review" ? "需要確認" : "尚待整理";
-      await replyLineMessage(replyToken, `最近一筆｜英文影像\n「${image.title}」\n${image.attachments.length} 張圖片\n狀態：${status}`, image.route === "pending" ? imageDraftQuickReply(image.id) : englishImageOrganizeQuickReply(image.id));
+      const status = saved.route === "pending" ? "待分類" : saved.analysisStatus === "completed" ? "AI 已完成" : saved.analysisStatus === "needs-review" ? "需要確認" : "尚待整理";
+      await replyImage(event, `最近一筆｜英文影像\n「${saved.title}」\n${saved.attachments.length} 張圖片\n狀態：${status}`, activeImage ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(saved.id) : englishImageOrganizeQuickReply(saved.id));
       return true;
     }
     if (capture) {
@@ -401,6 +406,10 @@ async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCap
   await replyLineMessage(token, `已剪藏｜Threads\n${status}${post ? "\n\n" + post.text.slice(0, 320) : ""}`, clipQuickReply(saved.id, !saved.clip.attachments.length, true));
 }
 
+function replyImage(event: LineWebhookEvent, text: string, quickReply?: Parameters<typeof replyLineMessage>[2]) {
+  return replyLineMessage(event.replyToken ?? "", text, quickReply, event);
+}
+
 async function handleImage(event: LineWebhookEvent, userId: string): Promise<void> {
   const messageId = event.message?.id ?? "";
   if (!messageId) throw new Error("LINE 圖片缺少 message id");
@@ -409,17 +418,24 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
   const duplicateCapture = captures.find((capture) => capture.clip.attachments.some((item) => item.sourceMessageId === messageId));
   const duplicateEnglish = englishImages.find((entry) => entry.externalMessageId === messageId || entry.attachments.some((attachment) => attachment.sourceMessageId === messageId));
   if (duplicateCapture) {
-    await replyLineMessage(event.replyToken ?? "", `這張截圖已經保存於「${duplicateCapture.title}」。`, clipQuickReply(duplicateCapture.id, false));
+    await replyImage(event, `這張截圖已經保存於「${duplicateCapture.title}」。`, clipQuickReply(duplicateCapture.id, false));
     return;
   }
   if (duplicateEnglish) {
     const entryId = duplicateEnglish.mergedIntoId || duplicateEnglish.id;
-    if(duplicateEnglish.readingClip) {
-      await receiveLinePages((await getEnglishImageEntry(entryId)).entry);
-      await replyLineMessage(event.replyToken ?? "","這張原圖已送到心知，可繼續核對。",readingClipQuickReply(entryId));
+    const { entry: saved } = await getEnglishImageEntry(entryId);
+    const attachment = saved.attachments.find(item => item.sourceMessageId === messageId);
+    if (!attachment || attachment.blockId === "pending") throw new Error("尚未核對 LINE 原圖");
+    const batch = await readLineImageBatch(userId);
+    if (batch && !batch.entryId && batch.sessionId && saved.lineImageSetId === "manual:" + batch.sessionId && saved.lineBatchState === "open" && !saved.mergedIntoId) {
+      await setLineImageBatch(userId, { ...batch, entryId: saved.id });
+    }
+    if(saved.readingClip) {
+      await receiveLinePages(saved);
+      await replyImage(event,"這張原圖已送到心知，可繼續核對。",readingClipQuickReply(entryId));
       return;
     }
-    await replyLineMessage(event.replyToken ?? "", `這張圖片已經保存於野採英文影像「${duplicateEnglish.title}」。`, duplicateEnglish.route === "pending" ? imageDraftQuickReply(entryId) : englishImageOrganizeQuickReply(entryId));
+    await replyImage(event, `這張圖片已經保存於野採英文影像「${duplicateEnglish.title}」。`, saved.lineBatchState === "open" && batch && (batch.entryId === saved.id || (batch.sessionId && saved.lineImageSetId === "manual:" + batch.sessionId)) ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(entryId) : englishImageOrganizeQuickReply(entryId));
     return;
   }
 
@@ -432,7 +448,7 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
   const image = await fetchLineImage(messageId);
   if (capture) {
     capture = await appendCaptureImage({ capture, bytes: image.bytes, mimeType: image.mimeType, filename: imageFilename(messageId, image.mimeType), sourceMessageId: messageId });
-    await replyLineMessage(event.replyToken ?? "", `截圖已補到「${capture.title}」，網址與原圖保存在同一筆素材。`, clipQuickReply(capture.id, false));
+    await replyImage(event, `截圖已補到「${capture.title}」，網址與原圖保存在同一筆素材。`, clipQuickReply(capture.id, false));
     return;
   }
 
@@ -444,15 +460,15 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
   // An explicitly opened batch takes precedence over LINE imageSet ids. LINE
   // commonly splits a single selection of more than ten images into several
   // image sets; the explicit user action is the reliable grouping boundary.
-  const manualBatch = manualImageBatches.get(userId);
-  if (manualBatch && manualBatch.expiresAt > Date.now()) {
-    await withLineWriteLock(`manual:${userId}`, async () => {
-      const currentBatch = manualImageBatches.get(userId) ?? manualBatch;
-      let entry: EnglishImageEntry | null = null;
-      if (currentBatch.entryId) {
-        try { entry = (await getEnglishImageEntry(currentBatch.entryId)).entry; }
-        catch { entry = null; }
-      }
+  const currentBatch = await readLineImageBatch(userId);
+  if (currentBatch && (!event.timestamp || !currentBatch.startedAt || event.timestamp >= currentBatch.startedAt)) {
+    const sessionKey = currentBatch.sessionId ? "manual:" + currentBatch.sessionId : "";
+    let entry = currentBatch.entryId ? (await getEnglishImageEntry(currentBatch.entryId)).entry
+      : sessionKey ? englishImages.find(item => item.lineImageSetId === sessionKey && !item.mergedIntoId) : undefined;
+    if (entry && (entry.mergedIntoId || entry.lineBatchState !== "open" ||
+        (entry.route !== "pending" && !currentBatch.sessionId?.startsWith("continue:")))) {
+      await setLineImageBatch(userId, null);
+    } else {
       if (entry) {
         entry = await appendEnglishImageAttachment({
           entry,
@@ -468,36 +484,38 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
           filename: imageFilename(messageId, image.mimeType),
           sourceMessageId: messageId,
           externalEventId: event.webhookEventId ?? "",
+          lineImageSetId: sessionKey,
           lineBatchState: "open",
           lineBatchUntil: new Date(Date.now() + IMAGE_BATCH_WINDOW_MS).toISOString(),
         });
       }
       if (entry.readingClip) {
         await receiveLinePages(entry);
-        manualImageBatches.delete(userId);
-        await replyLineMessage(event.replyToken ?? "", "書頁已加入心知的同一組。", readingClipQuickReply(entry.id));
+        await setLineImageBatch(userId, null);
+        await replyImage(event, "書頁已加入心知的同一組。", readingClipQuickReply(entry.id));
         return;
       }
       const expiresAt = Date.now() + IMAGE_BATCH_WINDOW_MS;
-      entry = await saveEnglishImageEntry({ ...entry, lineBatchState: "open", lineBatchUntil: new Date(expiresAt).toISOString() });
-      manualImageBatches.set(userId, { entryId: entry.id, expiresAt });
-
-      // Keep LINE quiet while it is still delivering one native image set.
-      // A progress message at each native set boundary keeps the finish button
-      // available without replying once per image.
-      const reachedNativeSetEnd = !imageSetId || imageSetTotal <= 1 || (imageSetIndex ?? 0) >= imageSetTotal;
-      if (reachedNativeSetEnd) {
-        await replyLineMessage(event.replyToken ?? "", `已加入目前圖片組，現在共有 ${entry.attachments.length} 張。全部傳完後請按「完成這組」。`, imageBatchCollectQuickReply(entry.id));
+      const nativeSetProgress = { ...currentBatch.nativeSetProgress };
+      let reachedNativeSetEnd = true;
+      if (imageSetId && imageSetTotal > 1 && imageSetIndex) {
+        const received = new Set(nativeSetProgress[imageSetId] || []);
+        received.add(imageSetIndex);
+        reachedNativeSetEnd = received.size >= imageSetTotal;
+        if (reachedNativeSetEnd) delete nativeSetProgress[imageSetId];
+        else nativeSetProgress[imageSetId] = [...received];
       }
-    });
-    return;
+      await setLineImageBatch(userId, { ...currentBatch, entryId: entry.id, expiresAt, nativeSetProgress });
+      if (reachedNativeSetEnd) {
+        await replyImage(event, `已加入目前圖片組，現在共有 ${entry.attachments.length} 張。全部傳完後請按「完成這組」。`, imageBatchCollectQuickReply(entry.id));
+      }
+      return;
+    }
   }
-  manualImageBatches.delete(userId);
 
   if (imageSetId && imageSetTotal > 1) {
     await withLineWriteLock(imageSetId, async () => {
-      const currentEntries = await listEnglishImageEntries({ includeMerged: true, includeReadingClips: true });
-      let entry = currentEntries.find((item) => item.lineImageSetId === imageSetId && !item.mergedIntoId);
+      let entry = englishImages.find((item) => item.lineImageSetId === imageSetId && !item.mergedIntoId);
       if (entry) {
         entry = await appendEnglishImageAttachment({
           entry,
@@ -524,13 +542,13 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
       if (entry.readingClip) {
         await receiveLinePages(entry);
         if (entry.attachments.length >= imageSetTotal) {
-          await replyLineMessage(event.replyToken ?? "", "書頁已加入心知的同一組。", readingClipQuickReply(entry.id));
+          await replyImage(event, "書頁已加入心知的同一組。", readingClipQuickReply(entry.id));
         }
         return;
       }
       if (entry.attachments.length >= imageSetTotal) {
-        entry = await saveEnglishImageEntry({ ...entry, lineBatchState: "closed", lineBatchUntil: null });
-        await replyLineMessage(event.replyToken ?? "", `已收到完整圖片組，共 ${entry.attachments.length} 張。請選擇這組素材的類型；選擇後才會開始 AI 分析。`, imageDraftQuickReply(entry.id));
+        entry = await updateEnglishImageEntry(entry.id, () => ({ lineBatchState: "closed", lineBatchUntil: null }));
+        await replyImage(event, `已收到完整圖片組，共 ${entry.attachments.length} 張。請選擇這組素材的類型；選擇後才會開始 AI 分析。`, imageDraftQuickReply(entry.id));
       }
     });
     return;
@@ -544,20 +562,35 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
     externalEventId: event.webhookEventId ?? "",
     lineBatchState: "closed",
   });
-  await replyLineMessage(event.replyToken ?? "", "圖片已獨立保存到野採。若還有相關畫面，請按「繼續補這組」；這張圖記錄的是哪種素材？系統不會再自動合併上一張。", imageDraftQuickReply(entry.id));
+  await replyImage(event, "圖片已獨立保存到野採。若還有相關畫面，請按「繼續補這組」；這張圖記錄的是哪種素材？系統不會再自動合併上一張。", imageDraftQuickReply(entry.id));
 }
 
 async function handlePostback(event: LineWebhookEvent, userId: string): Promise<void> {
   const params = new URLSearchParams(event.postback?.data ?? "");
   const action = params.get("action");
   if (action === "imageBatchStart") {
-    manualImageBatches.set(userId, { entryId: "", expiresAt: Date.now() + IMAGE_BATCH_WINDOW_MS });
-    await replyLineMessage(event.replyToken ?? "", "已開啟新的大型圖片組（30 分鐘）。接下來即使 LINE 把一次選取拆成數批，也會加入同一筆；全部傳完後按「完成這組」。", imageBatchCollectQuickReply());
+    const sessionId = event.webhookEventId || randomUUID();
+    const existing = await readLineImageBatch(userId);
+    if ((existing?.startedAt && event.timestamp && event.timestamp < existing.startedAt) ||
+        (event.deliveryContext?.isRedelivery && existing?.sessionId !== sessionId)) {
+      await replyImage(event, "這張收圖卡已經失效。請用目前的收圖卡或輸入「最近一筆」。", basicLineMenuQuickReply());
+      return;
+    }
+    if (existing?.sessionId !== sessionId) {
+      await setLineImageBatch(userId, { entryId: "", expiresAt: Date.now() + IMAGE_BATCH_WINDOW_MS, sessionId, startedAt: event.timestamp || Date.now() });
+    }
+    await replyImage(event, "已開啟新的大型圖片組（30 分鐘）。傳完所有相關圖片後按「完成這組」。", imageBatchCollectQuickReply(existing?.sessionId === sessionId ? existing.entryId : undefined, sessionId));
     return;
   }
   if (action === "imageBatchCancel") {
-    manualImageBatches.delete(userId);
-    await replyLineMessage(event.replyToken ?? "", "已停止收圖，尚未上傳任何圖片。", basicLineMenuQuickReply());
+    const current = await readLineImageBatch(userId);
+    if (!current || !params.get("sessionId") || current.sessionId !== params.get("sessionId")) {
+      await replyImage(event, "這張收圖卡已經失效。請輸入「最近一筆」查看已保存的圖片。", basicLineMenuQuickReply());
+      return;
+    }
+    if (current.entryId) await updateEnglishImageEntry(current.entryId, () => ({ lineBatchState: "closed", lineBatchUntil: null }));
+    await setLineImageBatch(userId, null);
+    await replyImage(event, "已停止收圖。已經收到的圖片可從「最近一筆」查看。", basicLineMenuQuickReply());
     return;
   }
   if (action?.startsWith("image") && action !== "imageRoute") {
@@ -566,24 +599,33 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     let entry;
     try { entry = (await getEnglishImageEntry(entryId)).entry; }
     catch {
-      await replyLineMessage(event.replyToken ?? "", "找不到這筆英文影像，可能已經被移動或移除。");
+      await replyImage(event, "找不到這筆英文影像，可能已經被移動或移除。");
       return;
     }
     if (entry.readingClip) {
-      await replyLineMessage(event.replyToken ?? "","這組書頁已送到心知。",readingClipQuickReply(entry.id));
+      await replyImage(event,"這組書頁已送到心知。",readingClipQuickReply(entry.id));
       return;
     }
     if (action === "imageBatchContinue") {
+      if (entry.mergedIntoId) {
+        await replyImage(event, "這張圖片已經合併到另一組，可從「最近一筆」查看。", basicLineMenuQuickReply());
+        return;
+      }
       const expiresAt = Date.now() + IMAGE_BATCH_WINDOW_MS;
-      const updated = await saveEnglishImageEntry({ ...entry, lineBatchState: "open", lineBatchUntil: new Date(expiresAt).toISOString() });
-      manualImageBatches.set(userId, { entryId: updated.id, expiresAt });
-      await replyLineMessage(event.replyToken ?? "", `已開啟「${updated.title}」的補圖模式，目前 ${updated.attachments.length} 張。接下來只會加入這一組。`, imageBatchCollectQuickReply(updated.id));
+      const current = await readLineImageBatch(userId);
+      if (current && current.entryId !== entry.id) {
+        await replyImage(event, "目前已有另一組正在收圖。請先完成目前的圖片組。", imageBatchCollectQuickReply(current.entryId, current.sessionId));
+        return;
+      }
+      const updated = await updateEnglishImageEntry(entry.id, () => ({ lineBatchState: "open", lineBatchUntil: new Date(expiresAt).toISOString() }));
+      await setLineImageBatch(userId, { entryId: updated.id, expiresAt, sessionId: current?.sessionId?.startsWith("continue:") ? current.sessionId : "continue:" + (event.webhookEventId || randomUUID()), startedAt: current?.startedAt || event.timestamp || Date.now() });
+      await replyImage(event, `已開啟「${updated.title}」的補圖模式，目前 ${updated.attachments.length} 張。接下來只會加入這一組。`, imageBatchCollectQuickReply(updated.id));
       return;
     }
     if (action === "imageBatchFinish") {
-      const updated = await saveEnglishImageEntry({ ...entry, lineBatchState: "closed", lineBatchUntil: null });
-      manualImageBatches.delete(userId);
-      await replyLineMessage(event.replyToken ?? "", `這組已完成，共 ${updated.attachments.length} 張。請選擇素材類型；選擇後才會開始 AI 分析。`, imageDraftQuickReply(updated.id));
+      const updated = await updateEnglishImageEntry(entry.id, () => ({ lineBatchState: "closed", lineBatchUntil: null }));
+      if ((await readLineImageBatch(userId))?.entryId === entry.id) await setLineImageBatch(userId, null);
+      await replyImage(event, `這組已完成，共 ${updated.attachments.length} 張。請選擇素材類型；選擇後才會開始 AI 分析。`, imageDraftQuickReply(updated.id));
       return;
     }
     if (action === "imageInput") {
@@ -773,45 +815,60 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     const {entry}=await getEnglishImageEntry(entryId).catch(()=>({entry:null}));
     if (entry?.readingClip) {
       await receiveLinePages(entry);
-      await replyLineMessage(event.replyToken ?? "","這組書頁已送到心知。",readingClipQuickReply(entry.id));
+      await replyImage(event,"這組書頁已送到心知。",readingClipQuickReply(entry.id));
       return;
     }
     if (!entry || entry.mergedIntoId) {
-      await replyLineMessage(event.replyToken ?? "", "找不到這筆圖片，可能已經被移動或移除。");
+      await replyImage(event, "找不到這筆圖片，可能已經被移動或移除。");
       return;
     }
-    manualImageBatches.delete(userId);
+    async function applyRoute<T>(change: (latest: EnglishImageEntry) => Promise<T>) {
+      return withLineImageBatchLock(userId, async () => {
+        const { entry: latest } = await getEnglishImageEntry(entryId);
+        if (latest.mergedIntoId) throw new Error("這筆圖片已合併");
+        const result = await change(latest);
+        if ((await readLineImageBatch(userId))?.entryId === entryId) await setLineImageBatch(userId, null);
+        return result;
+      });
+    }
     if (route === "xinzhi") {
       if(entry.route!=="pending") {
-        await replyLineMessage(event.replyToken ?? "","這組圖片已經選作英文學習素材。",englishImageOrganizeQuickReply(entry.id));
+        await replyImage(event,"這組圖片已經選作英文學習素材。",englishImageOrganizeQuickReply(entry.id));
         return;
       }
       try {
-        const routed = await saveEnglishImageEntry({
-          ...entry, readingClip: true, title: "心知閱讀截圖", status: "organized",
+        const routed = await applyRoute(latest => saveEnglishImageEntry({
+          ...latest, readingClip: true, title: "心知閱讀截圖", status: "organized",
           lineBatchState: "closed", lineBatchUntil: null, awaitingContextUntil: null,
-        });
+        }));
         await receiveLinePages(routed);
       } catch {
-        await replyLineMessage(event.replyToken ?? "","原圖還在野採，送往心知尚未完成。請再點一次「心知閱讀截圖」。",imageDraftQuickReply(entry.id));
+        await replyImage(event,"原圖還在野採，送往心知尚未完成。請再點一次「心知閱讀截圖」。",imageDraftQuickReply(entry.id));
         return;
       }
-      await replyLineMessage(event.replyToken ?? "",`已收到 ${entry.attachments.length} 張閱讀截圖。打開心知即可核對原文、選書和存筆記。`,readingClipQuickReply(entry.id));
+      await replyImage(event,`已收到 ${entry.attachments.length} 張閱讀截圖。打開心知即可核對原文、選書和存筆記。`,readingClipQuickReply(entry.id));
       return;
     }
     if (route === "capture") {
-      const capture = await moveEnglishImageToCapture(entry);
-      await replyLineMessage(event.replyToken ?? "", "已轉成一般素材，並留在野採採集匣。", clipQuickReply(capture.id, false));
+      const capture = await applyRoute(moveEnglishImageToCapture);
+      await replyImage(event, "已轉成一般素材，並留在野採採集匣。", clipQuickReply(capture.id, false));
       return;
     }
     if (isEnglishImageLearningRoute(route)) {
-      const routed = await routeEnglishImage(entry, route);
-      const analyzed = await analyzeEnglishImage(routed.id);
+      const routed = await applyRoute(latest => routeEnglishImage(latest, route));
+      let analyzed;
+      try {
+        analyzed = await analyzeEnglishImage(routed.id);
+      } catch (error) {
+        console.error("LINE image analysis failed", routed.id, error instanceof Error ? error.message : String(error));
+        await replyImage(event, `這組 ${routed.attachments.length} 張原圖已保存。AI 分析尚未完成，可從「最近一筆」開啟素材，再按「重新分析」。`, englishImageOrganizeQuickReply(routed.id));
+        return;
+      }
       const label = englishImageRouteLabel(route);
       if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
-        await replyLineMessage(event.replyToken ?? "", lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id));
+        await replyImage(event, lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id));
       } else {
-        await replyLineMessage(event.replyToken ?? "", `已放進「${label}」，原圖已保存。\nAI 暫時未完成：${analyzed.analysisError || "稍後可在英文影像匣重新分析"}`, englishImageOrganizeQuickReply(analyzed.id));
+        await replyImage(event, `已放進「${label}」，原圖已保存。\nAI 暫時未完成：${analyzed.analysisError || "稍後可在英文影像匣重新分析"}`, englishImageOrganizeQuickReply(analyzed.id));
       }
       return;
     }
@@ -869,8 +926,12 @@ async function handleEvent(event: LineWebhookEvent, allowedUserId: string): Prom
   }
   if (userId !== allowedUserId) return;
   if (event.type === "message" && event.message?.type === "text") return handleText(event, userId);
-  if (event.type === "message" && event.message?.type === "image") return handleImage(event, userId);
-  if (event.type === "postback") return handlePostback(event, userId);
+  if (event.type === "message" && event.message?.type === "image") return withLineImageBatchLock(userId, () => handleImage(event, userId));
+  if (event.type === "postback") {
+    const action = new URLSearchParams(event.postback?.data).get("action");
+    if (action?.startsWith("imageBatch")) return withLineImageBatchLock(userId, () => handlePostback(event, userId));
+    return handlePostback(event, userId);
+  }
   if (event.type === "message") {
     await replyLineMessage(event.replyToken ?? "", "目前只接收網頁網址與截圖。其他素材可以先留在原本的 LINE 收藏處。");
   }
@@ -925,9 +986,9 @@ export async function POST(req: NextRequest) {
   // seconds. Image analysis and external integrations can take longer, so keep
   // the work alive after the HTTP response has already been returned.
   after(async () => {
-    try {
-      for (const event of body.events ?? []) {
-        const eventId = event.webhookEventId ?? event.message?.id ?? "";
+    for (const event of body.events ?? []) {
+      const eventId = event.webhookEventId ?? event.message?.id ?? "";
+      try {
         const performanceMessage=performanceReplies.get(eventId);
         if(performanceMessage){await replyLineMessage(event.replyToken??"",performanceMessage,basicLineMenuQuickReply());continue}
         const intake = bankIntakes.get(eventId);
@@ -939,9 +1000,15 @@ export async function POST(req: NextRequest) {
         } catch {
           await replyLineMessage(event.replyToken ?? "", "銀行截圖已安全保存，但辨識暫時未完成；稍後可到財富待辦匣安全重試。", basicLineMenuQuickReply());
         }
+      } catch (error) {
+        console.error("LINE clipping event failed", eventId, error instanceof Error ? error.message : String(error));
+        const ordinaryImage = event.type === "message" && event.message?.type === "image" && !bankIntakes.has(eventId);
+        const imageAction = event.type === "postback" && new URLSearchParams(event.postback?.data).get("action")?.startsWith("image");
+        if ((ordinaryImage || imageAction) && event.source?.userId === allowedUserId && !(error instanceof Error && error.name === "LineReplyDeliveryError")) {
+          await replyImage(event, imageAction ? "這次圖片操作尚未完成。請輸入「最近一筆」查看保存狀態並重試。" : "這張圖片尚未核對完成。請輸入「最近一筆」查看已保存的張數，再補傳缺少的圖片。", basicLineMenuQuickReply())
+            .catch(deliveryError => console.error("LINE image receipt failed", eventId, deliveryError instanceof Error ? deliveryError.message : String(deliveryError)));
+        }
       }
-    } catch (error) {
-      console.error("LINE clipping webhook background processing failed", error instanceof Error ? error.message : String(error));
     }
   });
 

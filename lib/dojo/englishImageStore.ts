@@ -1,8 +1,9 @@
 import "server-only";
+import { createHash } from "node:crypto";
 
 import { createKnowledgeEntry, updateKnowledgeEntry } from "@/lib/notion/mutations";
 import { getKnowledgeEntry } from "@/lib/notion/queries";
-import { notion, withNotionRateLimit } from "@/lib/notion/client";
+import { notion, notionWithoutRetries, withNotionRateLimit } from "@/lib/notion/client";
 import { captureContent, captureRecordTitle, normalizeCaptureEntry } from "./formal";
 import {
   ENGLISH_IMAGE_TITLE_PREFIX,
@@ -18,18 +19,40 @@ import {
 import { listJsonRecords, updateJsonRecordById } from "./notionStore";
 import { withIntegrationMutationLease } from "./integrationMutationLease";
 
-async function firstImageBlockId(pageId: string): Promise<string | null> {
+async function firstImageBlockId(pageId: string, caption?: string): Promise<string | null> {
   let cursor: string | undefined;
   do {
     const response = await withNotionRateLimit(() => notion().blocks.children.list({ block_id: pageId, start_cursor: cursor, page_size: 100 }));
-    const image = response.results.find((block) => "type" in block && block.type === "image");
+    const image = response.results.find((block) => "type" in block && block.type === "image" &&
+      (!caption || block.image.caption?.some(part => part.plain_text === caption)));
     if (image) return image.id;
     cursor = response.has_more && response.next_cursor ? response.next_cursor : undefined;
   } while (cursor);
   return null;
 }
 
-async function repairPendingAttachments(entry: EnglishImageEntry, title: string): Promise<EnglishImageEntry> {
+async function uploadLineImage(params: { filename: string; mimeType: string; bytes: ArrayBuffer; sourceMessageId: string }) {
+  const upload = await withNotionRateLimit(() => notion().fileUploads.create({ mode: "single_part", filename: params.filename, content_type: params.mimeType }));
+  await withNotionRateLimit(() => notion().fileUploads.send({
+    file_upload_id: upload.id,
+    file: { filename: params.filename, data: new Blob([params.bytes], { type: params.mimeType }) },
+  }));
+  return {
+    object: "block" as const,
+    type: "image" as const,
+    image: {
+      type: "file_upload" as const,
+      file_upload: { id: upload.id },
+      caption: [{ type: "text" as const, text: { content: imageCaption(params.sourceMessageId) } }],
+    },
+  };
+}
+
+function imageCaption(messageId: string) {
+  return "LINE 英文影像原圖 · " + createHash("sha256").update(messageId).digest("hex").slice(0, 24);
+}
+
+async function repairPendingAttachments(entry: EnglishImageEntry): Promise<EnglishImageEntry> {
   if (!entry.attachments.some((attachment) => attachment.blockId === "pending")) return entry;
   const rows = await listJsonRecords(ENGLISH_IMAGE_TITLE_PREFIX);
   const mergedChildren = rows.flatMap((row) => {
@@ -41,11 +64,22 @@ async function repairPendingAttachments(entry: EnglishImageEntry, title: string)
     const blockId = await firstImageBlockId(owner.id);
     return blockId ? { ...owner.attachment, blockId } : null;
   }));
-  const attachments = recovered.filter((attachment): attachment is NonNullable<typeof attachment> => Boolean(attachment));
+  const attachments = entry.attachments.map(attachment => {
+    if (attachment.blockId !== "pending") return attachment;
+    const found = recovered.find(item => item && (attachment.sourceMessageId
+      ? item.sourceMessageId === attachment.sourceMessageId
+      : item.id === attachment.id));
+    if (!found) throw new Error("尚未找到這組素材的所有原圖，請稍後再試");
+    return { ...attachment, blockId: found.blockId };
+  });
+  for (const item of recovered) {
+    if (item && !attachments.some(a => a.blockId === item.blockId)) attachments.push(item);
+  }
   if (!attachments.length) throw new Error("原圖仍在，但暫時找不到 Notion 圖片區塊；請稍後再試");
-  const repaired = normalizeEnglishImageEntry({ ...entry, attachment: attachments[0], attachments }, { id: entry.id, capturedAt: entry.capturedAt, touch: true });
+  // Resolve historical blocks for readers. Only a writer holding the entry
+  // lease may persist metadata or advance the revision used by other writers.
+  const repaired = normalizeEnglishImageEntry({ ...entry, attachment: attachments[0], attachments }, { id: entry.id, capturedAt: entry.capturedAt });
   if (!repaired) throw new Error("英文影像紀錄自動修復失敗");
-  await updateKnowledgeEntry(entry.id, { 標題: title, 內容: JSON.stringify(englishImageContent(repaired)) });
   return repaired;
 }
 
@@ -57,23 +91,28 @@ export async function listEnglishImageEntries(options: { includeMerged?: boolean
   }).filter((entry) => (options.includeMerged || !entry.mergedIntoId) && (options.includeReadingClips || !entry.readingClip)).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
 }
 
-export async function getEnglishImageEntry(id: string): Promise<{ entry: EnglishImageEntry; title: string }> {
+async function readEnglishImageRow(id: string): Promise<{ entry: EnglishImageEntry; title: string }> {
   const row = await getKnowledgeEntry(id);
   if (!row.標題.startsWith(ENGLISH_IMAGE_TITLE_PREFIX)) throw new Error("紀錄類型不符");
   let value: unknown;
   try { value = JSON.parse(row.內容); } catch { value = null; }
-  let entry = normalizeEnglishImageEntry(value, { id });
+  const entry = normalizeEnglishImageEntry(value, { id });
   if (!entry) throw new Error("英文影像紀錄無法讀取");
-  entry = await repairPendingAttachments(entry, row.標題);
   return { entry, title: row.標題 };
+}
+
+export async function getEnglishImageEntry(id: string): Promise<{ entry: EnglishImageEntry; title: string }> {
+  const row = await readEnglishImageRow(id);
+  return { title: row.title, entry: await repairPendingAttachments(row.entry) };
 }
 
 export async function saveEnglishImageEntry(entry: EnglishImageEntry): Promise<EnglishImageEntry> {
   return withIntegrationMutationLease(`english-image:${entry.id}`, async (guard) => {
-    const current = await getEnglishImageEntry(entry.id);
+    const current = await readEnglishImageRow(entry.id);
     if (entry.updatedAt && current.entry.updatedAt && entry.updatedAt !== current.entry.updatedAt)
       throw new Error("英文影像已由另一個流程更新，請重新讀取後再儲存");
-    const normalized = normalizeEnglishImageEntry(entry, { id: entry.id, capturedAt: current.entry.capturedAt, touch: true });
+    const resolved = await repairPendingAttachments(entry);
+    const normalized = normalizeEnglishImageEntry(resolved, { id: entry.id, capturedAt: current.entry.capturedAt, touch: true });
     if (!normalized) throw new Error("英文影像紀錄無法儲存");
     await guard.assertCurrent();
     await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
@@ -83,11 +122,13 @@ export async function saveEnglishImageEntry(entry: EnglishImageEntry): Promise<E
 
 export async function updateEnglishImageEntry(
   id: string,
-  update: (current: EnglishImageEntry) => Partial<EnglishImageEntry>
+  update: (current: EnglishImageEntry) => Partial<EnglishImageEntry> | Promise<Partial<EnglishImageEntry>>
 ): Promise<EnglishImageEntry> {
   return withIntegrationMutationLease(`english-image:${id}`, async (guard) => {
     const current = await getEnglishImageEntry(id);
-    const normalized = normalizeEnglishImageEntry({ ...current.entry, ...update(current.entry) }, { id, capturedAt: current.entry.capturedAt, touch: true });
+    const changes = await update(current.entry);
+    if (!Object.keys(changes).length) return current.entry;
+    const normalized = normalizeEnglishImageEntry({ ...current.entry, ...changes }, { id, capturedAt: current.entry.capturedAt, touch: true });
     if (!normalized) throw new Error("英文影像紀錄無法儲存");
     await guard.assertCurrent();
     await updateJsonRecordById(normalized.id, ENGLISH_IMAGE_TITLE_PREFIX, current.title, englishImageContent(normalized));
@@ -127,22 +168,18 @@ export async function createEnglishImageEntry(params: {
     attachment: { id: params.sourceMessageId || "pending", blockId: "pending", filename: params.filename, mimeType: params.mimeType, sourceMessageId: params.sourceMessageId, createdAt: now, batchIndex: params.batchIndex ?? null },
   }, { id: "pending" });
   if (!seed) throw new Error("無法建立英文影像紀錄");
-  const created = await createKnowledgeEntry({ 標題: englishImageRecordTitle(crypto.randomUUID()), 內容: JSON.stringify(englishImageContent(seed)) });
-
-  const upload = await withNotionRateLimit(() => notion().fileUploads.create({ mode: "single_part", filename: params.filename, content_type: params.mimeType }));
-  await withNotionRateLimit(() => notion().fileUploads.send({
-    file_upload_id: upload.id,
-    file: { filename: params.filename, data: new Blob([params.bytes], { type: params.mimeType }) },
-  }));
-  const response = await withNotionRateLimit(() => notion().blocks.children.append({
-    block_id: created.id,
-    children: [{ object: "block", type: "image", image: { type: "file_upload", file_upload: { id: upload.id }, caption: [{ type: "text", text: { content: "LINE 英文影像原圖" } }] } }],
-  }));
-  const block = response.results[0];
-  if (!block) throw new Error("圖片沒有成功附加到英文影像紀錄");
-  const attachment = { ...seed.attachment, id: block.id, blockId: block.id };
-  const entry = { ...seed, id: created.id, attachment, attachments: [attachment] };
-  return saveEnglishImageEntry(entry);
+  const image = await uploadLineImage(params);
+  // Create the page together with its image. Even a lost response leaves
+  // one recoverable source message and original on the same page.
+  const title = englishImageRecordTitle(crypto.randomUUID());
+  const created = await createKnowledgeEntry({ 標題: title, 內容: JSON.stringify(englishImageContent(seed)) }, {
+    retryCreate: false,
+    children: [image],
+  });
+  const blockId = await firstImageBlockId(created.id, imageCaption(params.sourceMessageId));
+  if (!blockId) throw new Error("尚未取得已上傳的圖片區塊；請從最近一筆核對");
+  const attachment = { ...seed.attachment, id: blockId, blockId };
+  return saveEnglishImageEntry({ ...seed, id: created.id, attachment, attachments: [attachment] });
 }
 
 export async function appendEnglishImageAttachment(params: {
@@ -156,29 +193,23 @@ export async function appendEnglishImageAttachment(params: {
   if (!params.mimeType.startsWith("image/")) throw new Error("LINE 傳入的檔案不是圖片");
   if (params.bytes.byteLength > 20 * 1024 * 1024) throw new Error("圖片超過 20 MB，暫時無法保存");
   if (params.entry.attachments.some((item) => item.sourceMessageId === params.sourceMessageId)) return params.entry;
-  const now = new Date().toISOString();
-  const upload = await withNotionRateLimit(() => notion().fileUploads.create({ mode: "single_part", filename: params.filename, content_type: params.mimeType }));
-  await withNotionRateLimit(() => notion().fileUploads.send({
-    file_upload_id: upload.id,
-    file: { filename: params.filename, data: new Blob([params.bytes], { type: params.mimeType }) },
-  }));
-  const response = await withNotionRateLimit(() => notion().blocks.children.append({
-    block_id: params.entry.id,
-    children: [{ object: "block", type: "image", image: { type: "file_upload", file_upload: { id: upload.id }, caption: [{ type: "text", text: { content: "LINE 英文影像原圖" } }] } }],
-  }));
-  const block = response.results[0];
-  if (!block) throw new Error("圖片沒有成功附加到英文影像紀錄");
-  const attachment: EnglishImageEntry["attachment"] = {
-    id: block.id,
-    blockId: block.id,
-    filename: params.filename,
-    mimeType: params.mimeType,
-    sourceMessageId: params.sourceMessageId,
-    createdAt: now,
-    batchIndex: params.batchIndex ?? null,
-  };
-  return updateEnglishImageEntry(params.entry.id, (current) => {
+  return updateEnglishImageEntry(params.entry.id, async (current) => {
     if (current.attachments.some((item) => item.sourceMessageId === params.sourceMessageId)) return {};
+    // The block might already exist after a timeout between binary attachment
+    // and metadata persistence. Bind it to its message before creating another.
+    let blockId = await firstImageBlockId(current.id, imageCaption(params.sourceMessageId));
+    if (!blockId) {
+      const image = await uploadLineImage(params);
+      const response = await withNotionRateLimit(() => notionWithoutRetries().blocks.children.append({
+        block_id: current.id, children: [image],
+      }), { retry: false });
+      blockId = response.results[0]?.id || null;
+    }
+    if (!blockId) throw new Error("圖片沒有成功附加到英文影像紀錄");
+    const attachment: EnglishImageEntry["attachment"] = {
+      id: blockId, blockId, filename: params.filename, mimeType: params.mimeType,
+      sourceMessageId: params.sourceMessageId, createdAt: new Date().toISOString(), batchIndex: params.batchIndex ?? null,
+    };
     const attachments = [...current.attachments, attachment]
       .map((item, originalIndex) => ({ item, originalIndex }))
       .sort((a, b) => {
