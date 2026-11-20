@@ -25,7 +25,13 @@ export function calculateRequestFingerprint(body: Record<string, unknown>): stri
   return sha256(stableJson(payload));
 }
 
+export function assertGameLearningReady(entry: EnglishImageEntry) {
+  if (entry.route === "game" && entry.gameLearningMode && !entry.gameLearning)
+    throw new Error("這組遊戲圖片的逐圖教材尚未完成，請先重新分析。");
+}
+
 export function sourceContent(entry: EnglishImageEntry) {
+  assertGameLearningReady(entry);
   return {
     source: {
       system: "lumen-dojo",
@@ -50,6 +56,7 @@ export function sourceContent(entry: EnglishImageEntry) {
       chineseUnderstanding: entry.chineseExplanation,
       contextNote: entry.contextNote,
       uncertaintyNote: entry.analysisReviewReason,
+      ...(entry.route === "game" && entry.gameLearning ? { gameLearning: entry.gameLearning } : {}),
     },
   };
 }

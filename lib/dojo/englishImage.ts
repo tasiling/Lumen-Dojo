@@ -82,11 +82,33 @@ export type EnglishImageAttachment = {
   batchIndex: number | null;
 };
 
+export type GameLearningMode = "auto" | "interface" | "story";
+
+export type GameLearningScreen = {
+  index: number;
+  kind: "interface" | "story";
+  title: string;
+  labels: Array<{ text: string; meaning: string }>;
+  operation: string;
+  restriction: string;
+  consequence: string;
+  evidence: string;
+  unit: string;
+};
+
+export type GameLearning = {
+  kind: "interface" | "story" | "mixed";
+  screens: GameLearningScreen[];
+};
+
 export type EnglishImageEntry = {
   version: 2;
   recordType: "english-image-entry";
   id: string;
   route: EnglishImageRoute;
+  gameLearningMode?: GameLearningMode;
+  gameLearning?: GameLearning | null;
+  gameLearningSourceIds?: string[];
   readingClip?: true;
   status: EnglishImageStatus;
   title: string;
@@ -157,7 +179,7 @@ export function withEnglishImageStatus(entry: EnglishImageEntry, status: English
 }
 
 export function englishImageRouteLabel(route: EnglishImageRoute): string {
-  if (route === "game") return "遊戲事件";
+  if (route === "game") return "遊戲英文";
   if (route === "field") return "現場經歷";
   if (route === "video") return "影音／逐字稿";
   if (route === "daily") return "英文日常";
@@ -168,6 +190,30 @@ export function englishImageRouteLabel(route: EnglishImageRoute): string {
 
 function text(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+/** One lesson page per original, in the same order as the protected attachments. */
+function normalizeGameLearning(source: Partial<EnglishImageEntry>, attachmentIds: string[]): GameLearning | null {
+  const value = source.gameLearning;
+  if (!value || !Array.isArray(value.screens) || value.screens.length !== attachmentIds.length) return null;
+  const savedIds = source.gameLearningSourceIds;
+  if (savedIds !== undefined && (!Array.isArray(savedIds) || (savedIds.length > 0 &&
+    (savedIds.length !== attachmentIds.length || savedIds.some((id, index) => id !== attachmentIds[index]))))) return null;
+  const screens: GameLearningScreen[] = [];
+  for (const [position, screen] of value.screens.entries()) {
+    if (!screen || screen.index !== position + 1 || (screen.kind !== "interface" && screen.kind !== "story")) return null;
+    const labels = Array.isArray(screen.labels) ? screen.labels.flatMap(label => {
+      const original = text(label?.text, 300);
+      return original ? [{ text: original, meaning: text(label.meaning, 500) }] : [];
+    }) : [];
+    screens.push({
+      index: screen.index, kind: screen.kind, title: text(screen.title, 350), unit: text(screen.unit, 250),
+      labels, operation: text(screen.operation, 1000), restriction: text(screen.restriction, 1000),
+      consequence: text(screen.consequence, 1000), evidence: text(screen.evidence, 1600),
+    });
+  }
+  const kinds = new Set(screens.map(screen => screen.kind));
+  return { kind: kinds.size > 1 ? "mixed" : screens[0].kind, screens };
 }
 
 function iso(value: unknown, fallback: string): string {
@@ -217,6 +263,8 @@ export function normalizeEnglishImageEntry(
   if (!blockId) return null;
   const capturedAt = iso(source.capturedAt, params.capturedAt ?? now);
   const route: EnglishImageRoute = isEnglishImageLearningRoute(source.route) ? source.route : "pending";
+  const attachmentIds = attachments.map(item => item.blockId);
+  const gameLearning = route === "game" ? normalizeGameLearning(source, attachmentIds) : null;
   const analysisStatus: EnglishImageAnalysisStatus =
     source.analysisStatus === "processing" || source.analysisStatus === "completed" ||
     source.analysisStatus === "needs-review" || source.analysisStatus === "failed"
@@ -232,6 +280,10 @@ export function normalizeEnglishImageEntry(
     id: params.id,
     ...(source.readingClip === true ? {readingClip:true as const} : {}),
     route,
+    ...(route === "game" ? {
+      ...(["auto", "interface", "story"].includes(source.gameLearningMode ?? "") ? { gameLearningMode: source.gameLearningMode } : {}),
+      ...(gameLearning ? { gameLearning, gameLearningSourceIds: attachmentIds } : {}),
+    } : {}),
     status: source.status === "organized" ? "organized" : "inbox",
     title: text(source.title, 300) || (route === "pending" ? "待分類英文影像" : englishImageRouteLabel(route)),
     sourceLabel: text(source.sourceLabel, 300),

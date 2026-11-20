@@ -8,10 +8,21 @@ import { LEARNING_USAGE_PROMPT, learningUsageIssues } from "./englishImageLearni
 const INPUT_USD_PER_MILLION = 0.2;
 const OUTPUT_USD_PER_MILLION = 1.2;
 const ANALYSIS_IMAGE_CHUNK_SIZE = 10;
+const GAME_IMAGE_CHUNK_SIZE = 5;
 const VOCABULARY_KEY_CACHE_MS = 10 * 60_000;
 let vocabularyKeyCache: { keys: string[]; expiresAt: number } | null = null;
 
+type GameLesson = NonNullable<EnglishImageEntry["gameLearning"]>;
+type GameScreen = GameLesson["screens"][number];
+type VisionScreen = GameScreen & {
+  ocrText: string;
+  restrictionEvidence: string;
+  consequenceEvidence: string;
+  consequenceBasis: "visible" | "inferred" | "unknown";
+};
+
 type AnalysisResult = {
+  gameScreens?: VisionScreen[];
   sourceLabel: string;
   ocrText: string;
   englishRecord: string;
@@ -83,6 +94,41 @@ const ANALYSIS_SCHEMA = {
   },
 };
 
+function gameAnalysisSchema(indices: number[]) {
+  const string = { type: "string" };
+  const label = {
+    type: "object", additionalProperties: false, required: ["text", "meaning"],
+    properties: { text: string, meaning: string },
+  };
+  const properties = {
+    index: { type: "integer", enum: indices }, kind: { type: "string", enum: ["interface", "story"] },
+    title: string, unit: string, ocrText: string, evidence: string,
+    labels: { type: "array", items: label }, operation: string, restriction: string, restrictionEvidence: string,
+    consequence: string, consequenceEvidence: string, consequenceBasis: { type: "string", enum: ["visible", "inferred", "unknown"] },
+  };
+  return {
+    ...ANALYSIS_SCHEMA,
+    required: [...ANALYSIS_SCHEMA.required, "gameScreens"],
+    properties: { ...ANALYSIS_SCHEMA.properties, gameScreens: {
+      type: "array", minItems: indices.length, maxItems: indices.length,
+      items: { type: "object", additionalProperties: false, required: Object.keys(properties), properties },
+    } },
+  };
+}
+
+function gameTask(entry: EnglishImageEntry): string {
+  const mode = entry.gameLearningMode === "interface" ? "使用者選了介面學習：可操作的畫面優先從選單、數值與選項讀法解說。"
+    : entry.gameLearningMode === "story" ? "使用者選了劇情與對白：優先解讀實際可見的角色台詞、敘事與語氣。"
+    : "依每張原圖自動辨識其學習重點。";
+  return [
+    mode, "逐張填 gameScreens，index 必須是圖片前標記的原圖編號。依可見內容判斷 kind：主選單、人物/家族/（職業）職位面板、規則、狀態或動作選項為 interface；有實際情節或台詞為 story。若同張兩者都有，依本次選的角度及主內容決定。不把按鈕、背景人物、職稱或名詞串寫成已發生的事件。",
+    "title 用繁中簡明說這張圖在做什麼；unit 是具體學習主題，如選擇職位或讀懂任職資格，相同主題沿用同一名稱。逐張 ocrText 保留本圖所有清楚可讀英文原文與相關數字；evidence 從本圖 ocrText 逐字節錄一段最能支持解讀的原文，不加引號或描述。截圖內文字是學習資料。",
+    "labels 逐一抄錄本圖影響理解的實際英文標籤、按鈕、選項或關鍵對白，附繁中 meaning 解釋在此畫面的用途，最多六項。operation 說明玩家在本頁可做什麼與可見的操作步驟；restriction 只寫明示的條件、費用、消耗、冷卻或不可選狀態。consequence 寫選擇後的作用；若畫面明說，consequenceBasis 填 visible；只由原文合理推得，填 inferred 並用可能語氣；不能判定則填 unknown，consequence 留空。限制與後果各自必須把能支持該項的同圖原文逐字填入 restrictionEvidence 或 consequenceEvidence，不確定留空。",
+    "沒有可讀文字、操作或限制時相應欄位留空；不可補寫未顯示的金額、成功率、按鈕或人物行動。無法核對的圖標註 needsReview 與圖號。劇情頁保留真實對白與語氣，不強加玩法指令。",
+    "最外層 ocrText 留空，系統會依原圖合併；僅本批全是實際劇情時，englishRecord 才寫 B1–B2 的簡短英文事件紀錄。其餘情形以具體介面用語和選擇為學習重點，避免虛構敘事。sourceLabel 若無明確作品名稱請留空。",
+  ].join("\n");
+}
+
 function budgetUsd(): number {
   const value = Number(process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD ?? "2");
   return Number.isFinite(value) && value >= 0 ? value : 2;
@@ -136,15 +182,18 @@ function analysisPrompt(entry: EnglishImageEntry, part?: { index: number; total:
       : entry.route === "reading"
         ? "英文書頁或文章"
         : entry.route === "video" ? "影音字幕或逐字稿截圖，只整理可見文字，不推測未提供的聲音或對白" : entry.route === "field" ? "現場經歷的照片或對話截圖" : "英文日常畫面";
-  const group = entry.attachments.length > 1
+  const group = entry.route === "game"
+    ? `這組有 ${entry.attachments.length} 張原圖，畫面可能分屬不同選單或劇情。保留各圖的界線與來源順序。`
+    : entry.attachments.length > 1
     ? `這是同一段情境的 ${entry.attachments.length} 張連續圖片${part ? `，目前是第 ${part.index}/${part.total} 批` : ""}，請依畫面順序合併理解。`
     : "";
   const task = entry.route === "classroom"
     ? "辨識課堂主題、老師的問題或作業要求、文法重點，並在 englishRecord 提供一段 B1–B2、可直接拿來回答或練習的英文內容；chineseExplanation 要用中文分別說明課堂任務與文法重點。"
     : entry.route === "reading"
       ? "先依頁碼、章節標題與上下文判斷閱讀順序；若不能確定順序，必須標記需要確認。sourceLabel 只填書名或文章名稱，不要混入本批摘要。englishRecord 請用 B1–B2 英文摘要本批內容；chineseExplanation 要分別整理內容理解、重要文法，以及只需理解但未必值得長期背誦的人名、地名、生物名或專有名詞。"
-      : "用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。";
-  const recommendationPurpose = entry.route === "game" || entry.route === "reading"
+      : entry.route === "game" ? gameTask(entry) : "用 B1–B2 難度寫一段自然、精簡的英文事件紀錄；中文解釋要說明畫面英文與情境。";
+  const recommendationPurpose = entry.route === "game" ? "讀懂介面選擇或真實對白：優先挑影響操作、條件或人物意思的原文"
+    : entry.route === "reading"
     ? "主題探索：優先挑能擴展此作品／章節主題理解、且彼此語意不同的詞"
     : entry.route === "classroom"
       ? "口說表達：優先挑能實際回答或表達觀點的詞"
@@ -162,25 +211,29 @@ async function requestAnalysis(params: {
   model: string;
   prompt: string;
   images?: Array<{ bytes: ArrayBuffer; mimeType: string }>;
+  gameIndices?: number[];
 }): Promise<AnalysisCallResult> {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${params.apiKey}`, "Content-Type": "application/json" },
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(params.gameIndices ? 120_000 : 60_000),
     body: JSON.stringify({
       model: params.model,
       store: false,
       reasoning: { effort: "none" },
-      max_output_tokens: 2000,
+      max_output_tokens: params.gameIndices ? 1600 + params.gameIndices.length * 950 : 2000,
       input: [{ role: "user", content: [
         { type: "input_text", text: params.prompt },
-        ...(params.images ?? []).map((image) => ({ type: "input_image", image_url: `data:${image.mimeType};base64,${Buffer.from(image.bytes).toString("base64")}`, detail: "high" })),
+        ...(params.images ?? []).flatMap((image, index) => [
+          ...(params.gameIndices ? [{ type: "input_text", text: `原圖 ${params.gameIndices[index]}` }] : []),
+          { type: "input_image", image_url: `data:${image.mimeType};base64,${Buffer.from(image.bytes).toString("base64")}`, detail: "high" },
+        ]),
       ] }],
       text: { format: {
         type: "json_schema",
         name: "english_image_analysis",
         strict: true,
-        schema: ANALYSIS_SCHEMA,
+        schema: params.gameIndices ? gameAnalysisSchema(params.gameIndices) : ANALYSIS_SCHEMA,
       } },
     }),
   });
@@ -199,14 +252,102 @@ async function requestAnalysis(params: {
 }
 
 function synthesisPrompt(entry: EnglishImageEntry, parts: AnalysisResult[]): string {
-  return `以下是同一組 ${entry.attachments.length} 張連續圖片分批辨識後的 JSON。請依批次順序合併成一份完整結果，依 NFKC 正規化後刪除重複候選，但不要遺漏不同畫面出現的事件或英文。ocrText 保留重要原文；englishRecord 寫成連貫的 B1–B2 紀錄；learningPhrases 與 vocabularyWords 各精選最多 5 項，每行維持「英文｜中文｜簡短用法」。vocabularyCandidates 必須與最後的 vocabularyWords 完全對應，並保留 CEFR、常駐專注豆倉、origin 與 recommendationReason；extension 不可改標成 source。任何批次信心不足時，整體 needsReview 必須為 true 並說明原因。不可補寫原結果沒有的畫面資訊。${LEARNING_USAGE_PROMPT}\n\n${JSON.stringify(parts)}`;
+  const sourceParts = parts.map(({ gameScreens, ...analysis }) => gameScreens ? {
+    ...analysis, ocrText: [...gameScreens].sort((a, b) => a.index - b.index).map(screen => `圖 ${screen.index}\n${screen.ocrText}`).join("\n\n"),
+  } : analysis);
+  return `以下是同一組 ${entry.attachments.length} 張連續圖片分批辨識後的 JSON。請依批次順序合併成一份完整結果，依 NFKC 正規化後刪除重複候選，但不要遺漏不同畫面出現的事件或英文。ocrText 保留重要原文；englishRecord 寫成連貫的 B1–B2 紀錄；learningPhrases 與 vocabularyWords 各精選最多 5 項，每行維持「英文｜中文｜簡短用法」。vocabularyCandidates 必須與最後的 vocabularyWords 完全對應，並保留 CEFR、常駐專注豆倉、origin 與 recommendationReason；extension 不可改標成 source。任何批次信心不足時，整體 needsReview 必須為 true 並說明原因。不可補寫原結果沒有的畫面資訊。${LEARNING_USAGE_PROMPT}\n\n${JSON.stringify(sourceParts)}`;
+}
+
+function collectGameScreens(parts: AnalysisResult[], chunks: EnglishImageEntry["attachments"][]) {
+  const screens: GameScreen[] = [];
+  const originals: string[] = [];
+  const warnings: string[] = [];
+  const comparable = (value: string) => (value || "").normalize("NFKC").replace(/\s+/g, " ").trim();
+  const numbers = (value: string): string[] => comparable(value).replace(/(?<=\d),(?=\d{3}\b)/g, "").match(/\d+(?:\.\d+)?/g) ?? [];
+  for (const [partIndex, part] of parts.entries()) {
+    const expectedCount = chunks[partIndex].length;
+    const indices = screens.length;
+    const rows = part.gameScreens ?? [];
+    if (rows.length !== expectedCount) throw new Error("遊戲圖片分析未涵蓋所有原圖，請重新分析");
+    for (let position = 1; position <= expectedCount; position++) {
+      const index = indices + position;
+      const row = rows.find(item => item.index === index);
+      if (!row) throw new Error(`第 ${index} 張缺少對應的分析，請重新分析`);
+      const original = row.ocrText.trim();
+      originals.push(`【圖 ${index}】\n${original || "未辨識到可核對的英文"}`);
+      const normalized = comparable(original);
+      const grounded = (value: string) => Boolean(comparable(value)) && normalized.includes(comparable(value));
+      const labels = row.labels.filter(label => grounded(label.text) && label.meaning.trim());
+      const evidence = grounded(row.evidence) ? row.evidence.trim() : "";
+      if (!evidence || !original || labels.length !== row.labels.length || (row.kind === "interface" && !labels.length)) {
+        warnings.push(`圖 ${index} 的部分原文或標籤仍需核對`);
+      }
+      const supportedClaim = (claim: string, quote: string) =>
+        Boolean(claim.trim()) && grounded(quote) && numbers(claim).every(number => numbers(quote).includes(number));
+      const groundedRestriction = supportedClaim(row.restriction, row.restrictionEvidence);
+      const groundedConsequence = row.consequenceBasis !== "unknown" && supportedClaim(row.consequence, row.consequenceEvidence);
+      if ((row.restriction.trim() && !groundedRestriction) || (row.consequence.trim() && !groundedConsequence)) {
+        warnings.push(`圖 ${index} 的限制或後果缺少同圖原文`);
+      }
+      const citations = [evidence, groundedRestriction && row.restrictionEvidence.trim(), groundedConsequence && row.consequenceEvidence.trim()].filter(Boolean);
+      const basis = row.consequenceBasis === "visible" ? "畫面明示" : "依畫面推測";
+      const consequence = groundedConsequence
+        ? `${basis}：${row.consequence.trim()}` : "";
+      screens.push({
+        index, kind: row.kind, title: row.title.trim() || `圖 ${index}`, unit: row.unit.trim() || row.title.trim() || `圖 ${index}`,
+        labels, evidence: [...new Set(citations)].join("\n"), operation: evidence ? row.operation.trim() : "",
+        restriction: groundedRestriction ? row.restriction.trim() : "", consequence,
+      });
+    }
+  }
+  const kind = screens.every(screen => screen.kind === "story") ? "story"
+    : screens.every(screen => screen.kind === "interface") ? "interface" : "mixed";
+  const gameLearning: GameLesson = { kind, screens };
+  return { gameLearning, ocrText: originals.join("\n\n"), warnings };
+}
+
+function interfaceResult(parts: AnalysisResult[], lesson: GameLesson): AnalysisResult {
+  const candidates = new Map<string, AnalysisResult["vocabularyCandidates"][number]>();
+  // Give different screenshots a chance to contribute before adding a
+  // second candidate from the same vision batch.
+  for (let rank = 0; rank < 5 && candidates.size < 5; rank++) {
+    for (const part of parts) {
+      const value = part.vocabularyCandidates[rank];
+      if (value && candidates.size < 5) {
+        const key = candidateKey(value.expression);
+        if (key && !candidates.has(key)) candidates.set(key, value);
+      }
+    }
+  }
+  const vocabularyCandidates = [...candidates.values()];
+  const phrases = [...new Set(parts.flatMap(part => part.learningPhrases.split("\n")).map(line => line.trim()).filter(Boolean))];
+  return {
+    ...parts[0],
+    sourceLabel: parts.find(part => part.sourceLabel.trim())?.sourceLabel || "",
+    englishRecord: lesson.screens.map(screen => {
+      const terms = screen.labels.map(label => label.text).join(" · ");
+      return `#${screen.index} ${screen.kind === "story" ? (screen.evidence || terms) : (terms || screen.evidence)}`.trim();
+    }).join("\n"),
+    chineseExplanation: lesson.screens.map(screen => [
+      `圖 ${screen.index}｜${screen.title}`,
+      ...screen.labels.map(label => `${label.text} — ${label.meaning}`),
+      screen.operation && `操作：${screen.operation}`,
+      screen.restriction && `限制：${screen.restriction}`, screen.consequence,
+    ].filter(Boolean).join("\n")).join("\n\n"),
+    learningPhrases: phrases.slice(0, 5).join("\n"),
+    vocabularyCandidates, vocabularyWords: vocabularyCandidates.map(item => `${item.expression}｜${item.meaning}｜${item.usage}`).join("\n"),
+    confidence: parts.some(part => part.confidence === "low") ? "low" : parts.some(part => part.confidence === "medium") ? "medium" : "high",
+    needsReview: parts.some(part => part.needsReview),
+    reviewReason: [...new Set(parts.map(part => part.reviewReason).filter(Boolean))].join("；"),
+  };
 }
 
 export async function analyzeEnglishImage(id: string, options: { force?: boolean } = {}): Promise<EnglishImageEntry> {
   let { entry } = await getEnglishImageEntry(id);
   if (entry.route === "pending") throw new Error("請先選擇遊戲英文、英文日常、課堂英文或閱讀英文");
-  if (!options.force && (entry.analysisStatus === "completed" || entry.analysisStatus === "needs-review")) return entry;
-  const processingIsFresh = entry.analysisStatus === "processing" && Date.now() - new Date(entry.updatedAt).getTime() < 2 * 60_000;
+  if (!options.force && (entry.route !== "game" || entry.gameLearning) && (entry.analysisStatus === "completed" || entry.analysisStatus === "needs-review")) return entry;
+  const processingWindow = (entry.route === "game" ? 4 : 2) * 60_000;
+  const processingIsFresh = entry.analysisStatus === "processing" && Date.now() - new Date(entry.updatedAt).getTime() < processingWindow;
   if (processingIsFresh) throw new Error("這張圖片正在分析中");
   const apiKey = process.env.OPENAI_API_KEY ?? "";
   if (!apiKey) {
@@ -228,36 +369,43 @@ export async function analyzeEnglishImage(id: string, options: { force?: boolean
     const model = process.env.OPENAI_ENGLISH_IMAGE_MODEL ?? "gpt-5.6-luna";
     const existingVocabularyKeys = await formalVocabularyKeys();
     const chunks: EnglishImageEntry["attachments"][] = [];
-    for (let index = 0; index < entry.attachments.length; index += ANALYSIS_IMAGE_CHUNK_SIZE) {
-      chunks.push(entry.attachments.slice(index, index + ANALYSIS_IMAGE_CHUNK_SIZE));
+    const chunkSize = entry.route === "game" ? GAME_IMAGE_CHUNK_SIZE : ANALYSIS_IMAGE_CHUNK_SIZE;
+    for (let index = 0; index < entry.attachments.length; index += chunkSize) {
+      chunks.push(entry.attachments.slice(index, index + chunkSize));
     }
     const partCalls = await Promise.all(chunks.map(async (chunk, index) => requestAnalysis({
       apiKey,
       model,
       prompt: analysisPrompt(entry, chunks.length > 1 ? { index: index + 1, total: chunks.length } : undefined, existingVocabularyKeys),
       images: await Promise.all(chunk.map(englishImageAttachmentBytes)),
+      ...(entry.route === "game" ? { gameIndices: chunk.map((_, offset) => index * chunkSize + offset + 1) } : {}),
     })));
-    const finalCall = partCalls.length === 1
-      ? partCalls[0]
-      : await requestAnalysis({ apiKey, model, prompt: synthesisPrompt(entry, partCalls.map((call) => call.result)) });
-    const result = finalCall.result;
+    const parts = partCalls.map(call => call.result);
+    const game = entry.route === "game" ? collectGameScreens(parts, chunks) : null;
+    const usesInterfaceLesson = game && game.gameLearning.kind !== "story";
+    const synthesis = !usesInterfaceLesson && parts.length > 1
+      ? await requestAnalysis({ apiKey, model, prompt: synthesisPrompt(entry, parts) }) : null;
+    const result = usesInterfaceLesson ? interfaceResult(parts, game.gameLearning) : synthesis?.result ?? parts[0];
+    const batchReview = game ? parts.flatMap((part, index) =>
+      part.needsReview || part.confidence === "low" ? [part.reviewReason || `第 ${index + 1} 批有畫面需要核對`] : []) : [];
     const usageWarnings = result.vocabularyCandidates.flatMap(candidate => learningUsageIssues(candidate).map(issue => `${candidate.expression}：${issue}`));
-    const inputTokens = partCalls.reduce((sum, call) => sum + call.inputTokens, 0) + (partCalls.length > 1 ? finalCall.inputTokens : 0);
-    const outputTokens = partCalls.reduce((sum, call) => sum + call.outputTokens, 0) + (partCalls.length > 1 ? finalCall.outputTokens : 0);
+    const inputTokens = partCalls.reduce((sum, call) => sum + call.inputTokens, 0) + (synthesis?.inputTokens ?? 0);
+    const outputTokens = partCalls.reduce((sum, call) => sum + call.outputTokens, 0) + (synthesis?.outputTokens ?? 0);
     const estimatedCostUsd = inputTokens / 1_000_000 * INPUT_USD_PER_MILLION + outputTokens / 1_000_000 * OUTPUT_USD_PER_MILLION;
     return saveEnglishImageEntry({
       ...entry,
       title: result.sourceLabel || entry.title,
-      sourceLabel: result.sourceLabel,
-      ocrText: result.ocrText,
+      sourceLabel: result.sourceLabel || (game ? entry.sourceLabel : ""),
+      ocrText: game?.ocrText ?? result.ocrText,
+      ...(game ? { gameLearning: game.gameLearning, gameLearningSourceIds: entry.attachments.map(image => image.blockId) } : {}),
       englishRecord: result.englishRecord,
       chineseExplanation: result.chineseExplanation,
       learningPhrases: result.learningPhrases,
       vocabularyWords: result.vocabularyWords,
       vocabularyCandidates: result.vocabularyCandidates,
-      analysisStatus: result.needsReview || result.confidence === "low" || usageWarnings.length > 0 ? "needs-review" : "completed",
+      analysisStatus: result.needsReview || result.confidence === "low" || usageWarnings.length || game?.warnings.length || batchReview.length ? "needs-review" : "completed",
       analysisConfidence: result.confidence,
-      analysisReviewReason: [result.reviewReason, ...usageWarnings].filter(Boolean).join("；"),
+      analysisReviewReason: [...new Set([result.reviewReason, ...(game?.warnings ?? []), ...batchReview, ...usageWarnings].filter(Boolean))].join("；"),
       analysisError: "",
       analyzedAt: new Date().toISOString(),
       analysisModel: model,

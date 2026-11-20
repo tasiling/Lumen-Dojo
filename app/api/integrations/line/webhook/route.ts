@@ -97,6 +97,28 @@ function imageFilename(messageId: string, mimeType: string): string {
 
 function lineLearningSummary(entry: EnglishImageEntry, intro: string): string {
   const sections = [intro, entry.title ? `「${entry.title}」` : ""];
+  const game = entry.route === "game" ? entry.gameLearning : undefined;
+  if (entry.route === "game" && entry.gameLearningMode === "interface" && !game?.screens.length) {
+    return [intro, "逐圖介面資訊尚待辨識，可按「重新分析」再試一次。"].join("\n\n");
+  }
+  if (game && game.kind !== "story" && game.screens.length) {
+    for (const screen of [...game.screens].sort((a, b) => a.index - b.index)) {
+      const lines = [`圖 ${screen.index}｜${screen.title || (screen.kind === "interface" ? "遊戲介面" : "劇情／對白")}`];
+      for (const label of screen.labels) {
+        if (label.text) lines.push(label.meaning ? `${label.text} → ${label.meaning}` : label.text);
+      }
+      if (screen.kind === "interface") {
+        if (screen.operation) lines.push(`操作：${screen.operation}`);
+        if (screen.restriction) lines.push(`限制：${screen.restriction}`);
+        if (screen.consequence) lines.push(`可能結果：${screen.consequence}`);
+      }
+      if (screen.evidence) lines.push(`畫面線索：${screen.evidence}`);
+      if (screen.unit) lines.push(`學習重點：${screen.unit}`);
+      sections.push(lines.join("\n"));
+    }
+    if (entry.analysisStatus === "needs-review") sections.push(`需要確認：${entry.analysisReviewReason || "部分畫面資訊尚待核對"}`);
+    return sections.filter(Boolean).join("\n\n");
+  }
   const recordLabel = entry.route === "classroom" ? "課堂回答整理" : entry.route === "reading" ? "英文閱讀摘要" : "英文事件紀錄";
   if (entry.englishRecord) sections.push(`【${recordLabel}】\n${entry.englishRecord.slice(0, 900)}`);
   if (entry.chineseExplanation) sections.push(`【中文理解】\n${entry.chineseExplanation.slice(0, 900)}`);
@@ -164,7 +186,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
         return true;
       }
       const status = saved.route === "pending" ? "待分類" : saved.analysisStatus === "completed" ? "AI 已完成" : saved.analysisStatus === "needs-review" ? "需要確認" : "尚待整理";
-      await replyImage(event, `最近一筆｜英文影像\n「${saved.title}」\n${saved.attachments.length} 張圖片\n狀態：${status}`, activeImage ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(saved.id) : englishImageOrganizeQuickReply(saved.id));
+      await replyImage(event, `最近一筆｜英文影像\n「${saved.title}」\n${saved.attachments.length} 張圖片\n狀態：${status}`, activeImage ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(saved.id) : englishImageOrganizeQuickReply(saved.id, saved.route));
       return true;
     }
     if (capture) {
@@ -252,7 +274,7 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
       await replyLineMessage(
         event.replyToken ?? "",
         awaitingInput.lineInputMode === "context" ? "情境說明已補進這筆野採素材。" : "英文原文已修正並保存；需要時可再執行 AI 分析。",
-        englishImageOrganizeQuickReply(updated.id),
+        englishImageOrganizeQuickReply(updated.id, updated.route),
       );
       return;
     }
@@ -261,7 +283,7 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
     );
     if (recent) {
       await saveEnglishImageEntry({ ...recent, contextNote: [recent.contextNote, text].filter(Boolean).join("\n"), awaitingContextUntil: null });
-      await replyLineMessage(event.replyToken ?? "", "情境說明已補進野採英文影像。AI 不會自動重跑；需要時可在影像匣按「重新分析」。", englishImageOrganizeQuickReply(recent.id));
+      await replyLineMessage(event.replyToken ?? "", "情境說明已補進野採英文影像。AI 不會自動重跑；需要時可在影像匣按「重新分析」。", englishImageOrganizeQuickReply(recent.id, recent.route));
       return;
     }
     await replyLineMessage(event.replyToken ?? "", "我目前沒有辨識到網址或操作指令。你可以直接傳圖片、貼網址，或從下方選擇功能。", basicLineMenuQuickReply());
@@ -435,7 +457,7 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
       await replyImage(event,"這張原圖已送到心知，可繼續核對。",readingClipQuickReply(entryId));
       return;
     }
-    await replyImage(event, `這張圖片已經保存於野採英文影像「${duplicateEnglish.title}」。`, saved.lineBatchState === "open" && batch && (batch.entryId === saved.id || (batch.sessionId && saved.lineImageSetId === "manual:" + batch.sessionId)) ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(entryId) : englishImageOrganizeQuickReply(entryId));
+    await replyImage(event, `這張圖片已經保存於野採英文影像「${duplicateEnglish.title}」。`, saved.lineBatchState === "open" && batch && (batch.entryId === saved.id || (batch.sessionId && saved.lineImageSetId === "manual:" + batch.sessionId)) ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(entryId) : englishImageOrganizeQuickReply(entryId, saved.route));
     return;
   }
 
@@ -644,13 +666,13 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       const summary = analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review"
         ? lineLearningSummary(analyzed, "重新分析完成｜野採英文影像")
         : `重新分析尚未完成：${analyzed.analysisError || "請稍後再試"}`;
-      await replyLineMessage(event.replyToken ?? "", summary, englishImageOrganizeQuickReply(analyzed.id));
+      await replyImage(event, summary, englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
       return;
     }
     if (action === "imageUndoMerge") {
       try {
         const result = await undoLatestEnglishImageMerge(entry);
-        await replyLineMessage(event.replyToken ?? "", `已撤銷最近一次誤合併。\n「${result.parent.title}」保留 ${result.parent.attachments.length} 張；另一筆 ${result.restored.attachments.length} 張圖片已恢復為獨立素材。`, result.parent.route === "pending" ? imageDraftQuickReply(result.parent.id) : englishImageOrganizeQuickReply(result.parent.id));
+        await replyLineMessage(event.replyToken ?? "", `已撤銷最近一次誤合併。\n「${result.parent.title}」保留 ${result.parent.attachments.length} 張；另一筆 ${result.restored.attachments.length} 張圖片已恢復為獨立素材。`, result.parent.route === "pending" ? imageDraftQuickReply(result.parent.id) : englishImageOrganizeQuickReply(result.parent.id, result.parent.route));
       } catch (error) {
         await replyLineMessage(event.replyToken ?? "", error instanceof Error ? error.message : "無法撤銷圖片合併");
       }
@@ -726,7 +748,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
         const page = Number.isFinite(requestedPage) ? Math.max(0, Math.floor(requestedPage)) : 0;
         await replyLineMessage(event.replyToken ?? "", `請選擇要放入的豆倉（第 ${page + 1} 頁）。`, englishImageBookQuickReply(entry.id, books, page));
       } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", `豆倉清單暫時無法讀取：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", `豆倉清單暫時無法讀取：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id, entry.route));
       }
       return;
     }
@@ -746,7 +768,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
           englishImageVocabQuickReply(updated.id, candidates, [], entry.vocabForgeExports.map((item) => item.key), entry.contextRoomUrl),
         );
       } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", `無法開始挑選單字：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", `無法開始挑選單字：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id, entry.route));
       }
       return;
     }
@@ -770,7 +792,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
           englishImageVocabQuickReply(updated.id, candidates, [key], updated.vocabForgeExports.map((item) => item.key), updated.contextRoomUrl),
         );
       } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id, entry.route));
       }
       return;
     }
@@ -785,7 +807,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
         const updated = await saveEnglishImageEntry({ ...entry, vocabForgeDraft: { ...entry.vocabForgeDraft, selectedKeys } });
         await replyLineMessage(event.replyToken ?? "", `已勾選 ${selectedKeys.length} 個單字；尚未送出。`, englishImageVocabQuickReply(updated.id, candidates, selectedKeys, updated.vocabForgeExports.map((item) => item.key), updated.contextRoomUrl));
       } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id, entry.route));
       }
       return;
     }
@@ -804,7 +826,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
           englishImageVocabQuickReply(updated.id, englishImageVocabCandidates(updated), [], updated.vocabForgeExports.map((item) => item.key), updated.contextRoomUrl),
         );
       } catch (error) {
-        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id));
+        await replyLineMessage(event.replyToken ?? "", `VocabForge 尚未接收：${error instanceof Error ? error.message : String(error)}`, englishImageOrganizeQuickReply(entry.id, entry.route));
       }
       return;
     }
@@ -833,7 +855,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (route === "xinzhi") {
       if(entry.route!=="pending") {
-        await replyImage(event,"這組圖片已經選作英文學習素材。",englishImageOrganizeQuickReply(entry.id));
+        await replyImage(event,"這組圖片已經選作英文學習素材。",englishImageOrganizeQuickReply(entry.id, entry.route));
         return;
       }
       try {
@@ -855,20 +877,26 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       return;
     }
     if (isEnglishImageLearningRoute(route)) {
-      const routed = await applyRoute(latest => routeEnglishImage(latest, route));
+      const mode = route === "game" ? params.get("mode") : null;
+      if (mode !== null && mode !== "auto" && mode !== "interface" && mode !== "story") {
+        await replyImage(event, "請選擇遊戲畫面的整理方式。", imageRouteQuickReply(entry.id));
+        return;
+      }
+      const routed = await applyRoute(latest => routeEnglishImage(latest, route, mode ?? undefined));
       let analyzed;
       try {
         analyzed = await analyzeEnglishImage(routed.id);
       } catch (error) {
         console.error("LINE image analysis failed", routed.id, error instanceof Error ? error.message : String(error));
-        await replyImage(event, `這組 ${routed.attachments.length} 張原圖已保存。AI 分析尚未完成，可從「最近一筆」開啟素材，再按「重新分析」。`, englishImageOrganizeQuickReply(routed.id));
+        await replyImage(event, `這組 ${routed.attachments.length} 張原圖已保存。AI 分析尚未完成，可從「最近一筆」開啟素材，再按「重新分析」。`, englishImageOrganizeQuickReply(routed.id, routed.route));
         return;
       }
-      const label = englishImageRouteLabel(route);
+      const gameLabels = { interface: "遊戲介面學習", mixed: "遊戲介面與劇情", story: "遊戲劇情／對白" };
+      const label = route === "game" ? (analyzed.gameLearning ? gameLabels[analyzed.gameLearning.kind] : "遊戲") : englishImageRouteLabel(route);
       if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
-        await replyImage(event, lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id));
+        await replyImage(event, lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
       } else {
-        await replyImage(event, `已放進「${label}」，原圖已保存。\nAI 暫時未完成：${analyzed.analysisError || "稍後可在英文影像匣重新分析"}`, englishImageOrganizeQuickReply(analyzed.id));
+        await replyImage(event, `已放進「${label}」，原圖已保存。\nAI 暫時未完成：${analyzed.analysisError || "稍後可在英文影像匣重新分析"}`, englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
       }
       return;
     }

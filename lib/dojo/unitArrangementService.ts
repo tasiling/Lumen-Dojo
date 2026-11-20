@@ -141,6 +141,9 @@ export async function createUnitArrangement(params: {
     units: units.map((unit) => ({ id: unit.id, name: unit.label, learningGoal: unit.learningGoal, status: unit.status, sourceRecordIds: unit.sourceRecordIds })),
     sources: entries.map((entry) => {
       const full = fullIds.has(entry.id);
+      const gameScreenTopics = entry.gameLearning ? includeText(entry.gameLearning.screens.map(screen =>
+        `圖 ${screen.index}｜${screen.unit}｜${screen.title}｜${screen.labels.map(label => label.text).join(" / ")}`
+      ).join("\n"), 7000) : "";
       const summary = includeText(summaryOf(entry), 2500);
       const englishRecord = includeText(entry.englishRecord, 4000);
       const chineseUnderstanding = includeText(entry.chineseExplanation, 2500);
@@ -155,6 +158,7 @@ export async function createUnitArrangement(params: {
         type: entry.route,
         sourceLabel: entry.sourceLabel,
         attachmentCount: entry.attachments.length,
+        ...(gameScreenTopics ? { gameScreenTopics } : {}),
         range: contextNote,
         summary,
         englishRecord,

@@ -13,6 +13,7 @@ import {
   normalizeEnglishImageEntry,
   withEnglishImageStatus,
   type EnglishImageEntry,
+  type GameLearningMode,
   type EnglishImageRoute,
   type EnglishImageStatus,
 } from "./englishImage";
@@ -227,13 +228,24 @@ export async function appendEnglishImageAttachment(params: {
   });
 }
 
-export async function routeEnglishImage(entry: EnglishImageEntry, route: Exclude<EnglishImageRoute, "pending">): Promise<EnglishImageEntry> {
+export async function routeEnglishImage(
+  entry: EnglishImageEntry, route: Exclude<EnglishImageRoute, "pending">, gameLearningMode: GameLearningMode = "auto",
+): Promise<EnglishImageEntry> {
+  const newGameLesson = route === "game" &&
+    ((entry.gameLearningMode ?? "auto") !== gameLearningMode || (!entry.gameLearning && !entry.gameLearningMode));
+  const needsAnalysis = entry.route !== route || newGameLesson;
+  if (route === "game" && !needsAnalysis && entry.lineBatchState === "closed") return entry;
   return saveEnglishImageEntry({
     ...entry,
     route,
+    ...(route === "game" ? { gameLearningMode } : {}),
+    ...(needsAnalysis ? {
+      analysisStatus: "idle", gameLearning: null, gameLearningSourceIds: [],
+      analysisReviewReason: "", analysisError: "",
+    } : {}),
     lineBatchState: "closed",
     lineBatchUntil: null,
-    title: englishImageRouteLabel(route),
+    title: needsAnalysis ? englishImageRouteLabel(route) : entry.title,
     awaitingContextUntil: new Date(Date.now() + 10 * 60_000).toISOString(),
   });
 }

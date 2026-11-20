@@ -7,6 +7,7 @@ import { getEnglishImageEntry, saveEnglishImageEntry, updateEnglishImageEntry } 
 import {
   calculateRequestFingerprint,
   calculateSourceContentFingerprint,
+  assertGameLearningReady,
   nextSourceRevision,
   sourceContent,
   SOURCE_HANDOFF_V2,
@@ -316,6 +317,7 @@ export async function exportEnglishImageContext(params: {
   const secret = contextRoomSecret();
   if (!base || !secret) throw new Error("語境修習室串接尚未完成 Railway 設定");
   const { entry } = await getEnglishImageEntry(params.id);
+  assertGameLearningReady(entry);
   if (entry.route === "pending") throw new Error("請先把圖片分類為遊戲英文、英文日常、課堂英文或閱讀英文");
   if (!entry.englishRecord.trim() && !entry.ocrText.trim()) throw new Error("請先完成 AI 分析或補上英文原文");
   const materialTitle = params.materialTitle.trim().slice(0, 300);
@@ -584,7 +586,7 @@ export async function exportEnglishImageVocabs(
       body: JSON.stringify({
         contextContractVersion: 2,
         sourceSystem: "Lumen Dojo",
-        sourceType: entry.route === "field" ? "野採・現場經歷" : entry.route === "video" ? "野採・影音／逐字稿" : entry.route === "game" ? "野採・遊戲事件" : entry.route === "classroom" ? "野採・課堂英文" : entry.route === "reading" ? "野採・閱讀英文" : "野採・英文日常",
+        sourceType: entry.route === "field" ? "野採・現場經歷" : entry.route === "video" ? "野採・影音／逐字稿" : entry.route === "game" ? (entry.gameLearning?.kind === "interface" ? "野採・遊戲介面" : "野採・遊戲英文") : entry.route === "classroom" ? "野採・課堂英文" : entry.route === "reading" ? "野採・閱讀英文" : "野採・英文日常",
         sourceDate: entry.capturedAt.slice(0, 10),
         sourceRecordId: entry.id,
         topicTitle: entry.title,

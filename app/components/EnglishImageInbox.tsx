@@ -8,6 +8,8 @@ import {
   type EnglishImageLearningRoute,
   type EnglishImageRoute,
   type EnglishImageStatus,
+  type GameLearningMode,
+  type GameLearningScreen,
 } from "@/lib/dojo/englishImage";
 import {
   englishImageStageLabel,
@@ -32,7 +34,7 @@ async function json<T>(response: Response): Promise<T> {
 
 const PAGE_SIZE = 20;
 const ROUTES: { key: "all" | EnglishImageLearningRoute; label: string }[] = [
-  { key: "all", label: "全部類別" }, { key: "game", label: "遊戲事件" }, { key: "daily", label: "英文日常" }, { key: "field", label: "現場經歷" }, { key: "video", label: "影音／逐字稿" },
+  { key: "all", label: "全部類別" }, { key: "game", label: "遊戲英文" }, { key: "daily", label: "英文日常" }, { key: "field", label: "現場經歷" }, { key: "video", label: "影音／逐字稿" },
   { key: "classroom", label: "課堂／工作回收" }, { key: "reading", label: "閱讀內容" },
 ];
 const STATUS_TABS: { key: "inbox" | "organized" | "all"; label: string }[] = [
@@ -49,10 +51,28 @@ function completionWarnings(entry: EnglishImageEntry): string[] {
   return [failed ? `${failed} 個 VocabForge 單字同步失敗` : "", pending ? `${pending} 個 VocabForge 單字尚待確認` : "", entry.analysisStatus === "failed" ? "AI 分析仍為失敗狀態" : ""].filter(Boolean);
 }
 
-function englishRecordLabel(route: EnglishImageRoute): string {
+function englishRecordLabel(entry: EnglishImageEntry): string {
+  const route = entry.route;
+  if (route === "game") return entry.gameLearning?.kind === "story" ? "遊戲劇情／對白" : "遊戲英文筆記";
   if (route === "classroom") return "課堂回答整理";
   if (route === "reading") return "英文閱讀摘要";
   return "英文事件紀錄";
+}
+
+function GameScreenLesson({ screen }: { screen: GameLearningScreen }) {
+  return <section className="english-image-section-body" aria-label={`第 ${screen.index} 張圖解`}>
+    <h4>圖 {screen.index}｜{screen.title}</h4>
+    {screen.labels.length > 0 && <ul>{screen.labels.map((label, i) =>
+      <li key={i}><strong lang="en">{label.text}</strong>{label.meaning && ` — ${label.meaning}`}</li>
+    )}</ul>}
+    {screen.kind === "interface" && <>
+      {screen.operation && <p><b>操作</b>　{screen.operation}</p>}
+      {screen.restriction && <p><b>限制</b>　{screen.restriction}</p>}
+      {screen.consequence && <p><b>可能結果</b>　{screen.consequence}</p>}
+    </>}
+    {screen.evidence && <p><b>畫面原文</b>　<q lang="en">{screen.evidence}</q></p>}
+    {screen.unit && <p><b>學習主題</b>　{screen.unit}</p>}
+  </section>;
 }
 
 function analysisLabel(entry: EnglishImageEntry): string {
@@ -63,7 +83,11 @@ function analysisLabel(entry: EnglishImageEntry): string {
   return "尚未分析";
 }
 
-function contextRoomCopy(route: EnglishImageRoute) {
+function contextRoomCopy(entry: EnglishImageEntry) {
+  const route = entry.route;
+  if (route === "game" && (entry.gameLearning?.kind === "interface" || entry.gameLearning?.kind === "mixed")) {
+    return { heading: "建立遊戲學習單元", materialLabel: "遊戲名稱", materialPlaceholder: "作品名稱", eventLabel: "這次學習主題", eventPlaceholder: "例如：讀懂職位的任職資格" };
+  }
   if (route === "classroom") return { heading: "建立課堂練習", materialLabel: "課堂／主題", materialPlaceholder: "例如：英文課堂・工作描述", eventLabel: "這次課堂任務", eventPlaceholder: "例如：使用三種時態介紹工作" };
   if (route === "video") return { heading: "加入影音素材", materialLabel: "影片／節目", materialPlaceholder: "作品名稱", eventLabel: "片段", eventPlaceholder: "集數或時間碼" };
   if (route === "game") return { heading: "建立遊戲事件", materialLabel: "素材專案／遊戲名稱", materialPlaceholder: "例如：Animal Crossing", eventLabel: "這次事件名稱", eventPlaceholder: "例如：評論角色的穿搭" };
@@ -192,10 +216,10 @@ export default function EnglishImageInbox() {
     catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
   }
 
-  async function routeAndAnalyze(entry: EnglishImageEntry, route: EnglishImageLearningRoute) {
+  async function routeAndAnalyze(entry: EnglishImageEntry, route: EnglishImageLearningRoute, gameLearningMode?: GameLearningMode) {
     if (entry.analysisAttempts > 0 && !window.confirm("這張圖片曾經分析過；再次執行會使用 API 額度，確定要繼續嗎？")) return;
     setBusy(entry.id); setError("");
-    try { const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: entry.id, action: "routeAndAnalyze", route }) })); replaceEntries([result.entry]); }
+    try { const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: entry.id, action: "routeAndAnalyze", route, gameLearningMode }) })); replaceEntries([result.entry]); }
     catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
   }
 
@@ -300,7 +324,7 @@ export default function EnglishImageInbox() {
 
   function renderContextDispatch(entry: EnglishImageEntry) {
     if (contextDraft?.entryId !== entry.id) return null;
-    const form = contextRoomCopy(entry.route);
+    const form = contextRoomCopy(entry);
     const project = contextDraft.projects.find((item) => item.id === contextDraft.materialId);
     const activeUnits = project?.units.filter((unit) => unit.status === "active") ?? [];
     const expectedType = entry.route === "field" ? "field_experience" : entry.route === "video" ? "video" : entry.route === "game" ? "game_journey" : entry.route === "classroom" ? "class_topic" : entry.route === "reading" ? "reading" : "custom";
@@ -323,9 +347,16 @@ export default function EnglishImageInbox() {
   function renderDetail(entry: EnglishImageEntry) {
     const openEditor = editing === entry.id && draft;
     const attachment = entry.attachments[currentImageIndex] ?? entry.attachments[0];
+    const game = entry.route === "game" ? entry.gameLearning : null;
+    const screen = game?.screens.find(item => item.index === currentImageIndex + 1);
     return <section id="english-image-detail" className="english-image-detail"><div className="english-image-detail-nav"><button onClick={closeEntry}>← 返回精簡清單</button><span>{entry.status === "organized" ? "已完成素材" : "待處理素材"}</span></div><header className="english-image-detail-head"><div><small>{englishImageRouteLabel(entry.route)}・{entry.capturedAt.slice(0, 10)}</small><h5>{entry.title}</h5><p>{englishImageStageLabel(entry)}</p></div><span className={`analysis-${entry.analysisStatus}`}>{analysisLabel(entry)}</span></header><DispatchBadges entry={entry} /><ForageTabs items={ENGLISH_DETAIL_TABS} value={detailTab} onChange={setDetailTab} label="英文素材分區" />{deepLinkMessage && <p className="english-image-deep-link-note">{deepLinkMessage}</p>}{notice && <p className="form-success">{notice}</p>}{error && <p className="form-error">{error}</p>}{entry.analysisError && <p className="form-error">{entry.analysisError}</p>}
-      <details className="english-image-detail-section" hidden={detailTab!=="images"} open><summary>原始圖片 <span>{entry.attachments.length} 張</span></summary><div className="english-image-viewer">{entry.attachments.length ? <EnglishImageAsset key={`${entry.id}-${currentImageIndex}`} entry={entry} index={currentImageIndex} variant="full" /> : <p className="muted-note">這份素材沒有原始附件；文字與派送紀錄仍保留。</p>}<div className="english-image-viewer-meta"><span>第 {entry.attachments.length ? currentImageIndex + 1 : 0}／{entry.attachments.length} 張{attachment?.batchIndex ? `・批次序號 ${attachment.batchIndex}` : ""}</span><a href={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}&index=${currentImageIndex}`} target="_blank" rel="noreferrer">開啟原圖 ↗</a></div>{entry.attachments.length > 1 && <div className="english-image-viewer-controls"><button disabled={currentImageIndex === 0} onClick={() => setCurrentImageIndex((value) => Math.max(0, value - 1))}>上一張</button><div aria-label="圖片順序">{entry.attachments.map((item, index) => <button className={index === currentImageIndex ? "on" : ""} key={`${item.blockId}-${index}`} onClick={() => setCurrentImageIndex(index)} aria-label={`查看第 ${index + 1} 張`}>{item.batchIndex ?? index + 1}</button>)}</div><button disabled={currentImageIndex === entry.attachments.length - 1} onClick={() => setCurrentImageIndex((value) => Math.min(entry.attachments.length - 1, value + 1))}>下一張</button></div>}</div></details>
-      <details className="english-image-detail-section" hidden={detailTab!=="content"} open><summary>{englishRecordLabel(entry.route)} <span>{entry.englishRecord ? "已有內容" : "尚未建立"}</span></summary><p>{entry.englishRecord || "尚無英文事件紀錄。"}</p></details>
+      <details className="english-image-detail-section" hidden={detailTab!=="images"} open><summary>原始圖片 <span>{entry.attachments.length} 張</span></summary><div className="english-image-viewer">{entry.attachments.length ? <EnglishImageAsset key={`${entry.id}-${currentImageIndex}`} entry={entry} index={currentImageIndex} variant="full" /> : <p className="muted-note">這份素材沒有原始附件；文字與派送紀錄仍保留。</p>}<div className="english-image-viewer-meta"><span>第 {entry.attachments.length ? currentImageIndex + 1 : 0}／{entry.attachments.length} 張{attachment?.batchIndex ? `・批次序號 ${attachment.batchIndex}` : ""}</span><a href={`/api/dojo/english-images/image?id=${encodeURIComponent(entry.id)}&index=${currentImageIndex}`} target="_blank" rel="noreferrer">開啟原圖 ↗</a></div>{entry.attachments.length > 1 && <div className="english-image-viewer-controls"><button disabled={currentImageIndex === 0} onClick={() => setCurrentImageIndex((value) => Math.max(0, value - 1))}>上一張</button><div aria-label="圖片順序">{entry.attachments.map((item, index) => <button className={index === currentImageIndex ? "on" : ""} key={`${item.blockId}-${index}`} onClick={() => setCurrentImageIndex(index)} aria-label={`查看第 ${index + 1} 張`}>{item.batchIndex ?? index + 1}</button>)}</div><button disabled={currentImageIndex === entry.attachments.length - 1} onClick={() => setCurrentImageIndex((value) => Math.min(entry.attachments.length - 1, value + 1))}>下一張</button></div>}</div>{screen && <GameScreenLesson screen={screen} />}</details>
+      {game && game.kind !== "story" ? <details className="english-image-detail-section" hidden={detailTab!=="content"} open>
+        <summary>{game.kind === "mixed" ? "遊戲介面與劇情" : "遊戲介面學習"} <span>{game.screens.length} 張圖解</span></summary>
+        <ol>{game.screens.map(item => <li key={item.index}><button className="text-link" onClick={() => {
+          setCurrentImageIndex(item.index - 1); setDetailTab("images");
+        }}>{item.title || `圖 ${item.index}`}</button>{item.unit && ` · ${item.unit}`}</li>)}</ol>
+      </details> : <details className="english-image-detail-section" hidden={detailTab!=="content"} open><summary>{englishRecordLabel(entry)} <span>{entry.englishRecord ? "已有內容" : "尚未建立"}</span></summary><p>{entry.englishRecord || "尚無英文紀錄。"}</p></details>}
       <details className="english-image-detail-section" hidden={detailTab!=="content"} open><summary>中文理解 <span>{entry.chineseExplanation ? "已有內容" : "尚未建立"}</span></summary><p>{entry.chineseExplanation || "尚無中文理解。"}</p></details>
       <details className="english-image-detail-section" hidden={detailTab!=="phrases"} open><summary>可學詞句 <span>{entry.learningPhrases ? "可查看" : "尚無內容"}</span></summary><p>{entry.learningPhrases || "尚無可學詞句。"}</p></details>
       <details className="english-image-detail-section" hidden={detailTab!=="phrases"} open><summary>單字候選 <span>{entry.vocabularyCandidates.length || 0} 項結構化候選</span></summary><p>{entry.vocabularyWords || "尚無單字候選。"}</p></details>
@@ -347,8 +378,14 @@ export default function EnglishImageInbox() {
           </>}
         </div>
       </details>
-      <details className="english-image-detail-section" hidden={detailTab!=="content"} open><summary>素材整理 <span>分類與文字修訂</span></summary>{!openEditor ? <div className="english-image-section-body"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>編輯素材內容</button></div> : <div className="english-image-editor"><label htmlFor="english-field-1">類型</label><select id="english-field-1" className="field" value={draft.route} onChange={(event) => setDraft({ ...draft, route: event.target.value as EnglishImageRoute })}><option value="pending">待分類</option><option value="game">遊戲事件</option><option value="daily">英文日常</option><option value="field">現場經歷</option><option value="video">影音／逐字稿</option><option value="classroom">課堂／工作回收</option><option value="reading">閱讀內容</option></select><label htmlFor="english-field-2">標題／作品或場景</label><input id="english-field-2" className="field" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /><label htmlFor="english-field-3">情境補充</label><textarea id="english-field-3" className="field" rows={2} value={draft.contextNote} onChange={(event) => setDraft({ ...draft, contextNote: event.target.value })} /><label htmlFor="english-field-4">圖片英文原文</label><textarea id="english-field-4" className="field" rows={5} value={draft.ocrText} onChange={(event) => setDraft({ ...draft, ocrText: event.target.value })} /><label htmlFor="english-field-5">{englishRecordLabel(draft.route)}</label><textarea id="english-field-5" className="field" rows={4} value={draft.englishRecord} onChange={(event) => setDraft({ ...draft, englishRecord: event.target.value })} /><label htmlFor="english-field-6">中文解釋</label><textarea id="english-field-6" className="field" rows={4} value={draft.chineseExplanation} onChange={(event) => setDraft({ ...draft, chineseExplanation: event.target.value })} /><label htmlFor="english-field-7">可學詞句</label><textarea id="english-field-7" className="field" rows={5} value={draft.learningPhrases} onChange={(event) => setDraft({ ...draft, learningPhrases: event.target.value })} /><label htmlFor="english-field-8">單字候選</label><textarea id="english-field-8" className="field" rows={5} value={draft.vocabularyWords} onChange={(event) => setDraft({ ...draft, vocabularyWords: event.target.value })} /><div className="english-image-actions"><button onClick={() => { setEditing(null); setDraft(null); }}>取消</button><button className="primary" disabled={busy === entry.id} onClick={() => void save(entry.route === "pending" && draft.route !== "pending")}>{busy === entry.id ? "儲存中…" : entry.route === "pending" && draft.route !== "pending" ? "儲存並分析" : "儲存"}</button></div></div>}</details>
-      {entry.route === "pending" && <div hidden={detailTab!=="images"} className="english-image-route-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game")}>遊戲事件並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "field")}>現場經歷並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "video")}>影音／逐字稿並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "classroom")}>課堂／工作回收並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "reading")}>閱讀內容並分析</button></div>}
+      <details className="english-image-detail-section" hidden={detailTab!=="content"} open><summary>素材整理 <span>分類與文字修訂</span></summary>{!openEditor ? <div className="english-image-section-body"><button onClick={() => { setEditing(entry.id); setDraft(structuredClone(entry)); }}>編輯素材內容</button></div> : <div className="english-image-editor"><label htmlFor="english-field-1">類型</label><select id="english-field-1" className="field" value={draft.route} onChange={(event) => setDraft({ ...draft, route: event.target.value as EnglishImageRoute })}><option value="pending">待分類</option><option value="game">遊戲英文</option><option value="daily">英文日常</option><option value="field">現場經歷</option><option value="video">影音／逐字稿</option><option value="classroom">課堂／工作回收</option><option value="reading">閱讀內容</option></select><label htmlFor="english-field-2">標題／作品或場景</label><input id="english-field-2" className="field" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /><label htmlFor="english-field-3">情境補充</label><textarea id="english-field-3" className="field" rows={2} value={draft.contextNote} onChange={(event) => setDraft({ ...draft, contextNote: event.target.value })} /><label htmlFor="english-field-4">圖片英文原文</label><textarea id="english-field-4" className="field" rows={5} value={draft.ocrText} onChange={(event) => setDraft({ ...draft, ocrText: event.target.value })} /><label htmlFor="english-field-5">{englishRecordLabel(draft)}</label><textarea id="english-field-5" className="field" rows={4} value={draft.englishRecord} onChange={(event) => setDraft({ ...draft, englishRecord: event.target.value })} /><label htmlFor="english-field-6">中文解釋</label><textarea id="english-field-6" className="field" rows={4} value={draft.chineseExplanation} onChange={(event) => setDraft({ ...draft, chineseExplanation: event.target.value })} /><label htmlFor="english-field-7">可學詞句</label><textarea id="english-field-7" className="field" rows={5} value={draft.learningPhrases} onChange={(event) => setDraft({ ...draft, learningPhrases: event.target.value })} /><label htmlFor="english-field-8">單字候選</label><textarea id="english-field-8" className="field" rows={5} value={draft.vocabularyWords} onChange={(event) => setDraft({ ...draft, vocabularyWords: event.target.value })} /><div className="english-image-actions"><button onClick={() => { setEditing(null); setDraft(null); }}>取消</button><button className="primary" disabled={busy === entry.id} onClick={() => void save(entry.route === "pending" && draft.route !== "pending")}>{busy === entry.id ? "儲存中…" : entry.route === "pending" && draft.route !== "pending" ? "儲存並分析" : "儲存"}</button></div></div>}</details>
+      {(entry.route === "pending" || entry.route === "game") && <div hidden={detailTab !== "images" && detailTab !== "content"}
+        className="english-image-route-actions" role="group" aria-label="遊戲畫面分析方式">
+        <button className="primary" disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game", "auto")}>遊戲英文（自動判讀）</button>
+        <button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game", "interface")}>遊戲介面學習</button>
+        <button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "game", "story")}>遊戲劇情／對白</button>
+      </div>}
+      {entry.route === "pending" && <div hidden={detailTab!=="images"} className="english-image-route-actions"><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "field")}>現場經歷並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "video")}>影音／逐字稿並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "classroom")}>課堂／工作回收並分析</button><button disabled={busy === entry.id} onClick={() => void routeAndAnalyze(entry, "reading")}>閱讀內容並分析</button></div>}
       {completionPromptId === entry.id && entry.status === "inbox" && <div className="english-image-completion-prompt"><div><small>{completionWarnings(entry).length ? "派送請求已結束・仍有狀態需確認" : "派送已完成"}</small><b>這筆素材還需要其他處理嗎？</b></div><div className="english-image-actions"><button className="primary" disabled={busy === entry.id} onClick={() => void setEntryStatus(entry, "organized")}>✓ 完成整理</button><button onClick={() => setCompletionPromptId(null)}>稍後繼續</button></div></div>}
       <section className="english-image-detail-section" hidden={detailTab!=="content"}><h3>圖片英文原文</h3><p>{entry.ocrText||"尚無辨識原文。"}</p><h3>情境補充</h3><p>{entry.contextNote||"尚未補充。"}</p></section>
       <div hidden={detailTab!=="phrases"} className="english-image-actions"><button onClick={()=>void openUnifiedDispatch(entry,"vocab")}>挑選單字</button><button onClick={()=>void openUnifiedDispatch(entry,"context")}>挑選表達與學習單元</button></div>
