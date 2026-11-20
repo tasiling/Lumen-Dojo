@@ -281,6 +281,13 @@ export async function listManualCards(bookId?: string) {
   const lists = await Promise.all(ids.map(async (b) => (await notebook(b)).manualCards ?? []));
   return lists.flat().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
+export async function listStudioDiscussions(): Promise<ReadingDiscussion[]> {
+  const [local, archived] = await Promise.all([storedBookIds(), archivedDiscussionIndex()]);
+  const books = new Set([...local, ...archived.keys()]);
+  return (await Promise.all([...books].map(async bookId =>
+    mergeArchivedDiscussions((await notebook(bookId)).discussions, archived.get(bookId) ?? [])
+  ))).flat();
+}
 export async function saveManualCard(body: Record<string, unknown>) {
   const bookId = id(body.bookId),
     noteId = id(body.noteId),

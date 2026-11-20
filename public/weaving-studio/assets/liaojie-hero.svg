@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" width="360" height="240" fill="none"><g stroke="white" stroke-width="1.5">
+      <path opacity=".8" d="M365 35c-102-8-175 54-175 130s73 115 175 92"/>
+      <path opacity=".55" d="M365 45c-91-8-165 48-165 120s74 104 165 82"/>
+      <path opacity=".72" d="M95 50c83-10 148 40 148 111s-65 119-148 110"/>
+      <path opacity=".6" stroke-dasharray="13 12" d="M110 61c73-8 123 37 123 100s-50 104-123 98"/>
+    </g></svg>
