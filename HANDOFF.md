@@ -2,7 +2,7 @@
 
 核對日期 2026-11-21（墨爾本）。GitHub 預設分支 `master` 與 Railway 正式服務當時成功部署的版本同為 `e97d353`。以下「正式版」指這份程式碼；使用者的手機驗收及外站收件結果另列。日後接手時，先比對 `master` 與 Railway 成功部署的 commit。 [程式基準](https://github.com/tasiling/Lumen-Dojo/commit/e97d3534b5b53e6efc7a089ef06a2e6ebfa6e4cb)
 
-**要接手模擬測試，從[模擬檔索引](simulations/README.md)開始。** 索引附各版本的原始試用站、可下載的檔案、啟動方式及待驗項目，野採列在最前面。
+**要接手模擬測試，從[模擬檔索引](simulations/README.md)開始。** 索引附各版本的原始試用站、可下載的檔案、啟動方式及待驗項目，野採列在最前面。 要接手原文共讀、閱讀心智圖或手機介面調整，從 [Skill 原檔與測試入口](skills/README.md) 選取對應指引。
 
 ## 產品與正式入口
 
