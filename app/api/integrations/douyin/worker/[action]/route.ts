@@ -1,7 +1,9 @@
 import { type NextRequest } from "next/server";
 import { captureIdPattern, douyinError, douyinJson, douyinJsonBody } from "@/lib/dojo/douyin/http";
+import { douyinFinishedMessage } from "@/lib/dojo/douyin/lineStatus";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { InputError } from "@/lib/dojo/douyin/share.mjs";
+import { clipQuickReply, pushLineMessage } from "@/lib/dojo/lineClipping";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,10 +23,21 @@ export async function POST(req: NextRequest, context: { params: Promise<{ action
     queue.authenticate(token);
     const data = await douyinJsonBody(req, action === "update" ? 10 * 1024 * 1024 : 4096);
     if (action === "claim") return douyinJson({ job: queue.claim(token, data.ready === true) });
-    if (typeof data.id !== "string" || !captureIdPattern.test(data.id))
+    const id = data.id;
+    if (typeof id !== "string" || !captureIdPattern.test(id))
       throw new InputError("素材編號格式不符。");
-    return douyinJson(queue.update(token, data));
+    const result = queue.update(token, data);
+    if (data.action === "finish" || data.action === "fail") notifyOwner(id, douyinFinishedMessage(queue.view(id)));
+    return douyinJson(result);
   } catch (error) {
     return douyinError(error);
   }
+}
+
+/** The transcript is already stored, so a notice that cannot be delivered never fails the Mac's update. */
+function notifyOwner(captureId: string, message: string | null) {
+  if (!message) return;
+  void pushLineMessage(message, clipQuickReply(captureId, false, false, "查看這筆素材")).catch((error) => {
+    console.error("野採抖音轉錄通知未送達", error instanceof Error ? error.message : "UnknownError");
+  });
 }

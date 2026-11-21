@@ -1,4 +1,5 @@
 import { readThreadsPost, threadsPostUrl } from "@/lib/dojo/threadsReader";
+import { douyinStatusLine } from "@/lib/dojo/douyin/lineStatus";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { InputError, readShare as readDouyinShare, sourceUrl as douyinSourceUrl } from "@/lib/dojo/douyin/share.mjs";
 import { after, NextRequest, NextResponse } from "next/server";
@@ -190,7 +191,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
       return true;
     }
     if (capture) {
-      await replyLineMessage(replyToken, `最近一筆｜一般素材\n「${capture.title}」\n${capture.sourceUrl || "圖片素材"}`, clipQuickReply(capture.id, capture.clip.attachments.length === 0 && Boolean(capture.sourceUrl)));
+      await replyLineMessage(replyToken, `最近一筆｜一般素材\n「${capture.title}」\n${capture.sourceUrl || "圖片素材"}${douyinStatusFor(capture.id)}`, clipQuickReply(capture.id, capture.clip.attachments.length === 0 && Boolean(capture.sourceUrl)));
       return true;
     }
   }
@@ -355,6 +356,15 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
   void userId;
 }
 
+/** A "轉錄：…" line for a clip that has a transcription job; empty for every other capture. */
+function douyinStatusFor(captureId: string): string {
+  try {
+    const queue = douyinQueue();
+    const job = queue.view(captureId);
+    return job ? `\n轉錄：${douyinStatusLine(job, queue.connection())}` : "";
+  } catch { return ""; }
+}
+
 async function handleDouyinShare(event: LineWebhookEvent, text: string): Promise<void> {
   const token = event.replyToken ?? "";
   let share;
@@ -394,9 +404,7 @@ async function handleDouyinShare(event: LineWebhookEvent, text: string): Promise
     }));
   }
   const job = queue.view(capture.id);
-  const status = job?.status === "done" ? "已有逐字稿"
-    : job?.status === "failed" ? "轉錄未完成，可在素材內重試"
-    : job?.status === "running" ? "Mac 正在轉錄" : "等待 Mac 轉錄";
+  const status = douyinStatusLine(job, queue.connection());
   await replyLineMessage(token, ["已剪藏｜抖音", `「${job?.title || capture.title}」`, status].join("\n"),
     clipQuickReply(capture.id, false, false, "查看這筆素材"));
 }

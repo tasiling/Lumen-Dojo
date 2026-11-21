@@ -432,6 +432,25 @@ export async function replyLineMessage(replyToken: string, text: string, quickRe
   }
 }
 
+/**
+ * Send the owner a message outside a webhook reply, for results that arrive later.
+ * Each call counts toward the LINE official account's monthly push quota; replies do not.
+ */
+export async function pushLineMessage(text: string, quickReply?: LineQuickReply): Promise<boolean> {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const to = process.env.LINE_ALLOWED_USER_ID;
+  if (!token || !to) return false;
+  const messages = splitLineText(text).map((chunk, index, chunks) => ({
+    type: "text", text: chunk, ...(quickReply && index === chunks.length - 1 ? { quickReply } : {}),
+  }));
+  const response = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ to, messages }), signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error(`LINE 推播失敗（${response.status}）`);
+  return true;
+}
+
 export async function fetchLineImage(messageId: string): Promise<{ bytes: ArrayBuffer; mimeType: string }> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) throw new Error("缺少 LINE_CHANNEL_ACCESS_TOKEN");
