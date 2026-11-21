@@ -4,12 +4,14 @@ import * as next from "next/server.js";
 import { fixture } from "./weaving-fixture.mjs";
 
 const replies = [];
+const pushes = [];
 const background = [];
 const f = await fixture({
   "next/server": { ...next, after: fn => background.push(fn) },
   "@/lib/dojo/lineClipping": () => ({
     ...f.load("lib/dojo/lineClipping.ts"),
     replyLineMessage: async (_token, text, quickReply) => replies.push({ text, quickReply }),
+    pushLineMessage: async (text, quickReply) => { pushes.push({ text, quickReply }); return true; },
   }),
 });
 Object.assign(process.env, {
@@ -54,7 +56,7 @@ try {
   assert.equal((await own.GET(f.req("GET", base, null, false))).status, 401);
   assert.equal((await endpoint("claim", { ready: true })).status, 401);
   const first = await send(raw, 1);
-  assert.match(first.text, /等待 Mac 轉錄/);
+  assert.match(first.text, /等待 Mac 轉錄：Mac 尚未配對/);
   const href = new URL(first.quickReply.items.find(item => item.action.label === "查看這筆素材").action.uri);
   assert.equal(href.origin, "https://dojo.example");
   const id = href.searchParams.get("captureId");
@@ -84,6 +86,8 @@ try {
   assert.equal((await update("identify", { videoId, title: "青銅器展" })).status, 200);
   assert.equal((await update("finish", { videoId: "11000000000" })).status, 422);
   assert.equal((await update("fail", { phase: "download", message: "播放來源回傳 HTTP 403。" })).status, 200);
+  assert.equal(pushes.length, 1);
+  assert.match(pushes[0].text, /^轉錄未完成｜抖音\n「青銅器展」\n停在：取得影片\n原因：播放來源回傳 HTTP 403。/);
   shown = await (await own.GET(f.req("GET", base + "?captureId=" + id))).json();
   assert.equal(shown.job.status, "failed");
   assert.match(shown.job.error, /403/);
@@ -97,6 +101,9 @@ try {
   const text = "這一段是青銅器展的逐字稿。";
   assert.equal((await endpoint("update", { id, lease: nextJob.lease, action: "finish", videoId, text,
     segments: [{ start: 0, end: 5.4, text }] }, token)).status, 200);
+  assert.equal(pushes.length, 2);
+  assert.match(pushes[1].text, /^轉錄完成｜抖音\n「青銅器展」/);
+  assert.equal(new URL(pushes[1].quickReply.items.find(i => i.action.label === "查看這筆素材").action.uri).searchParams.get("captureId"), id);
   const again = await send("https://www.douyin.com/video/" + videoId + "\n筆記：這段可做展覽參考。", 2);
   assert.match(again.text, /已有逐字稿/);
   assert.equal(new URL(again.quickReply.items.find(i => i.action.label === "查看這筆素材").action.uri).searchParams.get("captureId"), id);
