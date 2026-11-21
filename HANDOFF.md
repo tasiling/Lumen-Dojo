@@ -2,6 +2,8 @@
 
 核對日期 2026-11-21（墨爾本）。GitHub 預設分支 `master` 與 Railway 正式服務當時成功部署的版本同為 `e97d353`。以下「正式版」指這份程式碼；使用者的手機驗收及外站收件結果另列。日後接手時，先比對 `master` 與 Railway 成功部署的 commit。 [程式基準](https://github.com/tasiling/Lumen-Dojo/commit/e97d3534b5b53e6efc7a089ef06a2e6ebfa6e4cb)
 
+**要接手模擬測試，從[模擬檔索引](simulations/README.md)開始。** 索引附各版本的原始試用站、可下載的檔案、啟動方式及待驗項目，野採列在最前面。
+
 ## 產品與正式入口
 
 行光道場是全零自用的繁體中文、手機優先工作站。擁有者在同一處記下生活、做練習、收進素材，把閱讀發現發展成作品，並管理自己的內容與服務。個人日誌和創作排程可以同日出現在行事曆，各自保有資料來源和進度。
@@ -22,7 +24,7 @@
 | 狀態 | 接手工作與完成條件 |
 | --- | --- |
 | 已合併，優先做手機驗收 | 織光堂與聊解室已切至工作室首頁，真實材料及織光杼 GPT 討論也已接上。用一張本人允許的卡從首頁立杼，分別建一篇文字與一份漫畫，實際走過帶入素材、保存、重開、定稿與回杼。這能定位先前回報的「選了形式之後無法接著做成品」。 [#127](https://github.com/tasiling/Lumen-Dojo/pull/127) · [#128](https://github.com/tasiling/Lumen-Dojo/pull/128) |
-| 模擬版先行，待本人確認 | 正式工作室目前的 A 為診斷草稿／確認意圖，B 為研究與主文或媒體腳本，C 為確定稿轉譯，D 為從成品建立知識脈絡。下一輪要逐一比對各工具的輸入、GPT 回傳、本人採用與保存位置，並在模擬版試 D 的心智圖。草稿 PR 有另一版原生編修流程，移植前先逐項比對。 [目前按鈕](public/weaving-studio/workspace.js) · [指令對應](public/weaving-studio/diamond.js) · [草稿 PR #114](https://github.com/tasiling/Lumen-Dojo/pull/114) |
+| 模擬版先行，待本人確認 | 正式工作室目前的 A 為診斷草稿／確認意圖，B 為研究與主文或媒體腳本，C 為確定稿轉譯，D 為從成品建立知識脈絡。[創作流程模擬 v16](simulations/creative-studio-v16.zip) 已可操作 A／B／C／D、D 心智圖及五種媒體通道。下一輪由本人逐一核對各工具的輸入、GPT 回傳、採用與保存位置。草稿 PR 有另一版原生編修流程，移植前先逐項比對。 [目前按鈕](public/weaving-studio/workspace.js) · [指令對應](public/weaving-studio/diamond.js) · [草稿 PR #114](https://github.com/tasiling/Lumen-Dojo/pull/114) |
 | 已合併，跨服務實測待核對 | LINE 收圖重試及遊戲介面教材已進主線。用一組多圖核對原圖順序、截圖分類、目的地、語境修習室重開後的內容；另核對送 VF 的表達、目標豆倉與接收端詞卡。抖音的正式入口在 #126，#125 是另一個獨立試驗；完整轉錄需已配對且在線的 Mac。 [#129](https://github.com/tasiling/Lumen-Dojo/pull/129) · [#130](https://github.com/tasiling/Lumen-Dojo/pull/130) · [正式 #126](https://github.com/tasiling/Lumen-Dojo/pull/126) · [試驗 #125](https://github.com/tasiling/Lumen-Dojo/pull/125) |
 | 部分已做，仍有分支或規劃 | 閱讀書架、歷史討論成果與跨書搜尋已進主線；閱讀卡片的手機操作另有開放中的 #123，先比對目前卡面。心・情的「GPT 依情境推薦日記格式、回看整輪本人原話」仍屬模擬驗收。書寫修習已有英文字型工作臺，逐筆動畫、描摹畫布與後續中文／左手細部練習列在 #109。 [閱讀 PR #123](https://github.com/tasiling/Lumen-Dojo/pull/123) · [書寫議題 #109](https://github.com/tasiling/Lumen-Dojo/issues/109) · [書寫交付範圍](docs/handwriting-workspace-launch-20261103.md) |
 | 尚未交付 | 聊解室的對外自助預約／改期、安全交付門戶，以及舊工具媒體與排版的完整原生轉換仍待開發。現有服務管理由擁有者操作。 [創作與服務驗收紀錄](docs/creative-studio-acceptance.md) |

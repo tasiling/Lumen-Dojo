@@ -1,0 +1,248 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>野採｜截圖逐段回看試作</title></head><body><div id="xhs-forage-walkthrough" class="viz-dotted-background" lang="zh-Hant">
+  <section class="xf-sheet" aria-label="野採圖文逐段回看的操作示範">
+    <header class="xf-head">
+      <div><small>行光道場</small><h2>野採</h2></div>
+      <span>操作示範</span>
+    </header>
+    <nav class="xf-nav" aria-label="野採工作區">
+      <button type="button" data-mode="inbox" aria-pressed="true">一般採集匣</button>
+      <button type="button" data-mode="review" aria-pressed="false">回看所拾</button>
+    </nav>
+    <div id="xf-inbox" class="xf-content">
+      <div class="xf-listhead"><h3>小紅書收藏</h3><small>2 則・5 張截圖</small></div>
+      <div id="xf-records"></div>
+      <small class="xf-foot">試作範例使用兩則自寫素材及五張示意圖。</small>
+    </div>
+    <div id="xf-review" class="xf-content" hidden>
+      <div class="xf-source">
+        <label for="xf-source-choice">正在回看的收藏</label>
+        <select id="xf-source-choice"></select>
+        <small id="xf-source-meta"></small>
+      </div>
+      <nav id="xf-pager" class="xf-pages" aria-label="切換原圖"></nav>
+      <figure class="xf-figure">
+        <figcaption><span id="xf-crop-label">原圖局部</span><button id="xf-zoom" type="button" aria-pressed="false">看完整截圖</button></figcaption>
+        <div class="xf-stage" id="xf-stage"><img id="xf-image" alt=""><span id="xf-mark-box" hidden></span></div>
+      </figure>
+      <div class="xf-text">
+        <label for="xf-line">圖中文字</label>
+        <select id="xf-line"></select>
+        <p id="xf-transcript" lang="zh-Hans"></p>
+        <div id="xf-other" class="xf-links"></div>
+      </div>
+      <div class="xf-annot">
+        <button class="xf-main" id="xf-pin" type="button" aria-pressed="false">標記這段</button>
+        <button type="button" id="xf-note-button" aria-expanded="false" aria-controls="xf-note-editor">寫下自己的話</button>
+      </div>
+      <div id="xf-note-editor" hidden>
+        <label for="xf-note-target">這句話想留在哪裡</label>
+        <select id="xf-note-target"><option value="part">這段原文旁</option><option value="whole">整篇收藏旁</option></select>
+        <label for="xf-note">我的話</label>
+        <textarea rows="2" id="xf-note" placeholder="可以先留白"></textarea>
+        <small>試寫內容只保留在這次開啟的示範裡。</small>
+      </div>
+      <div id="xf-saved" hidden><h3>這篇的回看紀錄</h3><div id="xf-saved-items"></div></div>
+    </div>
+    <span id="xf-live" role="status" aria-live="polite" class="xf-sr"></span>
+  </section>
+</div>
+<style>
+  #xhs-forage-walkthrough{color-scheme:light dark;--xf-paper:light-dark(#fffcf5,#25221d);--xf-ink:light-dark(#362b21,#f8ecdc);--xf-sub:light-dark(#6c6051,#cdbda8);--xf-line:light-dark(#dbd1bf,#51483b);--xf-fill:light-dark(#f5eedf,#302b23);--xf-honey:light-dark(#79532d,#e3bd8f);--xf-action:light-dark(#694829,#eed3b3);--xf-on-action:light-dark(#fffbf2,#332417);--xf-focal:light-dark(#a45f17,#eea850);padding:8px 4px;font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.5;color:var(--xf-ink)}
+  #xhs-forage-walkthrough *{box-sizing:border-box}
+  #xhs-forage-walkthrough [hidden]{display:none!important}
+  #xhs-forage-walkthrough .xf-sheet{margin:auto;max-width:620px;min-width:0;background:var(--xf-paper);border:1px solid var(--xf-line);border-radius:14px;overflow:hidden}
+  #xhs-forage-walkthrough h2,#xhs-forage-walkthrough h3,#xhs-forage-walkthrough p,#xhs-forage-walkthrough figure{margin:0}
+  #xhs-forage-walkthrough h2,#xhs-forage-walkthrough h3{color:var(--xf-ink);font-family:"Songti TC","Noto Serif TC","PMingLiU",serif}
+  #xhs-forage-walkthrough h2{font-size:28px;line-height:1.25;font-weight:600;letter-spacing:.04em}
+  #xhs-forage-walkthrough h3{font-size:19px;line-height:1.45;font-weight:600}
+  #xhs-forage-walkthrough small,#xhs-forage-walkthrough .xf-head>span{font-size:12px;color:var(--xf-sub)}
+  #xhs-forage-walkthrough button,#xhs-forage-walkthrough select,#xhs-forage-walkthrough textarea{font:inherit;color:var(--xf-ink)}
+  #xhs-forage-walkthrough button{appearance:none;background:none;border:0;min-height:42px;line-height:1.35;padding:6px 9px;border-radius:6px;text-align:center}
+  #xhs-forage-walkthrough button:focus-visible,#xhs-forage-walkthrough select:focus-visible,#xhs-forage-walkthrough textarea:focus-visible{outline:2px solid var(--xf-honey);outline-offset:2px}
+  #xhs-forage-walkthrough button:hover{background:var(--xf-fill)}
+  #xhs-forage-walkthrough select,#xhs-forage-walkthrough textarea{width:100%;min-width:0;border-radius:6px;border:1px solid var(--xf-line);background:var(--xf-paper);padding:9px 8px;font-size:16px}
+  #xhs-forage-walkthrough .xf-source select,#xhs-forage-walkthrough #xf-line{font-weight:550}
+  #xhs-forage-walkthrough .xf-source label,#xhs-forage-walkthrough .xf-text>label,#xhs-forage-walkthrough #xf-note-editor label{display:block;margin:0 0 5px;color:var(--xf-sub);font-size:13px}
+  #xhs-forage-walkthrough .xf-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:17px 24px 9px}
+  #xhs-forage-walkthrough .xf-head>span{margin-right:58px}
+  #xhs-forage-walkthrough .xf-nav{display:flex;gap:20px;border-bottom:1px solid var(--xf-line);padding:0 24px}
+  #xhs-forage-walkthrough .xf-nav button{border-radius:0;padding:9px 1px;border-bottom:2px solid transparent;color:var(--xf-sub);font-size:15px}
+  #xhs-forage-walkthrough .xf-nav button[aria-pressed="true"]{color:var(--xf-honey);border-bottom-color:var(--xf-honey);font-weight:650}
+  #xhs-forage-walkthrough .xf-content{padding:16px 24px 18px}
+  #xhs-forage-walkthrough .xf-listhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:3px}
+  #xhs-forage-walkthrough .xf-entry{display:grid;grid-template-columns:76px minmax(0,1fr);column-gap:14px;align-items:start;padding:16px 0;border-bottom:1px solid var(--xf-line)}
+  #xhs-forage-walkthrough .xf-thumb{width:76px;aspect-ratio:3/4;object-fit:cover;object-position:50% 17%;border:1px solid var(--xf-line);border-radius:4px;background:var(--xf-fill)}
+  #xhs-forage-walkthrough .xf-entry h4{font:600 17px/1.42 "PingFang TC","Noto Sans TC",system-ui,sans-serif;overflow-wrap:anywhere;margin:2px 0 3px;color:var(--xf-ink)}
+  #xhs-forage-walkthrough .xf-entry-actions,.xf-pages,.xf-annot,#xhs-forage-walkthrough .xf-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+  #xhs-forage-walkthrough .xf-entry-actions{margin-top:3px}
+  #xhs-forage-walkthrough .xf-entry-actions button,.xf-pages button{padding-inline:8px;color:var(--xf-honey);font-size:14px}
+  #xhs-forage-walkthrough .xf-entry-actions button:first-child{margin-left:-7px}
+  #xhs-forage-walkthrough .xf-foot{display:block;margin-top:12px}
+  #xhs-forage-walkthrough .xf-source small{display:block;margin-top:5px}
+  #xhs-forage-walkthrough .xf-pages{margin:10px 0 8px;gap:5px}
+  #xhs-forage-walkthrough .xf-pages button[aria-pressed="true"]{background:var(--xf-fill);color:var(--xf-ink);box-shadow:inset 0 0 0 1px var(--xf-line)}
+  #xhs-forage-walkthrough .xf-figure{background:var(--xf-fill);padding:4px 11px 11px;border-radius:8px}
+  #xhs-forage-walkthrough figcaption{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--xf-sub)}
+  #xhs-forage-walkthrough figcaption button,#xhs-forage-walkthrough .xf-links button,#xhs-forage-walkthrough #xf-note-button{color:var(--xf-honey);text-decoration:underline;text-underline-offset:3px}
+  #xhs-forage-walkthrough .xf-stage{position:relative;overflow:hidden;margin:0 auto;max-width:100%;background:var(--xf-paper);border-radius:4px}
+  #xhs-forage-walkthrough .xf-stage img{position:absolute;max-width:none;max-height:none;display:block}
+  #xhs-forage-walkthrough #xf-mark-box{position:absolute;outline:2px solid var(--xf-focal);outline-offset:1px;border-radius:2px;pointer-events:none}
+  #xhs-forage-walkthrough .xf-text{margin-top:14px}
+  #xhs-forage-walkthrough #xf-transcript{padding:9px 0 2px;font-size:16px;overflow-wrap:anywhere;white-space:pre-wrap}
+  #xhs-forage-walkthrough .xf-links{font-size:13px;color:var(--xf-sub)}
+  #xhs-forage-walkthrough .xf-links button{font-size:13px}
+  #xhs-forage-walkthrough .xf-annot{margin-top:10px;gap:8px}
+  #xhs-forage-walkthrough button.xf-main{background:var(--xf-action);color:var(--xf-on-action);padding:9px 16px}
+  #xhs-forage-walkthrough button.xf-main[aria-pressed="true"]{background:var(--xf-fill);color:var(--xf-honey);box-shadow:inset 0 0 0 1px var(--xf-line)}
+  #xhs-forage-walkthrough #xf-note-editor,#xhs-forage-walkthrough #xf-saved{border-top:1px solid var(--xf-line);margin-top:15px;padding-top:13px}
+  #xhs-forage-walkthrough #xf-note-editor label:not(:first-child){margin-top:8px}
+  #xhs-forage-walkthrough textarea{resize:vertical;display:block}
+  #xhs-forage-walkthrough #xf-note-editor small{display:block;margin-top:5px}
+  #xhs-forage-walkthrough #xf-saved h3{font-size:16px}
+  #xhs-forage-walkthrough .xf-saved-row{padding:7px 0;border-bottom:1px solid var(--xf-line)}
+  #xhs-forage-walkthrough .xf-saved-row:last-child{border:0}
+  #xhs-forage-walkthrough .xf-saved-row button{display:block;text-align:left;color:var(--xf-honey);padding-left:0;overflow-wrap:anywhere;font-size:14px}
+  #xhs-forage-walkthrough .xf-saved-row p{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+  #xhs-forage-walkthrough .xf-sr{position:absolute!important;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  @media(max-width:440px){#xhs-forage-walkthrough .xf-head{padding:14px 14px 8px}#xhs-forage-walkthrough .xf-nav{padding:0 14px}#xhs-forage-walkthrough .xf-content{padding:13px 14px 15px}#xhs-forage-walkthrough .xf-entry{grid-template-columns:55px minmax(0,1fr);gap:10px}#xhs-forage-walkthrough .xf-thumb{width:55px}#xhs-forage-walkthrough .xf-entry-actions{gap:0}}
+  @media(pointer:coarse){#xhs-forage-walkthrough button,#xhs-forage-walkthrough select{min-height:44px}}
+</style>
+<script>
+(()=>{
+  const root=document.getElementById('xhs-forage-walkthrough');
+  if(!root||root.dataset.ready)return;
+  root.dataset.ready='true';
+  const data={"pages": [{"id": "overview", "tab": "總覽", "width": 700, "height": 1200, "default": 0, "image": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3MDAiIGhlaWdodD0iMTIwMCI+PHJlY3Qgd2lkdGg9IjcwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjZjZmMGU2Ii8+PHRleHQgeD0iNDAiIHk9IjYwIiBmb250LXNpemU9IjMyIj7nuL3opr3vvZzooZfop5Lop4Dlr5/npLrkvos8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjEzNCIgZm9udC1zaXplPSIyMyI+MDHjgIDoqJjkuIvlnLDpu548L3RleHQ+PHRleHQgeD0iNDAiIHk9IjE2NCIgZm9udC1zaXplPSIxOSI+5a+r5LiL5pyA6L+R55qE6Lev5Y+j44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSIyMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIyMzQiIGZvbnQtc2l6ZT0iMjMiPjAy44CA6IGG6IG9PC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIyNjQiIGZvbnQtc2l6ZT0iMTkiPuetieS4gOWIhumQmO+8jOiBveiBvemZhOi/keeahOiBsumfs+OAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iMzA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iMzM0IiBmb250LXNpemU9IjIzIj4wM+OAgOaqouafpeWFiee3mjwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMzY0IiBmb250LXNpemU9IjE5Ij7lvp7pmbDlvbHovqjoqo3lpKrpmb3nmoTmlrnlkJHjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjQwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjQzNCIgZm9udC1zaXplPSIyMyI+MDTjgIDlhYjmi43lhajmma88L3RleHQ+PHRleHQgeD0iNDAiIHk9IjQ2NCIgZm9udC1zaXplPSIxOSI+55WZ5LiA5by16IO955yL5Ye65ZGo5ZyN55Kw5aKD55qE54Wn54mH44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI1MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI1MzQiIGZvbnQtc2l6ZT0iMjMiPjA144CA5qiZ6KiY5pa55ZCRPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI1NjQiIGZvbnQtc2l6ZT0iMTkiPueUqOeuremgreiou+iomOihjOi1sOeahOaWueWQkeOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iNjA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iNjM0IiBmb250LXNpemU9IjIzIj4wNuOAgOioreioiOWVj+mhjDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iNjY0IiBmb250LXNpemU9IjE5Ij7llY/kuIDlgIvpgoTmspLmnInnrZTmoYjnmoTllY/poYzjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjcwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjczNCIgZm9udC1zaXplPSIyMyI+MDfjgIDlr6vkuIDlj6XoqbE8L3RleHQ+PHRleHQgeD0iNDAiIHk9Ijc2NCIgZm9udC1zaXplPSIxOSI+55So6Ieq5bex55qE6Kmx5o+P6L+w55y85YmN55qE5qij5a2Q44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI4MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI4MzQiIGZvbnQtc2l6ZT0iMjMiPjA444CA5L+d55WZ55aR5ZWPPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI4NjQiIGZvbnQtc2l6ZT0iMTkiPuaKiueEoeazleeiuuWumueahOS6i+WPpuWkluWciOi1t+S+huOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iOTA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iOTM0IiBmb250LXNpemU9IjIzIj4wOeOAgOavlOWwjee0sOevgDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iOTY0IiBmb250LXNpemU9IjE5Ij7lsIvmib7lhanlvLXnhafniYfkuK3nm7jlkIznmoToqJjomZ/jgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIxMDM0IiBmb250LXNpemU9IjIzIj4xMOOAgOWbnumhp+S+i+WtkDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMTA2NCIgZm9udC1zaXplPSIxOSI+5Zue55yL5LiK5LiA5qyh55qE562G6KiY44CCPC90ZXh0Pjwvc3ZnPg==", "lines": [{"name": "記下地點", "text": "寫下最近的路口。", "box": [26, 104, 674, 188]}, {"name": "聆聽", "text": "等一分鐘，聽聽附近的聲音。", "box": [26, 204, 674, 288]}, {"name": "檢查光線", "text": "從陰影辨認太陽的方向。", "box": [26, 304, 674, 388]}, {"name": "先拍全景", "text": "留一張能看出周圍環境的照片。", "box": [26, 404, 674, 488]}, {"name": "標記方向", "text": "用箭頭註記行走的方向。", "box": [26, 504, 674, 588]}, {"name": "設計問題", "text": "問一個還沒有答案的問題。", "box": [26, 604, 674, 688]}, {"name": "寫一句話", "text": "用自己的話描述眼前的樣子。", "box": [26, 704, 674, 788]}, {"name": "保留疑問", "text": "把無法確定的事另外圈起來。", "box": [26, 804, 674, 888]}, {"name": "比對細節", "text": "尋找兩張照片中相同的記號。", "box": [26, 904, 674, 988]}, {"name": "回顧例子", "text": "回看上一次的筆記。", "box": [26, 1004, 674, 1088]}]}, {"id": "topics", "tab": "選題", "width": 700, "height": 1200, "default": 0, "image": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3MDAiIGhlaWdodD0iMTIwMCI+PHJlY3Qgd2lkdGg9IjcwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjZjZmMGU2Ii8+PHRleHQgeD0iNDAiIHk9IjYwIiBmb250LXNpemU9IjMyIj7pgbjpoYzvvZzooZfop5Lop4Dlr5/npLrkvos8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjEzNCIgZm9udC1zaXplPSIyMyI+MDHjgIDoqJjkuIvlnLDpu548L3RleHQ+PHRleHQgeD0iNDAiIHk9IjE2NCIgZm9udC1zaXplPSIxOSI+5om+5LiA5YCL5Y+v5Lul5Zue6Kiq55qE5L2N572u44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSIyMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIyMzQiIGZvbnQtc2l6ZT0iMjMiPjAy44CA6IGG6IG9PC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIyNjQiIGZvbnQtc2l6ZT0iMTkiPuaKiuiBsumfs+eVtuS9nOingOWvn+eahOi1t+m7nuOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iMzA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iMzM0IiBmb250LXNpemU9IjIzIj4wM+OAgOaqouafpeWFiee3mjwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMzY0IiBmb250LXNpemU9IjE5Ij7lvp7lkIzkuIDmop3ooZfpgbjmmI7mmpflhanomZXjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjQwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjQzNCIgZm9udC1zaXplPSIyMyI+MDTjgIDlhYjmi43lhajmma88L3RleHQ+PHRleHQgeD0iNDAiIHk9IjQ2NCIgZm9udC1zaXplPSIxOSI+6K6T6KaW6YeO5a655b6X5LiL5pW05YCL6Lev5Y+j44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI1MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI1MzQiIGZvbnQtc2l6ZT0iMjMiPjA144CA5qiZ6KiY5pa55ZCRPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI1NjQiIGZvbnQtc2l6ZT0iMTkiPuiomOS4i+S4i+S4gOatpeaDs+aOouioqueahOaWueWQkeOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iNjA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iNjM0IiBmb250LXNpemU9IjIzIj4wNuOAgOioreioiOWVj+mhjDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iNjY0IiBmb250LXNpemU9IjE5Ij7lhYjlr6vkuIvmg7Pnn6XpgZPnmoTkuovjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjcwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjczNCIgZm9udC1zaXplPSIyMyI+MDfjgIDlr6vkuIDlj6XoqbE8L3RleHQ+PHRleHQgeD0iNDAiIHk9Ijc2NCIgZm9udC1zaXplPSIxOSI+55So55+t5Y+l5pS25paC5LuK5aSp55qE6aGM55uu44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI4MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI4MzQiIGZvbnQtc2l6ZT0iMjMiPjA444CA5L+d55WZ55aR5ZWPPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI4NjQiIGZvbnQtc2l6ZT0iMTkiPueVmeS4gOWAi+S4i+asoeWbnuioqueahOWVj+mhjOOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iOTA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iOTM0IiBmb250LXNpemU9IjIzIj4wOeOAgOavlOWwjee0sOevgDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iOTY0IiBmb250LXNpemU9IjE5Ij7pgbjlhanlgIvntLDnr4DnlbbkvZzlsI3nhafjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIxMDM0IiBmb250LXNpemU9IjIzIj4xMOOAgOWbnumhp+S+i+WtkDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMTA2NCIgZm9udC1zaXplPSIxOSI+5oyR5LiA5YmH5pyA5pyJ5oSf55qE5L6L5a2Q44CCPC90ZXh0Pjwvc3ZnPg==", "lines": [{"name": "記下地點", "text": "找一個可以回訪的位置。", "box": [26, 104, 674, 188]}, {"name": "聆聽", "text": "把聲音當作觀察的起點。", "box": [26, 204, 674, 288]}, {"name": "檢查光線", "text": "從同一條街選明暗兩處。", "box": [26, 304, 674, 388]}, {"name": "先拍全景", "text": "讓視野容得下整個路口。", "box": [26, 404, 674, 488]}, {"name": "標記方向", "text": "記下下一步想探訪的方向。", "box": [26, 504, 674, 588]}, {"name": "設計問題", "text": "先寫下想知道的事。", "box": [26, 604, 674, 688]}, {"name": "寫一句話", "text": "用短句收斂今天的題目。", "box": [26, 704, 674, 788]}, {"name": "保留疑問", "text": "留一個下次回訪的問題。", "box": [26, 804, 674, 888]}, {"name": "比對細節", "text": "選兩個細節當作對照。", "box": [26, 904, 674, 988]}, {"name": "回顧例子", "text": "挑一則最有感的例子。", "box": [26, 1004, 674, 1088]}]}, {"id": "make", "tab": "創作", "width": 700, "height": 1200, "default": 0, "image": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3MDAiIGhlaWdodD0iMTIwMCI+PHJlY3Qgd2lkdGg9IjcwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjZjZmMGU2Ii8+PHRleHQgeD0iNDAiIHk9IjYwIiBmb250LXNpemU9IjMyIj7libXkvZzvvZzooZfop5Lop4Dlr5/npLrkvos8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjEzNCIgZm9udC1zaXplPSIyMyI+MDHjgIDoqJjkuIvlnLDpu548L3RleHQ+PHRleHQgeD0iNDAiIHk9IjE2NCIgZm9udC1zaXplPSIxOSI+54K65aC05pmv55Wr5LiA5YCL57Ch5ZyW44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSIyMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIyMzQiIGZvbnQtc2l6ZT0iMjMiPjAy44CA6IGG6IG9PC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIyNjQiIGZvbnQtc2l6ZT0iMTkiPuaKiuiFs+atpeiBsuaUvuWcqOesrOS4gOauteOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iMzA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iMzM0IiBmb250LXNpemU9IjIzIj4wM+OAgOaqouafpeWFiee3mjwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMzY0IiBmb250LXNpemU9IjE5Ij7mj4/ov7DkuIDmnZ/lhYnokL3lnKjlk6roo6HjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjQwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjQzNCIgZm9udC1zaXplPSIyMyI+MDTjgIDlhYjmi43lhajmma88L3RleHQ+PHRleHQgeD0iNDAiIHk9IjQ2NCIgZm9udC1zaXplPSIxOSI+55So5YWo5pmv5L2c54K655Wr6Z2i55qE6ZaL6aCt44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI1MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI1MzQiIGZvbnQtc2l6ZT0iMjMiPjA144CA5qiZ6KiY5pa55ZCRPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI1NjQiIGZvbnQtc2l6ZT0iMTkiPuaKiuavj+asoei9ieW9jueVq+aIkOespuiZn+OAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iNjA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iNjM0IiBmb250LXNpemU9IjIzIj4wNuOAgOioreioiOWVj+mhjDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iNjY0IiBmb250LXNpemU9IjE5Ij7mm7/kuIvkuIDmrrXlr6vkuIDlgIvmj5DllY/jgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjcwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjczNCIgZm9udC1zaXplPSIyMyI+MDfjgIDlr6vkuIDlj6XoqbE8L3RleHQ+PHRleHQgeD0iNDAiIHk9Ijc2NCIgZm9udC1zaXplPSIxOSI+6Kmm5a+r5LiA5Y+l5Y+v5Lul5pyX6K6A55qE5peB55m944CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI4MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI4MzQiIGZvbnQtc2l6ZT0iMjMiPjA444CA5L+d55WZ55aR5ZWPPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI4NjQiIGZvbnQtc2l6ZT0iMTkiPuS/neeVmeaaq+aZgumChOS4jeeQhuino+eahOmDqOWIhuOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iOTA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iOTM0IiBmb250LXNpemU9IjIzIj4wOeOAgOavlOWwjee0sOevgDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iOTY0IiBmb250LXNpemU9IjE5Ij7mi7/nm7jlkIznmoToqJjomZ/kuLLotbflhanmoLzjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIxMDM0IiBmb250LXNpemU9IjIzIj4xMOOAgOWbnumhp+S+i+WtkDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMTA2NCIgZm9udC1zaXplPSIxOSI+6Kq/5pW05L6L5a2Q5Ye654++55qE6aCG5bqP44CCPC90ZXh0Pjwvc3ZnPg==", "lines": [{"name": "記下地點", "text": "為場景畫一個簡圖。", "box": [26, 104, 674, 188]}, {"name": "聆聽", "text": "把腳步聲放在第一段。", "box": [26, 204, 674, 288]}, {"name": "檢查光線", "text": "描述一束光落在哪裡。", "box": [26, 304, 674, 388]}, {"name": "先拍全景", "text": "用全景作為畫面的開頭。", "box": [26, 404, 674, 488]}, {"name": "標記方向", "text": "把每次轉彎畫成符號。", "box": [26, 504, 674, 588]}, {"name": "設計問題", "text": "替下一段寫一個提問。", "box": [26, 604, 674, 688]}, {"name": "寫一句話", "text": "試寫一句可以朗讀的旁白。", "box": [26, 704, 674, 788]}, {"name": "保留疑問", "text": "保留暫時還不理解的部分。", "box": [26, 804, 674, 888]}, {"name": "比對細節", "text": "拿相同的記號串起兩格。", "box": [26, 904, 674, 988]}, {"name": "回顧例子", "text": "調整例子出現的順序。", "box": [26, 1004, 674, 1088]}]}, {"id": "post", "tab": "發布", "width": 700, "height": 1200, "default": 0, "image": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3MDAiIGhlaWdodD0iMTIwMCI+PHJlY3Qgd2lkdGg9IjcwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjZjZmMGU2Ii8+PHRleHQgeD0iNDAiIHk9IjYwIiBmb250LXNpemU9IjMyIj7nmbzluIPvvZzooZfop5Lop4Dlr5/npLrkvos8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjEzNCIgZm9udC1zaXplPSIyMyI+MDHjgIDoqJjkuIvlnLDpu548L3RleHQ+PHRleHQgeD0iNDAiIHk9IjE2NCIgZm9udC1zaXplPSIxOSI+6K6T6K6A6ICF55+l6YGT6YCZ5piv5ZOq56iu56m66ZaT44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSIyMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIyMzQiIGZvbnQtc2l6ZT0iMjMiPjAy44CA6IGG6IG9PC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIyNjQiIGZvbnQtc2l6ZT0iMTkiPuWcqOeFp+eJh+aXgeWvq+S4i+iBveWIsOeahOiBsumfs+OAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iMzA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iMzM0IiBmb250LXNpemU9IjIzIj4wM+OAgOaqouafpeWFiee3mjwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMzY0IiBmb250LXNpemU9IjE5Ij7nlKjnsKHnn63lnJboqqrkuqTku6PmmYLplpPjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjQwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjQzNCIgZm9udC1zaXplPSIyMyI+MDTjgIDlhYjmi43lhajmma88L3RleHQ+PHRleHQgeD0iNDAiIHk9IjQ2NCIgZm9udC1zaXplPSIxOSI+5YWI5pS+5YWo5pmv77yM5YaN5pS+5bGA6YOo44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI1MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI1MzQiIGZvbnQtc2l6ZT0iMjMiPjA144CA5qiZ6KiY5pa55ZCRPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI1NjQiIGZvbnQtc2l6ZT0iMTkiPuiqqua4healmuingOWvn+i3r+e3muOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iNjA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iNjM0IiBmb250LXNpemU9IjIzIj4wNuOAgOioreioiOWVj+mhjDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iNjY0IiBmb250LXNpemU9IjE5Ij7lnKjmlofmnKvnlZnkuIvljp/kvobnmoTllY/poYzjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjcwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjczNCIgZm9udC1zaXplPSIyMyI+MDfjgIDlr6vkuIDlj6XoqbE8L3RleHQ+PHRleHQgeD0iNDAiIHk9Ijc2NCIgZm9udC1zaXplPSIxOSI+56K66KqN5LiA5Y+l6Kmx6IO9542o56uL55CG6Kej44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI4MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI4MzQiIGZvbnQtc2l6ZT0iMjMiPjA444CA5L+d55WZ55aR5ZWPPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI4NjQiIGZvbnQtc2l6ZT0iMTkiPuaKiuWBh+ioreaomeaIkOW+heafpeitieOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iOTA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iOTM0IiBmb250LXNpemU9IjIzIj4wOeOAgOavlOWwjee0sOevgDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iOTY0IiBmb250LXNpemU9IjE5Ij7kuKbmjpLlhanlgIvlj6/ku6Xlm57nnIvnmoTntLDnr4DjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIxMDM0IiBmb250LXNpemU9IjIzIj4xMOOAgOWbnumhp+S+i+WtkDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMTA2NCIgZm9udC1zaXplPSIxOSI+6Kqq6Kqq5ZOq5LiA6aCB5pyA5YC85b6X5Zue6Kiq44CCPC90ZXh0Pjwvc3ZnPg==", "lines": [{"name": "記下地點", "text": "讓讀者知道這是哪種空間。", "box": [26, 104, 674, 188]}, {"name": "聆聽", "text": "在照片旁寫下聽到的聲音。", "box": [26, 204, 674, 288]}, {"name": "檢查光線", "text": "用簡短圖說交代時間。", "box": [26, 304, 674, 388]}, {"name": "先拍全景", "text": "先放全景，再放局部。", "box": [26, 404, 674, 488]}, {"name": "標記方向", "text": "說清楚觀察路線。", "box": [26, 504, 674, 588]}, {"name": "設計問題", "text": "在文末留下原來的問題。", "box": [26, 604, 674, 688]}, {"name": "寫一句話", "text": "確認一句話能獨立理解。", "box": [26, 704, 674, 788]}, {"name": "保留疑問", "text": "把假設標成待查證。", "box": [26, 804, 674, 888]}, {"name": "比對細節", "text": "並排兩個可以回看的細節。", "box": [26, 904, 674, 988]}, {"name": "回顧例子", "text": "說說哪一頁最值得回訪。", "box": [26, 1004, 674, 1088]}]}, {"id": "social", "tab": "重訪手記", "width": 700, "height": 1200, "default": 0, "image": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3MDAiIGhlaWdodD0iMTIwMCI+PHJlY3Qgd2lkdGg9IjcwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjZjZmMGU2Ii8+PHRleHQgeD0iNDAiIHk9IjYwIiBmb250LXNpemU9IjMyIj7ph43oqKrmiYvoqJjvvZzooZfop5Lop4Dlr5/npLrkvos8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjEwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjEzNCIgZm9udC1zaXplPSIyMyI+MDHjgIDoqJjkuIvlnLDpu548L3RleHQ+PHRleHQgeD0iNDAiIHk9IjE2NCIgZm9udC1zaXplPSIxOSI+5om+5LiA5YCL5Y+v5Lul5Zue6Kiq55qE5L2N572u44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSIyMDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSIyMzQiIGZvbnQtc2l6ZT0iMjMiPjAy44CA6IGG6IG9PC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIyNjQiIGZvbnQtc2l6ZT0iMTkiPuaKiuiBsumfs+eVtuS9nOingOWvn+eahOi1t+m7nuOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iMzA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iMzM0IiBmb250LXNpemU9IjIzIj4wM+OAgOaqouafpeWFiee3mjwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMzY0IiBmb250LXNpemU9IjE5Ij7lvp7lkIzkuIDmop3ooZfpgbjmmI7mmpflhanomZXjgII8L3RleHQ+PHJlY3QgeD0iMjYiIHk9IjQwNCIgd2lkdGg9IjY0OCIgaGVpZ2h0PSI4NCIgcng9IjQiIGZpbGw9IndoaXRlIi8+PHRleHQgeD0iNDAiIHk9IjQzNCIgZm9udC1zaXplPSIyMyI+MDTjgIDlhYjmi43lhajmma88L3RleHQ+PHRleHQgeD0iNDAiIHk9IjQ2NCIgZm9udC1zaXplPSIxOSI+6K6T6KaW6YeO5a655b6X5LiL5pW05YCL6Lev5Y+j44CCPC90ZXh0PjxyZWN0IHg9IjI2IiB5PSI1MDQiIHdpZHRoPSI2NDgiIGhlaWdodD0iODQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjQwIiB5PSI1MzQiIGZvbnQtc2l6ZT0iMjMiPjA144CA5qiZ6KiY5pa55ZCRPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSI1NjQiIGZvbnQtc2l6ZT0iMTkiPuiomOS4i+S4i+S4gOatpeaDs+aOouioqueahOaWueWQkeOAgjwvdGV4dD48cmVjdCB4PSIyNiIgeT0iNjA0IiB3aWR0aD0iNjQ4IiBoZWlnaHQ9Ijg0IiByeD0iNCIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI0MCIgeT0iNjM0IiBmb250LXNpemU9IjIzIj4wNuOAgOioreioiOWVj+mhjDwvdGV4dD48dGV4dCB4PSI0MCIgeT0iNjY0IiBmb250LXNpemU9IjE5Ij7lhYjlr6vkuIvmg7Pnn6XpgZPnmoTkuovjgII8L3RleHQ+PC9zdmc+", "lines": [{"name": "記下地點", "text": "找一個可以回訪的位置。", "box": [26, 104, 674, 188]}, {"name": "聆聽", "text": "把聲音當作觀察的起點。", "box": [26, 204, 674, 288]}, {"name": "檢查光線", "text": "從同一條街選明暗兩處。", "box": [26, 304, 674, 388]}, {"name": "先拍全景", "text": "讓視野容得下整個路口。", "box": [26, 404, 674, 488]}, {"name": "標記方向", "text": "記下下一步想探訪的方向。", "box": [26, 504, 674, 588]}, {"name": "設計問題", "text": "先寫下想知道的事。", "box": [26, 604, 674, 688]}]}], "posts": [{"id": "rank", "title": "一天的街角觀察", "author": "示例編輯", "pages": ["overview", "topics", "make", "post"]}, {"id": "single", "title": "下次回訪時可以做什麼", "author": "試作資料", "pages": ["social"]}]};
+  const get=id=>root.querySelector('#xf-'+id);
+  const pageById=new Map(data.pages.map(page=>[page.id,page]));
+  const notes=new Map(),pins=new Set();
+  let mode='inbox', post=data.posts[0],page=pageById.get('topics'),idx=page.default,full=false,scope='part';
+  const elem=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el};
+  function button(text,action,label){
+    const b=elem('button',text,'cursor-interaction');b.type='button';
+    if(label)b.setAttribute('aria-label',label);
+    b.addEventListener('click',action);return b;
+  }
+  function option(value,label){const o=elem('option',label);o.value=value;return o}
+  const key=(p,i)=>p.id+'-'+i;
+  const activeKey=()=>scope==='whole'?'whole-'+post.id:key(page,idx);
+  const ordinal=(p,i)=>p.id==='social'?p.lines[i].name:'第 '+(i+1)+' 項';
+  const pageLabel=(p,item)=>item.pages.length===1?'原圖頁碼 05／11':'圖 '+(item.pages.indexOf(p.id)+1)+'／'+item.pages.length+'・'+p.tab;
+  const remembered=k=>pins.has(k)||Boolean(notes.get(k));
+  function count(item){let n=0;for(const id of item.pages){const p=pageById.get(id);p.lines.forEach((_,i)=>{if(remembered(key(p,i)))n++})}return n}
+  function buildInbox(){
+    const list=get('records');list.replaceChildren();
+    for(const item of data.posts){
+      const first=pageById.get(item.pages[0]);
+      const article=elem('article',undefined,'xf-entry');
+      const thumb=elem('img',undefined,'xf-thumb');thumb.alt='';thumb.src=first.image;
+      const content=elem('div'),author=elem('small',item.author);
+      const title=elem('h4',item.title),n=count(item);
+      const info=elem('small',item.pages.length+' 張截圖'+(n?'・已留 '+n+' 段':'')+(notes.get('whole-'+item.id)?'・有自己的話':''));
+      const actions=elem('div',undefined,'xf-entry-actions');actions.setAttribute('aria-label','回看這篇的原圖');
+      for(const id of item.pages){
+        const p=pageById.get(id);
+        actions.append(button(p.id==='social'?'看第 05 頁':p.tab,()=>openPage(item,p.id),item.title+'，回看'+pageLabel(p,item)));
+      }
+      content.append(author,title,info,actions);article.append(thumb,content);list.append(article);
+    }
+  }
+  function openPage(item,id,line,showAll=false){
+    post=item;page=pageById.get(id);idx=line===undefined?page.default:line;
+    full=showAll;scope='part';get('note-editor').hidden=true;
+    setMode('review');
+  }
+  function setMode(value){
+    mode=value;
+    root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+    get('inbox').hidden=mode!=='inbox';get('review').hidden=mode!=='review';
+    if(mode==='inbox'){buildInbox();get('live').textContent='一般採集匣，共兩則收藏。'}
+    else renderReview();
+  }
+  function renderFrame(){
+    const image=get('image'),stage=get('stage'),mark=get('mark-box'),selected=page.lines[idx];
+    const [x,y,right,bottom]=selected.box;
+    const pad=Math.round(Math.max(12,(right-x)*.035));
+    const x0=full?0:Math.max(0,x-pad),y0=full?0:Math.max(0,y-pad);
+    const w=full?page.width:Math.min(page.width,right+pad)-x0,h=full?page.height:Math.min(page.height,bottom+pad)-y0;
+    stage.style.width=full?'min(100%, 300px)':'100%';
+    stage.style.aspectRatio=w+' / '+h;
+    image.src=page.image;image.alt=pageLabel(page,post)+'，'+(full?'完整截圖，標出':'原圖局部，')+selected.name;
+    image.style.width=(page.width/w*100)+'%';image.style.height=(page.height/h*100)+'%';
+    image.style.left=(-x0/w*100)+'%';image.style.top=(-y0/h*100)+'%';
+    mark.hidden=!full;
+    mark.style.left=x/page.width*100+'%';mark.style.top=y/page.height*100+'%';
+    mark.style.width=(right-x)/page.width*100+'%';mark.style.height=(bottom-y)/page.height*100+'%';
+    get('crop-label').textContent=pageLabel(page,post)+' · '+(full?'完整截圖':'原圖局部');
+    get('zoom').textContent=full?'看這段局部':'看完整截圖';get('zoom').setAttribute('aria-pressed',String(full));
+  }
+  function renderRemembered(){
+    const list=get('saved-items'),rows=[];list.replaceChildren();
+    const general=notes.get('whole-'+post.id);
+    if(general){
+      const entry=elem('div',undefined,'xf-saved-row');entry.append(elem('small','留給整篇的話'),elem('p',general));rows.push(entry);
+    }
+    for(const id of post.pages){
+      const p=pageById.get(id);
+      p.lines.forEach((l,i)=>{
+        const k=key(p,i);if(!remembered(k))return;
+        const row=elem('div',undefined,'xf-saved-row');
+        const location=pageLabel(p,post)+' · '+ordinal(p,i);
+        row.append(button(location+' ↗',()=>openPage(post,id,i,true),'回到原圖，'+location+'，'+l.name));
+        row.append(elem('p',l.name+'　'+l.text));
+        if(notes.get(k)){const note=elem('p');note.append(elem('small','我的話　'),document.createTextNode(notes.get(k)));row.append(note)}
+        rows.push(row);
+      });
+    }
+    list.append(...rows);get('saved').hidden=rows.length===0;
+  }
+  function renderNote(){
+    get('note-target').value=scope;get('note').value=notes.get(activeKey())||'';
+    get('note-button').setAttribute('aria-expanded',String(!get('note-editor').hidden));
+  }
+  function renderPin(){
+    const saved=pins.has(key(page,idx));get('pin').setAttribute('aria-pressed',String(saved));
+    get('pin').textContent=saved?'已標記 · 取消':'標記這段';
+  }
+  function renderReview(){
+    get('source-choice').value=post.id;
+    get('source-meta').textContent='小紅書 · '+post.author+' · 自寫測試資料';
+    const pager=get('pager');pager.replaceChildren();pager.hidden=post.pages.length===1;
+    for(const id of post.pages){
+      const p=pageById.get(id),b=button(p.tab,()=>openPage(post,id),pageLabel(p,post));b.setAttribute('aria-pressed',String(id===page.id));pager.append(b);
+    }
+    const list=get('line');list.replaceChildren();
+    page.lines.forEach((l,i)=>list.append(option(String(i),page.id==='social'?l.name:String(i+1).padStart(2,'0')+' · '+l.name)));
+    list.value=String(idx);
+    const ln=page.lines[idx];
+    get('transcript').textContent=ln.text+(ln.category?' ｜ '+ln.category:'');
+    const links=get('other');links.replaceChildren();
+    for(const id of post.pages.filter(id=>id!==page.id)){
+      const p=pageById.get(id),i=p.lines.findIndex(l=>l.name===ln.name);
+      if(i<0)continue;
+      if(!links.childNodes.length)links.append(elem('span','同一篇也出現在'));
+      links.append(button(p.tab+' · 第 '+(i+1)+' 項',()=>openPage(post,id,i)));
+    }
+    renderFrame();renderPin();renderNote();renderRemembered();
+    get('live').textContent=pageLabel(page,post)+'，'+ln.name;
+  }
+  const sources=get('source-choice');for(const p of data.posts)sources.append(option(p.id,p.title));
+  sources.addEventListener('change',()=>{const p=data.posts.find(s=>s.id===sources.value);openPage(p,p.pages[0])});
+  get('line').addEventListener('change',e=>openPage(post,page.id,Number(e.target.value),full));
+  get('zoom').addEventListener('click',()=>{full=!full;renderFrame()});
+  get('pin').addEventListener('click',()=>{
+    const k=key(page,idx);if(pins.has(k))pins.delete(k);else pins.add(k);
+    renderPin();renderRemembered();get('live').textContent=pins.has(k)?'已在本次示範標記這段原文。':'已取消標記。';
+  });
+  get('note-button').addEventListener('click',()=>{
+    get('note-editor').hidden=!get('note-editor').hidden;renderNote();
+    if(!get('note-editor').hidden)get('note').focus();
+  });
+  get('note-target').addEventListener('change',e=>{scope=e.target.value;renderNote()});
+  get('note').addEventListener('input',e=>{const k=activeKey();if(e.target.value.trim())notes.set(k,e.target.value);else notes.delete(k);renderRemembered()});
+  root.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+  root.querySelectorAll('button,select').forEach(el=>el.classList.add('cursor-interaction'));
+  buildInbox();
+})();
+</script>
+</body></html>
