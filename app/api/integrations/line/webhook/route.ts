@@ -1,4 +1,4 @@
-import { readThreadsPost, threadsPostUrl } from "@/lib/dojo/threadsReader";
+import { readThreadsPostDetailed, threadsFailureLine, threadsPostUrl, threadsReplyStatus } from "@/lib/dojo/threadsReader";
 import { douyinStatusLine } from "@/lib/dojo/douyin/lineStatus";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { InputError, readShare as readDouyinShare, sourceUrl as douyinSourceUrl } from "@/lib/dojo/douyin/share.mjs";
@@ -310,7 +310,8 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
       sourceUrl, title: "Threads", note: text.replace(foundUrl, "").trim(),
       clip: emptyClip({ sourceKind: "webpage", platform: "Threads", externalMessageId: messageId, externalEventId: event.webhookEventId || "" }),
     });
-    await replyWithThreadsPost(capture, event.replyToken || "");
+    // Sending a link again after it could not be read counts as a repeated attempt.
+    await replyWithThreadsPost(capture, event.replyToken || "", false, Boolean(duplicate && !duplicate.clip.threadsPost));
     return;
   }
   if (duplicate) {
@@ -409,15 +410,20 @@ async function handleDouyinShare(event: LineWebhookEvent, text: string): Promise
     clipQuickReply(capture.id, false, false, "查看這筆素材"));
 }
 
-async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCaptureEntry>>, token: string, refresh = false) {
+async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCaptureEntry>>, token: string, refresh = false, repeated = refresh) {
   let saved = capture;
   let post = capture.clip.threadsPost;
   let failed = false;
   let invalid = false;
+  let reason = "";
+  let viaFallback = false;
   if (!post || refresh || post.partial) {
-    const found = await readThreadsPost(capture.sourceUrl);
-    invalid = found === "invalid_post";
-    if (found && found !== "invalid_post") {
+    const read = await readThreadsPostDetailed(capture.sourceUrl);
+    const found = read.post;
+    invalid = read.invalid;
+    reason = threadsFailureLine(read);
+    viaFallback = read.viaFallback;
+    if (found) {
       saved = await updateCaptureEntry(capture.id, current => {
         if (current.sourceUrl !== capture.sourceUrl) throw new Error("素材來源已變更");
         if (!found.partial || !current.clip.threadsPost || current.clip.threadsPost.partial) {
@@ -431,8 +437,7 @@ async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCap
       post = saved.clip.threadsPost;
     } else failed = true;
   }
-  const status = failed && post ? "本次未能更新，已保留之前的文字。" : !post ? (invalid ? "網址已存，原文待補。Threads 將這條連結導向無效貼文頁。若 App 裡仍可開啟，請從原貼文重新複製連結。" : "網址已存，原文待補。可點「重新擷取原文」。") :
-    post.partial ? "已取得部分貼文文字，請核對原文。" : "已取得貼文原文。";
+  const status = threadsReplyStatus({ post, failed, invalid, repeated, reason, viaFallback });
   await replyLineMessage(token, `已剪藏｜Threads\n${status}${post ? "\n\n" + post.text.slice(0, 320) : ""}`, clipQuickReply(saved.id, !saved.clip.attachments.length, true));
 }
 
