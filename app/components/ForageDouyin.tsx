@@ -30,6 +30,8 @@ const connections = {
 };
 
 type Job = {
+  kind?: "douyin" | "file";
+  source?: string;
   status: keyof typeof statuses;
   phase: string;
   title: string;
@@ -40,7 +42,20 @@ type Job = {
   synced?: boolean;
   finishedAt?: string | null;
 };
-type State = { connection: keyof typeof connections; unsynced?: number; job: Job | null };
+/** A video or audio file waiting in the Mac's iCloud inbox folder; only its name, size and hash are known here. */
+type Offer = { file: string; name: string; size: number };
+type State = {
+  connection: keyof typeof connections;
+  mac?: { files: boolean; inbox: string };
+  offers?: Offer[];
+  unsynced?: number;
+  job: Job | null;
+};
+const INBOX_NAME = "行光轉錄";
+
+function megabytes(size: number) {
+  return size >= 1048576 ? `${Math.round(size / 1048576)} MB` : `${Math.max(1, Math.round(size / 1024))} KB`;
+}
 
 export function isDouyinCapture(sourceUrl: string, platform: string): boolean {
   if (platform === "抖音") return true;
@@ -71,10 +86,13 @@ async function checked(response: Response) {
 }
 
 /**
+ * Mac transcription for a capture. 抖音 captures can be queued from their link. For any capture, a video or audio
+ * file saved to the iCloud Drive inbox folder is transcribed on the Mac; the file itself is never sent to this site.
+ *
  * `stored` is the transcript in the capture's Notion record, which is what the page shows. The queue supplies
  * progress, timestamps, and the text itself only until Notion has it (or beyond what Notion could hold).
  */
-export default function ForageDouyin({ captureId, captureTitle, stored }: { captureId?: string; captureTitle?: string; stored?: CaptureTranscript }) {
+export default function ForageDouyin({ captureId, captureTitle, douyin = true, stored }: { captureId?: string; captureTitle?: string; douyin?: boolean; stored?: CaptureTranscript }) {
   const [data, setData] = useState<State | null>(null);
   const [connectionOpen, setConnectionOpen] = useState(false);
   const [timesOpen, setTimesOpen] = useState(false);
@@ -85,7 +103,9 @@ export default function ForageDouyin({ captureId, captureTitle, stored }: { capt
   const [notice, setNotice] = useState("");
   const job = data?.job;
   const visible = Boolean(captureId) || connectionOpen;
-  const poll = connectionOpen || job?.status === "queued" || job?.status === "running";
+  // Captures without a transcript keep polling slowly so a file that reaches the Mac shows up here.
+  const active = connectionOpen || job?.status === "queued" || job?.status === "running";
+  const poll = active || (Boolean(captureId) && !job);
 
   useEffect(() => {
     if (!visible || busy) return;
@@ -109,16 +129,16 @@ export default function ForageDouyin({ captureId, captureTitle, stored }: { capt
       }
     }
     void refresh();
-    const timer = poll ? window.setInterval(refresh, 9000) : undefined;
+    const timer = poll ? window.setInterval(refresh, active ? 9000 : 30000) : undefined;
     document.addEventListener("visibilitychange", refresh);
     return () => {
       controller.abort();
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [busy, captureId, poll, reload, visible]);
+  }, [active, busy, captureId, poll, reload, visible]);
 
-  async function submit(action: "install" | "retry" | "syncTranscripts") {
+  async function submit(action: "install" | "retry" | "attach" | "syncTranscripts", file?: string) {
     setBusy(true);
     setActionError("");
     setNotice("");
@@ -126,14 +146,14 @@ export default function ForageDouyin({ captureId, captureTitle, stored }: { capt
       const response = await checked(await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, captureId }),
+        body: JSON.stringify({ action, captureId, file }),
       }));
       if (action === "syncTranscripts") {
         const result = await response.json() as State & { synced: number; failed: number };
         setData(result);
         setNotice(result.failed ? `有 ${result.failed} 筆這次沒有寫入 Notion，稍後會自動再試。` : result.unsynced
           ? `已寫入 ${result.synced} 筆，還有 ${result.unsynced} 筆，可以再按一次。` : "逐字稿都已寫回 Notion。");
-      } else if (action === "retry") {
+      } else if (action !== "install") {
         setData(await response.json() as State);
       } else {
         const url = URL.createObjectURL(await response.blob());
@@ -162,6 +182,8 @@ export default function ForageDouyin({ captureId, captureTitle, stored }: { capt
     }
   }
 
+  const offers = data?.offers ?? [];
+  const canAttach = Boolean(captureId) && (!job || job.status === "done" || job.status === "failed");
   const done = job?.status === "done" ? job : null;
   // Notion's copy is shown once it holds this transcript in full; until then the queue's copy stands in.
   const inNotion = stored && (!done || (done.synced !== false && stored.finishedAt === done.finishedAt)) ? stored : null;
@@ -172,21 +194,37 @@ export default function ForageDouyin({ captureId, captureTitle, stored }: { capt
     : inNotion ? statuses.done : data ? "尚未排入轉錄" : loadError ? "" : "正在讀取轉錄狀態…";
 
   return (
-    <section className="forage-douyin" aria-label={captureId ? "抖音逐字稿" : "Mac 轉錄設定"}>
+    <section className="forage-douyin" aria-label={captureId ? "逐字稿" : "Mac 轉錄設定"}>
       {captureId && <>
         <div className="forage-douyin-heading">
           <b>逐字稿</b>
           <span aria-live="polite">{status}</span>
         </div>
         {job?.title && job.title !== captureTitle && job.title !== "抖音影片" && <p className="forage-douyin-title">{job.title}</p>}
-        {job?.status === "queued" && <p>Mac 可用時會自動接續這筆素材。</p>}
+        {job?.status === "queued" && (job.kind === "file" && data?.connection === "ready" && data.mac?.files === false
+          ? <p>Mac 的連線程式是舊版，還不能轉錄資料夾裡的檔案。請展開下方「Mac 轉錄設定」重新下載配對檔並執行。</p>
+          : <p>Mac 可用時會自動接續這筆素材。</p>)}
         {job?.status === "running" && phases[job.phase] && <p>{phases[job.phase]}中…</p>}
         {job?.status === "failed" && <p role="alert" className="form-error">
           {phases[job.phase] ? `${phases[job.phase]}時未完成。` : ""}{job.error || "可以讓 Mac 再試一次。"}
         </p>}
-        {data && (!job || job.status === "failed") && <button type="button" disabled={busy} onClick={() => void submit("retry")}>
+        {data && ((!job && douyin) || job?.status === "failed") && <button type="button" disabled={busy} onClick={() => void submit("retry")}>
           {job ? "重試轉錄" : "排入 Mac 轉錄"}
         </button>}
+        {data && !job && !douyin && <p>
+          Threads、IG 等平台的影片：在 iPhone 把影片或音訊存進 iCloud 雲碟的「{INBOX_NAME}」資料夾。同步到 Mac 後，行光剪藏會在 LINE 問你要掛到哪一筆素材；影片只留在你的 Mac，這裡只收逐字稿。
+        </p>}
+        {data?.mac?.inbox === "unreadable" && <p role="alert" className="form-error">
+          Mac 讀不到 iCloud 雲碟的「{INBOX_NAME}」資料夾。請在 Mac 的「系統設定 → 隱私權與安全性 → 檔案與檔案夾」允許 Python 取用 iCloud 雲碟，並確認資料夾存在。
+        </p>}
+        {canAttach && offers.length > 0 && <div className="forage-douyin-offers">
+          <b>Mac 上待指定的檔案</b>
+          {job && <p>指定後會取代這筆素材目前的逐字稿。</p>}
+          <ul>{offers.map((offer) => <li key={offer.file}>
+            <span>{offer.name}（{megabytes(offer.size)}）</span>
+            <button type="button" disabled={busy} onClick={() => void submit("attach", offer.file)}>轉錄到這筆素材</button>
+          </li>)}</ul>
+        </div>}
         {pending && <p role="status">
           這份逐字稿還沒寫回 Notion，會自動再試。
           <button type="button" disabled={busy} onClick={() => void submit("syncTranscripts")}>立即寫回 Notion</button>
@@ -211,7 +249,7 @@ export default function ForageDouyin({ captureId, captureTitle, stored }: { capt
             </ol>}
           </details>}
         </>}
-        {job?.share && <details className="forage-douyin-fold">
+        {job?.share && job.kind !== "file" && <details className="forage-douyin-fold">
           <summary>抖音分享文字</summary>
           <p className="forage-douyin-text">{job.share}</p>
         </details>}
@@ -219,6 +257,7 @@ export default function ForageDouyin({ captureId, captureTitle, stored }: { capt
       <details className="forage-douyin-connection" onToggle={(event) => setConnectionOpen(event.currentTarget.open)}>
         <summary>Mac 轉錄設定{data ? `・${connections[data.connection]}` : ""}</summary>
         <p>在安裝 BiliNote 的 Mac 登入正式版。下載配對檔後，到 Mac 的「終端機」執行下方指令，並開著原有的 Docker 和 BiliNote。</p>
+        <p>安裝後，Mac 會留意 iCloud 雲碟的「{INBOX_NAME}」資料夾；轉完的原檔會移到 Mac 的「影片 → 行光轉錄封存」，以素材編號命名。</p>
         <code>{INSTALL_COMMAND}</code>
         <button type="button" disabled={busy} onClick={() => void submit("install")}>下載 Mac 配對檔</button>
         {Boolean(data?.unsynced) && <p role="status">

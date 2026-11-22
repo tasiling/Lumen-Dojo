@@ -60,6 +60,14 @@ def install():
     subprocess.run(['/bin/launchctl','enable',scope+'/'+LABEL],check=True)
     subprocess.run(['/bin/launchctl','bootstrap',scope,str(agent)],check=True)
     print('已配對這台 Mac。請開著原有的 Docker 與 BiliNote；以後登入 Mac 後會自動等候任務。')
+    inbox=Path.home()/'Library'/'Mobile Documents'/'com~apple~CloudDocs'/'行光轉錄'
+    archive=Path.home()/'Movies'/'行光轉錄封存'
+    try:
+        inbox.mkdir(parents=True,exist_ok=True)
+        archive.mkdir(parents=True,exist_ok=True)
+        print('把影片或音訊存進 iCloud 雲碟的「行光轉錄」資料夾，這台 Mac 會轉錄；轉完的原檔移到「影片 → 行光轉錄封存」。')
+    except OSError:
+        print('未能建立 iCloud 雲碟的「行光轉錄」資料夾。請確認已開啟 iCloud 雲碟，再手動建立這個資料夾。')
     print('回到行光道場的野採，看到「Mac 可轉錄」後，就能把抖音影片傳給行光剪藏。')
 
 if __name__=='__main__':

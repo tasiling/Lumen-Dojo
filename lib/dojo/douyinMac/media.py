@@ -418,10 +418,15 @@ def probe(path):
     return duration, audio_duration
 
 
-def speech_track(clip, output):
+VIDEO_FORMATS = 'mov,matroska,webm,avi,flv,mpegts,mpeg'
+# A file from the inbox folder may also be audio only: MP3, WAV, AAC, Ogg/Opus, FLAC (M4A uses the mov demuxer).
+FILE_FORMATS = VIDEO_FORMATS + ',mp3,wav,aac,ogg,flac'
+
+
+def speech_track(clip, output, formats=VIDEO_FORMATS):
     """Decode locally to the PCM file the Mac Whisper worker will receive."""
     flags = ['-nostdin', '-v', 'error', '-xerror', '-protocol_whitelist', 'file', '-format_whitelist',
-             'mov,matroska,webm,avi,flv,mpegts,mpeg', '-i']
+             formats, '-i']
     conversion = ['-map', '0:a:0', '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', '-f', 'wav']
     binary = shutil.which('ffmpeg')
     if binary:
@@ -436,7 +441,8 @@ def speech_track(clip, output):
             result = subprocess.run([docker, 'exec', '-i', container, 'sh', '-ec', script, 'decode'] + flags,
                                     stdin=src, stdout=dst, stderr=subprocess.PIPE, timeout=230)
     if result.returncode:
-        raise TrialError('Mac 已取得影像，但 FFmpeg 無法解開其中的音軌。')
+        raise TrialError('Mac 已取得檔案，但 FFmpeg 無法解開其中的音軌。' if formats != VIDEO_FORMATS
+                         else 'Mac 已取得影像，但 FFmpeg 無法解開其中的音軌。')
     try:
         with wave.open(str(output), 'rb') as wav:
             if (wav.getnchannels(), wav.getframerate(), wav.getsampwidth()) != (1, 16000, 2):

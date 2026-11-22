@@ -1,4 +1,5 @@
 import { readThreadsPostDetailed, threadsFailureLine, threadsPostUrl, threadsReplyStatus } from "@/lib/dojo/threadsReader";
+import { fileCaptureTitle, fileSourceLabel } from "@/lib/dojo/douyin/fileOffer";
 import { douyinStatusLine } from "@/lib/dojo/douyin/lineStatus";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { kickTranscriptSync } from "@/lib/dojo/douyin/transcriptSync";
@@ -363,7 +364,7 @@ function douyinStatusFor(captureId: string): string {
   try {
     const queue = douyinQueue();
     const job = queue.view(captureId);
-    return job ? `\n轉錄：${douyinStatusLine(job, queue.connection())}` : "";
+    return job ? `\n轉錄：${douyinStatusLine(job, queue.connection(), queue.mac().files)}` : "";
   } catch { return ""; }
 }
 
@@ -411,6 +412,29 @@ async function handleDouyinShare(event: LineWebhookEvent, text: string): Promise
   const status = douyinStatusLine(job, queue.connection());
   await replyLineMessage(token, ["已剪藏｜抖音", `「${job?.title || capture.title}」`, status].join("\n"),
     clipQuickReply(capture.id, false, false, "查看這筆素材"));
+}
+
+/** The owner answered which capture a media file on the Mac belongs to: an existing one, or a new one (null). */
+async function handleFileChoice(event: LineWebhookEvent, file: string, captureId: string | null): Promise<void> {
+  const token = event.replyToken ?? "";
+  try {
+    const queue = douyinQueue();
+    const name = queue.offerName(file);
+    // Checked before a capture is created, so pressing the button twice never leaves an empty capture behind.
+    if (!name) throw new InputError("這個檔案已經指定過，或已不在 Mac 的資料夾裡。", 410);
+    const capture = captureId === null
+      ? await createCaptureEntry({ sourceUrl: "", title: fileCaptureTitle(name), note: "", clip: emptyClip({ platform: "影片檔", externalEventId: event.webhookEventId || "" }) })
+      : (await listCaptureEntries()).find((item) => item.id === captureId);
+    if (!capture) throw new InputError("找不到這筆素材，可能已經被移除。可以開啟另一筆素材，在逐字稿區塊指定這個檔案。", 404);
+    const job = queue.assign(capture.id, file, { title: capture.title, source: fileSourceLabel(capture) });
+    await replyLineMessage(token, [
+      captureId === null ? "已新增素材並排入轉錄｜影片檔" : `已排入轉錄｜${fileSourceLabel(capture)}`,
+      `「${capture.title}」`, `檔案：${name}`, douyinStatusLine(job, queue.connection(), queue.mac().files),
+    ].join("\n"), clipQuickReply(capture.id, false, false, "查看這筆素材"));
+  } catch (error) {
+    if (!(error instanceof InputError)) throw error;
+    await replyLineMessage(token, error.message, basicLineMenuQuickReply());
+  }
 }
 
 async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCaptureEntry>>, token: string, refresh = false, repeated = refresh) {
@@ -606,6 +630,10 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
 async function handlePostback(event: LineWebhookEvent, userId: string): Promise<void> {
   const params = new URLSearchParams(event.postback?.data ?? "");
   const action = params.get("action");
+  if (action === "fileAttach" || action === "fileNew") {
+    await handleFileChoice(event, params.get("file") ?? "", action === "fileAttach" ? params.get("captureId") ?? "" : null);
+    return;
+  }
   if (action === "imageBatchStart") {
     const sessionId = event.webhookEventId || randomUUID();
     const existing = await readLineImageBatch(userId);
