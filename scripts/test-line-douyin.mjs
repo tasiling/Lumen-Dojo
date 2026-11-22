@@ -103,6 +103,9 @@ try {
     segments: [{ start: 0, end: 5.4, text }] }, token)).status, 200);
   assert.equal(pushes.length, 2);
   assert.match(pushes[1].text, /^轉錄完成｜抖音\n「青銅器展」/);
+  // The transcript is written to the capture's Notion record in the background; wait for it before the next message.
+  await f.load("lib/dojo/douyin/transcriptSync.ts").syncPendingTranscripts();
+  assert.equal((await captureStore.getCaptureEntry(id)).capture.clip.transcript.text, text);
   assert.equal(new URL(pushes[1].quickReply.items.find(i => i.action.label === "查看這筆素材").action.uri).searchParams.get("captureId"), id);
   const again = await send("https://www.douyin.com/video/" + videoId + "\n筆記：這段可做展覽參考。", 2);
   assert.match(again.text, /已有逐字稿/);

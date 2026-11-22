@@ -136,6 +136,9 @@ try {
   assert.equal((await update("finish", { videoId: job.video, text, segments: [{ start: 0, end: 3, text }] })).status, 200);
   assert.match(pushes.at(-1).text, /^轉錄完成｜Threads\n「Threads 上的陶藝示範」/);
   assert.deepEqual(await (await offer(fileA)).json(), { state: "done", captureId: threads });
+  // The transcript of a file is written to the capture's Notion record like any other.
+  await f.load("lib/dojo/douyin/transcriptSync.ts").syncPendingTranscripts();
+  assert.equal((await f.load("lib/dojo/captureStore.ts").getCaptureEntry(threads)).capture.clip.transcript.text, text);
   assert.equal((await status(threads)).job.text, text);
 
   // "另外新增一筆": a capture named after the file is created and queued.
