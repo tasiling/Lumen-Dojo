@@ -416,11 +416,13 @@ async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCap
   let failed = false;
   let invalid = false;
   let reason = "";
+  let viaFallback = false;
   if (!post || refresh || post.partial) {
     const read = await readThreadsPostDetailed(capture.sourceUrl);
     const found = read.post;
     invalid = read.invalid;
     reason = threadsFailureLine(read);
+    viaFallback = read.viaFallback;
     if (found) {
       saved = await updateCaptureEntry(capture.id, current => {
         if (current.sourceUrl !== capture.sourceUrl) throw new Error("素材來源已變更");
@@ -435,7 +437,7 @@ async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCap
       post = saved.clip.threadsPost;
     } else failed = true;
   }
-  const status = threadsReplyStatus({ post, failed, invalid, repeated, reason });
+  const status = threadsReplyStatus({ post, failed, invalid, repeated, reason, viaFallback });
   await replyLineMessage(token, `已剪藏｜Threads\n${status}${post ? "\n\n" + post.text.slice(0, 320) : ""}`, clipQuickReply(saved.id, !saved.clip.attachments.length, true));
 }
 

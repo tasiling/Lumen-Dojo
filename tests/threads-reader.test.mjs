@@ -7,7 +7,8 @@ const load = loader();
 const { parseThreadsPost, threadsPostUrl, readThreadsPost, readThreadsPostDetailed, threadsFailureLine, threadsReplyStatus } = load("lib/dojo/threadsReader.ts");
 const { threadAddress, extractThreadBody, fullCaption, threadCanonical, sourceMeta } = load("lib/dojo/threadsPage.ts");
 // Synthetic pages: post-page-ld-json.html comes from simulations/yecai-inbox-v7.zip (fixtures/saved-thread.html);
-// the embed pages are written to the structure its parser reads. None is a copy of a real post.
+// embed-reply.html follows the structure threads.com/t/<code>/embed served in 2026-11 (the replied-to post first, then
+// the target post, paragraphs as line breaks inside one text node). The text in every fixture is made up.
 const fixture = name => readFileSync(new URL("./fixtures/threads/" + name, import.meta.url), "utf8");
 
 const share = "https://www.threads.com/share/BAUARI8pa1";
@@ -43,11 +44,24 @@ test("a reply's embed page yields the reply itself, attributed to its author", (
   const point = { url: "https://www.threads.com/t/DemoReply01", author: "", code: "DemoReply01" };
   assert.deepEqual(extractThreadBody(fixture("embed-reply.html"), point), { address: replyAddress, text: replyText });
 });
+test("paragraph breaks of the post survive: single line breaks, blank lines, CRLF and <br>", async () => {
+  const text = extractThreadBody(fixture("embed-reply.html"), replyAddress).text;
+  assert.deepEqual(text.split("\n"), ["我照這個方法試了三天。", "第一天漏了核對時間 & 地點，第二天補上✅", "", "結果交班快了很多。"]);
+  assert.ok(!text.includes("被回覆的那則貼文"), "the replied-to post is not part of the text");
+  const body = lines => "<a href=\"https://www.threads.com/@reply_fixture/post/DemoReply01\"></a><span class=\"TextContentContainerFull\"><span class=\"BodyTextContainer\"><span>" + lines + "</span></span></span>";
+  assert.equal(extractThreadBody(body("第一段<br>第二段<br /><br/>第三段"), replyAddress).text, "第一段\n第二段\n\n第三段");
+  const [read] = await withFetch({ "https://www.threads.com/t/DemoReply01/embed/": html(body("第一段\r\n第二段\r\n\r\n\r\n\r\n第三段\u2028第四段")) },
+    () => readThreadsPostDetailed(replyAddress.url));
+  assert.equal(read.post.text, "第一段\n第二段\n\n第三段\n第四段");
+  // The post page's structured caption keeps them as well.
+  assert.equal(fullCaption(fixture("post-page-ld-json.html"), postAddress).split("\n").length, 2);
+});
 test("an embed for another post, a clipped embed, or one showing two bodies gives no text", () => {
   const other = { url: "https://www.threads.com/t/Other99", author: "", code: "Other99" };
   assert.equal(extractThreadBody(fixture("embed-reply.html"), other).address, null);
   assert.deepEqual(extractThreadBody(fixture("embed-clipped.html"), postAddress), { address: postAddress, text: "" });
-  const twice = fixture("embed-reply.html").replace("<div class=\"Footer\">", "<span class=\"TextContentContainerFull\"><span class=\"BodyTextContainer\">上一則貼文</span></span><div class=\"Footer\">");
+  const twice = fixture("embed-reply.html").replace("<div class=\"BarcelonaBigLogoContainer\">", "<span class=\"TextContentContainerFull\"><span class=\"BodyTextContainer\">另一則貼文</span></span><div class=\"BarcelonaBigLogoContainer\">");
+  assert.notEqual(twice, fixture("embed-reply.html"));
   assert.equal(extractThreadBody(twice, replyAddress).text, "");
 });
 test("post page: canonical address, structured caption, og fields", () => {
@@ -92,7 +106,7 @@ test("a share link to a reply is read from the official embed, without the fallb
     "https://www.threads.com/share/BAfsihy6ZF/": redirect("https://www.threads.com/@reply_fixture/post/DemoReply01?xmt=1"),
     [replyEmbed]: html(fixture("embed-reply.html")),
   }, () => readThreadsPostDetailed(replyShare));
-  assert.deepEqual(read, { post: { canonicalUrl: replyAddress.url, text: replyText, partial: false }, invalid: false, failure: null, fallbackFailed: false });
+  assert.deepEqual(read, { post: { canonicalUrl: replyAddress.url, text: replyText, partial: false }, invalid: false, failure: null, fallbackFailed: false, viaFallback: false });
   assert.deepEqual(calls.map(u => new URL(u).pathname), ["/share/BAfsihy6ZF/", "/t/DemoReply01/embed/"]);
 });
 test("a share page that answers 200 is resolved through its og:url; readThreadsPost keeps its old result shape", async () => {
@@ -127,7 +141,8 @@ test("embed refused: r.jina.ai remains the fallback", async () => {
     [jina]: () => new Response(jinaReply),
   }, () => readThreadsPostDetailed(replyShare));
   assert.equal(read.post.text, "備援讀到的文字");
-  assert.deepEqual([read.failure.step, read.fallbackFailed], ["embed", false]);
+  assert.deepEqual([read.failure.step, read.fallbackFailed, read.viaFallback], ["embed", false, true]);
+  assert.match(threadsReplyStatus({ post: read.post, failed: false, invalid: false, repeated: false, reason: "", viaFallback: true }), /備援不保留段落換行/);
 });
 test("every source failing reports the step that stopped", async () => {
   const [read] = await withFetch({

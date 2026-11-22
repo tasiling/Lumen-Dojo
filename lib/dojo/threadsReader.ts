@@ -63,6 +63,8 @@ export type ThreadsRead = {
   failure: ThreadsReadFailure | null;
   /** Whether the r.jina.ai fallback also ran and found nothing. */
   fallbackFailed: boolean;
+  /** The text came from r.jina.ai, which joins a post's paragraphs into one line. */
+  viaFallback: boolean;
 };
 
 const stepLabels: Record<ThreadsReadStep, string> = {
@@ -191,13 +193,13 @@ async function readThroughJina(url: string): Promise<ThreadsPost | "invalid_post
 export async function readThreadsPostDetailed(source: string): Promise<ThreadsRead> {
   const url = threadsPostUrl(source);
   const start = url && threadAddress(url);
-  if (!url || !start) return { post: null, invalid: false, failure: { step: 'resolve', reason: '這不是 Threads 貼文或分享連結。' }, fallbackFailed: false };
+  if (!url || !start) return { post: null, invalid: false, failure: { step: 'resolve', reason: '這不是 Threads 貼文或分享連結。' }, fallbackFailed: false, viaFallback: false };
   let official: ThreadsPost | null = null;
   let failure: ThreadsReadFailure | null = null;
   let invalid = false;
   try {
     official = await readOfficial(start);
-    if (!official.partial) return { post: official, invalid: false, failure: null, fallbackFailed: false };
+    if (!official.partial) return { post: official, invalid: false, failure: null, fallbackFailed: false, viaFallback: false };
     failure = { step: 'verify', reason: 'Threads 只提供了預覽文字，未能核對完整主文。' };
   } catch (error) {
     if (!(error instanceof ReadStop)) failure = { step: 'embed', reason: reasonOf(error) };
@@ -205,8 +207,8 @@ export async function readThreadsPostDetailed(source: string): Promise<ThreadsRe
   }
   const fallback = await readThroughJina(url);
   if (fallback && fallback !== "invalid_post" && (!fallback.partial || !official))
-    return { post: fallback, invalid: false, failure, fallbackFailed: false };
-  return { post: official, invalid: !official && (invalid || fallback === "invalid_post"), failure, fallbackFailed: true };
+    return { post: fallback, invalid: false, failure, fallbackFailed: false, viaFallback: true };
+  return { post: official, invalid: !official && (invalid || fallback === "invalid_post"), failure, fallbackFailed: true, viaFallback: false };
 }
 
 /** Same result shape as before the official-embed reader: the post, "invalid_post", or null. */
@@ -219,10 +221,11 @@ export async function readThreadsPost(source: string): Promise<ThreadsPost | "in
  * The status line of a LINE reply about a Threads clip. A first failure says where the read stopped and offers a
  * retry; a repeated one (retry pressed, or the same link sent again) suggests a screenshot or pasted text instead.
  */
-export function threadsReplyStatus({ post, failed, invalid, repeated, reason }: {
-  post: Pick<ThreadsPost, "partial"> | null | undefined; failed: boolean; invalid: boolean; repeated: boolean; reason: string;
+export function threadsReplyStatus({ post, failed, invalid, repeated, reason, viaFallback = false }: {
+  post: Pick<ThreadsPost, "partial"> | null | undefined; failed: boolean; invalid: boolean; repeated: boolean; reason: string; viaFallback?: boolean;
 }): string {
   if (post && failed) return ["本次未能更新，已保留之前的文字。", reason].filter(Boolean).join("\n");
+  if (post && viaFallback && !post.partial) return "已由備援轉讀取得貼文原文。備援不保留段落換行，分段請對照原貼文。";
   if (post) return post.partial ? ["已取得部分貼文文字，請核對原文。", reason].filter(Boolean).join("\n") : "已取得貼文原文。";
   const lines = ["網址已存，原文待補。", reason];
   if (invalid) lines.push("若 App 裡仍可開啟這則貼文，請從原貼文重新複製連結。");
