@@ -297,8 +297,15 @@ export type CaptureAttachment = {
   createdAt: string;
 };
 
+/**
+ * The Mac transcription of a clip's video or audio, written back from the transcription queue when it finishes.
+ * `text` keeps paragraph breaks. `truncated` marks a transcript too long for the record; the queue holds the rest.
+ */
+export type CaptureTranscript = { text: string; finishedAt: string; truncated: boolean };
+
 export type CaptureClipMeta = {
   threadsPost?: import("./threadsReader").ThreadsPost;
+  transcript?: CaptureTranscript;
   origin: CaptureOrigin;
   purpose: CaptureClipPurpose;
   sourceKind: CaptureSourceKind;
@@ -1115,6 +1122,12 @@ export function normalizeCaptureEntry(
       sourceKind,
       ...(sourceClip.threadsPost && typeof sourceClip.threadsPost.text === "string" && sourceClip.threadsPost.text.trim()
         ? { threadsPost: { text: sourceClip.threadsPost.text.slice(0, 12000), canonicalUrl: normalizedCaptureSourceUrl(sourceClip.threadsPost.canonicalUrl), partial: sourceClip.threadsPost.partial === true } } : {}),
+      ...(sourceClip.transcript && typeof sourceClip.transcript.text === "string" && sourceClip.transcript.text.trim()
+        ? { transcript: {
+            text: sourceClip.transcript.text.slice(0, 100000),
+            finishedAt: stringValue(sourceClip.transcript.finishedAt).slice(0, 40),
+            truncated: sourceClip.transcript.truncated === true || sourceClip.transcript.text.length > 100000,
+          } } : {}),
       platform: stringValue(sourceClip.platform).trim().slice(0, 100),
       externalEventId: stringValue(sourceClip.externalEventId).trim().slice(0, 200),
       externalMessageId: stringValue(sourceClip.externalMessageId).trim().slice(0, 200),

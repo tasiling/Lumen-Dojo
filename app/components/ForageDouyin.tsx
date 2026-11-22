@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CaptureTranscript } from "@/lib/dojo/formal";
+import { transcriptReadingText } from "@/lib/dojo/douyin/transcriptText";
 
 const API = "/api/dojo/douyin";
 const INSTALL_FILENAME = "YeCai-Connect-Mac-Production.command";
@@ -35,8 +37,10 @@ type Job = {
   text: string;
   segments: Array<{ start: number; end: number; text: string }>;
   error: string;
+  synced?: boolean;
+  finishedAt?: string | null;
 };
-type State = { connection: keyof typeof connections; job: Job | null };
+type State = { connection: keyof typeof connections; unsynced?: number; job: Job | null };
 
 export function isDouyinCapture(sourceUrl: string, platform: string): boolean {
   if (platform === "抖音") return true;
@@ -53,31 +57,6 @@ function timestamp(start: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-function readingText(job: Job): string {
-  if (job.text.includes("\n") || job.segments.length < 2) return job.text;
-  const paragraphs: string[] = [];
-  let cursor = 0;
-  let paragraphAt = 0;
-  let paragraphTime = job.segments[0].start;
-  let lastEnd = paragraphTime;
-  for (const segment of job.segments) {
-    const text = segment.text.trim();
-    if (!text) continue;
-    const at = job.text.indexOf(text, cursor);
-    if (at < 0) continue;
-    if (cursor && at > paragraphAt &&
-       (segment.start - paragraphTime >= 40 || at - paragraphAt >= 240 || segment.start - lastEnd >= 3)) {
-      paragraphs.push(job.text.slice(paragraphAt, at));
-      paragraphAt = at;
-      paragraphTime = segment.start;
-    }
-    cursor = at + text.length;
-    lastEnd = segment.end;
-  }
-  paragraphs.push(job.text.slice(paragraphAt));
-  return paragraphs.join("\n\n");
-}
-
 function transcriptPreview(text: string) {
   if (text.length <= 600) return { lead: text, rest: "" };
   const ending = text.slice(220, 440).search(/\n|[。！？.!?]/u);
@@ -91,7 +70,11 @@ async function checked(response: Response) {
   throw new Error(body.error || `目前無法讀取 Mac 轉錄資料（${response.status}）。`);
 }
 
-export default function ForageDouyin({ captureId, captureTitle }: { captureId?: string; captureTitle?: string }) {
+/**
+ * `stored` is the transcript in the capture's Notion record, which is what the page shows. The queue supplies
+ * progress, timestamps, and the text itself only until Notion has it (or beyond what Notion could hold).
+ */
+export default function ForageDouyin({ captureId, captureTitle, stored }: { captureId?: string; captureTitle?: string; stored?: CaptureTranscript }) {
   const [data, setData] = useState<State | null>(null);
   const [connectionOpen, setConnectionOpen] = useState(false);
   const [timesOpen, setTimesOpen] = useState(false);
@@ -135,7 +118,7 @@ export default function ForageDouyin({ captureId, captureTitle }: { captureId?: 
     };
   }, [busy, captureId, poll, reload, visible]);
 
-  async function submit(action: "install" | "retry") {
+  async function submit(action: "install" | "retry" | "syncTranscripts") {
     setBusy(true);
     setActionError("");
     setNotice("");
@@ -145,7 +128,12 @@ export default function ForageDouyin({ captureId, captureTitle }: { captureId?: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, captureId }),
       }));
-      if (action === "retry") {
+      if (action === "syncTranscripts") {
+        const result = await response.json() as State & { synced: number; failed: number };
+        setData(result);
+        setNotice(result.failed ? `有 ${result.failed} 筆這次沒有寫入 Notion，稍後會自動再試。` : result.unsynced
+          ? `已寫入 ${result.synced} 筆，還有 ${result.unsynced} 筆，可以再按一次。` : "逐字稿都已寫回 Notion。");
+      } else if (action === "retry") {
         setData(await response.json() as State);
       } else {
         const url = URL.createObjectURL(await response.blob());
@@ -174,8 +162,14 @@ export default function ForageDouyin({ captureId, captureTitle }: { captureId?: 
     }
   }
 
-  const transcript = job?.status === "done" ? transcriptPreview(readingText(job)) : null;
-  const status = job ? statuses[job.status] : data ? "尚未排入轉錄" : loadError ? "" : "正在讀取轉錄狀態…";
+  const done = job?.status === "done" ? job : null;
+  // Notion's copy is shown once it holds this transcript in full; until then the queue's copy stands in.
+  const inNotion = stored && (!done || (done.synced !== false && stored.finishedAt === done.finishedAt)) ? stored : null;
+  const fullText = inNotion && !(inNotion.truncated && done) ? inNotion.text : done ? transcriptReadingText(done) : "";
+  const transcript = fullText ? transcriptPreview(fullText) : null;
+  const pending = Boolean(done && done.synced === false);
+  const status = job && !(inNotion && job.status === "failed") ? statuses[job.status]
+    : inNotion ? statuses.done : data ? "尚未排入轉錄" : loadError ? "" : "正在讀取轉錄狀態…";
 
   return (
     <section className="forage-douyin" aria-label={captureId ? "抖音逐字稿" : "Mac 轉錄設定"}>
@@ -193,17 +187,24 @@ export default function ForageDouyin({ captureId, captureTitle }: { captureId?: 
         {data && (!job || job.status === "failed") && <button type="button" disabled={busy} onClick={() => void submit("retry")}>
           {job ? "重試轉錄" : "排入 Mac 轉錄"}
         </button>}
-        {job && transcript && <>
+        {pending && <p role="status">
+          這份逐字稿還沒寫回 Notion，會自動再試。
+          <button type="button" disabled={busy} onClick={() => void submit("syncTranscripts")}>立即寫回 Notion</button>
+        </p>}
+        {inNotion?.truncated && <p role="status">
+          這份逐字稿太長，Notion 只存到前 {inNotion.text.length.toLocaleString()} 字{done ? "；這裡顯示的是轉錄佇列裡的完整內容" : ""}。
+        </p>}
+        {transcript && <>
           <p className="forage-douyin-text">{transcript.lead}</p>
           {transcript.rest && <details className="forage-douyin-fold">
             <summary>展開完整逐字稿</summary>
             <p className="forage-douyin-text">{transcript.rest}</p>
           </details>}
-          <button type="button" onClick={() => void copyTranscript(job.text)}>複製完整逐字稿</button>
-          {job.segments.length > 0 && <details className="forage-douyin-fold" onToggle={(event) => setTimesOpen(event.currentTarget.open)}>
-            <summary>查看時間戳（{job.segments.length} 段）</summary>
+          <button type="button" onClick={() => void copyTranscript(fullText)}>複製完整逐字稿</button>
+          {done && done.segments.length > 0 && <details className="forage-douyin-fold" onToggle={(event) => setTimesOpen(event.currentTarget.open)}>
+            <summary>查看時間戳（{done.segments.length} 段）</summary>
             {timesOpen && <ol className="forage-douyin-timestamps">
-              {job.segments.map((segment, index) => <li key={`${segment.start}-${index}`}>
+              {done.segments.map((segment, index) => <li key={`${segment.start}-${index}`}>
                 <time dateTime={`PT${Math.floor(segment.start)}S`}>{timestamp(segment.start)}</time>
                 <span>{segment.text}</span>
               </li>)}
@@ -220,6 +221,10 @@ export default function ForageDouyin({ captureId, captureTitle }: { captureId?: 
         <p>在安裝 BiliNote 的 Mac 登入正式版。下載配對檔後，到 Mac 的「終端機」執行下方指令，並開著原有的 Docker 和 BiliNote。</p>
         <code>{INSTALL_COMMAND}</code>
         <button type="button" disabled={busy} onClick={() => void submit("install")}>下載 Mac 配對檔</button>
+        {Boolean(data?.unsynced) && <p role="status">
+          有 {data?.unsynced} 筆逐字稿尚未寫回 Notion。
+          <button type="button" disabled={busy} onClick={() => void submit("syncTranscripts")}>立即寫回 Notion</button>
+        </p>}
       </details>
       {notice && <p role="status">{notice}</p>}
       {actionError && <p className="form-error" role="alert">{actionError}</p>}

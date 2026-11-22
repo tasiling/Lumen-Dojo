@@ -3,6 +3,7 @@ import { captureIdPattern, douyinError, douyinJson, douyinJsonBody } from "@/lib
 import { douyinFinishedMessage } from "@/lib/dojo/douyin/lineStatus";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { InputError } from "@/lib/dojo/douyin/share.mjs";
+import { kickTranscriptSync } from "@/lib/dojo/douyin/transcriptSync";
 import { clipQuickReply, pushLineMessage } from "@/lib/dojo/lineClipping";
 
 export const runtime = "nodejs";
@@ -22,12 +23,18 @@ export async function POST(req: NextRequest, context: { params: Promise<{ action
     const queue = douyinQueue();
     queue.authenticate(token);
     const data = await douyinJsonBody(req, action === "update" ? 10 * 1024 * 1024 : 4096);
-    if (action === "claim") return douyinJson({ job: queue.claim(token, data.ready === true) });
+    if (action === "claim") {
+      // The Mac checks in every 20 seconds, which also retries transcripts Notion has not received yet.
+      kickTranscriptSync();
+      return douyinJson({ job: queue.claim(token, data.ready === true) });
+    }
     const id = data.id;
     if (typeof id !== "string" || !captureIdPattern.test(id))
       throw new InputError("素材編號格式不符。");
     const result = queue.update(token, data);
     if (data.action === "finish" || data.action === "fail") notifyOwner(id, douyinFinishedMessage(queue.view(id)));
+    // The transcript is safe in the queue; writing it to Notion never delays or fails the Mac's report.
+    if (data.action === "finish") kickTranscriptSync();
     return douyinJson(result);
   } catch (error) {
     return douyinError(error);

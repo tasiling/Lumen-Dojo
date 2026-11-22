@@ -1,6 +1,7 @@
 import { readThreadsPostDetailed, threadsFailureLine, threadsPostUrl, threadsReplyStatus } from "@/lib/dojo/threadsReader";
 import { douyinStatusLine } from "@/lib/dojo/douyin/lineStatus";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
+import { kickTranscriptSync } from "@/lib/dojo/douyin/transcriptSync";
 import { InputError, readShare as readDouyinShare, sourceUrl as douyinSourceUrl } from "@/lib/dojo/douyin/share.mjs";
 import { after, NextRequest, NextResponse } from "next/server";
 import {
@@ -405,6 +406,8 @@ async function handleDouyinShare(event: LineWebhookEvent, text: string): Promise
     }));
   }
   const job = queue.view(capture.id);
+  // A capture that joins an already transcribed video gets that transcript written to its own Notion record.
+  if (job?.status === "done" && !job.synced) kickTranscriptSync();
   const status = douyinStatusLine(job, queue.connection());
   await replyLineMessage(token, ["已剪藏｜抖音", `「${job?.title || capture.title}」`, status].join("\n"),
     clipQuickReply(capture.id, false, false, "查看這筆素材"));

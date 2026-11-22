@@ -3,6 +3,7 @@ import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { captureIdPattern, douyinError, douyinJson, douyinJsonBody } from "@/lib/dojo/douyin/http";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { InputError, sourceUrl } from "@/lib/dojo/douyin/share.mjs";
+import { kickTranscriptSync, syncPendingTranscripts } from "@/lib/dojo/douyin/transcriptSync";
 import { douyinInstallFile } from "@/lib/dojo/douyinInstall";
 import { getCaptureEntry } from "@/lib/dojo/captureStore";
 
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 function view(captureId?: string) {
   const queue = douyinQueue();
-  return douyinJson({ connection: queue.connection(), job: captureId ? queue.view(captureId) : null });
+  return douyinJson({ connection: queue.connection(), unsynced: queue.unsynced(), job: captureId ? queue.view(captureId) : null });
 }
 
 export async function GET(req: NextRequest) {
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
     requireLearningOwner(req);
     const id = req.nextUrl.searchParams.get("captureId");
     if (id && !captureIdPattern.test(id)) throw new InputError("素材編號格式不符。");
+    kickTranscriptSync();
     return view(id ?? undefined);
   } catch (error) {
     return douyinError(error);
@@ -43,6 +45,12 @@ export async function POST(req: NextRequest) {
           "X-Content-Type-Options": "nosniff",
         },
       });
+    }
+    if (action === "syncTranscripts") {
+      // Writes transcripts Notion does not hold yet, including those finished before write-back existed.
+      const result = await syncPendingTranscripts({ limit: 20, force: true });
+      return douyinJson({ ...result, connection: queue.connection(), unsynced: result.remaining,
+        job: typeof captureId === "string" && captureIdPattern.test(captureId) ? queue.view(captureId) : null });
     }
     if (action !== "retry" || typeof captureId !== "string" || !captureIdPattern.test(captureId))
       throw new InputError("請選擇一筆野採素材。");
