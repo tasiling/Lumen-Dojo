@@ -13,6 +13,7 @@
     "test:english-images": "node scripts/test-english-image-completion.mjs && node scripts/test-line-image-storage.mjs && node scripts/test-line-image-webhook.mjs && node scripts/test-game-screen-analysis.mjs && node scripts/test-game-source-handoff.mjs && node scripts/test-line-game-learning.mjs",
     "test:unit-arrangement": "node scripts/test-unit-arrangement.mjs && node scripts/test-unit-arrangement-contract.mjs && node scripts/test-unit-arrangement-completed-retry.mjs",
     "test:transcript-notion": "node scripts/test-transcript-notion.mjs",
+    "test:threads": "node --test tests/threads-reader.test.mjs",
     "test:capture-exploration": "node scripts/test-capture-exploration.mjs",
     "test:html-entity-overflow": "node scripts/test-html-entity-mobile-overflow.mjs",
     "lint": "eslint",
