@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { captureIdPattern, douyinError, douyinJson, douyinJsonBody } from "@/lib/dojo/douyin/http";
+import { askOwnerAboutFile } from "@/lib/dojo/douyin/fileOffer";
 import { douyinFinishedMessage } from "@/lib/dojo/douyin/lineStatus";
 import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { InputError } from "@/lib/dojo/douyin/share.mjs";
@@ -16,13 +17,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ action
       const { ticket } = await douyinJsonBody(req);
       return douyinJson({ token: douyinQueue().pair(ticket) });
     }
-    if (action !== "claim" && action !== "update") throw new InputError("找不到這個轉錄入口。", 404);
+    if (action !== "claim" && action !== "update" && action !== "offer") throw new InputError("找不到這個轉錄入口。", 404);
     const token = req.headers.get("authorization")?.match(/^Bearer ([A-Za-z0-9_-]{43})$/)?.[1];
     if (!token) throw new InputError("這台 Mac 尚未配對。", 401);
     const queue = douyinQueue();
     queue.authenticate(token);
     const data = await douyinJsonBody(req, action === "update" ? 10 * 1024 * 1024 : 4096);
-    if (action === "claim") return douyinJson({ job: queue.claim(token, data.ready === true) });
+    if (action === "claim")
+      return douyinJson({ job: queue.claim(token, data.ready === true, { files: data.files === true, inbox: typeof data.inbox === "string" ? data.inbox : "" }) });
+    if (action === "offer") {
+      // The Mac found a media file in its inbox folder. Only its name, size and hash are sent here.
+      const { ask, ...result } = queue.offer(token, data);
+      if (ask) askOwner(data.file as string, (data.name as string).trim());
+      return douyinJson(result);
+    }
     const id = data.id;
     if (typeof id !== "string" || !captureIdPattern.test(id))
       throw new InputError("素材編號格式不符。");
@@ -32,6 +40,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ action
   } catch (error) {
     return douyinError(error);
   }
+}
+
+/** The Mac offers the file again every loop, so a question LINE could not deliver is retried later. */
+function askOwner(file: string, name: string) {
+  void askOwnerAboutFile(file, name).catch((error) => {
+    console.error("野採新檔案的詢問未送達", error instanceof Error ? error.message : "UnknownError");
+  });
 }
 
 /** The transcript is already stored, so a notice that cannot be delivered never fails the Mac's update. */

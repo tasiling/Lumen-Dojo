@@ -162,7 +162,7 @@ type LineQuickReplyItem = {
     | { type: "camera" | "cameraRoll"; label: string };
 };
 
-function quickReplyItem(label: string, data: string): LineQuickReplyItem {
+export function quickReplyItem(label: string, data: string): LineQuickReplyItem {
   return { type: "action", action: { type: "postback", label, data, displayText: label } };
 }
 
