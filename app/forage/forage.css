@@ -199,3 +199,56 @@
 .dojo.forage-shell .modal .sheet{background:var(--v2-surface);color:var(--v2-ink)}
 .dojo.forage-shell :is(a,button,input,select,textarea,summary):focus-visible{outline-color:var(--v2-accent)}
 .dojo.forage-shell .forage-ui .forage-motif{mask-image:linear-gradient(to right,transparent 0%,transparent 45%,#000 85%)}
+/* 野採淬鍊：沿用野採的面板、按鈕與蜜橙配色，依序呈現設定、討論包、貼回與檢查、候選。 */
+.dojo.forage-shell .forage-ui .forage-refine-nav{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:24px;font-size:.8125rem}
+.dojo.forage-shell .forage-ui .forage-refine-nav span{color:var(--muted)}
+.dojo.forage-shell .forage-ui .refine-step{border:1px solid var(--line);background:var(--surface);padding:20px;border-radius:15px;margin:24px 0}
+.dojo.forage-shell .forage-ui .refine-step>h2,.dojo.forage-shell .forage-ui .refine-rules>summary{font-size:1.125rem;margin-bottom:12px}
+.dojo.forage-shell .forage-ui .refine-rules>summary{min-height:44px;font-weight:600;cursor:pointer;margin-bottom:0}
+.dojo.forage-shell .forage-ui .refine-step label{display:block;font-size:.875rem;margin:14px 0 7px}
+.dojo.forage-shell .forage-ui .refine-step textarea.field{width:100%;font:inherit;font-size:.9375rem;line-height:1.7}
+.dojo.forage-shell .forage-ui .refine-step details{margin-top:14px}
+.dojo.forage-shell .forage-ui .refine-step details>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:.875rem}
+.dojo.forage-shell .forage-ui .refine-angles{display:grid;gap:10px}
+.dojo.forage-shell .forage-ui .refine-angles button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:12px 14px;border-radius:11px;min-height:44px}
+.dojo.forage-shell .forage-ui .refine-angles button small{font-size:.8125rem;color:var(--muted);line-height:1.6;font-weight:400}
+.dojo.forage-shell .forage-ui .refine-angles button.on{border-color:var(--accent);background:var(--soft)}
+.dojo.forage-shell .forage-ui .refine-sources{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:8px}
+.dojo.forage-shell .forage-ui .refine-sources li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.dojo.forage-shell .forage-ui .refine-sources li>span:nth-child(2){min-width:0}
+.dojo.forage-shell .forage-ui .refine-sources b{display:block;font-size:.9375rem;overflow-wrap:anywhere}
+.dojo.forage-shell .forage-ui .refine-label{font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)}
+.dojo.forage-shell .forage-ui .refine-original{display:inline-block;font-size:.75rem;color:var(--muted)}
+.dojo.forage-shell .forage-ui .refine-original:is(.is-none,.is-partial,.is-unsegmented){padding:2px 8px;border-radius:999px;background:var(--soft)}
+.dojo.forage-shell .forage-ui .refine-original.is-none{color:var(--error)}
+.dojo.forage-shell .forage-ui .refine-note{font-size:.875rem;padding:10px 12px;border-radius:10px;background:var(--soft)}
+.dojo.forage-shell .forage-ui .refine-summary{display:flex;flex-wrap:wrap;gap:8px;font-size:.8125rem}
+.dojo.forage-shell .forage-ui .refine-summary span{padding:6px 10px;border-radius:8px;background:var(--soft)}
+.dojo.forage-shell .forage-ui .refine-problem{padding:14px;border:1px solid var(--error);border-radius:11px;margin:12px 0}
+.dojo.forage-shell .forage-ui .refine-check-list{list-style:none;padding:0;margin:12px 0;display:grid;gap:10px}
+.dojo.forage-shell .forage-ui .refine-check-list li{display:grid;gap:4px;padding:12px;border-radius:10px;border:1px solid var(--line);font-size:.875rem}
+.dojo.forage-shell .forage-ui .refine-check-list li.is-fail{border-color:var(--error)}
+.dojo.forage-shell .forage-ui .refine-check-list small{color:var(--muted)}
+.dojo.forage-shell .forage-ui .refine-check-list blockquote{margin:4px 0 0;padding:8px 10px;border-left:3px solid var(--ornament);background:var(--soft);font-size:.8125rem}
+.dojo.forage-shell .forage-ui .refine-candidates{display:grid;gap:14px}
+.dojo.forage-shell .forage-ui .refine-candidate{padding:14px;border:1px solid var(--line);border-radius:12px}
+.dojo.forage-shell .forage-ui .refine-candidate.is-picked{border-color:var(--accent);background:var(--soft)}
+.dojo.forage-shell .forage-ui .refine-candidate p{font-size:.9375rem;white-space:pre-wrap;margin:8px 0}
+.dojo.forage-shell .forage-ui .refine-candidate strong{display:block;font-size:.75rem;color:var(--muted)}
+.dojo.forage-shell .forage-ui .refine-candidate-meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.8125rem}
+.dojo.forage-shell .forage-ui .refine-candidate-meta .is-ok{color:var(--accent)}
+.dojo.forage-shell .forage-ui .refine-candidate-meta .is-fail{color:var(--error)}
+.dojo.forage-shell .forage-ui .refine-pick [role=radiogroup]{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.dojo.forage-shell .forage-ui .refine-pick [role=radio].on{border-color:var(--accent);background:var(--soft);font-weight:600}
+.dojo.forage-shell .forage-ui .refine-pick-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.dojo.forage-shell .forage-ui .refine-turns{padding-left:0;list-style:none;display:grid;gap:10px}
+.dojo.forage-shell .forage-ui .refine-turns p{white-space:pre-wrap;font-size:.875rem;margin:2px 0 0}
+.dojo.forage-shell .forage-ui .refine-selection-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 18px;font-size:.875rem;position:sticky;top:8px;z-index:2;background:var(--paper);padding:6px 0}
+.dojo.forage-shell .forage-ui .refine-select{display:flex;align-items:center;gap:8px;min-height:44px;font-size:.875rem;margin:6px 0}
+.dojo.forage-shell .forage-ui .refine-select input{width:20px;height:20px}
+.dojo.forage-shell .forage-ui .refine-select.is-disabled{color:var(--muted)}
+.dojo.forage-shell .forage-ui .forage-refine-start{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:10px;border:1px solid var(--forage-honey-border,var(--accent));background:var(--forage-honey,var(--accent));color:var(--v2-ink,var(--on));text-decoration:none;font-size:.875rem;font-weight:600}
+.dojo.forage-shell .forage-ui .capture-refine-rounds ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:8px}
+.dojo.forage-shell .forage-ui .capture-refine-rounds li{display:grid;gap:2px}
+.dojo.forage-shell .forage-ui .capture-refine-rounds small{color:var(--muted);font-size:.75rem}
+@media(min-width:760px){.dojo.forage-shell .forage-ui .refine-angles{grid-template-columns:repeat(3,minmax(0,1fr))}}

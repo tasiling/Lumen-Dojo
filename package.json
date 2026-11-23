@@ -16,6 +16,7 @@
     "test:transcript-notion": "node scripts/test-transcript-notion.mjs",
     "test:threads": "node --test tests/threads-reader.test.mjs",
     "test:capture-exploration": "node scripts/test-capture-exploration.mjs",
+    "test:capture-refine": "node --test tests/capture-refine.test.mjs && node scripts/test-capture-refine-api.mjs",
     "test:html-entity-overflow": "node scripts/test-html-entity-mobile-overflow.mjs",
     "lint": "eslint",
     "test:lived-progress": "node scripts/test-lived-progress.mjs && node scripts/test-lived-progress-api.mjs",
