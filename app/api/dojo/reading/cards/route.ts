@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       cards: cards.map((card) => ({
         ...card,
-        sourceBookTitle: card.sourceBookId ? (bookTitles.get(card.sourceBookId) ?? "來源書籍") : "來源書籍",
+        sourceBookTitle: card.sourceBookId ? (bookTitles.get(card.sourceBookId) ?? "來源書籍") : card.refine ? "野採淬鍊" : "來源書籍",
       })),
       todayISO,
     });

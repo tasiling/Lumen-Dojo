@@ -127,6 +127,46 @@ try {
   assert.equal((await post({ action: "pick", id, candidateN: 1, titleFrom: "隨便" })).status, 400);
   assert.equal((await post({ action: "configure", id, topic: "改題目", angle: "understand", captureIds: [c1] })).status, 409, "setup is fixed once returned");
 
+  // 卡片類型：預設取 GPT 給的類型；這一輪是「換個角度與看手法」，三種都可以。
+  assert.equal((await pick(1, "原話")).body.record.picks.find(p => p.candidateN === 1).cardType, "洞察");
+  assert.equal((await post({ action: "pick", id, candidateN: 1, titleFrom: "原話", cardType: "手法觀察" })).body.record.picks.find(p => p.candidateN === 1).cardType, "手法觀察");
+  assert.equal((await post({ action: "pick", id, candidateN: 1, titleFrom: "原話", cardType: "隨便" })).status, 422);
+
+  // 存成卡片：寫入 DB-22 的欄位、重試不重複建卡、存卡後不能改挑選或重新貼回。
+  const cards = [];
+  f.mutations.createRefineCard = async card => { cards.push(card); return { id: "card-" + cards.length }; };
+  f.queries.findRefineCardId = async prefix => cards.findIndex(card => card.discussion.startsWith(prefix)) + 1 ? "card-" + (cards.findIndex(card => card.discussion.startsWith(prefix)) + 1) : null;
+  assert.equal((await post({ action: "adopt", id, candidateN: 3 })).status, 422, "an unpicked candidate is not saved");
+  let adopted = await post({ action: "adopt", id, candidateN: 2 });
+  assert.equal(adopted.status, 200, JSON.stringify(adopted.body));
+  assert.deepEqual(adopted.body.record.adopted, [{ candidateN: 2, cardId: "card-1" }]);
+  assert.deepEqual(cards[0], {
+    // GPT's 原話 for #2 was not verbatim, so the card keeps the owner's whole turn T4 instead.
+    title: "我需要學會真的停下來。", words: "我很少真的停下來，休息時腦子還在跑。", titleOrigin: "本人改寫", cardType: "觀點",
+    quote: "〔停下來〕C2-P2｜問題不在有沒有壓力，而在壓力結束之後，你有沒有讓自己真的停下來。",
+    discussion: `${id}｜候選#2｜T4｜題目：焦慮能不能幫助一個人努力？`, captureIds: [c1, c2], todayISO: cards[0].todayISO,
+  });
+  assert.match(cards[0].todayISO, /^\d{4}-\d{2}-\d{2}$/);
+  adopted = await post({ action: "adopt", id, candidateN: 1 });
+  assert.equal(cards[1].quote, "〔焦慮是燃料〕C1-P1｜很多人把焦慮當成燃料，覺得不緊張就不會動。", "a quoted sentence comes from the return");
+  assert.deepEqual([cards[1].titleOrigin, cards[1].cardType, cards[1].words], ["本人原話", "手法觀察", "做完之後我會累到兩三天都不想碰任何東西。"]);
+  assert.equal((await post({ action: "adopt", id, candidateN: 1 })).body.record.adopted.length, 2);
+  assert.equal(cards.length, 2, "saving again does not make a second card");
+  assert.equal((await pick(3, "改寫", "用對比開場抓住人。")).status, 200);
+  const gptTurn = await post({ action: "adopt", id, candidateN: 3 });
+  assert.deepEqual([gptTurn.status, /T3 不是你的發言/.test(gptTurn.body.error)], [422, true]);
+  assert.equal(cards.length, 2, "a candidate citing GPT's turn is never saved");
+  assert.equal((await pick(1, "整理版")).status, 409);
+  assert.equal((await post({ action: "pick", id, candidateN: 2, titleFrom: null })).status, 409);
+  const again = await post({ action: "return", id, raw: [...header(), ...body].join("\n") });
+  assert.deepEqual([again.status, /不能重新貼回/.test(again.body.error)], [409, true]);
+  // A card made before the round recorded it (a failed write) is found again instead of duplicated.
+  const pageId = [...f.records].find(([, row]) => row.title === "行光淬鍊-" + id)[0];
+  const stored = f.records.get(pageId).value;
+  f.records.set(pageId, { ...f.records.get(pageId), value: { ...stored, adopted: stored.adopted.filter(a => a.candidateN !== 1) } });
+  assert.deepEqual((await post({ action: "adopt", id, candidateN: 1 })).body.record.adopted, [{ candidateN: 1, cardId: "card-2" }, { candidateN: 2, cardId: "card-1" }]);
+  assert.equal(cards.length, 2);
+
   // 原文在討論之後變動：提示，不擋讀取。
   await f.load("lib/dojo/captureStore.ts").updateCaptureEntry(c1, () => ({ excerpt: "改過的原文。" }));
   assert.deepEqual((await call("GET", null, "?id=" + id)).body.changed, ["C1"]);
@@ -160,7 +200,7 @@ try {
   assert.equal(tighter.turns.find(t => t.n === 4).text, "引用".repeat(10), "a cited turn is kept");
   assert.equal(fitRefineRecord(long, 500), null);
 
-  console.log("PASS refine rounds: setup checks, DB-14 prefix, package, configure, return checks, picks, close, rules, size limit");
+  console.log("PASS refine rounds: setup checks, DB-14 prefix, package, configure, return checks, picks, card types, saving cards to DB-22, close, rules, size limit");
 } finally {
   await f.close();
 }

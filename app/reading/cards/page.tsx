@@ -302,9 +302,10 @@ function LibraryCard({
   }
 
   return <article className={`reading-library-card ${stuck ? "is-stuck" : ""} ${selected ? "is-selected" : ""}`}>
-    <div className="reading-visit-meta"><span>{card.actionType}</span><span>{card.status}</span><span>{card.sourceBookTitle}</span></div>
+    <div className="reading-visit-meta">{card.refine ? <span>{card.refine.cardType || "野採卡片"}</span> : <><span>{card.actionType}</span><span>{card.status}</span></>}<span>{card.sourceBookTitle}</span></div>
     <h3>{card.insight}</h3>
-    <div className="reading-original-action"><small>行動化</small><p>{card.action}</p></div>
+    {card.refine && card.refine.words !== card.insight && <div className="reading-original-action"><small>我的原話</small><p>{card.refine.words}</p></div>}
+    {card.action && <div className="reading-original-action"><small>行動化</small><p>{card.action}</p></div>}
     {card.result && <p className="reading-library-result">{card.result}</p>}
     <div className="reading-card-tags">
       {card.topics.map((topic) => <span key={topic}>{topic}</span>)}
