@@ -194,7 +194,31 @@ export function mapInsightCard(p: NotionPage): InsightCard {
     extractedAt: readDateStart(p, "萃取日期"),
     postponementCount: Math.max(0, readNumber(p, "順延次數") ?? 0),
     createdAt: typeof p.created_time === "string" ? p.created_time : "",
+    refine: mapRefineFields(p),
   };
+}
+
+function mapRefineFields(p: NotionPage): InsightCard["refine"] {
+  const discussion = readRichText(p, "出自討論");
+  const captureIds = readRelationIds(p, "來源採集");
+  if (!discussion && !captureIds.length) return null;
+  return {
+    cardType: readSelect(p, "類型") ?? "",
+    titleOrigin: readSelect(p, "標題來歷") ?? "",
+    words: readRichText(p, "我的原話"),
+    quote: readRichText(p, "依據的原文"),
+    discussion,
+    captureIds,
+  };
+}
+
+/** The DB-22 card a 野採淬鍊 candidate was saved as, found by the start of its 「出自討論」. */
+export async function findRefineCardId(discussionPrefix: string): Promise<string | null> {
+  const pages = await queryAll(DATA_SOURCES.DB22_洞察卡片庫, {
+    property: "出自討論",
+    rich_text: { starts_with: discussionPrefix },
+  });
+  return pages[0]?.id ?? null;
 }
 
 export async function listInsightCards(): Promise<InsightCard[]> {

@@ -675,6 +675,39 @@ export async function createInsightCard(params: {
   return { id: page.id };
 }
 
+/**
+ * Saves a 野採淬鍊 candidate as a DB-22 card. It has no source book and no action yet; 狀態 and 行動型態 stay
+ * empty so the card is not counted as something to act on. Text fields longer than 2,000 characters are split.
+ */
+export async function createRefineCard(params: {
+  title: string;
+  words: string;
+  titleOrigin: string;
+  cardType: string;
+  quote: string;
+  discussion: string;
+  captureIds: string[];
+  todayISO: string;
+}) {
+  const page = await withNotionRateLimit(() =>
+    notion().pages.create({
+      parent: { type: "data_source_id", data_source_id: DATA_SOURCES.DB22_洞察卡片庫 },
+      properties: {
+        洞察: titleProp(params.title.trim()),
+        我的原話: richTextProp(params.words),
+        標題來歷: selectProp(params.titleOrigin),
+        類型: selectProp(params.cardType),
+        依據的原文: richTextProp(params.quote),
+        出自討論: richTextProp(params.discussion),
+        來源採集: relationProp(params.captureIds),
+        節目應用: selectProp("未定"),
+        萃取日期: dateProp(params.todayISO),
+      },
+    })
+  );
+  return { id: page.id };
+}
+
 export async function updateInsightCard(
   cardId: string,
   patch: {

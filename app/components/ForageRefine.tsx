@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { REFINE_ANGLES, REFINE_MAX_SOURCES, type RefineAngleKey, type RefineChecks } from "@/lib/dojo/captureRefine";
+import { REFINE_ANGLES, REFINE_MAX_SOURCES, type RefineAngleKey, type RefineCardType, type RefineChecks } from "@/lib/dojo/captureRefine";
 import type { CaptureEntry } from "@/lib/dojo/formal";
 import {
-  captureOriginal, originalStateLabel, refineLeftOut,
+  captureOriginal, originalStateLabel, refineCardTypes, refineDefaultCardType, refineLeftOut, refineOwnTurn,
   type RefinePick, type RefineRecord, type RefineTitleFrom,
 } from "@/lib/dojo/refineRecord";
 
@@ -29,7 +29,7 @@ async function copy(text: string): Promise<boolean> {
 
 /**
  * 一輪淬鍊：設定、討論包、貼回與檢查、候選。道場不呼叫 AI；它產生討論包、核對貼回的紀錄，並保存擁有者的挑選。
- * 卡片的保存位置尚待擁有者裁決，所以候選目前只能挑選，不會存成卡片。
+ * 挑選後的候選存成 DB-22 洞察卡片庫的卡片，由織光堂與道藏取用。
  */
 export default function ForageRefine({ roundId, captureIds }: { roundId: string; captureIds: string[] }) {
   const router = useRouter();
@@ -107,13 +107,29 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
     });
   }
 
-  function pick(candidateN: number, titleFrom: RefineTitleFrom | null, title = "") {
+  function pick(candidateN: number, titleFrom: RefineTitleFrom | null, title = "", cardType?: RefineCardType) {
     if (!record) return;
-    void run(async () => { setView(await post<RefineView>({ action: "pick", id: record.id, candidateN, titleFrom, title })); });
+    void run(async () => { setView(await post<RefineView>({ action: "pick", id: record.id, candidateN, titleFrom, title, cardType })); });
+  }
+
+  /** Saves picked candidates as cards one at a time, so a failure keeps the ones already saved. */
+  function adopt(candidateNs: number[]) {
+    if (!record) return;
+    void run(async () => {
+      let saved = 0;
+      for (const candidateN of candidateNs) {
+        setView(await post<RefineView>({ action: "adopt", id: record.id, candidateN }));
+        saved++;
+      }
+      setNotice(`已存成 ${saved} 張卡片，在 Notion 的 DB-22 洞察卡片庫。`);
+    });
   }
 
   function close() {
-    if (!record || !window.confirm("結束後這一輪就不能再貼回或更改挑選。要結束嗎？")) return;
+    const unsaved = record ? record.picks.filter((p) => !record.adopted.some((a) => a.candidateN === p.candidateN)).length : 0;
+    if (!record || !window.confirm(unsaved
+      ? `還有 ${unsaved} 則挑選了但沒有存成卡片，結束後就不能再存。要結束嗎？`
+      : "結束後這一輪就不能再貼回或更改挑選。要結束嗎？")) return;
     void run(async () => { setView(await post<RefineView>({ action: "close", id: record.id })); setNotice("這一輪已結束。"); });
   }
 
@@ -185,7 +201,7 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
         <details open={packageFallback}><summary>查看討論包全文</summary><textarea className="field" rows={10} readOnly value={view.package} aria-label="討論包全文" /></details>
       </section>}
 
-      {record && record.status !== "closed" && <section className="refine-step" aria-labelledby="refine-return">
+      {record && record.status !== "closed" && !record.adopted.length && <section className="refine-step" aria-labelledby="refine-return">
         <h2 id="refine-return">貼回與檢查</h2>
         <p>把 GPT 收尾時輸出的整段紀錄貼在這裡。道場只檢查、不修改內容。</p>
         <label htmlFor="refine-paste">GPT 的收尾紀錄</label>
@@ -217,11 +233,18 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
 
       {record && record.status !== "open" && <section className="refine-step" aria-labelledby="refine-candidates">
         <h2 id="refine-candidates">候選</h2>
-        <p className="refine-note">卡片的保存位置還在等你決定。現在可以先挑選、決定標題，挑選會存在這一輪的紀錄裡；位置定案後再存成卡片。</p>
+        <p className="refine-note">先挑選、決定標題與類型，再按「存成卡片」。卡片存進 Notion 的 DB-22 洞察卡片庫，連回這一輪帶入的採集；存成卡片後，這則的挑選就不能再改，這一輪也不能再重新貼回。</p>
+        {(() => {
+          const pending = record.picks.filter((p) => !record.adopted.some((a) => a.candidateN === p.candidateN)).map((p) => p.candidateN);
+          return <p className="refine-summary">
+            <span>已挑選 {record.picks.length} 則</span><span>已存成卡片 {record.adopted.length} 張</span>
+            {record.status === "returned" && pending.length > 1 && <button type="button" className="primary" disabled={busy} onClick={() => adopt(pending)}>把已挑選的 {pending.length} 則都存成卡片</button>}
+          </p>;
+        })()}
         {record.omitted && <p className="refine-note">這場討論太長，為了放進 Notion，{record.omitted.gptTurns ? "GPT 的發言" : ""}{record.omitted.ownerTurns.length ? `與 T${record.omitted.ownerTurns.join("、T")}` : ""}沒有逐字保存；候選與檢查結果完整保存。</p>}
         {!record.candidates.length && <p>這份紀錄沒有候選。</p>}
         <div className="refine-candidates">
-          {record.candidates.map((candidate) => <RefineCandidateCard key={candidate.n} candidate={candidate} record={record} pick={record.picks.find((item) => item.candidateN === candidate.n)} busy={busy} onPick={pick} />)}
+          {record.candidates.map((candidate) => <RefineCandidateCard key={candidate.n} candidate={candidate} record={record} pick={record.picks.find((item) => item.candidateN === candidate.n)} cardId={record.adopted.find((item) => item.candidateN === candidate.n)?.cardId} busy={busy} onPick={pick} onAdopt={(n) => adopt([n])} />)}
         </div>
         <details><summary>GPT 延伸（{record.extensions.length}）</summary><ul>{record.extensions.map((item, index) => <li key={index}>{item}</li>)}</ul></details>
         <details><summary>待查證（{record.toVerify.length}）</summary><ul>{record.toVerify.map((item, index) => <li key={index}>{item}</li>)}</ul></details>
@@ -241,26 +264,34 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
   );
 }
 
-function RefineCandidateCard({ candidate, record, pick, busy, onPick }: {
-  candidate: RefineRecord["candidates"][number]; record: RefineRecord; pick?: RefinePick; busy: boolean;
-  onPick: (n: number, from: RefineTitleFrom | null, title?: string) => void;
+function RefineCandidateCard({ candidate, record, pick, cardId, busy, onPick, onAdopt }: {
+  candidate: RefineRecord["candidates"][number]; record: RefineRecord; pick?: RefinePick; cardId?: string; busy: boolean;
+  onPick: (n: number, from: RefineTitleFrom | null, title?: string, cardType?: RefineCardType) => void;
+  onAdopt: (n: number) => void;
 }) {
   const check = record.checks.words.find((item) => item.n === candidate.n);
   const verified = Boolean(check?.ok);
   const [from, setFrom] = useState<RefineTitleFrom>(pick?.titleFrom ?? (verified ? "原話" : "改寫"));
   const [rewrite, setRewrite] = useState(pick?.titleFrom === "改寫" ? pick.title : "");
-  const closed = record.status === "closed";
+  const [cardType, setCardType] = useState<RefineCardType>(pick?.cardType ?? refineDefaultCardType(record.angle, candidate.type));
+  const editable = record.status === "returned" && !cardId;
   const choices: RefineTitleFrom[] = verified ? ["原話", "整理版", "改寫"] : ["改寫"];
-  return <article className={`refine-candidate ${pick ? "is-picked" : ""}`}>
+  return <article className={`refine-candidate ${pick ? "is-picked" : ""} ${cardId ? "is-adopted" : ""}`}>
     <div className="refine-candidate-meta"><b>#{candidate.n}｜{candidate.type}</b><span>T{candidate.turn}{candidate.reply ? `・回應 ${candidate.reply}` : ""}</span><span className={verified ? "is-ok" : "is-fail"}>{verified ? "原話逐字相符" : "原話未通過檢查"}</span></div>
     <p><strong>原話</strong>{candidate.words || "（沒有附上原話）"}</p>
     {candidate.tidy && <p><strong>整理版</strong>{candidate.tidy}</p>}
-    {pick && <p className="refine-picked"><strong>已挑選・標題用{pick.titleFrom}</strong>{pick.title}</p>}
-    {!closed && candidate.words && <div className="refine-pick">
+    {!verified && candidate.words && (refineOwnTurn(record, candidate.turn)
+      ? <p className="refine-note">原話和 T{candidate.turn} 對不上，存成卡片時「我的原話」會改存你在 T{candidate.turn} 的完整發言：{refineOwnTurn(record, candidate.turn)}</p>
+      : <p className="refine-note">原話和 T{candidate.turn} 對不上，而 T{candidate.turn} 不是你的發言或沒有逐字保存，這則不能存成卡片。</p>)}
+    {pick && <p className="refine-picked"><strong>{cardId ? "已存成卡片" : "已挑選"}・{pick.cardType}・標題用{pick.titleFrom}</strong>{pick.title}</p>}
+    {cardId && <a className="refine-card-link" href={`https://www.notion.so/${cardId.replaceAll("-", "")}`} target="_blank" rel="noreferrer">在 Notion 打開這張卡片 ↗</a>}
+    {editable && candidate.words && <div className="refine-pick">
       <div role="radiogroup" aria-label={`候選 #${candidate.n} 的標題`}>{choices.map((choice) => <button type="button" key={choice} role="radio" aria-checked={from === choice} className={from === choice ? "on" : ""} disabled={choice === "整理版" && !candidate.tidy} onClick={() => setFrom(choice)}>{choice === "改寫" ? "自己改寫" : `用${choice}`}</button>)}</div>
       {from === "改寫" && <textarea className="field" rows={2} value={rewrite} onChange={(event) => setRewrite(event.target.value)} aria-label={`候選 #${candidate.n} 改寫的標題`} placeholder="用自己的話寫成一句能獨立閱讀的標題" />}
+      <div role="radiogroup" aria-label={`候選 #${candidate.n} 的卡片類型`}>{refineCardTypes(record.angle).map((type) => <button type="button" key={type} role="radio" aria-checked={cardType === type} className={cardType === type ? "on" : ""} onClick={() => setCardType(type)}>{type}</button>)}</div>
       <div className="refine-pick-actions">
-        <button type="button" className="primary" disabled={busy || (from === "改寫" && !rewrite.trim())} onClick={() => onPick(candidate.n, from, rewrite)}>{pick ? "更新挑選" : "挑選這則"}</button>
+        <button type="button" className={pick ? "" : "primary"} disabled={busy || (from === "改寫" && !rewrite.trim())} onClick={() => onPick(candidate.n, from, rewrite, cardType)}>{pick ? "更新挑選" : "挑選這則"}</button>
+        {pick && <button type="button" className="primary" disabled={busy} onClick={() => onAdopt(candidate.n)}>存成卡片</button>}
         {pick && <button type="button" disabled={busy} onClick={() => onPick(candidate.n, null)}>取消挑選</button>}
       </div>
     </div>}

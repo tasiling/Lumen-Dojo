@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import {
-  closeRefineRound, configureRefineRound, createRefineRound, getRefineRound, listRefineRounds, pickRefineCandidate,
+  adoptRefineCandidate, closeRefineRound, configureRefineRound, createRefineRound, getRefineRound, listRefineRounds, pickRefineCandidate,
   readRefineRules, returnRefineRound, saveRefineRules,
 } from "@/lib/dojo/refineStore";
 import type { RefineTitleFrom } from "@/lib/dojo/refineRecord";
@@ -51,8 +51,11 @@ export async function POST(req: NextRequest) {
       case "pick": {
         const from = body.titleFrom === null ? null : ["原話", "整理版", "改寫"].includes(str(body.titleFrom)) ? body.titleFrom as RefineTitleFrom : undefined;
         if (from === undefined || !Number.isSafeInteger(body.candidateN)) throw new LearningError("挑選的內容格式不符。", 400);
-        return json(await pickRefineCandidate(id, body.candidateN as number, from, str(body.title)));
+        return json(await pickRefineCandidate(id, body.candidateN as number, from, str(body.title), str(body.cardType) || undefined));
       }
+      case "adopt":
+        if (!Number.isSafeInteger(body.candidateN)) throw new LearningError("候選編號格式不符。", 400);
+        return json(await adoptRefineCandidate(id, body.candidateN as number));
       case "close":
         return json(await closeRefineRound(id));
       case "rules":
