@@ -138,6 +138,14 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
   const checks = result?.checks ?? (record?.status !== "open" ? record?.checks : undefined);
   const failedQuotes = checks?.quotes.filter((check) => !check.ok || check.note) ?? [];
   const failedWords = checks?.words.filter((check) => !check.ok || check.note) ?? [];
+  const allMatch = (list: { ok: boolean }[]) => list.every((check) => check.ok);
+  // The four stops of a round. A stop is a link once its section is on the page.
+  const steps = [
+    { id: "refine-setup", name: "設定", ready: true, current: !record },
+    { id: "refine-package", name: "討論包", ready: Boolean(view), current: record?.status === "open" },
+    { id: "refine-return", name: "貼回", ready: Boolean(record && record.status !== "closed" && !record.adopted.length), current: false },
+    { id: "refine-candidates", name: "候選", ready: Boolean(record && record.status !== "open"), current: Boolean(record && record.status !== "open") },
+  ];
 
   return (
     <section className="forage-refine" aria-label="野採淬鍊">
@@ -145,10 +153,16 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
         <Link href="/forage/captures">返回採集匣</Link>
         {record && <span>{record.id}・{STATUS_LABELS[record.status]}</span>}
       </div>
+      <nav className="refine-steps" aria-label="淬鍊步驟">
+        {steps.map((step) => step.ready
+          ? <a key={step.id} href={`#${step.id}`} aria-current={step.current ? "step" : undefined}>{step.name}</a>
+          : <span key={step.id} aria-disabled="true">{step.name}</span>)}
+      </nav>
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <p className="form-success" role="status">{notice}</p>}
 
-      <section className="refine-step" aria-labelledby="refine-setup">
+      <section className="refine-step is-setup" aria-labelledby="refine-setup">
+        <span className="refine-eyebrow">所拾</span>
         <h2 id="refine-setup">設定這一輪</h2>
         <label htmlFor="refine-topic">本輪題目</label>
         <textarea id="refine-topic" className="field" rows={2} value={topic} disabled={!editable} onChange={(event) => setTopic(event.target.value)} placeholder="例如：焦慮能不能幫助一個人努力？" />
@@ -191,7 +205,8 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
         {!editable && <p className="field-help">已經貼回討論紀錄，設定不能再改。要換題目或素材，請另開一輪。</p>}
       </section>
 
-      {view && <section className="refine-step" aria-labelledby="refine-package">
+      {view && <section className="refine-step is-package" aria-labelledby="refine-package">
+        <span className="refine-eyebrow">帶去討論</span>
         <h2 id="refine-package">討論包</h2>
         {view.unsegmented.length > 0 && <p className="refine-note">{view.unsegmented.join("、")} 的原文存成一整行，這裡暫時依句號切段；段落編號只在這一輪有效。</p>}
         {view.changed.length > 0 && <p className="refine-note">{view.changed.join("、")} 的原文在這一輪設定之後變動過，討論包與檢查都用目前的原文。</p>}
@@ -201,7 +216,8 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
         <details open={packageFallback}><summary>查看討論包全文</summary><textarea className="field" rows={10} readOnly value={view.package} aria-label="討論包全文" /></details>
       </section>}
 
-      {record && record.status !== "closed" && !record.adopted.length && <section className="refine-step" aria-labelledby="refine-return">
+      {record && record.status !== "closed" && !record.adopted.length && <section className="refine-step is-return" aria-labelledby="refine-return">
+        <span className="refine-eyebrow">貼回</span>
         <h2 id="refine-return">貼回與檢查</h2>
         <p>把 GPT 收尾時輸出的整段紀錄貼在這裡。道場只檢查、不修改內容。</p>
         <label htmlFor="refine-paste">GPT 的收尾紀錄</label>
@@ -210,6 +226,7 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
       </section>}
 
       {checks && <section className="refine-step refine-checks" aria-labelledby="refine-checks">
+        <span className="refine-eyebrow">核對</span>
         <h2 id="refine-checks">檢查結果</h2>
         {result && !result.checks.idOk && <p className="form-error" role="alert">這份紀錄不屬於這一輪，沒有保存。{result.checks.idNote}</p>}
         {checks.missing.length > 0 && <div className="refine-problem">
@@ -219,8 +236,8 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
         </div>}
         {checks.turnGaps.length > 0 && <p className="refine-note">逐字問答的編號不連續：{checks.turnGaps.join("；")}</p>}
         <p className="refine-summary">
-          <span>原文引用 {checks.quotes.filter((check) => check.ok).length}／{checks.quotes.length} 逐字相符</span>
-          <span>本人原話 {checks.words.filter((check) => check.ok).length}／{checks.words.length} 逐字相符</span>
+          <span className={allMatch(checks.quotes) ? "is-pass" : "is-fail"}>原文引用 {checks.quotes.filter((check) => check.ok).length}／{checks.quotes.length} 逐字相符</span>
+          <span className={allMatch(checks.words) ? "is-pass" : "is-fail"}>本人原話 {checks.words.filter((check) => check.ok).length}／{checks.words.length} 逐字相符</span>
         </p>
         {failedQuotes.length > 0 && <ul className="refine-check-list">{failedQuotes.map((check, index) => <li key={index} className={check.ok ? "is-note" : "is-fail"}>
           <b>{check.ok ? "位置不同" : "對不上"}｜{check.ref}</b><q>{check.text}</q><small>{check.note}</small>
@@ -231,7 +248,8 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
         </li>)}</ul>}
       </section>}
 
-      {record && record.status !== "open" && <section className="refine-step" aria-labelledby="refine-candidates">
+      {record && record.status !== "open" && <section className="refine-step is-candidates" aria-labelledby="refine-candidates">
+        <span className="refine-eyebrow">留下的</span>
         <h2 id="refine-candidates">候選</h2>
         <p className="refine-note">先挑選、決定標題與類型，再按「存成卡片」。卡片存進 Notion 的 DB-22 洞察卡片庫，連回這一輪帶入的採集；存成卡片後，這則的挑選就不能再改，這一輪也不能再重新貼回。</p>
         {(() => {
@@ -247,12 +265,19 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
           {record.candidates.map((candidate) => <RefineCandidateCard key={candidate.n} candidate={candidate} record={record} pick={record.picks.find((item) => item.candidateN === candidate.n)} cardId={record.adopted.find((item) => item.candidateN === candidate.n)?.cardId} busy={busy} onPick={pick} onAdopt={(n) => adopt([n])} />)}
         </div>
         <details><summary>GPT 延伸（{record.extensions.length}）</summary><ul>{record.extensions.map((item, index) => <li key={index}>{item}</li>)}</ul></details>
-        <details><summary>待查證（{record.toVerify.length}）</summary><ul>{record.toVerify.map((item, index) => <li key={index}>{item}</li>)}</ul></details>
+        <details className="refine-verify" open={record.toVerify.length > 0}><summary>待查證（{record.toVerify.length}）</summary>
+          <ul>{record.toVerify.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          {record.toVerify.length > 0 && <>
+            <p className="field-help">這些說法還不能當成事實。複製清單後貼給 Claude 並說「查證」，它會逐則找來源、給出判定。</p>
+            <button type="button" onClick={() => void copy(["【野採待查清單】", `討論包ID：${record.id}`, ...record.toVerify.map((item, index) => `${index + 1}. ${item}`)].join("\n")).then((ok) => setNotice(ok ? "待查清單已複製。" : "這個瀏覽器不能自動複製，請手動選取上面的清單。"))}>複製待查清單</button>
+          </>}
+        </details>
         <details><summary>未回答（{record.unanswered.length}）</summary><ul>{record.unanswered.map((item, index) => <li key={index}>{item}</li>)}</ul></details>
         <details><summary>逐字問答（{record.turns.length} 則）</summary><ol className="refine-turns">{record.turns.map((turn) => <li key={turn.n}><b>T{turn.n}｜{turn.who}</b><p>{turn.text || "（未逐字保存）"}</p></li>)}</ol></details>
       </section>}
 
-      {record && <section className="refine-step" aria-labelledby="refine-end">
+      {record && <section className="refine-step is-end" aria-labelledby="refine-end">
+        <span className="refine-eyebrow">歸類</span>
         <h2 id="refine-end">{record.status === "closed" ? "這一輪的歸類紀錄" : "結束這一輪"}</h2>
         <p>帶入：{record.sources.map((source) => `${source.label} ${source.title}`).join("、")}</p>
         <p>考慮過但沒有帶入：{refineLeftOut(record).map((id) => byId.get(id)?.title ?? id).join("、") || "無"}</p>
@@ -278,8 +303,8 @@ function RefineCandidateCard({ candidate, record, pick, cardId, busy, onPick, on
   const choices: RefineTitleFrom[] = verified ? ["原話", "整理版", "改寫"] : ["改寫"];
   return <article className={`refine-candidate ${pick ? "is-picked" : ""} ${cardId ? "is-adopted" : ""}`}>
     <div className="refine-candidate-meta"><b>#{candidate.n}｜{candidate.type}</b><span>T{candidate.turn}{candidate.reply ? `・回應 ${candidate.reply}` : ""}</span><span className={verified ? "is-ok" : "is-fail"}>{verified ? "原話逐字相符" : "原話未通過檢查"}</span></div>
-    <p><strong>原話</strong>{candidate.words || "（沒有附上原話）"}</p>
-    {candidate.tidy && <p><strong>整理版</strong>{candidate.tidy}</p>}
+    <p className="refine-mine"><strong>我的原話</strong>{candidate.words || "（沒有附上原話）"}</p>
+    {candidate.tidy && <p className="refine-tidy"><strong>GPT 的整理版</strong>{candidate.tidy}</p>}
     {!verified && candidate.words && (refineOwnTurn(record, candidate.turn)
       ? <p className="refine-note">原話和 T{candidate.turn} 對不上，存成卡片時「我的原話」會改存你在 T{candidate.turn} 的完整發言：{refineOwnTurn(record, candidate.turn)}</p>
       : <p className="refine-note">原話和 T{candidate.turn} 對不上，而 T{candidate.turn} 不是你的發言或沒有逐字保存，這則不能存成卡片。</p>)}
