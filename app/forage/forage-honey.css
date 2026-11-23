@@ -96,3 +96,58 @@
   .dojo.dojo-ui.forage-shell .forage-ui :is(.forage-page-heading,.hero) {padding:20px 16px}
   .dojo.dojo-ui.forage-shell .forage-ui :is(.english-image-detail-head,.item) {padding:16px}
 }
+
+/* 淬鍊：同一套色塊分出每個步驟、原文、本人原話與檢查結果（2026-11-24，對齊已確認的模擬版）。 */
+.dojo.dojo-ui.forage-shell .forage-ui .forage-refine {--refine-leaf:#ECF4E6;--refine-gold:#8C6F33;--refine-ok:#2C6B55;--refine-bad:#8A302C;--refine-bad-soft:#FFF4EF;--refine-bad-border:#EAD8CF}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-steps {position:sticky;top:0;z-index:3;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px 0;margin:0 0 8px;background:var(--v2-background)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-steps :is(a,span) {display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px 4px;border:1px solid var(--v2-border);border-radius:12px;background:var(--v2-surface);color:var(--v2-muted);font-size:.9375rem;text-decoration:none}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-steps a {color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-steps a[aria-current] {background:var(--forage-honey);border-color:var(--forage-honey-border);font-weight:600}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-steps span {opacity:.55;border-style:dashed}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-step {box-shadow:0 4px 20px #BD937512;scroll-margin-top:72px}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-step>h2 {scroll-margin-top:72px}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-eyebrow {display:inline-block;margin:0 0 10px;padding:3px 11px;border-radius:7px;font-size:.8125rem;letter-spacing:.04em;color:var(--v2-ink);background:var(--forage-peach)}
+.dojo.dojo-ui.forage-shell .forage-ui .is-package>.refine-eyebrow {background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell .forage-ui .is-return>.refine-eyebrow {background:var(--forage-mint)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-checks>.refine-eyebrow {background:var(--refine-leaf)}
+.dojo.dojo-ui.forage-shell .forage-ui .is-end>.refine-eyebrow {background:var(--v2-background);border:1px solid var(--v2-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-step fieldset {border:0;padding:0;margin:16px 0 0;min-width:0}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-step legend {padding:0;margin-bottom:8px;font-weight:600;font-size:.9375rem}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-angles button.on {background:var(--forage-peach);border-color:var(--forage-honey-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-sources li {background:var(--v2-surface);border-radius:12px}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-label {padding:2px 9px;border-radius:7px;background:var(--forage-yellow);color:var(--refine-gold);font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.8125rem}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-original {margin-top:4px;padding:2px 8px;border-radius:7px;background:var(--refine-leaf);color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-original:is(.is-partial,.is-unsegmented) {background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-original.is-none {background:var(--refine-bad-soft);color:var(--refine-bad);border:1px solid var(--refine-bad-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-note {background:var(--forage-yellow);border-radius:12px;padding:12px 14px}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-summary {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-summary span {padding:12px;border-radius:12px;background:var(--forage-peach)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-summary span:nth-of-type(2) {background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-summary span.is-pass {background:var(--forage-mint);color:var(--refine-ok)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-summary span.is-fail {background:var(--refine-bad-soft);color:var(--refine-bad);border:1px solid var(--refine-bad-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-summary button {grid-column:1/-1}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-problem {background:var(--refine-bad-soft);border-color:var(--refine-bad-border);border-radius:15px}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-problem>b {color:var(--refine-bad)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-check-list li.is-fail {background:var(--refine-bad-soft);border-color:var(--refine-bad-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-check-list li.is-fail>b {color:var(--refine-bad)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-check-list li.is-note {background:var(--forage-mint);border-color:#CDE5DD}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-check-list blockquote {border-left:0;border-radius:10px;background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate {padding:18px;border-radius:15px;background:var(--v2-surface);box-shadow:0 4px 20px #BD937512}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate.is-picked {background:var(--v2-surface);border-color:var(--forage-honey-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate.is-adopted {border-color:#CDE5DD}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate-meta>b {padding:2px 10px;border-radius:7px;background:var(--forage-peach);font-weight:600}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate-meta :is(.is-ok,.is-fail) {padding:2px 10px;border-radius:7px}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate-meta .is-ok {background:var(--forage-mint);color:var(--refine-ok)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate-meta .is-fail {background:var(--refine-bad-soft);color:var(--refine-bad);border:1px solid var(--refine-bad-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate :is(.refine-mine,.refine-tidy,.refine-picked) {margin:12px 0 0;padding:12px 14px;border-radius:12px;overflow-wrap:anywhere}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate :is(.refine-mine,.refine-tidy,.refine-picked)>strong {margin-bottom:4px;font-weight:400}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate .refine-mine {background:var(--forage-peach);border-left:4px solid var(--forage-honey-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate .refine-tidy {background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate .refine-picked {background:var(--forage-mint)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-candidate .refine-picked>strong {color:var(--refine-ok)}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-pick [role=radio].on {background:var(--forage-peach);border-color:var(--forage-honey-border)}
+.dojo.dojo-ui.forage-shell .forage-ui .is-candidates>details {border:1px solid var(--v2-border);border-radius:12px;padding:4px 14px}
+.dojo.dojo-ui.forage-shell .forage-ui .is-candidates>details[open] {padding-bottom:14px}
+.dojo.dojo-ui.forage-shell .forage-ui .is-candidates>details.refine-verify[open] {background:var(--forage-yellow);border-color:transparent}
+.dojo.dojo-ui.forage-shell .forage-ui .is-candidates>details li {font-size:.9375rem;overflow-wrap:anywhere}
+@media(min-width:760px){.dojo.dojo-ui.forage-shell .forage-ui .refine-steps {top:0}}
