@@ -97,6 +97,7 @@ function draftPrompt(w,mode) {
     L.push('出處：'+(where||'未記載')+(c.author?'（'+c.author+'）':''));
     // 由來 is wherever the card can be traced back to: the passage that prompted it when there is one, otherwise the source itself.
     if(c.basis)L.push('由來：我回應這段原文時說的——'+c.basis);
+    else if(!own&&c.quote)L.push('由來：這是 GPT 在討論中說的，不是我的話——「'+c.quote+'」'+(where?'（'+where+'）':''));
     else if(!mine&&c.quote&&c.quote!==c.idea)L.push('由來：我讀到這段'+(c.quoteLabel||'原文')+'時留下的——「'+c.quote+'」'+(where?'（'+where+'）':''));
     else if(where)L.push('由來：'+where);
     const use=(sh?.cardUses||[]).find(u=>cardsInUse(u).includes(id)), why=use?cardUseText(use):'';
