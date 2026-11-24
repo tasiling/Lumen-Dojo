@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CaptureTranscript } from "@/lib/dojo/formal";
 import { transcriptReadingText } from "@/lib/dojo/douyin/transcriptText";
+import { tidyComparison, tidyParagraphs, tidyWords, type TranscriptTidy } from "@/lib/dojo/douyin/tidyText";
 
 const API = "/api/dojo/douyin";
 const INSTALL_FILENAME = "YeCai-Connect-Mac-Production.command";
@@ -41,6 +42,12 @@ type Job = {
   error: string;
   synced?: boolean;
   finishedAt?: string | null;
+  /** 'pending' while correction is queued or running; null when it was never requested. */
+  tidyState?: "pending" | "done" | "failed" | "skipped" | null;
+  tidy?: TranscriptTidy | null;
+  tidyReason?: string;
+  /** The Traditional original the corrected text is compared with, for 「改了哪裡」. */
+  tidyBase?: string;
 };
 /** A video or audio file waiting in the Mac's iCloud inbox folder; only its name, size and hash are known here. */
 type Offer = { file: string; name: string; size: number };
@@ -101,10 +108,11 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
+  const [version, setVersion] = useState<"tidy" | "raw">("tidy");
   const job = data?.job;
   const visible = Boolean(captureId) || connectionOpen;
   // Captures without a transcript keep polling slowly so a file that reaches the Mac shows up here.
-  const active = connectionOpen || job?.status === "queued" || job?.status === "running";
+  const active = connectionOpen || job?.status === "queued" || job?.status === "running" || job?.tidyState === "pending";
   const poll = active || (Boolean(captureId) && !job);
 
   useEffect(() => {
@@ -138,7 +146,7 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
     };
   }, [active, busy, captureId, poll, reload, visible]);
 
-  async function submit(action: "install" | "retry" | "attach" | "syncTranscripts", file?: string) {
+  async function submit(action: "install" | "retry" | "attach" | "syncTranscripts" | "tidy", file?: string) {
     setBusy(true);
     setActionError("");
     setNotice("");
@@ -188,7 +196,20 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
   // Notion's copy is shown once it holds this transcript in full; until then the queue's copy stands in.
   const inNotion = stored && (!done || (done.synced !== false && stored.finishedAt === done.finishedAt)) ? stored : null;
   const fullText = inNotion && !(inNotion.truncated && done) ? inNotion.text : done ? transcriptReadingText(done) : "";
-  const transcript = fullText ? transcriptPreview(fullText) : null;
+  // The corrected copy is shown by default; the raw recognition stays one tap away and is never replaced.
+  const tidy = (inNotion && !(inNotion.truncated && done) ? inNotion.tidy : done?.tidy ?? inNotion?.tidy) ?? null;
+  const showTidy = Boolean(tidy) && version === "tidy";
+  const shownText = showTidy ? tidy!.text : fullText;
+  const transcript = shownText ? transcriptPreview(shownText) : null;
+  const comparison = tidy && done?.tidyBase ? tidyComparison(done.tidyBase, tidy.text) : null;
+  // Word fixes are listed one by one; punctuation, breaks and 〔？〕 marks are only counted, so the fixes stay visible.
+  const wordFixes = comparison?.map((item) => ({ ...item, hunks: item.hunks.filter((h) => tidyWords(h.before) !== tidyWords(h.after)) }))
+    .filter((item) => item.hunks.length) ?? [];
+  const markOnly = (comparison?.reduce((sum, item) => sum + item.hunks.length, 0) ?? 0) - wordFixes.reduce((sum, item) => sum + item.hunks.length, 0);
+  const unsure = tidy ? tidy.text.split("〔？〕").length - 1 : 0;
+  const tidyPending = done?.tidyState === "pending";
+  const canTidy = Boolean(done) && !tidyPending && (!tidy || tidy.state !== "done");
+  const revertedPreview = tidy ? tidyParagraphs(tidy.text) : [];
   const pending = Boolean(done && done.synced === false);
   const status = job && !(inNotion && job.status === "failed") ? statuses[job.status]
     : inNotion ? statuses.done : data ? "尚未排入轉錄" : loadError ? "" : "正在讀取轉錄狀態…";
@@ -232,13 +253,38 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
         {inNotion?.truncated && <p role="status">
           這份逐字稿太長，Notion 只存到前 {inNotion.text.length.toLocaleString()} 字{done ? "；這裡顯示的是轉錄佇列裡的完整內容" : ""}。
         </p>}
+        {tidyPending && <p role="status">正在校正逐字稿（簡轉繁、辨識修正）…完成前先顯示原始辨識。</p>}
+        {tidy && <div className="forage-douyin-versions" role="radiogroup" aria-label="逐字稿版本">
+          <button type="button" role="radio" aria-checked={showTidy} className={showTidy ? "on" : ""} onClick={() => setVersion("tidy")}>{tidy.state === "done" ? "校正版" : "繁體原稿"}</button>
+          <button type="button" role="radio" aria-checked={!showTidy} className={!showTidy ? "on" : ""} onClick={() => setVersion("raw")}>原始辨識</button>
+        </div>}
+        {tidy && showTidy && <div className="forage-douyin-tidy-note" role="note">
+          {tidy.state === "done" && <p>已校正：簡體轉為繁體，修正辨識錯字、標點與分段，共改了 {tidy.changes} 處；沒有刪句、增句或改寫。</p>}
+          {tidy.state === "skipped" && <p>{done?.tidyReason || "只轉成繁體，沒有做辨識修正。"}</p>}
+          {tidy.state === "failed" && <p>{done?.tidyReason || "辨識修正沒有完成。"}這裡顯示的是只轉成繁體的原始辨識。</p>}
+          {tidy.state === "done" && tidy.reverted.length > 0 && <details className="forage-douyin-fold">
+            <summary>這幾段沒有校正（{tidy.reverted.length} 段）</summary>
+            <p>這些段落的校正結果沒有通過檢查（改動過多或出現原稿沒有的句子），維持繁體原稿：</p>
+            <ul className="forage-douyin-reverted">{tidy.reverted.map((n) => <li key={n}>第 {n} 段：{(revertedPreview[n - 1] ?? "").slice(0, 24)}…</li>)}</ul>
+          </details>}
+          {comparison && comparison.length > 0 && <details className="forage-douyin-fold">
+            <summary>改了哪裡（{comparison.reduce((sum, item) => sum + item.hunks.length, 0)} 處，簡轉繁不列入）</summary>
+            <p>{wordFixes.length ? `修正用字 ${wordFixes.reduce((sum, item) => sum + item.hunks.length, 0)} 處：` : "沒有修改用字。"}</p>
+            {wordFixes.length > 0 && <ol className="forage-douyin-changes">{wordFixes.map((item) => <li key={item.n}>
+              <b>第 {item.n} 段</b>
+              <ul>{item.hunks.map((hunk, index) => <li key={index}><del>{hunk.before || "（無）"}</del> → <ins>{hunk.after || "（刪去）"}</ins></li>)}</ul>
+            </li>)}</ol>}
+            {(markOnly > 0 || unsure > 0) && <p>{markOnly > 0 ? `其餘 ${markOnly} 處只加了標點、換行或〔？〕。` : ""}{unsure > 0 ? `〔？〕表示聽不出來的地方，共 ${unsure} 處。` : ""}</p>}
+          </details>}
+        </div>}
+        {canTidy && <button type="button" disabled={busy} onClick={() => void submit("tidy")}>{tidy ? "重新校正" : "補做校正"}</button>}
         {transcript && <>
           <p className="forage-douyin-text">{transcript.lead}</p>
           {transcript.rest && <details className="forage-douyin-fold">
             <summary>展開完整逐字稿</summary>
             <p className="forage-douyin-text">{transcript.rest}</p>
           </details>}
-          <button type="button" onClick={() => void copyTranscript(fullText)}>複製完整逐字稿</button>
+          <button type="button" onClick={() => void copyTranscript(shownText)}>{showTidy ? "複製完整逐字稿（校正版）" : "複製完整逐字稿"}</button>
           {done && done.segments.length > 0 && <details className="forage-douyin-fold" onToggle={(event) => setTimesOpen(event.currentTarget.open)}>
             <summary>查看時間戳（{done.segments.length} 段）</summary>
             {timesOpen && <ol className="forage-douyin-timestamps">

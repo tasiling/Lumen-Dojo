@@ -101,8 +101,11 @@ try {
   const text = "這一段是青銅器展的逐字稿。";
   assert.equal((await endpoint("update", { id, lease: nextJob.lease, action: "finish", videoId, text,
     segments: [{ start: 0, end: 5.4, text }] }, token)).status, 200);
+  // The completion notice is sent once correction (簡轉繁、辨識修正) settles. This transcript is too short for a model
+  // call, so it is only converted to Traditional and the notice says so.
+  await f.load("lib/dojo/douyin/transcriptSync.ts").tidyPendingTranscripts();
   assert.equal(pushes.length, 2);
-  assert.match(pushes[1].text, /^轉錄完成｜抖音\n「青銅器展」/);
+  assert.equal(pushes[1].text, "轉錄完成｜抖音\n「青銅器展」\n逐字稿太短，只轉成繁體。\n逐字稿已可在這筆素材查看。");
   // The transcript is written to the capture's Notion record in the background; wait for it before the next message.
   await f.load("lib/dojo/douyin/transcriptSync.ts").syncPendingTranscripts();
   assert.equal((await captureStore.getCaptureEntry(id)).capture.clip.transcript.text, text);

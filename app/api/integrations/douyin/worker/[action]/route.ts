@@ -39,8 +39,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ action
     if (typeof id !== "string" || !captureIdPattern.test(id))
       throw new InputError("素材編號格式不符。");
     const result = queue.update(token, data);
-    if (data.action === "finish" || data.action === "fail") notifyOwner(id, douyinFinishedMessage(queue.view(id)));
-    // The transcript is safe in the queue; writing it to Notion never delays or fails the Mac's report.
+    // A failure is announced now. A finished transcript is announced once its correction (簡轉繁、辨識修正) settles;
+    // correction and the Notion write-back run after this response, so they never delay or fail the Mac's report.
+    if (data.action === "fail") notifyOwner(id, douyinFinishedMessage(queue.view(id)));
     if (data.action === "finish") kickTranscriptSync();
     return douyinJson(result);
   } catch (error) {

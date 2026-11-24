@@ -56,8 +56,11 @@ export function captureOriginal(capture: Pick<CaptureEntry, "excerpt" | "clip">)
   let partial = false;
   if (post?.text.trim()) { parts.push(post.text.trim()); kinds.push("貼文"); partial ||= post.partial; }
   if (transcript?.text.trim()) {
-    parts.push((parts.length ? "〔影片逐字稿〕\n" : "") + transcript.text.trim());
-    kinds.push("逐字稿");
+    // A corrected transcript is the original for discussion; its paragraph numbers are the ones cited. Uncorrected
+    // speech recognition is used only when no correction exists. The raw recognition stays on the capture either way.
+    const tidy = transcript.tidy;
+    parts.push((parts.length ? "〔影片逐字稿〕\n" : "") + (tidy?.text.trim() || transcript.text.trim()));
+    kinds.push(!tidy ? "逐字稿" : tidy.state === "done" ? "逐字稿，經校正" : "逐字稿，已轉繁體");
     partial ||= transcript.truncated;
   }
   const excerpt = capture.excerpt.trim();

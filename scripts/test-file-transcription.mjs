@@ -134,6 +134,7 @@ try {
   const text = "先把陶土置中，再慢慢拉高。";
   assert.equal((await update("finish", { videoId: "file:" + fileB, text, segments: [{ start: 0, end: 3, text }] })).status, 422);
   assert.equal((await update("finish", { videoId: job.video, text, segments: [{ start: 0, end: 3, text }] })).status, 200);
+  await f.load("lib/dojo/douyin/transcriptSync.ts").tidyPendingTranscripts();
   assert.match(pushes.at(-1).text, /^轉錄完成｜Threads\n「Threads 上的陶藝示範」/);
   assert.deepEqual(await (await offer(fileA)).json(), { state: "done", captureId: threads });
   // The transcript of a file is written to the capture's Notion record like any other.

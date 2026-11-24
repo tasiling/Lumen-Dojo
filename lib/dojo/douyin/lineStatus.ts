@@ -50,12 +50,28 @@ export function douyinStatusLine(job: DouyinJobStatus | null, connection: Douyin
   return `等待 Mac 轉錄：${reason}${willNotify}`;
 }
 
-/** The notice sent once a transcription ends; null while it is still queued or running. */
-export function douyinFinishedMessage(job: DouyinJobStatus | null): string | null {
+/** How correction ended, in one or two lines for the completion notice. */
+export function tidyNoticeLines(tidy: { state: string; changes: number; reverted: number[] } | null, reason: string): string[] {
+  if (!tidy) return [];
+  if (tidy.state === "done") return [
+    `已校正：簡轉繁與辨識修正，改了 ${tidy.changes} 處。`,
+    ...(tidy.reverted.length ? [`有 ${tidy.reverted.length} 段沒有通過檢查，那幾段維持繁體原稿。`] : []),
+  ];
+  if (tidy.state === "skipped") return [reason || "只轉成繁體，沒有做辨識修正。"];
+  return [reason || "辨識修正沒有完成。", "目前顯示的是原始辨識（已轉為繁體）。可在素材內補做校正。"];
+}
+
+/**
+ * The notice sent once a transcription ends; null while it is still queued or running. A finished transcript is
+ * announced after correction settles, so `tidy` and `tidyReason` describe how that went.
+ */
+export function douyinFinishedMessage(job: (DouyinJobStatus & {
+  tidy?: { state: string; changes: number; reverted: number[] } | null; tidyReason?: string;
+}) | null): string | null {
   if (!job) return null;
   const title = `「${job.title}」`;
   const source = transcriptionSource(job);
-  if (job.status === "done") return [`轉錄完成｜${source}`, title, "逐字稿已可在這筆素材查看。"].join("\n");
+  if (job.status === "done") return [`轉錄完成｜${source}`, title, ...tidyNoticeLines(job.tidy ?? null, job.tidyReason ?? ""), "逐字稿已可在這筆素材查看。"].join("\n");
   if (job.status !== "failed") return null;
   const phase = transcriptionPhaseLabel(job);
   return [
