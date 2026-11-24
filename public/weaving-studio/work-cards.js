@@ -92,9 +92,13 @@ function draftPrompt(w,mode) {
     const c=sourceCards.get(id), own=!/GPT/.test(c.author||'');
     L.push('');
     L.push('K'+(i+1)+'｜'+c.type+(own?'':'｜GPT 延伸，我尚未確認')+'｜'+(c.idea||c.title));
-    if(c.quote&&c.quote!==c.idea)L.push((c.quoteLabel||'原文')+'：'+c.quote);
-    L.push('出處：'+[c.source,c.location].filter(Boolean).join(' · ')+(c.author?'（'+c.author+'）':''));
-    if(c.basis)L.push('由來：這張卡是我回應這段原文時說的——'+c.basis);
+    const mine=c.quoteLabel==='我的原話', where=[c.source,c.location].filter(Boolean).join(' · ');
+    if(mine&&c.quote&&c.quote!==c.idea)L.push('我的原話：'+c.quote);
+    L.push('出處：'+(where||'未記載')+(c.author?'（'+c.author+'）':''));
+    // 由來 is wherever the card can be traced back to: the passage that prompted it when there is one, otherwise the source itself.
+    if(c.basis)L.push('由來：我回應這段原文時說的——'+c.basis);
+    else if(!mine&&c.quote&&c.quote!==c.idea)L.push('由來：我讀到這段'+(c.quoteLabel||'原文')+'時留下的——「'+c.quote+'」'+(where?'（'+where+'）':''));
+    else if(where)L.push('由來：'+where);
     const use=(sh?.cardUses||[]).find(u=>cardsInUse(u).includes(id)), why=use?cardUseText(use):'';
     if(why)L.push('接到這一杼的理由：'+why);
     if(c.url&&/^https?:/.test(c.url))L.push('原始資料：'+c.url);
@@ -110,7 +114,7 @@ function draftPrompt(w,mode) {
   ['只能使用卡片和我的回答裡出現過的內容，不替我增加新的觀點、例子或結論。',
    '引用我的話必須逐字，並標明來自哪一張卡或哪一次回答，不要替我換句話說。',
    '每一次提到卡片，都要連同它的出處與由來一起寫出來，照卡片上的記載抄寫，不得省略、合併或改寫。只寫「K1｜你的原話」是不夠的。',
-   '談到這一杼的核心理解時，也要寫出它的由來。卡片上沒有記載由來的，就寫「由來未記載」，不要自行推測。',
+   '談到這一杼的核心理解時，也要寫出它的由來。書名與位置本身就是由來；只有出處與由來兩行都沒有內容的卡片，才寫「由來未記載」，不要自行推測。',
    '你自己的建議要另外列在「GPT 建議」，並標示「尚未由本人確認」。',
    '標示為「GPT 延伸」的卡片不是我的話，使用前要先問我是否同意。',
    '不要替我寫成完整的文章，文字由我自己寫；你只負責排出骨架。'].forEach(r=>L.push('- '+r));
