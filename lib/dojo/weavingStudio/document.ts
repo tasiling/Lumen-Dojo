@@ -1,6 +1,6 @@
 const scripts = [
   "data", "app", "shuttle-flow", "diamond-original", "diamond", "media-b", "materials",
-  "card-box", "card-discussion", "card-use", "card-links", "related-match", "related-cards",
+  "card-box", "card-discussion", "card-use", "work-cards", "card-links", "related-match", "related-cards",
   "related-gpt", "workspace", "production"
 ];
 export function studioDocument(realm: "home" | "liao") {

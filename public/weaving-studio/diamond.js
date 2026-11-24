@@ -67,7 +67,7 @@ function openDiamond(w,mod,n) {
       tip('請保留定位。僅分析你核對過的文字，聲音或畫面可加本人描述。');
     body+=field('要比對的其他系統或專案（選填）','diaSystems','',true);
   } else {
-    if(mod==='B')body+=workMaterialPicker(w);
+    if(mod==='B'||mod==='A')body+=workMaterialPicker(w);
     body+=field(w.type==='text'?'這次分析的草稿':'這次要診斷的敘事、口白或作者草稿','diaScratch',
       w.type==='text'?w.body:(w.diamondNarrative||''),true);
     if(mod==='B'){

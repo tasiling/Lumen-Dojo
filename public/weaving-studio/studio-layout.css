@@ -170,3 +170,35 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
   .studio-tool .module-letter { flex-shrink: 0; }
   .modes-film button { min-width: 0; height: 100%; padding-inline: 4px; }
 }
+
+/* 寫文字：正文上方的卡片匣 */
+.work-card-tray{margin:0 0 18px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:4px 14px}
+.work-card-tray[open]{padding-bottom:14px}
+.work-card-tray>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;font-weight:700}
+.work-card-tray>summary span{font-weight:400;font-size:.83rem;padding:2px 10px;border-radius:999px;background:#e6f3ee;color:#2c6b55}
+.work-card-tray .tray-search{margin:4px 0 12px}
+.work-card-tray #trayList{display:grid;gap:10px;max-height:min(62vh,560px);overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
+.work-card-tray h4{margin:8px 0 0;font-size:.9rem;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.work-card-tray h4 small{font-weight:400;color:var(--muted);font-size:.78rem}
+.tray-card{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);min-width:0}
+.tray-card.is-used{background:#fff;border-color:#bfdccf}
+.tray-card>b{font-size:1rem;line-height:1.6;overflow-wrap:anywhere}
+.tray-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:.78rem}
+.tray-meta span{padding:2px 9px;border-radius:7px;background:var(--soft)}
+.tray-type[data-type="觀點"]{background:#fcebe3}
+.tray-type[data-type="洞察"]{background:#ece4f8}
+.tray-type[data-type="手法觀察"]{background:#faf0da}
+.tray-type[data-type="訪談重點"]{background:#e3f2ed}
+.tray-meta .tray-owner{background:#fff4ef;color:#8a302c;border:1px solid #ead8cf}
+.tray-meta .tray-used{background:#e6f3ee;color:#2c6b55}
+.tray-card blockquote{margin:0;padding:10px 12px;border-radius:10px;background:#faf0da;font-size:.9rem;line-height:1.7;overflow-wrap:anywhere}
+.tray-card blockquote small{display:block;font-size:.75rem;color:var(--muted)}
+.tray-source{color:var(--muted);font-size:.78rem;overflow-wrap:anywhere}
+.tray-card .actions{display:flex;flex-wrap:wrap;gap:8px}
+.tray-card .actions .light{background:var(--soft);border-color:var(--accent);font-weight:600}
+.work-card-tray #trayList{max-height:min(46vh,440px)}
+.work-sheet textarea#body{min-height:42vh}
+.tray-draft{margin:0 0 12px}
+.tray-draft .primary{width:100%}
+#dialog textarea#draftPrompt{width:100%;font-size:.85rem;line-height:1.6}
+.tray-card blockquote.tray-basis{background:#fff;border:1px solid var(--line)}

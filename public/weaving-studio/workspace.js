@@ -35,11 +35,20 @@ function versionTools(w, v) {
 
 function shuttleWorkRows(s) {
   const items=listedWorks().filter(w=>w.shuttle===s.id);
-  return items.length?items.map(w=>{
+  return (items.length?items.map(w=>{
     const v=w.versions.at(-1);
     return '<div class="shuttle-work">'+workRow(w)+(v?'<div>'+btn('從 V'+v.n+' 建立知識脈絡','creativeTool',[w.id,'D',v.n],'tiny')+'</div>':'')+'</div>';
-  }).join(''):'<p>選一種形式，匹配這一杼後，作品會出現在這裡。</p>';
+  }).join(''):'<p>用這一杼開始的作品會出現在這裡。</p>')+
+    '<div class="actions">'+btn('用這一杼寫文字','startFromShuttle',[s.id,'text'],'primary')+'</div>';
 }
+
+// Start a piece straight from a 杼, with the 杼 already matched.
+handlers.startFromShuttle=(sid,type)=>{
+  if(!findS(sid)||!TYPES[type])return;
+  const m={type,kind:'new',id:uid(),signature:JSON.stringify({type,kind:'new',from:sid,at:Date.now()})};
+  shuttleMatches()[m.id]=m;
+  confirmMatch(m.id,sid);
+};
 
 handlers.continueWork = id => {
   const w=findW(id);

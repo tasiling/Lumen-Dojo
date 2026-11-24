@@ -151,3 +151,4 @@
 .dojo.dojo-ui.forage-shell .forage-ui .is-candidates>details.refine-verify[open] {background:var(--forage-yellow);border-color:transparent}
 .dojo.dojo-ui.forage-shell .forage-ui .is-candidates>details li {font-size:.9375rem;overflow-wrap:anywhere}
 @media(min-width:760px){.dojo.dojo-ui.forage-shell .forage-ui .refine-steps {top:0}}
+.dojo.dojo-ui.forage-shell .forage-ui .refine-card-link.is-weave {margin:12px 10px 0 0;padding:10px 16px;border-radius:12px;border:1px solid var(--forage-honey-border);background:var(--forage-honey);color:var(--v2-ink);font-weight:600;text-decoration:none}
