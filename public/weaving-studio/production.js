@@ -202,6 +202,7 @@ async function loadCatalog(key){
       }
     }
     catalogs[key]='ready';
+    if(key==='cards')refreshTray();
   }catch{catalogs[key]='error';}
   renderIfReading();
 }

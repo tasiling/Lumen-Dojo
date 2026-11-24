@@ -52,6 +52,14 @@ export async function studioCards() {
   const bookNames=new Map(books.map(b=>[b.id,b.title]));
   for(const c of insights){
     if(handled.has(c.id) || blocked("reading_insight",c.id) || !c.insight)continue;
+    if(c.refine){
+      // A 野採淬鍊 card: its own type, the owner's verbatim words, and the original line it answers.
+      const words=c.refine.words||c.insight;
+      cards.push({id:"insight:"+c.id,title:shortTitle(c.insight),type:c.refine.cardType||"洞察",idea:c.insight,quote:words,
+        source:"野採淬鍊",location:c.refine.discussion,author:"本人原話",quoteLabel:"我的原話",
+        sourceKey:"insight:"+c.id,context:[words,c.refine.quote].filter(Boolean).join("\n"),url:sourceHref({sourceType:"reading_insight",sourceId:c.id})});
+      continue;
+    }
     cards.push({id:"insight:"+c.id,title:shortTitle(c.insight),type:"洞察",idea:c.insight,quote:c.insight,
       source:bookNames.get(c.sourceBookId??"")||"心知洞察卡",location:c.status,author:"已留存的洞察卡",quoteLabel:"卡片原文",
       sourceKey:"insight:"+c.id,context:[c.insight,c.action].filter(Boolean).join("\n"),url:sourceHref({sourceType:"reading_insight",sourceId:c.id})});
