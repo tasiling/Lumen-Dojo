@@ -48,6 +48,8 @@ export const FORMAL_STATE_TITLE_PREFIXES = [
   "行光續排-",
   CALENDAR_TITLE_PREFIX,
   ENTRY_TITLE_PREFIX,
+  // 心・情覺察是私人紀錄，不得出現在知識庫比對清單；前綴定義於 emotionAwareness.ts。
+  "行光覺察-",
   CAPTURE_TITLE_PREFIX,
   LEARNING_TITLE_PREFIX,
   "行光修習底座-",
