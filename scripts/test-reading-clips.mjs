@@ -84,6 +84,7 @@ const load = loader({
   "@/lib/dojo/wealthBank": { bankImageRoute: async () => ({ route: "ordinary" }) },
   "@/lib/dojo/captureStore": { listCaptureEntries: async () => [] },
   "@/lib/dojo/englishImageStore": store,
+  "@/lib/dojo/englishImageAutoUnit": { autoBuildContextUnit: async () => { throw Error("fixture has no context room"); } },
   "@/lib/dojo/englishImageAnalysis": {
     analyzeEnglishImage: async () => {
       englishAnalysis++;

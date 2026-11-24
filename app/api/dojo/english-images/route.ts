@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
+import { autoBuildContextUnit } from "@/lib/dojo/englishImageAutoUnit";
 import { isEnglishImageLearningRoute, type EnglishImageEntry, type EnglishImageStatus } from "@/lib/dojo/englishImage";
 import {
   getEnglishImageEntry,
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const id = typeof body.id === "string" ? body.id : "";
     if (!id) return NextResponse.json({ error: "缺少英文影像 ID" }, { status: 400 });
+    if (body.action === "autoUnit") return NextResponse.json({ entry: (await autoBuildContextUnit(id, { projectTitle: typeof body.projectTitle === "string" ? body.projectTitle.trim().slice(0, 300) : "" })).entry });
     if (body.action === "analyze") return NextResponse.json({ entry: await analyzeEnglishImage(id, { force: true }) });
     if (body.action === "routeAndAnalyze") {
       const route = isEnglishImageLearningRoute(body.route) ? body.route : null;

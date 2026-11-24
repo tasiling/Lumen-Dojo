@@ -5,7 +5,22 @@ export type EnglishImageLearningRoute = Exclude<EnglishImageRoute, "pending">;
 export type EnglishImageStatus = "inbox" | "organized";
 export type EnglishImageAnalysisStatus = "idle" | "processing" | "completed" | "needs-review" | "failed";
 export type EnglishImageConfidence = "high" | "medium" | "low" | null;
-export type EnglishImageLineInputMode = "context" | "ocr" | "vocabSource" | null;
+export type EnglishImageLineInputMode = "context" | "ocr" | "vocabSource" | "unitSource" | null;
+
+/** Latest outcome of the automatic "build a learning unit" step, shown in LINE and the inbox. */
+export type EnglishImageContextAuto = {
+  status: "built" | "needs-source" | "failed";
+  projectTitle: string;
+  unitTitle: string;
+  projectReused: boolean;
+  unitReused: boolean;
+  expressionCount: number;
+  /** Why this project and unit were chosen, in the owner's language. */
+  reason: string;
+  error: string;
+  decidedBy: "ai" | "rule" | "owner";
+  at: string;
+};
 
 export type EnglishImageVocabDraft = {
   sourceName: string;
@@ -149,6 +164,7 @@ export type EnglishImageEntry = {
   contextRoomExport: EnglishImageContextExport | null;
   contextRoomLinks: EnglishImageContextLink[];
   contextRoomDispatchDraft?: EnglishImageContextDispatchDraft | null;
+  contextRoomAuto?: EnglishImageContextAuto | null;
   contextRoomSourceRevision: number;
   contextRoomContentFingerprint: string;
   vocabForgeExports: EnglishImageVocabExport[];
@@ -325,7 +341,7 @@ export function normalizeEnglishImageEntry(
     lineImageSetTotal: Number.isFinite(source.lineImageSetTotal) ? Math.max(0, Math.floor(Number(source.lineImageSetTotal))) : 0,
     lineBatchState: source.lineBatchState === "open" ? "open" : "closed",
     lineBatchUntil: source.lineBatchUntil ? iso(source.lineBatchUntil, now) : null,
-    lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" || source.lineInputMode === "vocabSource" ? source.lineInputMode : null,
+    lineInputMode: source.lineInputMode === "context" || source.lineInputMode === "ocr" || source.lineInputMode === "vocabSource" || source.lineInputMode === "unitSource" ? source.lineInputMode : null,
     lineInputUntil: source.lineInputUntil ? iso(source.lineInputUntil, now) : null,
     contextRoomStatus: source.contextRoomStatus === "synced" ? "synced" : source.contextRoomStatus === "ready" ? "ready" : "idle",
     contextRoomPreparedAt: source.contextRoomPreparedAt ? iso(source.contextRoomPreparedAt, now) : null,
@@ -358,6 +374,18 @@ export function normalizeEnglishImageEntry(
         unitId: text(value.unitId, 200), eventTitle: text(value.eventTitle, 300), projectType: text(value.projectType, 100),
         crossTypeConfirmed: value.crossTypeConfirmed === true,
         candidateKeys: Array.isArray(value.candidateKeys) ? value.candidateKeys.filter((key): key is string => typeof key === "string").slice(0, 5) : [] };
+    })() : null,
+    contextRoomAuto: source.contextRoomAuto && typeof source.contextRoomAuto === "object" ? (() => {
+      const value = source.contextRoomAuto as Partial<EnglishImageContextAuto>;
+      const at = text(value.at, 80);
+      if (!at || (value.status !== "built" && value.status !== "needs-source" && value.status !== "failed")) return null;
+      return {
+        status: value.status, projectTitle: text(value.projectTitle, 300), unitTitle: text(value.unitTitle, 300),
+        projectReused: value.projectReused === true, unitReused: value.unitReused === true,
+        expressionCount: Number.isFinite(value.expressionCount) ? Math.max(0, Math.floor(Number(value.expressionCount))) : 0,
+        reason: text(value.reason, 500), error: text(value.error, 1000),
+        decidedBy: value.decidedBy === "ai" || value.decidedBy === "owner" ? value.decidedBy : "rule" as const, at,
+      };
     })() : null,
     contextRoomLinks: Array.isArray(source.contextRoomLinks) ? source.contextRoomLinks.flatMap((item) => {
       if (!item || typeof item !== "object") return [];

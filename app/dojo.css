@@ -4411,6 +4411,16 @@
 .dojo .english-image-detail-actions button { min-width: 0; padding: 8px 4px; font-size: 8.5px; }
 .dojo .english-image-detail .english-image-editor { padding: 0 10px 10px; }
 .dojo .english-image-destinations span.is-error { background: #f8e8db; color: #8a5039; }
+.dojo .english-image-destinations a.is-built { background: #e5efe4; color: #3f6747; font-weight: 700; }
+.dojo .english-image-auto-unit { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #faf7ef; }
+.dojo .english-image-auto-unit small { color: #857a69; font-size: 9px; letter-spacing: .04em; }
+.dojo .english-image-auto-unit b { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.dojo .english-image-auto-unit p { margin: 0; color: #665d50; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.dojo .english-image-auto-unit label { display: grid; gap: 4px; font-size: 11px; }
+.dojo .english-image-auto-unit.is-built { border-color: #b9d0b6; background: #eef5ec; }
+.dojo .english-image-auto-unit.is-built b { color: #35603f; }
+.dojo .english-image-auto-unit.is-waiting { border-color: #d7a28b; background: #faeee7; }
+.dojo .english-image-auto-unit.is-waiting b { color: #8a5039; }
 
 .dojo .unit-arrangement-backdrop { position: fixed; z-index: 120; inset: 0; display: grid; align-items: end; padding: 12px; background: rgba(38, 42, 31, .52); }
 .dojo .unit-arrangement-dialog { width: min(720px, 100%); max-height: calc(100dvh - 24px); margin: 0 auto; padding: 16px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: 18px 18px 10px 10px; background: #fffefa; box-shadow: 0 18px 60px rgba(38, 42, 31, .24); }
