@@ -98,6 +98,18 @@ export type InsightCard = {
   extractedAt: string | null;
   postponementCount: number;
   createdAt: string;
+  /** Set on cards saved from a 野採淬鍊 round; null on reading cards, whose new fields stay empty. */
+  refine: InsightCardRefine | null;
+};
+
+/** The DB-22 fields a 野採淬鍊 card fills. */
+export type InsightCardRefine = {
+  cardType: string;
+  titleOrigin: string;
+  words: string;
+  quote: string;
+  discussion: string;
+  captureIds: string[];
 };
 
 export type InsightCardWithBook = InsightCard & {

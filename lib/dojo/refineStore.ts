@@ -4,14 +4,16 @@ import { createHash } from "node:crypto";
 import { getCaptureEntry } from "./captureStore";
 import { LearningError } from "./learningFoundation/model";
 import { listJsonRecords, readJsonRecord, updateJsonRecordById, upsertJsonRecord } from "./notionStore";
-import { createKnowledgeEntry } from "@/lib/notion/mutations";
+import { createKnowledgeEntry, createRefineCard } from "@/lib/notion/mutations";
+import { findRefineCardId } from "@/lib/notion/queries";
+import { taipeiTodayISO } from "./formal";
 import {
   REFINE_DEFAULT_RULES, buildRefinePackage, checkRefineReturn, parseRefineReturn, refineParagraphs, refineRescuePrompt,
   type RefineAngleKey, type RefineChecks, type RefineRound, type RefineSource,
 } from "./captureRefine";
 import {
   REFINE_SETTINGS_TITLE, REFINE_TITLE_PREFIX, captureOriginal, fitRefineRecord, newRefineId, newRefineRecord,
-  normalizeRefineRecord, refineLabels, refinePick, refineSetupProblem, withRefineReturn,
+  normalizeRefineRecord, refineCardDraft, refineCardKey, refineLabels, refinePick, refineSetupProblem, withRefineAdopted, withRefineReturn,
   type RefineRecord, type RefineStoredSource, type RefineTitleFrom,
 } from "./refineRecord";
 
@@ -151,6 +153,8 @@ export async function returnRefineRound(id: string, raw: string): Promise<Refine
   return withRoundLock(id, async () => {
     const { pageId, record } = await readRecord(id);
     if (record.status === "closed") throw new LearningError("這一輪已經結束。", 409);
+    // A new return renumbers the candidates, which would detach the cards already saved from this round.
+    if (record.adopted.length) throw new LearningError("這一輪已經有候選存成卡片，不能重新貼回。要接著討論，請另開一輪。", 409);
     const live = await Promise.all(record.sources.map(async (source) => {
       try { return await liveSource(source.captureId, source.label); } catch { return null; }
     }));
@@ -167,17 +171,40 @@ export async function returnRefineRound(id: string, raw: string): Promise<Refine
   });
 }
 
-export async function pickRefineCandidate(id: string, candidateN: number, titleFrom: RefineTitleFrom | null, rewritten = ""): Promise<RefineView> {
+export async function pickRefineCandidate(id: string, candidateN: number, titleFrom: RefineTitleFrom | null, rewritten = "", cardType?: string): Promise<RefineView> {
   return withRoundLock(id, async () => {
     const { pageId, record } = await readRecord(id);
     if (record.status !== "returned") throw new LearningError(record.status === "closed" ? "這一輪已經結束。" : "還沒有貼回討論紀錄。", 409);
+    if (record.adopted.some((item) => item.candidateN === candidateN)) throw new LearningError("這個候選已經存成卡片，不能再更改。", 409);
     const others = record.picks.filter((pick) => pick.candidateN !== candidateN);
     if (titleFrom === null) return view(await write(pageId, { ...record, picks: others, updatedAt: new Date().toISOString() }));
     const now = new Date().toISOString();
-    const pick = refinePick(record, candidateN, titleFrom, rewritten, now);
+    const pick = refinePick(record, candidateN, titleFrom, rewritten, now, cardType);
     if (typeof pick === "string") throw new LearningError(pick, 422);
     const picks = [...others, pick].sort((a, b) => a.candidateN - b.candidateN);
     return view(await write(pageId, { ...record, picks, updatedAt: now }));
+  });
+}
+
+/**
+ * Saves a picked candidate as a DB-22 card and records it on the round. A save that created the card but failed to
+ * record it is completed on retry: the card is found by the round id and candidate number in 「出自討論」.
+ */
+export async function adoptRefineCandidate(id: string, candidateN: number): Promise<RefineView> {
+  return withRoundLock(id, async () => {
+    const { pageId, record } = await readRecord(id);
+    if (record.status !== "returned") throw new LearningError(record.status === "closed" ? "這一輪已經結束。" : "還沒有貼回討論紀錄。", 409);
+    if (record.adopted.some((item) => item.candidateN === candidateN)) return view(record);
+    const live = await Promise.all(record.sources.map(async (source) => {
+      try { return await liveSource(source.captureId, source.label); } catch { return null; }
+    }));
+    // Only captures that still exist can be related; a removed one is left out of 「來源採集」.
+    const sources = live.filter((item): item is NonNullable<typeof item> => item !== null);
+    const draft = refineCardDraft(record, candidateN, sources);
+    if (typeof draft === "string") throw new LearningError(draft, 422);
+    const cardId = await findRefineCardId(refineCardKey(record.id, candidateN))
+      ?? (await createRefineCard({ ...draft, todayISO: taipeiTodayISO() })).id;
+    return view(await write(pageId, withRefineAdopted(record, candidateN, cardId, new Date().toISOString())));
   });
 }
 
