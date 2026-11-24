@@ -309,6 +309,7 @@ function RefineCandidateCard({ candidate, record, pick, cardId, busy, onPick, on
       ? <p className="refine-note">原話和 T{candidate.turn} 對不上，存成卡片時「我的原話」會改存你在 T{candidate.turn} 的完整發言：{refineOwnTurn(record, candidate.turn)}</p>
       : <p className="refine-note">原話和 T{candidate.turn} 對不上，而 T{candidate.turn} 不是你的發言或沒有逐字保存，這則不能存成卡片。</p>)}
     {pick && <p className="refine-picked"><strong>{cardId ? "已存成卡片" : "已挑選"}・{pick.cardType}・標題用{pick.titleFrom}</strong>{pick.title}</p>}
+    {cardId && <a className="refine-card-link is-weave" href={`/weaving/studio#card/insight:${cardId}`}>帶去織光堂，做成織光杼</a>}
     {cardId && <a className="refine-card-link" href={`https://www.notion.so/${cardId.replaceAll("-", "")}`} target="_blank" rel="noreferrer">在 Notion 打開這張卡片 ↗</a>}
     {editable && candidate.words && <div className="refine-pick">
       <div role="radiogroup" aria-label={`候選 #${candidate.n} 的標題`}>{choices.map((choice) => <button type="button" key={choice} role="radio" aria-checked={from === choice} className={from === choice ? "on" : ""} disabled={choice === "整理版" && !candidate.tidy} onClick={() => setFrom(choice)}>{choice === "改寫" ? "自己改寫" : `用${choice}`}</button>)}</div>
