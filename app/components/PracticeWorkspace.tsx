@@ -17,6 +17,7 @@ const Context = dynamic(() => import("./EnglishContextRoomBridge"));
 const Grammar = dynamic(() => import("./EnglishContextSeedInbox"));
 const Topic = dynamic(() => import("./EnglishTopicStudy"));
 const Rhythm = dynamic(() => import("./EnglishRhythmWeek"));
+const Awareness = dynamic(() => import("./EmotionAwareness"));
 const names: Record<string, string> = {
   records: "學習歷程",
   journal: "日記自譯",
@@ -84,13 +85,15 @@ export default function PracticeWorkspace({
       {workspace === "journal" && (
         <Journal initialDate={params.get("journal")} />
       )}
-      {(workspace === "body" || workspace === "emotion") && (
+      {workspace === "emotion" && (
         <>
-          <p>
-            {workspace === "body"
-              ? "活動、睡眠、飲食、疼痛與恢復。留下單次紀錄，不提供伸展處方。"
-              : "情緒覺察、感恩與心裡小語。"}
-          </p>
+          <Awareness />
+          {!params.get("a") && <Link href="/timer">輔助計時（選用）</Link>}
+        </>
+      )}
+      {workspace === "body" && (
+        <>
+          <p>活動、睡眠、飲食、疼痛與恢復。留下單次紀錄，不提供伸展處方。</p>
           <button
             className="primary"
             onClick={() =>

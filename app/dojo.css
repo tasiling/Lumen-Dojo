@@ -6158,3 +6158,62 @@
 .dojo .practice-workspace .english-journal-actions { position:sticky;bottom:calc(82px + env(safe-area-inset-bottom));background:var(--paper);padding:12px 0;z-index:2; }
 .dojo:has(.practice-workspace) { overflow-x:visible; }
 .dojo .practice-workspace .english-journal-actions button { font-size:12px;min-height:44px; }
+
+/* 心・情覺察：沿用修習所的紙色與線條；用色塊區分「你的」「事實」「GPT 的假設」。 */
+.dojo .awareness { display:grid;gap:14px;min-width:0; }
+.dojo .awareness h2 { margin:4px 0 0;font-size:20px; }
+.dojo .awareness h3 { margin:0 0 8px;font-size:15px; }
+.dojo .awareness h4 { margin:10px 0 4px;font-size:13px; }
+.dojo .awareness p { margin:0;line-height:1.7; }
+.dojo .awareness small { color:var(--muted);line-height:1.6; }
+.dojo .awareness-entries { display:grid;gap:10px; }
+.dojo .awareness .card.on { border-color:var(--pr); }
+.dojo .awareness-back,.dojo .awareness-inline { justify-self:start;min-height:44px;padding:8px 0;border:0;background:none;color:var(--pr);text-align:left;white-space:normal; }
+.dojo .awareness-block { display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fffdf8;min-width:0; }
+.dojo .awareness-block.is-package { background:#fbf3dc; }
+.dojo .awareness-block.is-return { background:#eef5ec; }
+.dojo .awareness-block.is-mine { background:#f3f7ee;border-color:#c9d8c2; }
+.dojo .awareness-block.is-fact { background:#f6f1e6; }
+.dojo .awareness-block.is-guess { background:#f4eef4;border-color:#dccbdc;border-style:dashed; }
+.dojo .awareness-block.is-open { background:#faeee7;border-color:#e2c3b3; }
+.dojo .awareness-block.is-saved { background:#e8f0e4;border-color:#b9d0b6; }
+.dojo .awareness-block ul { margin:0;padding-left:20px;display:grid;gap:6px;line-height:1.7; }
+.dojo .awareness-writing,.dojo .awareness-talk p { white-space:pre-wrap;overflow-wrap:anywhere; }
+.dojo .awareness-field { display:grid;gap:6px;font-weight:600; }
+.dojo .awareness textarea.field { width:100%;min-height:88px;line-height:1.7;font-size:16px; }
+.dojo .awareness-package { font-size:13px !important;min-height:220px; }
+.dojo .awareness-hint { color:var(--muted);font-size:12px; }
+.dojo .awareness-note { padding:10px 12px;border-radius:12px;background:#eef5ec;color:#35603f; }
+.dojo .awareness-problem { display:grid;gap:8px;padding:10px 12px;border:1px solid #e2c3b3;border-radius:12px;background:#faeee7;color:#8a5039; }
+.dojo .awareness-status { display:flex;flex-wrap:wrap;gap:6px; }
+.dojo .awareness-status span { padding:3px 10px;border-radius:999px;background:#f1ede3;color:#665d50;font-size:12px; }
+.dojo .awareness-methods { display:grid;gap:8px;margin:0;padding:0;border:0;min-width:0; }
+.dojo .awareness-methods legend { padding:0;margin-bottom:6px;font-weight:600; }
+.dojo .awareness-methods label { display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fffdf8;min-height:44px; }
+.dojo .awareness-methods label.on { border-color:var(--pr);background:#eef5ec; }
+.dojo .awareness-methods label span { display:grid;gap:2px;min-width:0; }
+.dojo .awareness-methods input { margin-top:4px;flex:none; }
+.dojo .awareness-term { font-size:11px; }
+.dojo .awareness-actions { display:flex;flex-wrap:wrap;gap:8px; }
+.dojo .awareness-actions button,.dojo .awareness-manage button,.dojo .awareness-linked button,.dojo .awareness-link-add button { min-height:44px; }
+.dojo .awareness-actions.is-sticky { position:sticky;bottom:calc(82px + env(safe-area-inset-bottom));padding:10px 0;background:var(--paper); }
+.dojo .awareness-actions.is-sticky button { flex:1; }
+.dojo .awareness-item { display:grid;gap:8px;padding:12px;border-radius:12px;background:#fffdf8;border:1px solid var(--line);min-width:0; }
+.dojo .awareness-item blockquote { margin:0;padding-left:10px;border-left:3px solid var(--pr);line-height:1.7;white-space:pre-wrap; }
+.dojo .awareness-item small.is-fail { color:#8a5039; }
+.dojo .awareness-tidy { font-size:13px;color:#665d50; }
+.dojo .awareness-tidy span { margin-right:8px;padding:1px 8px;border-radius:7px;background:#f1ede3;font-size:11px; }
+.dojo .awareness-item .row { flex-wrap:wrap; }
+.dojo .awareness-check { display:flex;gap:10px;align-items:flex-start;min-height:44px;line-height:1.7; }
+.dojo .awareness-check input { margin-top:6px;flex:none; }
+.dojo .awareness-talk { display:grid;gap:10px; }
+.dojo .awareness-talk p b { display:block;font-size:11px;color:var(--muted); }
+.dojo .awareness-talk p.is-me { padding:10px;border-radius:12px;background:#f3f7ee; }
+.dojo .awareness-talk p.is-gpt { padding:10px;border-radius:12px;background:#f6f1e6; }
+.dojo .awareness-linked,.dojo .awareness-link-add { display:flex;gap:8px;align-items:center;min-width:0; }
+.dojo .awareness-linked .awareness-inline,.dojo .awareness-link-add select { flex:1;min-width:0; }
+.dojo .awareness-manage { display:flex;flex-wrap:wrap;gap:8px; }
+.dojo .awareness-manage .is-danger { color:#8a5039;border-color:#e2c3b3; }
+.dojo .awareness-filter { display:grid;gap:10px; }
+.dojo .awareness-filter label { display:grid;gap:4px;font-size:13px;min-width:0; }
+.dojo .awareness-dates { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
