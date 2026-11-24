@@ -301,7 +301,11 @@ export type CaptureAttachment = {
  * The Mac transcription of a clip's video or audio, written back from the transcription queue when it finishes.
  * `text` keeps paragraph breaks. `truncated` marks a transcript too long for the record; the queue holds the rest.
  */
-export type CaptureTranscript = { text: string; finishedAt: string; truncated: boolean };
+/**
+ * `text` is the speech recognition as it came back and is never overwritten. `tidy` is the corrected copy (簡轉繁 and
+ * recognition fixes, never a summary); removing it returns to the uncorrected transcript.
+ */
+export type CaptureTranscript = { text: string; finishedAt: string; truncated: boolean; tidy?: import("./douyin/tidyText").TranscriptTidy };
 
 export type CaptureClipMeta = {
   threadsPost?: import("./threadsReader").ThreadsPost;
@@ -948,6 +952,18 @@ function normalizedCaptureSourceUrl(value: unknown): string {
   return new URL(value.trim()).toString().slice(0, 2000);
 }
 
+function normalizedTidy(value: unknown): NonNullable<CaptureTranscript["tidy"]> | null {
+  if (!value || typeof value !== "object") return null;
+  const tidy = value as Record<string, unknown>;
+  const state = tidy.state === "done" || tidy.state === "failed" || tidy.state === "skipped" ? tidy.state : null;
+  if (!state || typeof tidy.text !== "string" || !tidy.text.trim()) return null;
+  return {
+    text: tidy.text.slice(0, 100000), at: stringValue(tidy.at).slice(0, 40), model: stringValue(tidy.model).slice(0, 100),
+    changes: Number.isSafeInteger(tidy.changes) && (tidy.changes as number) >= 0 ? tidy.changes as number : 0, state,
+    reverted: Array.isArray(tidy.reverted) ? tidy.reverted.filter((n): n is number => Number.isSafeInteger(n) && n > 0).slice(0, 5000) : [],
+  };
+}
+
 export function normalizeCaptureEntry(
   value: unknown,
   params: { id: string; capturedAt?: string; touch?: boolean }
@@ -1127,6 +1143,7 @@ export function normalizeCaptureEntry(
             text: sourceClip.transcript.text.slice(0, 100000),
             finishedAt: stringValue(sourceClip.transcript.finishedAt).slice(0, 40),
             truncated: sourceClip.transcript.truncated === true || sourceClip.transcript.text.length > 100000,
+            ...((tidy) => tidy ? { tidy } : {})(normalizedTidy(sourceClip.transcript.tidy)),
           } } : {}),
       platform: stringValue(sourceClip.platform).trim().slice(0, 100),
       externalEventId: stringValue(sourceClip.externalEventId).trim().slice(0, 200),

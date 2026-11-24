@@ -3419,6 +3419,32 @@
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+.dojo .forage-douyin-versions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+.dojo .forage-douyin-versions button.on {
+  border-color: #b68b47;
+  background: #ebdbc0;
+  color: #654a1d;
+  font-weight: 800;
+}
+.dojo .forage-douyin-tidy-note p { color: var(--muted); }
+.dojo .forage-douyin-reverted,
+.dojo .forage-douyin-changes {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.dojo .forage-douyin-changes ul { margin: 2px 0 0; padding-left: 14px; }
+.dojo .forage-douyin-changes del { color: #8a302c; }
+.dojo .forage-douyin-changes ins { color: #2f5a3a; text-decoration: none; font-weight: 700; }
 .dojo .forage-douyin-timestamps {
   display: grid;
   gap: 7px;

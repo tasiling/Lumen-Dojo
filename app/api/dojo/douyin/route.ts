@@ -5,15 +5,24 @@ import { douyinQueue } from "@/lib/dojo/douyin/queue.mjs";
 import { InputError, sourceUrl } from "@/lib/dojo/douyin/share.mjs";
 import { fileSourceLabel } from "@/lib/dojo/douyin/fileOffer";
 import { kickTranscriptSync, syncPendingTranscripts } from "@/lib/dojo/douyin/transcriptSync";
+import { toTraditional } from "@/lib/dojo/douyin/tidy";
+import { transcriptReadingText } from "@/lib/dojo/douyin/transcriptText";
 import { douyinInstallFile } from "@/lib/dojo/douyinInstall";
 import { getCaptureEntry } from "@/lib/dojo/captureStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function jobView(captureId?: string) {
+  if (!captureId) return null;
+  const job = douyinQueue().view(captureId);
+  // The Traditional original a corrected transcript is compared with for 「改了哪裡」; rebuilt here, never stored.
+  return job?.tidy ? { ...job, tidyBase: toTraditional(transcriptReadingText(job)) } : job;
+}
+
 function view(captureId?: string) {
   const queue = douyinQueue();
-  return douyinJson({ connection: queue.connection(), mac: queue.mac(), offers: queue.offers(), unsynced: queue.unsynced(), job: captureId ? queue.view(captureId) : null });
+  return douyinJson({ connection: queue.connection(), mac: queue.mac(), offers: queue.offers(), unsynced: queue.unsynced(), job: jobView(captureId) });
 }
 
 export async function GET(req: NextRequest) {
@@ -51,7 +60,14 @@ export async function POST(req: NextRequest) {
       // Writes transcripts Notion does not hold yet, including those finished before write-back existed.
       const result = await syncPendingTranscripts({ limit: 20, force: true });
       return douyinJson({ ...result, connection: queue.connection(), mac: queue.mac(), offers: queue.offers(), unsynced: result.remaining,
-        job: typeof captureId === "string" && captureIdPattern.test(captureId) ? queue.view(captureId) : null });
+        job: typeof captureId === "string" && captureIdPattern.test(captureId) ? jobView(captureId) : null });
+    }
+    if (action === "tidy") {
+      // 補做校正：correct a transcript that finished before correction existed, or whose correction did not finish.
+      if (typeof captureId !== "string" || !captureIdPattern.test(captureId)) throw new InputError("請選擇一筆野採素材。");
+      queue.requestTidy(captureId);
+      kickTranscriptSync();
+      return view(captureId);
     }
     if ((action !== "retry" && action !== "attach") || typeof captureId !== "string" || !captureIdPattern.test(captureId))
       throw new InputError("請選擇一筆野採素材。");
