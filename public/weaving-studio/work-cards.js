@@ -60,9 +60,76 @@ function trayBody(w) {
     group('可能相關','依字面相近排列，只是建議',g.near))||
     '<p>目前沒有和這篇相近的卡片。可以用上方的搜尋從全部 '+sourceCards.size+' 張裡找。</p>';
 }
+/* 起稿：把這一杼和它的卡片整理成一份給 GPT 的指令，不必自己動手貼。GPT 只能用本人說過的內容。 */
+const DRAFT_MODES={
+  ask:{name:'先問我，再用我的回答排出骨架',task:[
+    '一次只問我一題，等我回答後才問下一題。每一題都要引用一張卡片的內容並標明編號，例如 K2。',
+    '問題的目的是讓我把這件作品要說的話說出來：我想對誰說、最想讓對方帶走哪一句、哪一張卡是主幹、卡片之間怎麼接。',
+    '我說「可以收尾」時，才依下方的回傳格式輸出。']},
+  skeleton:{name:'直接排出骨架，標出我要補寫的地方',task:[
+    '不用先問我，直接依下方的回傳格式排出骨架。',
+    '卡片不足以支撐的段落，寫在「待我補寫」，不要替我補上內容。']}
+};
+function draftCardIds(w) {
+  return [...new Set([...(w.cardIds||[]),...shuttleCardIds(findS(w.shuttle))])].filter(id=>sourceCards.has(id));
+}
+function draftPrompt(w,mode) {
+  const sh=findS(w.shuttle), ids=draftCardIds(w), L=[];
+  L.push('【織光堂起稿包｜織光起稿/v1】');
+  L.push('作品：'+(w.title||'尚未命名')+'｜形式：'+(w.mode||TYPES[w.type].name));
+  L.push('');
+  L.push('【織光杼】'+(sh?.title||'尚未匹配'));
+  L.push('目前的核心理解：'+(sh?.core||'（尚未寫下）'));
+  L.push('');
+  L.push('【我的卡片】以下是這件作品可以使用的全部材料。');
+  if(!ids.length)L.push('（這一杼還沒有連結卡片。請只根據我接下來的回答整理。）');
+  ids.forEach((id,i)=>{
+    const c=sourceCards.get(id), own=!/GPT/.test(c.author||'');
+    L.push('');
+    L.push('K'+(i+1)+'｜'+c.type+(own?'':'｜GPT 延伸，我尚未確認')+'｜'+(c.idea||c.title));
+    if(c.quote&&c.quote!==c.idea)L.push((c.quoteLabel||'原文')+'：'+c.quote);
+    L.push('出處：'+[c.source,c.location].filter(Boolean).join(' · '));
+  });
+  L.push('');
+  L.push('【正文目前的內容】');
+  L.push(w.body.trim()||'（尚未動筆）');
+  L.push('');
+  L.push('【你的任務：'+DRAFT_MODES[mode].name+'】');
+  DRAFT_MODES[mode].task.forEach(t=>L.push('- '+t));
+  L.push('');
+  L.push('【規則】');
+  ['只能使用卡片和我的回答裡出現過的內容，不替我增加新的觀點、例子或結論。',
+   '引用我的話必須逐字，並標明來自哪一張卡或哪一次回答，不要替我換句話說。',
+   '你自己的建議要另外列在「GPT 建議」，並標示「尚未由本人確認」。',
+   '標示為「GPT 延伸」的卡片不是我的話，使用前要先問我是否同意。',
+   '不要替我寫成完整的文章，文字由我自己寫；你只負責排出骨架。'].forEach(r=>L.push('- '+r));
+  L.push('');
+  L.push('【回傳格式】整段放在一個程式碼區塊裡，標記行照抄。');
+  L.push('===織光起稿/v1===');
+  L.push('===骨架===');
+  L.push('第一段｜這一段要說什麼｜使用 K1');
+  L.push('我的話：（逐字，來自卡片或我的回答）');
+  L.push('===待我補寫===');
+  L.push('- （骨架裡還缺、需要我自己寫的部分）');
+  L.push('===GPT 建議===');
+  L.push('- （你的建議，尚未由本人確認）');
+  L.push('===結束===');
+  return L.join('\n');
+}
+function draftDialog(w,mode='ask') {
+  const ids=draftCardIds(w);
+  modal('帶這一杼去和 GPT 起稿',
+    '<p>'+(ids.length?'已自動帶入這一杼和這件作品的 '+ids.length+' 張卡片。':'這一杼還沒有連結卡片，指令裡只會有題目與目前的正文。')+'</p>'+
+    pick('要 GPT 怎麼協助','draftMode',Object.keys(DRAFT_MODES).map(k=>DRAFT_MODES[k].name),DRAFT_MODES[mode].name)+
+    '<div class="actions">'+btn('複製給 GPT 的指令','draftCopy',[],'primary')+'</div>'+
+    more('查看指令全文','<textarea id="draftPrompt" readonly rows="10">'+esc(draftPrompt(w,mode))+'</textarea>')+
+    field('貼回 GPT 的整理結果','draftReturn','',true)+
+    '<div class="actions">'+btn('存到候選，和正文比較','draftKeep',[],'light')+'</div>'+
+    '<p class="statusline">貼回的內容會先放在候選，不會直接改動正文。</p>');
+}
 function workCardTray(w) {
   const n=(w.cardIds||[]).filter(id=>sourceCards.has(id)).length;
-  return '<details class="work-card-tray" id="workCardTray" open><summary>可以帶入的卡片'+(n?'<span>已選用 '+n+' 張</span>':'')+'</summary>'+
+  return '<div class="actions tray-draft">'+btn('帶這一杼去和 GPT 起稿','draftOpen',[],'primary')+'</div><details class="work-card-tray" id="workCardTray" open><summary>可以帶入的卡片'+(n?'<span>已選用 '+n+' 張</span>':'')+'</summary>'+
     '<label class="field tray-search">搜尋全部卡片<input id="traySearch" type="search" value="'+esc(trayQuery)+'" autocomplete="off"></label>'+
     '<div id="trayList">'+trayBody(w)+'</div></details>';
 }
@@ -95,6 +162,33 @@ Object.assign(handlers,{
     keep(w);refreshTray();
     toast('已放進正文'+(part==='quote'&&c.quoteLabel!=='我的原話'?'，來源一併附上':''));
   },
+  draftOpen:()=>{const w=current();if(w&&!w.shelf)draftDialog(w);},
+  draftCopy:async()=>{
+    const el=$('draftPrompt');
+    if(!el)return;
+    if(await copyText(el.value))toast('已複製，貼到 GPT 後把它的整理結果帶回來');
+    else{el.closest('details').open=true;el.focus();el.select();toast('請長按複製選取的指令');}
+  },
+  draftKeep:()=>{
+    const w=current(), text=val('draftReturn');
+    if(!w||w.shelf)return;
+    if(!text){toast('先貼入 GPT 的整理結果');return;}
+    w.candidate=text;keep(w);
+    modal('GPT 的整理結果',(w.body.trim()?'<h3>目前正文</h3><pre>'+esc(w.body)+'</pre>':'')+'<h3>GPT 排出的骨架</h3><pre>'+esc(text)+'</pre>'+
+      '<div class="actions">'+btn(w.body.trim()?'接在正文後面':'放進正文','draftAppend',[],'primary')+
+      (w.body.trim()?btn('取代目前正文','adoptCandidate'):'')+btn('先留在候選','close')+'</div>');
+  },
+  draftAppend:()=>{
+    const w=current();
+    if(!w||w.shelf||!w.candidate?.trim())return;
+    // Format markers become plain section labels, so the body reads as a working outline.
+    const outline=w.candidate.split('\n').filter(l=>!/^\s*```/.test(l)).map(l=>{
+      const m=l.match(/^\s*=+\s*(.+?)\s*=+\s*$/);
+      return !m?l:/^織光起稿|^結束$/.test(m[1])?null:'【'+m[1]+'】';
+    }).filter(l=>l!==null).join('\n').trim();
+    w.body=[w.body.trimEnd(),outline].filter(Boolean).join('\n\n');w.review=false;keep(w);
+    closeRefresh('已放進正文，可以開始改寫');
+  },
   trayToggle:id=>{
     const w=current();
     if(!w||w.shelf||!sourceCards.has(id))return;
@@ -110,6 +204,11 @@ document.addEventListener('input',e=>{
   if(e.target.id==='traySearch'){trayQuery=e.target.value;refreshTray();}
   // Suggestions follow what is being written, once typing pauses.
   else if(e.target.id==='body'||e.target.id==='workTitle'){clearTimeout(trayTimer);trayTimer=setTimeout(refreshTray,700);}
+});
+document.addEventListener('change',e=>{
+  if(e.target.id!=='draftMode')return;
+  const w=current(), mode=Object.keys(DRAFT_MODES).find(k=>DRAFT_MODES[k].name===e.target.value);
+  if(w&&mode&&$('draftPrompt'))$('draftPrompt').value=draftPrompt(w,mode);
 });
 for(const type of ['keyup','click','blur','select'])document.addEventListener(type,e=>{
   if(e.target.id==='body')trayCaret=e.target.selectionStart;
