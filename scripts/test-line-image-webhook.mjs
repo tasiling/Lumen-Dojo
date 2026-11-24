@@ -21,6 +21,7 @@ const f = await fixture({
       const task = lock.then(work); lock = task.catch(() => {}); return task;
     },
   },
+  "@/lib/dojo/englishImageAutoUnit": { autoBuildContextUnit: async () => { throw Error("fixture has no context room"); } },
   "@/lib/dojo/englishImageAnalysis": {
     analyzeEnglishImage: async id => {
       if (failAnalysis) throw Error("fixture analysis timed out");

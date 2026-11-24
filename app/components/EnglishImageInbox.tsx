@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { autoUnitStatusLabel } from "@/lib/dojo/englishImageAutoUnitPlan";
 import {
   englishImageRouteLabel,
   type EnglishImageEntry,
@@ -118,10 +119,31 @@ function EnglishImageAsset({ entry, index, variant }: { entry: EnglishImageEntry
   </div>;
 }
 
+/** Says in one place whether this source already has a learning unit, and offers the next step. */
+function AutoUnitStatus({ entry, busy, onBuild }: { entry: EnglishImageEntry; busy: boolean; onBuild: (projectTitle?: string) => void }) {
+  const [projectTitle, setProjectTitle] = useState("");
+  const auto = entry.contextRoomAuto;
+  const notReady = entry.route === "pending" || (entry.analysisStatus !== "completed" && entry.analysisStatus !== "needs-review");
+  const built = auto?.status === "built" || (!auto && entry.contextRoomStatus === "synced" && Boolean(entry.contextRoomExport));
+  return <div className={`english-image-auto-unit ${built ? "is-built" : auto ? "is-waiting" : ""}`} role="status">
+    <small>語境修習室・學習單元</small>
+    <b>{built ? "✓ " : ""}{autoUnitStatusLabel(entry)}</b>
+    {auto?.status === "built" && <p>學習專案：{auto.projectTitle}（{auto.projectReused ? "既有專案" : "新建立"}）・{auto.unitReused ? "併入既有單元" : "新建立的單元"}・收進 {auto.expressionCount} 個表達</p>}
+    {auto?.status === "built" && auto.reason && <p>安排理由：{auto.reason}</p>}
+    {auto?.status === "failed" && <p>原因：{auto.error}</p>}
+    {auto?.status === "needs-source" && <label>這組素材屬於哪個學習專案？<input className="field" value={projectTitle} placeholder="例如：Dragon Quest V、按摩工作英文" onChange={(event) => setProjectTitle(event.target.value)}/></label>}
+    <div className="english-image-actions">
+      {built && entry.contextRoomUrl && <a className="button-link" href={entry.contextRoomUrl} target="_blank" rel="noreferrer">開啟學習單元 ↗</a>}
+      {!built && <button className="primary" disabled={busy || notReady || (auto?.status === "needs-source" && !projectTitle.trim())} onClick={() => onBuild(projectTitle)}>{busy ? "建立中…" : auto?.status === "failed" ? "再試一次建立單元" : "自動建立學習單元"}</button>}
+    </div>
+    {notReady && <p>完成素材分類與 AI 分析後才能建立學習單元。</p>}
+  </div>;
+}
+
 function DispatchBadges({ entry }: { entry: EnglishImageEntry }) {
   const failures = entry.vocabForgeSyncStates.filter((item) => item.status === "failed").length;
   const destinations = entry.contextRoomLinks.filter((link) => link.status === "synced").length || (entry.contextRoomExport ? 1 : 0);
-  return <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.status === "organized" && <span className="is-organized">✓ 已完成整理</span>}<span>{entry.vocabForgeExports.length ? `VF 已同步 ${entry.vocabForgeExports.length} 字` : "VF 尚未派送"}</span>{entry.contextRoomStatus !== "synced" || !entry.contextRoomUrl ? <span>語境尚未派送</span> : <a href={entry.contextRoomUrl} target="_blank" rel="noreferrer">語境 {destinations} 個目的地 ↗</a>}{failures > 0 && <span className="is-error">同步失敗 {failures} 字</span>}</div>;
+  return <div className="english-image-destinations"><span>{entry.attachments.length} 張圖片</span>{entry.status === "organized" && <span className="is-organized">✓ 已完成整理</span>}<span>{entry.vocabForgeExports.length ? `VF 已同步 ${entry.vocabForgeExports.length} 字` : "VF 尚未派送"}</span>{entry.contextRoomAuto?.status === "failed" || entry.contextRoomAuto?.status === "needs-source" ? <span className="is-error">{autoUnitStatusLabel(entry)}</span> : entry.contextRoomStatus !== "synced" || !entry.contextRoomUrl ? <span>尚未建立學習單元</span> : <a className="is-built" href={entry.contextRoomUrl} target="_blank" rel="noreferrer">✓ {autoUnitStatusLabel(entry)}{destinations > 1 ? `（共 ${destinations} 個目的地）` : ""} ↗</a>}{failures > 0 && <span className="is-error">同步失敗 {failures} 字</span>}</div>;
 }
 
 export default function EnglishImageInbox() {
@@ -185,6 +207,17 @@ export default function EnglishImageInbox() {
   function setVisibleCount(update: (current: number) => number) { setVisibleWindow({ key: listFilterKey, count: update(visibleCount) }); }
   function openEntry(entry: EnglishImageEntry) { setManualUsage(null);setDetailTab("images"); setDispatchStep("words"); setSelectedEntryId(entry.id); setCurrentImageIndex(0); setEditing(null); setDraft(null); setContextDraft(null); setVocabDraft(null); setError(""); setNotice(""); window.requestAnimationFrame(() => document.getElementById("english-image-detail")?.scrollIntoView({ behavior: "smooth", block: "start" })); }
   function closeEntry() { setSelectedEntryId(null); setEditing(null); setDraft(null); setContextDraft(null); setVocabDraft(null); setCompletionPromptId(null); }
+
+  async function buildUnit(entry: EnglishImageEntry, projectTitle = "") {
+    setBusy(entry.id); setError(""); setNotice("");
+    try {
+      const result = await json<{ entry: EnglishImageEntry }>(await fetch("/api/dojo/english-images", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: entry.id, action: "autoUnit", projectTitle }) }));
+      replaceEntries([result.entry]);
+      const auto = result.entry.contextRoomAuto;
+      if (auto?.status === "built") setNotice(`已${auto.unitReused ? "併入既有" : "建立新的"}學習單元「${auto.unitTitle}」，位於學習專案「${auto.projectTitle}」。`);
+      else setError(auto?.status === "needs-source" ? "還無法判斷這組素材屬於哪個學習專案，請在下方輸入專案名稱。" : auto?.error || "學習單元尚未建立");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); } finally { setBusy(null); }
+  }
 
   async function setEntryStatus(entry: EnglishImageEntry, status: EnglishImageStatus) {
     if (status === "organized") { const warnings = completionWarnings(entry); if (warnings.length && !window.confirm(`這筆素材仍有以下狀態：\n• ${warnings.join("\n• ")}\n\n仍要完成本次整理嗎？錯誤紀錄會完整保留，也不會自動重試。`)) return; }
@@ -363,7 +396,8 @@ export default function EnglishImageInbox() {
       <details className="english-image-detail-section english-image-dispatch-section" hidden={detailTab!=="dispatch"} open>
         <summary>整理與派送 <span>確認一次，分別接收</span></summary>
         <div className="english-image-section-body">
-          <button className="primary" disabled={busy === entry.id || entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => void openUnifiedDispatch(entry)}>確認來源與派送目的地</button>
+          <AutoUnitStatus entry={entry} busy={busy === entry.id} onBuild={(projectTitle) => void buildUnit(entry, projectTitle)}/>
+          <button disabled={busy === entry.id || entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => void openUnifiedDispatch(entry)}>手動選擇目的地與單字</button>
           <button disabled={busy === entry.id || entry.route === "pending" || entry.analysisStatus === "idle"} onClick={() => { setSelectedIds([entry.id]); setArrangementOpen(true); }}>請 GPT 協助安排多份素材</button>
           {(vocabDraft?.entryId === entry.id || contextDraft?.entryId === entry.id) && <>
             <ForageTabs items={[{key:"words",label:"挑選單字",short:"單字"},{key:"context",label:"語境與學習單元",short:"語境"},{key:"review",label:"來源與派送確認",short:"確認"}]} value={dispatchStep} onChange={setDispatchStep} label="派送步驟" /><div hidden={dispatchStep!=="review"}><p className="muted-note">設定與 LINE 共用同一筆素材；勾選目的地後確認送出，才會建立學習內容。</p>

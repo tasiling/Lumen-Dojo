@@ -275,11 +275,59 @@ export function englishImageOrganizeQuickReply(entryId: string, route?: string) 
     quickReplyItem("修正原文", new URLSearchParams({ action: "imageInput", entryId, mode: "ocr" }).toString()),
     quickReplyItem("重新分析", new URLSearchParams({ action: "imageAnalyze", entryId }).toString()),
     quickReplyItem("撤銷誤合併", new URLSearchParams({ action: "imageUndoMerge", entryId }).toString()),
-    quickReplyItem("送語境修習室", new URLSearchParams({ action: "imageDispatch", entryId, target: "context" }).toString()),
+    quickReplyItem("建立學習單元", new URLSearchParams({ action: "imageAutoUnit", entryId }).toString()),
     quickReplyItem("送 VocabForge", new URLSearchParams({ action: "imageDispatch", entryId, target: "vocab" }).toString()),
     quickReplyItem("兩邊都送", new URLSearchParams({ action: "imageDispatch", entryId, target: "both" }).toString()),
     quickReplyItem("先留野採", new URLSearchParams({ action: "imageKeep", entryId }).toString()),
     ...(route === "game" ? gameLearningActions(entryId) : []),
+  ] };
+}
+
+/**
+ * Buttons that follow the automatic unit step. What comes first depends on the
+ * outcome: open the unit, retry, or name the project the source belongs to.
+ */
+export function englishImageUnitQuickReply(params: {
+  entryId: string;
+  route?: string;
+  status: "built" | "needs-source" | "failed";
+  contextRoomUrl: string;
+  manualUrl: string;
+  projects: Array<{ id: string; title: string }>;
+}) {
+  const { entryId } = params;
+  const action = (label: string, data: Record<string, string>) => quickReplyItem(label, new URLSearchParams({ ...data, entryId }).toString());
+  if (params.status === "needs-source") {
+    return { items: [
+      ...params.projects.slice(0, 9).flatMap((project) => {
+        const data = new URLSearchParams({ action: "imageAutoUnit", entryId, projectId: project.id }).toString();
+        return Array.from(data).length <= LINE_POSTBACK_DATA_LIMIT ? [quickReplyItem(lineLabel(project.title), data)] : [];
+      }),
+      action("輸入專案名稱", { action: "imageAutoUnitInput" }),
+      uriQuickReplyItem("手動選擇單元", params.manualUrl),
+      action("先留野採", { action: "imageKeep" }),
+    ] };
+  }
+  const editing = [
+    action("補充情境", { action: "imageInput", mode: "context" }),
+    action("修正原文", { action: "imageInput", mode: "ocr" }),
+    action("重新分析", { action: "imageAnalyze" }),
+    action("送 VocabForge", { action: "imageDispatch", target: "vocab" }),
+    ...(params.route === "game" ? gameLearningActions(entryId) : []),
+  ];
+  if (params.status === "failed") {
+    return { items: [
+      action("再試一次建立單元", { action: "imageAutoUnit" }),
+      uriQuickReplyItem("手動選擇單元", params.manualUrl),
+      ...editing,
+      action("先留野採", { action: "imageKeep" }),
+    ] };
+  }
+  return { items: [
+    ...(params.contextRoomUrl ? [uriQuickReplyItem("開啟學習單元", params.contextRoomUrl)] : []),
+    uriQuickReplyItem("改放其他單元", params.manualUrl),
+    ...editing,
+    action("完成", { action: "imageKeep" }),
   ] };
 }
 

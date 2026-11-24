@@ -22,6 +22,7 @@ const f = await fixture({
       selected.push(mode); Object.assign(item, { route, gameLearningMode: mode || "auto" }); return { ...entry, ...item };
     },
   },
+  "@/lib/dojo/englishImageAutoUnit": { autoBuildContextUnit: async () => { throw Error("fixture has no context room"); } },
   "@/lib/dojo/englishImageAnalysis": { analyzeEnglishImage: async () => {
     const kind = item.gameLearningMode === "auto" ? automatic : item.gameLearningMode;
     return { ...item, gameLearning: { kind, screens: kind === "mixed" ? [storyScreen, interfaceScreen] : kind === "story" ? [storyScreen] : [interfaceScreen] } };

@@ -17,6 +17,8 @@ import { readLineImageBatch, setLineImageBatch, withLineImageBatchLock } from "@
 import { randomUUID } from "node:crypto";
 import { receiveLinePages } from "@/lib/reading/clipStore";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
+import { autoBuildContextUnit } from "@/lib/dojo/englishImageAutoUnit";
+import { autoUnitLineReport, autoUnitStatusLabel, type AutoUnitProject } from "@/lib/dojo/englishImageAutoUnitPlan";
 import {
   appendEnglishImageAttachment,
   createEnglishImageEntry,
@@ -38,6 +40,7 @@ import {
   englishImageBookQuickReply,
   englishImageFocusDeckQuickReply,
   englishImageOrganizeQuickReply,
+  englishImageUnitQuickReply,
   englishImageVocabQuickReply,
   extractFirstUrl,
   forageQuickReply,
@@ -128,8 +131,33 @@ function lineLearningSummary(entry: EnglishImageEntry, intro: string): string {
   if (entry.learningPhrases) sections.push(`【可學詞句】\n${entry.learningPhrases.slice(0, 1300)}`);
   if (entry.vocabularyWords) sections.push(`【單字候選】\n${entry.vocabularyWords.slice(0, 900)}`);
   if (entry.analysisStatus === "needs-review") sections.push(`⚠️ 需要確認：${entry.analysisReviewReason || "部分文字辨識信心較低"}`);
-  sections.push("接下來可以補充、修正，或派送到學習系統。");
+  if (entry.contextRoomAuto?.status !== "built") sections.push("接下來可以補充、修正，或派送到學習系統。");
   return sections.filter(Boolean).join("\n\n");
+}
+
+function unitQuickReply(entry: EnglishImageEntry, projects: AutoUnitProject[] = []) {
+  const auto = entry.contextRoomAuto;
+  if (!auto) return englishImageOrganizeQuickReply(entry.id, entry.route);
+  return englishImageUnitQuickReply({
+    entryId: entry.id, route: entry.route, status: auto.status, contextRoomUrl: entry.contextRoomUrl,
+    manualUrl: routingEntryUrl(forageUrl(entry.id), entry.id, "context"), projects,
+  });
+}
+
+/**
+ * Build the learning unit right after analysis and say plainly what happened.
+ * The unit report leads the message; the analysis summary follows as detail.
+ */
+async function replyWithLearningUnit(event: LineWebhookEvent, analyzed: EnglishImageEntry, summary: (entry: EnglishImageEntry) => string, choice: { projectId?: string; projectTitle?: string } = {}) {
+  let built: Awaited<ReturnType<typeof autoBuildContextUnit>>;
+  try { built = await autoBuildContextUnit(analyzed.id, choice); }
+  catch (error) {
+    console.error("LINE auto unit failed", analyzed.id, error instanceof Error ? error.message : String(error));
+    await replyImage(event, [`⚠️ 學習單元尚未建立\n原因：${error instanceof Error ? error.message : "系統暫時無法處理"}\n原圖與 AI 整理都已保存，可按「建立學習單元」再試一次。`, summary(analyzed)].filter(Boolean).join("\n\n———\n\n"), englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
+    return;
+  }
+  const report = autoUnitLineReport(built.entry.contextRoomAuto);
+  await replyImage(event, [report, summary(built.entry)].filter(Boolean).join("\n\n———\n\n"), unitQuickReply(built.entry, built.projects));
 }
 
 function forageUrl(englishImageId = ""): string {
@@ -189,7 +217,7 @@ async function handleLineCommand(event: LineWebhookEvent, command: string): Prom
         return true;
       }
       const status = saved.route === "pending" ? "待分類" : saved.analysisStatus === "completed" ? "AI 已完成" : saved.analysisStatus === "needs-review" ? "需要確認" : "尚待整理";
-      await replyImage(event, `最近一筆｜英文影像\n「${saved.title}」\n${saved.attachments.length} 張圖片\n狀態：${status}`, activeImage ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(saved.id) : englishImageOrganizeQuickReply(saved.id, saved.route));
+      await replyImage(event, `最近一筆｜英文影像\n「${saved.title}」\n${saved.attachments.length} 張圖片\n狀態：${status}${saved.route === "pending" ? "" : `\n學習單元：${autoUnitStatusLabel(saved)}`}`, activeImage ? imageBatchCollectQuickReply(saved.id) : saved.route === "pending" ? imageDraftQuickReply(saved.id) : unitQuickReply(saved));
       return true;
     }
     if (capture) {
@@ -255,6 +283,10 @@ async function handleText(event: LineWebhookEvent, userId: string): Promise<void
     const images = await listEnglishImageEntries();
     const awaitingInput = images.find((entry) => entry.lineInputMode && entry.lineInputUntil && new Date(entry.lineInputUntil).getTime() > Date.now());
     if (awaitingInput) {
+      if (awaitingInput.lineInputMode === "unitSource") {
+        await replyWithLearningUnit(event, awaitingInput, () => "", { projectTitle: text.slice(0, 300) });
+        return;
+      }
       if (awaitingInput.lineInputMode === "vocabSource") {
         const sourceName = text.slice(0, 300);
         const focusDecks = recommendedFocusDecks(awaitingInput, sourceName);
@@ -707,10 +739,11 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
         return;
       }
       const analyzed = await analyzeEnglishImage(entry.id, { force: true });
-      const summary = analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review"
-        ? lineLearningSummary(analyzed, "重新分析完成｜野採英文影像")
-        : `重新分析尚未完成：${analyzed.analysisError || "請稍後再試"}`;
-      await replyImage(event, summary, englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
+      if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
+        await replyWithLearningUnit(event, analyzed, latest => lineLearningSummary(latest, "重新分析完成｜野採英文影像"));
+        return;
+      }
+      await replyImage(event, `重新分析尚未完成：${analyzed.analysisError || "請稍後再試"}\n學習單元：${autoUnitStatusLabel(analyzed)}`, englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
       return;
     }
     if (action === "imageUndoMerge") {
@@ -724,6 +757,20 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
     }
     if (action === "imageKeep") {
       await replyLineMessage(event.replyToken ?? "", "已保留在野採；你可以之後再回來整理。");
+      return;
+    }
+    if (action === "imageAutoUnitInput") {
+      await saveEnglishImageEntry({ ...entry, lineInputMode: "unitSource", lineInputUntil: new Date(Date.now() + 10 * 60_000).toISOString() });
+      await replyLineMessage(event.replyToken ?? "", "請在十分鐘內直接輸入學習專案的名稱，例如遊戲或書名（Dragon Quest V），或是一個長期主題（按摩工作英文）。名稱和既有專案相同時會放進那個專案，否則建立新專案。");
+      return;
+    }
+    if (action === "imageAutoUnit" || (action === "imageDispatch" && params.get("target") === "context")) {
+      if (entry.route === "pending") {
+        await replyLineMessage(event.replyToken ?? "", "請先選擇這張圖記錄的素材類型；選擇後會自動分析並建立學習單元。", imageRouteQuickReply(entry.id));
+        return;
+      }
+      const projectId = params.get("projectId")?.trim().slice(0, 200) ?? "";
+      await replyWithLearningUnit(event, entry, () => "", projectId ? { projectId } : {});
       return;
     }
     if (action === "imageDispatch") {
@@ -938,7 +985,7 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       const gameLabels = { interface: "遊戲介面學習", mixed: "遊戲介面與劇情", story: "遊戲劇情／對白" };
       const label = route === "game" ? (analyzed.gameLearning ? gameLabels[analyzed.gameLearning.kind] : "遊戲") : englishImageRouteLabel(route);
       if (analyzed.analysisStatus === "completed" || analyzed.analysisStatus === "needs-review") {
-        await replyImage(event, lineLearningSummary(analyzed, `已放進「${label}」並完成 AI 整理`), englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
+        await replyWithLearningUnit(event, analyzed, latest => lineLearningSummary(latest, `已放進「${label}」並完成 AI 整理`));
       } else {
         await replyImage(event, `已放進「${label}」，原圖已保存。\nAI 暫時未完成：${analyzed.analysisError || "稍後可在英文影像匣重新分析"}`, englishImageOrganizeQuickReply(analyzed.id, analyzed.route));
       }
