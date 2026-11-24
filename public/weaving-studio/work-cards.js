@@ -40,6 +40,7 @@ function trayCard(w,id) {
       (owner?'<span class="tray-owner">'+esc(owner)+'</span>':'')+(used?'<span class="tray-used">已選用</span>':'')+'</div>'+
     '<b>'+esc(c.idea||c.title)+'</b>'+
     (c.quote&&!sameText?'<blockquote><small>'+esc(c.quoteLabel||'原文')+'</small>'+esc(c.quote)+'</blockquote>':'')+
+    (c.basis?'<blockquote class="tray-basis"><small>回應的原文</small>'+esc(c.basis)+'</blockquote>':'')+
     '<small class="tray-source">'+esc([c.source,c.location].filter(Boolean).join(' · '))+'</small>'+
     '<div class="actions">'+btn('放進正文','trayInsert',[id,'idea'],'light')+
       (c.quote&&!sameText?btn(c.quoteLabel==='我的原話'?'放進完整原話':'引用'+(c.quoteLabel||'原文'),'trayInsert',[id,'quote'],'tiny'):'')+
@@ -64,6 +65,7 @@ function trayBody(w) {
 const DRAFT_MODES={
   ask:{name:'先問我，再用我的回答排出骨架',task:[
     '一次只問我一題，等我回答後才問下一題。每一題都要引用一張卡片的內容並標明編號，例如 K2。',
+    '提問時的引用格式：K編號｜卡片內容｜出處｜由來，四項都要有。',
     '問題的目的是讓我把這件作品要說的話說出來：我想對誰說、最想讓對方帶走哪一句、哪一張卡是主幹、卡片之間怎麼接。',
     '我說「可以收尾」時，才依下方的回傳格式輸出。']},
   skeleton:{name:'直接排出骨架，標出我要補寫的地方',task:[
@@ -79,7 +81,10 @@ function draftPrompt(w,mode) {
   L.push('作品：'+(w.title||'尚未命名')+'｜形式：'+(w.mode||TYPES[w.type].name));
   L.push('');
   L.push('【織光杼】'+(sh?.title||'尚未匹配'));
+  const core=sh?coreHistory(sh).at(-1):null;
   L.push('目前的核心理解：'+(sh?.core||'（尚未寫下）'));
+  if(core)L.push('核心理解的由來：第 '+core.n+' 版，'+(core.from||'未註明')+(core.time?'，'+new Date(core.time).toLocaleDateString('zh-TW'):''));
+  if(w.understanding?.text)L.push('這件作品選用的方向理解：'+w.understanding.text);
   L.push('');
   L.push('【我的卡片】以下是這件作品可以使用的全部材料。');
   if(!ids.length)L.push('（這一杼還沒有連結卡片。請只根據我接下來的回答整理。）');
@@ -88,7 +93,11 @@ function draftPrompt(w,mode) {
     L.push('');
     L.push('K'+(i+1)+'｜'+c.type+(own?'':'｜GPT 延伸，我尚未確認')+'｜'+(c.idea||c.title));
     if(c.quote&&c.quote!==c.idea)L.push((c.quoteLabel||'原文')+'：'+c.quote);
-    L.push('出處：'+[c.source,c.location].filter(Boolean).join(' · '));
+    L.push('出處：'+[c.source,c.location].filter(Boolean).join(' · ')+(c.author?'（'+c.author+'）':''));
+    if(c.basis)L.push('由來：這張卡是我回應這段原文時說的——'+c.basis);
+    const use=(sh?.cardUses||[]).find(u=>cardsInUse(u).includes(id)), why=use?cardUseText(use):'';
+    if(why)L.push('接到這一杼的理由：'+why);
+    if(c.url&&/^https?:/.test(c.url))L.push('原始資料：'+c.url);
   });
   L.push('');
   L.push('【正文目前的內容】');
@@ -100,6 +109,8 @@ function draftPrompt(w,mode) {
   L.push('【規則】');
   ['只能使用卡片和我的回答裡出現過的內容，不替我增加新的觀點、例子或結論。',
    '引用我的話必須逐字，並標明來自哪一張卡或哪一次回答，不要替我換句話說。',
+   '每一次提到卡片，都要連同它的出處與由來一起寫出來，照卡片上的記載抄寫，不得省略、合併或改寫。只寫「K1｜你的原話」是不夠的。',
+   '談到這一杼的核心理解時，也要寫出它的由來。卡片上沒有記載由來的，就寫「由來未記載」，不要自行推測。',
    '你自己的建議要另外列在「GPT 建議」，並標示「尚未由本人確認」。',
    '標示為「GPT 延伸」的卡片不是我的話，使用前要先問我是否同意。',
    '不要替我寫成完整的文章，文字由我自己寫；你只負責排出骨架。'].forEach(r=>L.push('- '+r));
@@ -109,6 +120,7 @@ function draftPrompt(w,mode) {
   L.push('===骨架===');
   L.push('第一段｜這一段要說什麼｜使用 K1');
   L.push('我的話：（逐字，來自卡片或我的回答）');
+  L.push('出處與由來：（照卡片上的記載；來自我這次回答的，寫「本次討論的回答」）');
   L.push('===待我補寫===');
   L.push('- （骨架裡還缺、需要我自己寫的部分）');
   L.push('===GPT 建議===');

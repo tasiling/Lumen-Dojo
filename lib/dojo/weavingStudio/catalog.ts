@@ -16,7 +16,9 @@ import { LONG_VIDEO_PREFIX, LONG_VIDEO_VERSION_PREFIX } from "../longVideo/model
 import { PODCAST_PREFIX, PODCAST_VERSION_PREFIX } from "../podcast/model";
 import { WEAVING_OWNER } from "../weavingWorkflow/store";
 
-type Card = { id:string; title:string; type:string; idea:string; quote:string; source:string; location:string; author:string; quoteLabel:string; sourceKey:string; context:string; url:string };
+type Card = { id:string; title:string; type:string; idea:string; quote:string; source:string; location:string; author:string; quoteLabel:string; sourceKey:string; context:string; url:string;
+  /** The original line a 野採淬鍊 card answers, with its paragraph number. */
+  basis?:string };
 const shortTitle = (text:string) => {const line = text.split(/[\n。]/)[0].trim() || text; return line.length>46 ? line.slice(0,45)+"…" : line;};
 const noteURL = (book:string,note:string) => "/reading/books/"+encodeURIComponent(book)+"?note="+encodeURIComponent(note);
 function privacy(policies: SourcePolicy[]) {
@@ -57,7 +59,8 @@ export async function studioCards() {
       const words=c.refine.words||c.insight;
       cards.push({id:"insight:"+c.id,title:shortTitle(c.insight),type:c.refine.cardType||"洞察",idea:c.insight,quote:words,
         source:"野採淬鍊",location:c.refine.discussion,author:"本人原話",quoteLabel:"我的原話",
-        sourceKey:"insight:"+c.id,context:[words,c.refine.quote].filter(Boolean).join("\n"),url:sourceHref({sourceType:"reading_insight",sourceId:c.id})});
+        sourceKey:"insight:"+c.id,context:[words,c.refine.quote].filter(Boolean).join("\n"),url:sourceHref({sourceType:"reading_insight",sourceId:c.id}),
+        ...(c.refine.quote?{basis:c.refine.quote}:{})});
       continue;
     }
     cards.push({id:"insight:"+c.id,title:shortTitle(c.insight),type:"洞察",idea:c.insight,quote:c.insight,
