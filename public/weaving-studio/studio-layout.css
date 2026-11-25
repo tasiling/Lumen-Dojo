@@ -203,3 +203,24 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .tray-draft .primary{width:100%}
 #dialog textarea#draftPrompt{width:100%;font-size:.85rem;line-height:1.6}
 .tray-card blockquote.tray-basis{background:#fff;border:1px solid var(--line)}
+
+/* 文字稿 → 文字分鏡 → 成品製作 */
+.stage-bar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.stage-bar .stage{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:64px;padding:10px 12px;border-radius:12px;text-align:left;background:#fff;border:1px solid var(--line)}
+.stage-bar .stage b{font-size:.95rem}
+.stage-bar .stage small{font-size:.75rem;color:var(--muted);line-height:1.4;overflow-wrap:anywhere}
+.stage-bar .stage.is-done{background:#e6f3ee;border-color:#bfdccf}
+.stage-bar .stage.is-now{background:var(--soft);border-color:var(--accent)}
+.stage-bar .stage.is-wait{opacity:.7;border-style:dashed}
+.stage-bar .stage.is-missing{background:#fff4ef;border-color:#ead8cf}
+.production-panel{margin-top:18px}
+.production-list{display:grid;gap:12px;margin:14px 0}
+.production-unit{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);min-width:0}
+.production-unit.is-made{background:#fff;border-color:#bfdccf}
+.production-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.78rem}
+.production-meta b{font-size:.95rem;margin-right:4px}
+.production-meta span{padding:2px 9px;border-radius:7px}
+.production-meta .is-ok{background:#e6f3ee;color:#2c6b55}
+.production-meta .is-wait{background:#faf0da}
+.production-unit pre{margin:0;padding:12px;border-radius:10px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:.88rem;line-height:1.7;max-height:260px;overflow-y:auto}
+.production-unit .actions,.next-forms .chips{display:flex;flex-wrap:wrap;gap:8px}
