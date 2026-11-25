@@ -333,7 +333,8 @@ function Round({ id, go }: { id: string; go: (query: Record<string, string>) => 
 
       {record.confirmed && <section className="awareness-block is-saved">
         <h3>正式紀錄</h3>
-        <ul>{record.confirmed.understandings.map((item, index) => <li key={index}>{item.text}<small>（{item.from}）</small></li>)}</ul>
+        <ul>{record.confirmed.understandings.map((item, index) => <li key={index}>{item.text}<small>（{item.from}）</small>
+          <a className="awareness-weave" href={`/weaving/studio#card/awareness:${record.id}:${index}`}>帶去織光堂，做成織光杼</a></li>)}</ul>
         {record.confirmed.facts.length > 0 && <><h4>事實</h4><ul>{record.confirmed.facts.map((fact, index) => <li key={index}>{fact}</li>)}</ul></>}
       </section>}
 

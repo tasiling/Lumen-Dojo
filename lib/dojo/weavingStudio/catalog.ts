@@ -10,6 +10,7 @@ import { normalizeWeavingProject } from "../weavingProjects";
 import { legacyBundle, type WeavingShuttle } from "../weavingShuttle";
 import { studioTopics, studioWorks } from "../creativeStudio/store";
 import { listJsonRecords } from "../notionStore";
+import { AWARENESS_TITLE_PREFIX, awarenessMethodName, normalizeAwarenessRecord } from "../emotionAwareness";
 import { DECK_PREFIX, DECK_VERSION_PREFIX } from "../illustrated/model";
 import { COMIC_PREFIX, COMIC_VERSION_PREFIX } from "../comic/model";
 import { VIDEO_PREFIX, VIDEO_VERSION_PREFIX } from "../shortVideo/model";
@@ -28,8 +29,9 @@ function privacy(policies: SourcePolicy[]) {
 }
 
 export async function studioCards() {
-  const [manual, discussions, insights, books, policies, captures] = await Promise.all([
-    listManualCards(), listStudioDiscussions(), listInsightCards(), listReadingBooks(), sourcePolicies.list(), listJsonRecords(CAPTURE_TITLE_PREFIX)
+  const [manual, discussions, insights, books, policies, captures, awareness] = await Promise.all([
+    listManualCards(), listStudioDiscussions(), listInsightCards(), listReadingBooks(), sourcePolicies.list(), listJsonRecords(CAPTURE_TITLE_PREFIX),
+    listJsonRecords(AWARENESS_TITLE_PREFIX)
   ]);
   const blocked=privacy(policies), cards: Card[] = [], handled=new Set<string>();
   for(const c of manual){
@@ -78,13 +80,28 @@ export async function studioCards() {
       author:interview?"已送往織光堂的訪談素材":`已送往織光堂的野採・${c.creativeMaturity}`,quoteLabel:c.excerpt?"原摘錄":"採集紀錄",sourceKey:"capture:"+c.id,context:c.note||quote,
       url:"/forage/captures?captureId="+encodeURIComponent(c.id)});
   }
+  // 心・情覺察: only what the owner confirmed as a formal record, one card per understanding, in her own words.
+  for(const row of awareness){
+    const r=normalizeAwarenessRecord(row.value);
+    if(!r || r.archived || !r.confirmed) continue;
+    r.confirmed.understandings.forEach((taken,i)=>{
+      if(!taken.text.trim()) return;
+      const original=r.understandings.find(u=>u.n===taken.sourceN)?.words??"";
+      const words=taken.from==="原話"||!original?taken.text:original;
+      cards.push({id:"awareness:"+r.id+":"+i,title:shortTitle(taken.text),type:"覺察",idea:taken.text,quote:words,
+        source:"心・情覺察",location:[r.date,awarenessMethodName(r)].filter(Boolean).join(" · "),author:"本人原話",quoteLabel:"我的原話",
+        sourceKey:"awareness:"+r.id,context:[taken.text,...r.confirmed!.facts].join("\n"),url:"/practice/emotion?a="+encodeURIComponent(r.id)});
+    });
+  }
   return {cards};
 }
 
 function topic(s:WeavingShuttle){
   const versions=s.coreVersions.filter(v=>v.statement).map(v=>({n:v.number,text:v.statement,time:Date.parse(v.createdAt),from:v.changeNote}));
+  // A 杼 started from the reading page keeps the insight cards it was built from.
+  const cardUses=s.sourceRefs.filter(r=>r.sourceType==="reading_insight").map(r=>({cardId:"insight:"+r.sourceId,entryId:"insight:"+r.sourceId,note:"",supportsCore:false}));
   return {id:s.id,title:s.title,core:s.coreVersions.find(v=>v.id===s.currentCoreVersionId)?.statement??"", coreVersions:versions,
-    dirs:(s.studioDirections??[]).map(d=>({id:d.id,name:d.title,vs:d.versions.map(v=>v.statement)})),notes:[]};
+    dirs:(s.studioDirections??[]).map(d=>({id:d.id,name:d.title,vs:d.versions.map(v=>v.statement)})),notes:[],...(cardUses.length?{cardUses}:{})};
 }
 const statusNames:Record<string,string>={selecting:"準備中",drafting:"製作中",producing:"製作中",reviewing:"待確認",completed:"已定稿",sent_to_liaojie:"已定稿"};
 export async function studioCatalog(){
