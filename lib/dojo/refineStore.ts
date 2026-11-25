@@ -171,6 +171,34 @@ export async function returnRefineRound(id: string, raw: string): Promise<Refine
   });
 }
 
+/**
+ * 已經和 GPT 討論完才來淬鍊：沒有先開一輪，所以紀錄裡沒有討論包ID。這一輪在貼回時才建立，識別欄位不比對，
+ * 其餘檢查照舊；回傳不完整時不建立，只回報缺了什麼。
+ */
+export async function importRefineRound(input: { topic: string; angle: string; captureIds: string[]; offeredCaptureIds?: string[]; raw: string }): Promise<RefineReturnResult | (Omit<RefineReturnResult, "view"> & { view: null })> {
+  const problem = refineSetupProblem(input.topic, input.angle, input.captureIds);
+  if (problem) throw new LearningError(problem, 400);
+  if (typeof input.raw !== "string" || !input.raw.trim()) throw new LearningError("請貼上 GPT 收尾時輸出的紀錄。", 400);
+  if (input.raw.length > 400_000) throw new LearningError("貼上的內容太長。", 413);
+  const sources = await liveSources(input.captureIds);
+  const parsed = parseRefineReturn(input.raw);
+  const id = newRefineId();
+  const round: RefineRound = { id, topic: input.topic, angle: input.angle as RefineAngleKey, sources };
+  const checks = { ...checkRefineReturn({ ...parsed, id, labels: sources.map((s) => s.label) }, round), idOk: true, idNote: "" };
+  // The header is the only thing this return cannot have; everything else must be there.
+  checks.missing = checks.missing.filter((item) => !item.startsWith("識別"));
+  const rescue = refineRescuePrompt(checks);
+  if (checks.missing.length) return { saved: false, checks, rescue, view: null };
+  const now = new Date().toISOString();
+  const record = fitRefineRecord(withRefineReturn(newRefineRecord({
+    id, topic: input.topic, angle: input.angle as RefineAngleKey, sources: sources.map((s) => s.stored),
+    offeredCaptureIds: input.offeredCaptureIds ?? [], now,
+  }), parsed, checks, now));
+  if (!record) throw new LearningError("這份討論紀錄太長，超過 Notion 單一欄位能保存的長度。請請 GPT 分成兩輪收尾。", 413);
+  await createKnowledgeEntry({ 標題: REFINE_TITLE_PREFIX + record.id, 內容: JSON.stringify(record) });
+  return { saved: true, checks, rescue, view: await view(record) };
+}
+
 export async function pickRefineCandidate(id: string, candidateN: number, titleFrom: RefineTitleFrom | null, rewritten = "", cardType?: string): Promise<RefineView> {
   return withRoundLock(id, async () => {
     const { pageId, record } = await readRecord(id);

@@ -11,7 +11,7 @@ import {
 } from "@/lib/dojo/refineRecord";
 
 type RefineView = { record: RefineRecord; package: string; changed: string[]; unsegmented: string[]; missing: string[] };
-type ReturnResult = { saved: boolean; checks: RefineChecks; rescue: string; view: RefineView };
+type ReturnResult = { saved: boolean; checks: RefineChecks; rescue: string; view: RefineView | null };
 
 const API = "/api/dojo/refine";
 const STATUS_LABELS: Record<RefineRecord["status"], string> = { open: "討論中", returned: "已貼回", closed: "已結束" };
@@ -102,8 +102,21 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
     if (record.picks.length && !window.confirm("重新貼回會清除目前挑選的候選，要繼續嗎？")) return;
     void run(async () => {
       const returned = await post<ReturnResult>({ action: "return", id: record.id, raw: pasted });
-      setResult(returned); setView(returned.view);
+      setResult(returned); if (returned.view) setView(returned.view);
       if (returned.saved) { setPasted(""); setNotice("已保存這份討論紀錄。下方可以挑選候選。"); }
+    });
+  }
+
+  /** 已經和 GPT 討論完：建立這一輪並同時貼回紀錄。 */
+  function importReturn() {
+    void run(async () => {
+      const returned = await post<ReturnResult>({ action: "import", topic, angle, captureIds: chosen, offeredCaptureIds: offered, raw: pasted });
+      setResult(returned);
+      if (returned.saved && returned.view) {
+        setView(returned.view); setPasted("");
+        router.replace(`/forage/refine?id=${encodeURIComponent(returned.view.record.id)}`, { scroll: false });
+        setNotice("已建立這一輪並保存討論紀錄。下方可以挑選候選。");
+      }
     });
   }
 
@@ -158,6 +171,7 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
           ? <a key={step.id} href={`#${step.id}`} aria-current={step.current ? "step" : undefined}>{step.name}</a>
           : <span key={step.id} aria-disabled="true">{step.name}</span>)}
       </nav>
+      {!record && <p className="refine-note">先寫下本輪題目並按「建立這一輪」，討論包、貼回與候選才會出現。已經和 GPT 討論完的話，用設定區最下方的「直接貼回紀錄」。</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <p className="form-success" role="status">{notice}</p>}
 
@@ -202,6 +216,14 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
           {chosen.some((id) => byId.get(id) && captureOriginal(byId.get(id)!).state === "none") && <p className="form-error">有採集沒有原文，不能帶入。請先在素材頁補上全文，或移除它。</p>}
         </fieldset>
         {editable && <button type="button" className="primary" disabled={busy || !topic.trim() || !chosen.length} onClick={saveSetup}>{busy ? "保存中…" : record ? "更新設定" : "建立這一輪"}</button>}
+        {!record && <details className="refine-import">
+          <summary>已經和 GPT 討論完了？直接貼回紀錄</summary>
+          <p>沒有先在這裡開一輪也可以。填好上方的題目、確認帶入的採集，再把 GPT 依回傳格式輸出的整段紀錄貼進來。討論包ID 不用填，這一輪會在貼回時建立；其餘檢查照常進行。</p>
+          <label htmlFor="refine-import-paste">GPT 的收尾紀錄</label>
+          <textarea id="refine-import-paste" className="field" rows={8} value={pasted} onChange={(event) => setPasted(event.target.value)} placeholder="從 ===野採討論/v2=== 開始，到 ===結束=== 為止" />
+          <button type="button" className="primary" disabled={busy || !topic.trim() || !chosen.length || !pasted.trim()} onClick={importReturn}>{busy ? "檢查中…" : "建立這一輪並貼回"}</button>
+          {!topic.trim() && <p className="field-help">先在上方寫下本輪題目。</p>}
+        </details>}
         {!editable && <p className="field-help">已經貼回討論紀錄，設定不能再改。要換題目或素材，請另開一輪。</p>}
       </section>
 
@@ -228,6 +250,7 @@ export default function ForageRefine({ roundId, captureIds }: { roundId: string;
       {checks && <section className="refine-step refine-checks" aria-labelledby="refine-checks">
         <span className="refine-eyebrow">核對</span>
         <h2 id="refine-checks">檢查結果</h2>
+        {result && !result.saved && !result.view && !result.checks.missing.length && <p className="form-error" role="alert">這份紀錄沒有保存。</p>}
         {result && !result.checks.idOk && <p className="form-error" role="alert">這份紀錄不屬於這一輪，沒有保存。{result.checks.idNote}</p>}
         {checks.missing.length > 0 && <div className="refine-problem">
           <b>回傳不完整，沒有保存</b>
@@ -302,7 +325,7 @@ function RefineCandidateCard({ candidate, record, pick, cardId, busy, onPick, on
   const editable = record.status === "returned" && !cardId;
   const choices: RefineTitleFrom[] = verified ? ["原話", "整理版", "改寫"] : ["改寫"];
   return <article className={`refine-candidate ${pick ? "is-picked" : ""} ${cardId ? "is-adopted" : ""}`}>
-    <div className="refine-candidate-meta"><b>#{candidate.n}｜{candidate.type}</b><span>T{candidate.turn}{candidate.reply ? `・回應 ${candidate.reply}` : ""}</span><span className={verified ? "is-ok" : "is-fail"}>{verified ? "原話逐字相符" : "原話未通過檢查"}</span></div>
+    <div className="refine-candidate-meta"><b>#{candidate.n}{candidate.tag ? `（${candidate.tag}）` : ""}｜{candidate.type}</b><span>T{candidate.turn}{candidate.reply ? `・回應 ${candidate.reply}` : ""}</span><span className={verified ? "is-ok" : "is-fail"}>{verified ? "原話逐字相符" : "原話未通過檢查"}</span></div>
     <p className="refine-mine"><strong>我的原話</strong>{candidate.words || "（沒有附上原話）"}</p>
     {candidate.tidy && <p className="refine-tidy"><strong>GPT 的整理版</strong>{candidate.tidy}</p>}
     {!verified && candidate.words && (refineOwnTurn(record, candidate.turn)

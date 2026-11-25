@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireLearningOwner } from "@/lib/dojo/learningFoundation/access";
 import { LearningError } from "@/lib/dojo/learningFoundation/model";
 import {
-  adoptRefineCandidate, closeRefineRound, configureRefineRound, createRefineRound, getRefineRound, listRefineRounds, pickRefineCandidate,
+  adoptRefineCandidate, closeRefineRound, configureRefineRound, createRefineRound, getRefineRound, importRefineRound, listRefineRounds, pickRefineCandidate,
   readRefineRules, returnRefineRound, saveRefineRules,
 } from "@/lib/dojo/refineStore";
 import type { RefineTitleFrom } from "@/lib/dojo/refineRecord";
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
         return json(await createRefineRound({ topic: str(body.topic), angle: str(body.angle), captureIds: ids(body.captureIds), offeredCaptureIds: ids(body.offeredCaptureIds) }), 201);
       case "configure":
         return json(await configureRefineRound(id, { topic: str(body.topic), angle: str(body.angle), captureIds: ids(body.captureIds) }));
+      case "import":
+        return json(await importRefineRound({ topic: str(body.topic), angle: str(body.angle), captureIds: ids(body.captureIds), offeredCaptureIds: ids(body.offeredCaptureIds), raw: str(body.raw) }));
       case "return":
         return json(await returnRefineRound(id, str(body.raw)));
       case "pick": {

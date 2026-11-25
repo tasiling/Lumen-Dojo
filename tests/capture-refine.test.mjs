@@ -114,3 +114,15 @@ test("仍接受第一版把待查與未回答合在一起的回傳", () => {
   assert.deepEqual([parsed.toVerify.length, parsed.unanswered.length], [0, 2]);
   assert.deepEqual(checkRefineReturn(parsed, round).missing, []);
 });
+
+test("GPT 用 K1、E1 編候選時依序編號並保留原標籤；〔備註〕標題之後的行不算進上一個區塊", () => {
+  const raw = full({ candidates: ["#K1｜洞察｜T2", "原話：做完之後我會累到兩三天都不想碰任何東西。", "#E1｜觀點｜T2", "原話：那種緊繃會讓我動起來"] })
+    .replace("===結束===", "〔回傳核對備註〕\n- 討論包ID 待補。\n===結束===");
+  const parsed = parseRefineReturn(raw);
+  assert.deepEqual(parsed.candidates.map((c) => [c.n, c.tag]), [[1, "K1"], [2, "E1"]]);
+  assert.deepEqual(parsed.unanswered, ["不用緊繃的話，用什麼方式開始？"]);
+  const checks = checkRefineReturn(parsed, round);
+  assert.deepEqual(checks.words.map((w) => w.ok), [true, true]);
+  // 一般的數字編號不受影響
+  assert.equal(parseRefineReturn(full()).candidates[0].tag, undefined);
+});
