@@ -11,7 +11,63 @@ export type DiscussionSource = {
   readingQuestion: string;
   excerpt: string;
   reflection: string;
+  /** 對照的另一則筆記：S2 是它的作者原文，N2 是我對它的想法。 */
+  compare?: { noteId: string; label: string; locator: string; excerpt: string; reflection: string };
 };
+
+/** 這輪的讀法。每一種只改變 GPT 怎麼出題，觀點仍然只出自本人。 */
+export const READING_METHODS = {
+  open: { name: "一般討論", from: "", hint: "依選段自然討論，沒有指定讀法。", compare: "none", lines: [] },
+  buddy: {
+    name: "看懂作者在說什麼", from: "讀書搭子", hint: "先求看懂，再談同不同意。可以加一則對照的筆記，看兩段各自怎麼回答同一個問題。", compare: "optional",
+    lines: [
+      "依序圍繞四件事出題：作者在談什麼、他是怎麼說的、他說得有沒有道理、這和我有什麼關係。",
+      "在我表示已經看懂之前，不要請我評論或批評，也不要替我下結論。",
+      "有對照的筆記時，先和我定出一個兩段都在回答的共同問題，再問我兩段各自怎麼回答；兩邊並列，不要混成一個說法。",
+    ],
+  },
+  layers: {
+    name: "往下三層，問回我的經驗", from: "拆書計畫", hint: "從表面論點往下問到背後機制，最後一題只有我的經驗能回答。", compare: "none",
+    lines: [
+      "依序往下三層出題：表面論點（這段說了什麼）、背後機制（為什麼會這樣）、更深一層（這對我意味著什麼）。",
+      "每一層先逐字引用一句原文再提問。",
+      "每一題要有摩擦力：拿我的說法和原文之間的落差來追問，不要只請我補充。",
+      "最後一題必須是只有用我自己的經驗才能回答的問題。",
+    ],
+  },
+  distill: {
+    name: "兩段摘錄是互補還是分歧", from: "書籍深度蒸餾", hint: "需要再選一則對照的筆記。辨別兩段是互補、真正的分歧，還是證據不足。", compare: "required",
+    lines: [
+      "這輪只處理一件事：S 與 S2 兩段原文的關係是互補、分歧，還是證據不足。",
+      "先問我怎麼看這兩段的關係，等我回答後才提出你的看法；你的看法要寫明「這是 GPT 的推論，尚未確認」。",
+      "每次比較都要逐字引用兩邊的原句並寫出各自的位置，不要把兩邊合成一個結論。",
+      "談到分歧時，問我分歧落在哪一點、各自在什麼情況下成立；不要替我決定誰對。",
+    ],
+  },
+  bounds: {
+    name: "檢查論點的適用界線", from: "書籍百維拆解術", hint: "一次一個切入點，找出這個說法在什麼條件下成立、什麼條件下不成立。", compare: "none",
+    lines: [
+      "每一題只針對一句原文，並且只用一個切入點。輪流使用：他沒說出口的前提、他刻意沒談的部分、這個說法在什麼條件下才成立、在什麼條件下不成立、最強的反方會怎麼說。",
+      "反方的說法是你提出的假設，要標明「這是 GPT 提出的反方，不是作者也不是我的話」。",
+      "收斂前請我用自己的話說出這個論點的適用界線；候選只能用我說過的界線。",
+    ],
+  },
+  action: {
+    name: "做成一個行動實驗", from: "把好書變成 AI 外腦", hint: "把讀到的想法變成一個我會去做或去觀察的小實驗。", compare: "none",
+    lines: [
+      "這輪的目標是把選段裡的一個想法做成我自己的行動實驗。",
+      "依序問我四件事：我會在什麼情境用上它、我具體要做或觀察什麼、我怎麼知道有沒有看到結果、我打算什麼時候回來看。",
+      "四件事都由我說出，你只追問到夠具體，不要替我設計實驗或補上我沒說的步驟。",
+      "收尾時候選使用「洞察卡」類型，「行動」欄只填我說過的實驗內容。",
+    ],
+  },
+} as const satisfies Record<string, { name: string; from: string; hint: string; compare: "none" | "optional" | "required"; lines: readonly string[] }>;
+export type ReadingMethodKey = keyof typeof READING_METHODS;
+export const isReadingMethod = (value: unknown): value is ReadingMethodKey => typeof value === "string" && Object.hasOwn(READING_METHODS, value);
+export function methodLabel(key: ReadingMethodKey | undefined) {
+  const method = READING_METHODS[key ?? "open"];
+  return method.from ? method.from + "｜" + method.name : method.name;
+}
 export type DiscussionTurn = { role: "我" | "GPT"; text: string };
 export type DiscussionResult = {
   type: "觀點" | "洞察卡";
@@ -37,6 +93,8 @@ export type DiscussionRound = {
   id: string;
   source: DiscussionSource;
   starter: "gpt" | "me";
+  /** 沒有這個欄位的舊輪次就是一般討論。 */
+  method?: ReadingMethodKey;
   question: string;
   createdAt: string;
   savedAt?: string;
@@ -82,13 +140,14 @@ export function returnInstructions(discussion: ReadingDiscussion, round: Discuss
     '「問答」按順序寫本輪逐字發言，每則為 {"角色":"我","內容":"..."} 或 {"角色":"GPT","內容":"..."}。不要抄入舊輪、討論包、收尾指令或補寫我沒說過的話。依順序編號 T1、T2 等。',
     status === "暫存"
       ? "「下次從這裡」寫一個具體的續談點，候選留空。"
-      : '候選可留空。每項用 {"類型":"觀點","內容":"...","依據":"T2","依據原句":"...","行動":""}。類型也可為「洞察卡」。依據使用本輪 T 編號，或確實帶入的 S（作者原文）、N（我的筆記）。逐字引用原句。GPT 的提議和作者原文各用自己的來源。本人同意收尾只表示可以整理。洞察卡可帶一項本人願意觀察或執行的行動。',
+      : '候選可留空。每項用 {"類型":"觀點","內容":"...","依據":"T2","依據原句":"...","行動":""}。類型也可為「洞察卡」。依據使用本輪 T 編號，或確實帶入的 S（作者原文）、N（我的筆記）' + (round.source.compare ? "、S2（對照的作者原文）、N2（我對對照段的想法）" : "") + '。逐字引用原句。GPT 的提議和作者原文各用自己的來源。本人同意收尾只表示可以整理。洞察卡可帶一項本人願意觀察或執行的行動。',
     "輸出前核對引號和換行的 JSON 跳脫。",
   ].join("\n\n");
 }
 
 export function discussionPrompt(discussion: ReadingDiscussion, round: DiscussionRound) {
   const { source } = round;
+  const method = READING_METHODS[round.method ?? "open"];
   const priorIndex = discussion.rounds.findIndex(item => item.id === round.id) - 1;
   const previous = discussion.rounds[priorIndex]?.result;
   return [
@@ -97,7 +156,14 @@ export function discussionPrompt(discussion: ReadingDiscussion, round: Discussio
     source.readingQuestion && "讀前問題　" + source.readingQuestion,
     source.excerpt && "【S｜作者原文】\n" + source.excerpt,
     source.reflection && "【N｜我當時的想法】\n" + source.reflection,
+    source.compare && [
+      "【對照的另一則筆記】" + [source.compare.locator, source.compare.label].filter(Boolean).join(" · "),
+      source.compare.excerpt && "【S2｜對照的作者原文】\n" + source.compare.excerpt,
+      source.compare.reflection && "【N2｜我對這段的想法】\n" + source.compare.reflection,
+    ].filter(Boolean).join("\n\n"),
     "用繁體中文，依選段討論。分清作者原文、我的說法和你的推論。依實際看到的材料作答；缺少的資料列為待查。一次談一個重點。",
+    method.lines.length > 0 && ["【本輪的讀法：" + method.name + "（方法：" + method.from + "）】", ...method.lines.map(line => "- " + line),
+      "- 引用原文一律逐字，並寫出它的位置；我的話照我說的引用，不要替我換句話說。"].join("\n"),
     "【何時主動收斂】\n" + CONVERGENCE_GUIDE,
     previous?.status === "暫存" && [
       "【接續上次｜舊輪次供回顧】",
@@ -116,6 +182,8 @@ export function evidenceFor(round: DiscussionRound, turns = round.result?.turns 
   const refs: Record<string, { label: string; text: string }> = {};
   if (round.source.excerpt) refs.S = { label: "作者原文", text: round.source.excerpt };
   if (round.source.reflection) refs.N = { label: "我的閱讀筆記", text: round.source.reflection };
+  if (round.source.compare?.excerpt) refs.S2 = { label: "對照的作者原文", text: round.source.compare.excerpt };
+  if (round.source.compare?.reflection) refs.N2 = { label: "我對對照段的想法", text: round.source.compare.reflection };
   turns.forEach((turn, index) => { refs["T" + (index + 1)] = { label: turn.role === "我" ? "我的發言" : "GPT 發言", text: turn.text }; });
   return refs;
 }

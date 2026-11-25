@@ -33,7 +33,7 @@ export function discussionFromArchive(archive: ReadingArchive, book: ReadingBook
   const candidates: { 類型: string; 內容: string; 依據: string; 依據原句: string; 行動: string }[] = [];
   let section: "內容" | "依據原句" | "行動" = "內容";
   for (const line of lines.slice(candidatesAt + 1, turnsAt)) {
-    const heading = line.match(/^(\d+)[．.]\s*(觀點|洞察卡)\s*·\s*(T\d+|S|N)(?:（[^）]+）)?$/);
+    const heading = line.match(/^(\d+)[．.]\s*(觀點|洞察卡)\s*·\s*(T\d+|S2?|N2?)(?:（[^）]+）)?$/);
     if (heading) {
       if (Number(heading[1]) !== candidates.length + 1) return null;
       candidates.push({ 類型: heading[2], 內容: "", 依據: heading[3], 依據原句: "", 行動: "" });

@@ -242,3 +242,47 @@
 .reading-highlight-note [data-ink] {border-radius:.4em;padding:.12em .35em;}
 .reading-highlight-note [data-ink="黃色"] {background:#f8f4d9;}
 .reading-highlight-note [data-ink="綠色"] {background:#d9f7d3;}
+
+/* 這輪的讀法：每一種讀法一個色塊，和野採淬鍊的出題角度同一種選法 */
+.reading-method-picker {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px;border:0;margin:0;padding:0;min-width:0}
+.reading-method-picker legend {padding:0;margin-bottom:6px;font-weight:650}
+.dojo.reading-shell .reading-discussion .reading-method {margin:0;display:flex;flex-direction:row;align-items:flex-start;font-size:.9375rem;color:var(--ink);gap:8px;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.reading-method input {flex:none;width:18px;height:18px;margin:3px 0 0;accent-color:#B9762F}
+.reading-method span {display:grid;gap:2px;min-width:0}
+.dojo.reading-shell .reading-method b {font-size:.9375rem;font-weight:650;line-height:1.5;overflow-wrap:anywhere}
+.dojo.reading-shell .reading-method small {color:var(--muted);font-size:.75rem;font-weight:400}
+.dojo.reading-shell .reading-discussion .reading-method[data-method="buddy"] {background:#EEF4FA}
+.dojo.reading-shell .reading-discussion .reading-method[data-method="layers"] {background:#FBF1DC}
+.dojo.reading-shell .reading-discussion .reading-method[data-method="distill"] {background:#F0EBF7}
+.dojo.reading-shell .reading-discussion .reading-method[data-method="bounds"] {background:#FCEBE3}
+.dojo.reading-shell .reading-discussion .reading-method[data-method="action"] {background:#E3F2ED}
+.dojo.reading-shell .reading-discussion .reading-method.on {border-color:#B9762F;box-shadow:inset 0 0 0 1px #B9762F}
+.reading-method:focus-within {outline:2px solid #B9762F;outline-offset:2px}
+.reading-discussion .reading-method-hint {grid-column:1/-1;margin:0;color:var(--muted);font-size:.875rem;white-space:normal}
+.reading-discussion .reading-method-used {margin:0;font-size:.875rem;white-space:normal}
+.reading-method-used b {margin-right:8px;padding:2px 8px;border-radius:7px;background:#FBF1DC;font-weight:650;font-size:.75rem}
+
+/* 讀後復盤的心智圖：直立的樹，每一支都能收合 */
+.reading-map-panel {display:grid;gap:12px;min-width:0}
+.reading-map-legend {display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.reading-map {border:1px solid var(--line);border-radius:15px;background:var(--surface);padding:16px 12px;overflow-x:auto}
+.reading-map ul {list-style:none;margin:0;padding:0 0 0 16px;position:relative}
+.reading-map ul::before {content:"";position:absolute;left:5px;top:0;bottom:20px;border-left:2px solid #EADFD5}
+.reading-map li {position:relative;padding:5px 0 5px 12px;min-width:0}
+.reading-map li::before {content:"";position:absolute;left:-11px;top:24px;width:19px;border-top:2px solid #EADFD5}
+.reading-map details>summary {list-style:none;display:flex;align-items:flex-start;gap:6px;cursor:pointer;min-height:40px}
+.reading-map details>summary::-webkit-details-marker {display:none}
+.reading-map summary>i {flex:none;margin-top:8px;min-width:22px;padding:0 6px;border-radius:999px;background:#F4ECE5;color:var(--muted);font-style:normal;font-size:.75rem;line-height:22px;text-align:center}
+.reading-map details[open]>summary>i {background:#EFB873;color:var(--ink)}
+.reading-map-root {display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:6px;padding:10px 16px;border-radius:12px;background:var(--ink);color:#fff;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
+.dojo.reading-shell .reading-map-root small {color:#fff;font-weight:400;font-size:.75rem;opacity:.85}
+.dojo.reading-shell .reading-map-panel .reading-section-heading>button {flex:none;white-space:nowrap;min-height:44px;font-size:.875rem}
+.reading-map-node {display:inline-grid;gap:2px;max-width:100%;padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);line-height:1.6;overflow-wrap:anywhere;text-align:start}
+.reading-map-node small {color:var(--muted);font-size:.75rem;line-height:1.4}
+.reading-map-node.is-branch {background:#FAF5F0;font-weight:650}
+.reading-map-node.is-author {background:#FBF1DC;border-color:#F1DFB4}
+.reading-map-node.is-mine {background:#FCEBE3;border-color:#F3D3C4;border-left:4px solid #E9B9A3}
+.reading-map-node.is-question {background:#EEF4FA;border-color:#D6E3F0}
+.reading-map-node.is-card {background:#E3F2ED;border-color:#C6E2D8}
+.reading-map-legend .reading-map-node {padding:3px 10px}
+.reading-map-legend .reading-map-node small {color:var(--ink)}

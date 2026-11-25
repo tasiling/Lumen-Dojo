@@ -17,6 +17,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ReadingQuickCapture from "@/app/components/ReadingQuickCapture";
 import ClaimCandidateComposer from "@/app/components/ClaimCandidateComposer";
 import ReadingDiscussionWorkspace from "@/app/components/ReadingDiscussion";
+import ReadingMindmap from "@/app/components/ReadingMindmap";
 import type { InsightCard, ReadingBook, ReadingNote, ReadingNoteKind, ReadingNoteMetadata } from "@/lib/reading/types";
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -357,6 +358,7 @@ function BookWorkspace() {
               setNotice(note.metadata.reviewCompleted ? "這輪讀後復盤已完成。" : "讀後復盤已保存，可繼續補充。");
             }}
           />
+          <ReadingMindmap book={book} notes={notes} cards={cards} />
 
           <section className="reading-cards-section">
             <div className="reading-section-heading">
