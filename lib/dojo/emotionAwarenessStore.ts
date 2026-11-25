@@ -1,4 +1,5 @@
 import "server-only";
+import { unfilledId, wrongPlace } from "./returnPlaces";
 
 import { ENTRY_TITLE_PREFIX, taipeiTodayISO } from "./formal";
 import { LearningError } from "./learningFoundation/model";
@@ -118,10 +119,14 @@ export type AwarenessReturnResult = { saved: boolean; checks: AwarenessChecks; r
 export async function returnAwareness(id: string, raw: string): Promise<AwarenessReturnResult> {
   if (typeof raw !== "string" || !raw.trim()) throw new LearningError("請貼上 GPT 收尾時輸出的紀錄。", 400);
   if (raw.length > 400_000) throw new LearningError("貼上的內容太長。", 413);
+  const other = wrongPlace(raw, "awareness");
+  if (other) throw new LearningError(other, 400);
   return withRoundLock(id, async () => {
     const { pageId, record } = await readRecord(id);
     if (record.status === "confirmed") throw new LearningError("這一筆已經存成正式紀錄。要重新貼回，請先按「重新確認」。", 409);
-    const parsed = parseAwarenessReturn(raw);
+    const read = parseAwarenessReturn(raw);
+    // Discussed without this entry's package: no 討論包ID, so the record belongs to the entry it is pasted into.
+    const parsed = unfilledId(read.id) ? { ...read, id: record.id } : read;
     const checks = checkAwarenessReturn(parsed, record.id);
     const rescue = awarenessRescuePrompt(checks);
     if (!checks.idOk || checks.missing.length) return { saved: false, checks, rescue, view: await view(record) };

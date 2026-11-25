@@ -269,7 +269,8 @@ function Round({ id, go }: { id: string; go: (query: Record<string, string>) => 
 
     {record.status !== "confirmed" && <section className="awareness-block is-return">
       <h3>{record.status === "open" ? "把 GPT 輸出的紀錄貼回來" : "重新貼回（會取代目前的討論紀錄）"}</h3>
-      <textarea className="field" rows={6} value={pasted} onChange={(event) => setPasted(event.target.value)} placeholder="說「可以收尾」或「先暫停」後，把 GPT 輸出的整段紀錄貼在這裡。"/>
+<p className="awareness-hint">直接和 GPT 討論完、紀錄裡沒有討論包 ID 的，也可以貼在這裡，會存到這一則。</p>
+            <textarea className="field" rows={6} value={pasted} onChange={(event) => setPasted(event.target.value)} placeholder="說「可以收尾」或「先暫停」後，把 GPT 輸出的整段紀錄貼在這裡。"/>
       <div className="awareness-actions"><button className="primary" disabled={busy || !pasted.trim()} onClick={pasteBack}>{busy ? "核對中…" : "貼回並核對"}</button></div>
       {result && !result.saved && <div className="awareness-problem">
         <b>這份紀錄還沒有存進來，你貼的文字仍保留在上方。</b>

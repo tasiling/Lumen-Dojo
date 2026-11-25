@@ -247,6 +247,7 @@ Object.assign(handlers,{
     const s=findS(sid), t=SHUTTLE_TOOLS[key], raw=val('shuttleToolReturn');
     if(!s)return;
     if(!raw){toast('先貼入 GPT 的結果');return;}
+    if(studioWrongPlace(raw)){$('shuttleToolPicks').innerHTML='<p class="statusline">'+esc(studioWrongPlace(raw))+'</p>';return;}
     toolParsed=t.parse(raw);
     const box=$('shuttleToolPicks');
     if(!toolParsed.length){box.innerHTML='<p class="statusline">找不到可以採用的內容。請確認 GPT 有照回傳格式輸出，標記行也要照抄。</p>';return;}

@@ -11,6 +11,7 @@ import {
   REFINE_DEFAULT_RULES, buildRefinePackage, checkRefineReturn, parseRefineReturn, refineParagraphs, refineRescuePrompt,
   type RefineAngleKey, type RefineChecks, type RefineRound, type RefineSource,
 } from "./captureRefine";
+import { unfilledId, wrongPlace } from "./returnPlaces";
 import {
   REFINE_SETTINGS_TITLE, REFINE_TITLE_PREFIX, captureOriginal, fitRefineRecord, newRefineId, newRefineRecord,
   normalizeRefineRecord, refineCardDraft, refineCardKey, refineLabels, refinePick, refineSetupProblem, withRefineAdopted, withRefineReturn,
@@ -162,7 +163,11 @@ export async function returnRefineRound(id: string, raw: string): Promise<Refine
       id: record.id, topic: record.topic, angle: record.angle,
       sources: record.sources.map((source, index) => live[index] ?? { ...source, text: "" }),
     };
-    const parsed = parseRefineReturn(raw);
+    const other = wrongPlace(raw, "refine");
+    if (other) throw new LearningError(other, 400);
+    const read = parseRefineReturn(raw);
+    // A record discussed without this round's package has no 討論包ID; pasted here, it belongs to this round.
+    const parsed = unfilledId(read.id) ? { ...read, id: round.id, labels: read.labels.every(unfilledId) ? round.sources.map((s) => s.label) : read.labels } : read;
     const checks = checkRefineReturn(parsed, round);
     const rescue = refineRescuePrompt(checks);
     if (!checks.idOk || checks.missing.length) return { saved: false, checks, rescue, view: await view(record) };
@@ -180,6 +185,8 @@ export async function importRefineRound(input: { topic: string; angle: string; c
   if (problem) throw new LearningError(problem, 400);
   if (typeof input.raw !== "string" || !input.raw.trim()) throw new LearningError("請貼上 GPT 收尾時輸出的紀錄。", 400);
   if (input.raw.length > 400_000) throw new LearningError("貼上的內容太長。", 413);
+  const other = wrongPlace(input.raw, "refine");
+  if (other) throw new LearningError(other, 400);
   const sources = await liveSources(input.captureIds);
   const parsed = parseRefineReturn(input.raw);
   const id = newRefineId();

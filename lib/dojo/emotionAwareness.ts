@@ -259,6 +259,8 @@ export function parseAwarenessReturn(raw: string): AwarenessReturn {
       if (current && !buffers.has(current)) buffers.set(current, []);
       continue;
     }
+    // A bracketed heading on its own line (〔回傳核對備註〕) is GPT's own note, not part of the section above it.
+    if (current && current !== "逐字問答" && /^\s*〔[^〕]+〕\s*$/.test(line)) { current = null; continue; }
     if (current) buffers.get(current)!.push(line);
   }
   result.sections = [...buffers.keys()].filter((name) => name !== "識別");
@@ -283,9 +285,9 @@ export function parseAwarenessReturn(raw: string): AwarenessReturn {
   let item: AwarenessUnderstanding | null = null;
   let field: "words" | "tidy" | null = null;
   for (const line of buffers.get("本人理解") ?? []) {
-    const head = line.match(/^\s*#\s*(\d+)\s*[｜|]\s*T(\d+)/i);
+    const head = line.match(/^\s*#\s*([A-Za-z]{0,3})(\d+)\s*[｜|]\s*(?:[^｜|]*[｜|]\s*)?T(\d+)/i);
     if (head) {
-      item = { n: Number(head[1]), turn: Number(head[2]), words: "", tidy: "" };
+      item = { n: head[1] ? result.understandings.length + 1 : Number(head[2]), turn: Number(head[3]), words: "", tidy: "" };
       result.understandings.push(item);
       field = null;
       continue;
