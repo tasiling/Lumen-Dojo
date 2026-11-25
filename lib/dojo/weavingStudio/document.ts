@@ -1,7 +1,7 @@
 const scripts = [
   "data", "app", "shuttle-flow", "diamond-original", "diamond", "media-b", "materials",
   "card-box", "card-discussion", "card-use", "work-cards", "card-links", "related-match", "related-cards",
-  "related-gpt", "workspace", "production"
+  "related-gpt", "workspace", "three-steps", "production"
 ];
 export function studioDocument(realm: "home" | "liao") {
   const title = realm === "home" ? "織光堂" : "聊解室";
