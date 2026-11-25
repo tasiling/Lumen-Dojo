@@ -75,6 +75,24 @@ const DRAFT_MODES={
 function draftCardIds(w) {
   return [...new Set([...(w.cardIds||[]),...shuttleCardIds(findS(w.shuttle))])].filter(id=>sourceCards.has(id));
 }
+/** One card as it is handed to GPT: its words, where it is from, and how it came about. */
+function cardRecordLines(id,i,sh) {
+  const c=sourceCards.get(id), L=[];
+  if(!c)return L;
+  const own=!/GPT/.test(c.author||''), mine=c.quoteLabel==='我的原話', where=[c.source,c.location].filter(Boolean).join(' · ');
+  L.push('K'+(i+1)+'｜'+c.type+(own?'':'｜GPT 延伸，我尚未確認')+'｜'+(c.idea||c.title));
+  if(mine&&c.quote&&c.quote!==c.idea)L.push('我的原話：'+c.quote);
+  L.push('出處：'+(where||'未記載')+(c.author?'（'+c.author+'）':''));
+  // 由來 is wherever the card can be traced back to: the passage that prompted it when there is one, otherwise the source itself.
+  if(c.basis)L.push('由來：我回應這段原文時說的——'+c.basis);
+  else if(!own&&c.quote)L.push('由來：這是 GPT 在討論中說的，不是我的話——「'+c.quote+'」'+(where?'（'+where+'）':''));
+  else if(!mine&&c.quote&&c.quote!==c.idea)L.push('由來：我讀到這段'+(c.quoteLabel||'原文')+'時留下的——「'+c.quote+'」'+(where?'（'+where+'）':''));
+  else if(where)L.push('由來：'+where);
+  const use=(sh?.cardUses||[]).find(u=>cardsInUse(u).includes(id)), why=use?cardUseText(use):'';
+  if(why)L.push('接到這一杼的理由：'+why);
+  if(c.url&&/^https?:/.test(c.url))L.push('原始資料：'+c.url);
+  return L;
+}
 function draftPrompt(w,mode) {
   const sh=findS(w.shuttle), ids=draftCardIds(w), L=[];
   L.push('【織光堂起稿包｜織光起稿/v1】');
@@ -88,22 +106,7 @@ function draftPrompt(w,mode) {
   L.push('');
   L.push('【我的卡片】以下是這件作品可以使用的全部材料。');
   if(!ids.length)L.push('（這一杼還沒有連結卡片。請只根據我接下來的回答整理。）');
-  ids.forEach((id,i)=>{
-    const c=sourceCards.get(id), own=!/GPT/.test(c.author||'');
-    L.push('');
-    L.push('K'+(i+1)+'｜'+c.type+(own?'':'｜GPT 延伸，我尚未確認')+'｜'+(c.idea||c.title));
-    const mine=c.quoteLabel==='我的原話', where=[c.source,c.location].filter(Boolean).join(' · ');
-    if(mine&&c.quote&&c.quote!==c.idea)L.push('我的原話：'+c.quote);
-    L.push('出處：'+(where||'未記載')+(c.author?'（'+c.author+'）':''));
-    // 由來 is wherever the card can be traced back to: the passage that prompted it when there is one, otherwise the source itself.
-    if(c.basis)L.push('由來：我回應這段原文時說的——'+c.basis);
-    else if(!own&&c.quote)L.push('由來：這是 GPT 在討論中說的，不是我的話——「'+c.quote+'」'+(where?'（'+where+'）':''));
-    else if(!mine&&c.quote&&c.quote!==c.idea)L.push('由來：我讀到這段'+(c.quoteLabel||'原文')+'時留下的——「'+c.quote+'」'+(where?'（'+where+'）':''));
-    else if(where)L.push('由來：'+where);
-    const use=(sh?.cardUses||[]).find(u=>cardsInUse(u).includes(id)), why=use?cardUseText(use):'';
-    if(why)L.push('接到這一杼的理由：'+why);
-    if(c.url&&/^https?:/.test(c.url))L.push('原始資料：'+c.url);
-  });
+  ids.forEach((id,i)=>{L.push('');L.push(...cardRecordLines(id,i,sh));});
   L.push('');
   L.push('【正文目前的內容】');
   L.push(w.body.trim()||'（尚未動筆）');
