@@ -31,6 +31,8 @@ export type RefineTurn = { n: number; who: "我" | "GPT"; text: string };
 export type RefineQuote = { label: string; paragraph: number; text: string };
 export type RefineCandidate = {
   n: number; type: string; turn: number; reply: string; words: string; tidy: string; merged: number[];
+  /** The label GPT gave the candidate when it was not a plain number (K1, E2); the candidate is then numbered in order. */
+  tag?: string;
 };
 export type RefineReturn = {
   hasHeader: boolean;
@@ -199,6 +201,8 @@ export function parseRefineReturn(raw: string): RefineReturn {
       if (current && !buffers.has(current)) buffers.set(current, []);
       continue;
     }
+    // A bracketed heading on its own line (〔回傳核對備註〕) is GPT's own note, not part of the section above it.
+    if (current && current !== "逐字問答" && /^\s*〔[^〕]+〕\s*$/.test(line)) { current = null; continue; }
     if (current) buffers.get(current)?.push(line);
   }
   result.sections = [...buffers.keys()];
@@ -226,9 +230,10 @@ export function parseRefineReturn(raw: string): RefineReturn {
   let candidate: RefineCandidate | null = null;
   let field: "原話" | "整理版" | null = null;
   for (const line of buffers.get("候選") ?? []) {
-    const head = line.match(/^\s*#\s*(\d+)\s*[｜|]\s*(.+?)\s*[｜|]\s*T(\d+)\s*$/);
+    const head = line.match(/^\s*#\s*([A-Za-z]{0,3})(\d+)\s*[｜|]\s*(.+?)\s*[｜|]\s*T(\d+)\s*$/);
     if (head) {
-      candidate = { n: Number(head[1]), type: head[2].trim(), turn: Number(head[3]), reply: "", words: "", tidy: "", merged: [] };
+      const tag = head[1] ? head[1].toUpperCase() + head[2] : "";
+      candidate = { n: tag ? result.candidates.length + 1 : Number(head[2]), type: head[3].trim(), turn: Number(head[4]), reply: "", words: "", tidy: "", merged: [], ...(tag ? { tag } : {}) };
       result.candidates.push(candidate);
       field = null;
       continue;

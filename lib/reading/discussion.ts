@@ -199,6 +199,7 @@ const copyId = (value: unknown) => clean(value).toLowerCase().replace(/[‐‑�
 
 export function parseReturnText(raw: string) {
   if (!raw.trim() || raw.length > 170_000) throw Error("請貼上一張完整回傳卡。若對話太長，可以分輪整理。");
+  if (/===\s*野採討論/.test(raw)) throw Error("這是野採淬鍊的回傳紀錄，不是閱讀討論的回傳卡。請到野採素材的「開始淬鍊」頁面貼回。");
   const blocks = [...raw.trim().matchAll(/^```(?:json)?[ \t]*\r?\n([\s\S]*?)^```[ \t]*\r?$/gmi)]
     .map(match => match[1].trim()).filter(block => block.startsWith("{"));
   if (blocks.length > 1) throw Error("請一次貼回一張回傳卡。");
