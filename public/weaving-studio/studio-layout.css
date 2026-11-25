@@ -189,6 +189,7 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .tray-type[data-type="洞察"]{background:#ece4f8}
 .tray-type[data-type="手法觀察"]{background:#faf0da}
 .tray-type[data-type="訪談重點"]{background:#e3f2ed}
+.tray-type[data-type="野採採集"]{background:#fbeee2}
 .tray-meta .tray-owner{background:#fff4ef;color:#8a302c;border:1px solid #ead8cf}
 .tray-meta .tray-used{background:#e6f3ee;color:#2c6b55}
 .tray-card blockquote{margin:0;padding:10px 12px;border-radius:10px;background:#faf0da;font-size:.9rem;line-height:1.7;overflow-wrap:anywhere}

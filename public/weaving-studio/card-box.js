@@ -25,7 +25,7 @@ function updateReading(r, changes) {
 
 function cardSource(card) {
   return more('查看來源與上下文',(card.idea!==card.quote?'<h4>卡片內容</h4><p>'+esc(card.idea)+'</p>':'')+
-    '<h4>'+esc(card.type==='訪談重點'?'出處':'原討論')+'</h4><p class="card-original">'+esc(card.context)+'</p>'+
+    '<h4>'+esc(card.type==='訪談重點'||card.type==='野採採集'?'出處':'原討論')+'</h4><p class="card-original">'+esc(card.context)+'</p>'+
     '<a href="'+esc(card.url)+'" target="_blank" rel="noopener noreferrer">開啟完整來源紀錄</a>');
 }
 function cardPaper(card,showTitle=true) {

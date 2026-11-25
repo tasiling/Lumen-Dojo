@@ -41,7 +41,7 @@ function linkMatches(link: SourceLink, ref: ContentRef): boolean {
     return parts.length === 1 ? sameId(link.id, ref.recordId) : sameId(parts[0], ref.parentBookId ?? '') && sameId(parts[1], ref.recordId);
 }
 async function linkRef(link: SourceLink, deps: Dependencies): Promise<ContentRef | null> {
-    if (!['book', 'reading_note', 'reading_insight', 'knowledge_claim'].includes(link.kind))
+    if (!['book', 'reading_note', 'reading_insight', 'knowledge_claim', 'forage_capture'].includes(link.kind))
         return null;
     if (link.kind === 'reading_note') {
         const parts = link.id.split(':');
@@ -125,7 +125,8 @@ export async function relations(ref: ContentRef, cursor: string | null, owner: s
             const work = await reader.resolve({ kind: 'weaving_work', recordId: item.workId });
             return work ? { ...item, href: `${work.href}&completion=${item.ref.recordId}#completion-${item.ref.recordId}` } : item;
         }
-        if (item.ref.kind !== 'reading_insight')
+        // A 野採淬鍊 card already names its captures; it has no reading note to look up.
+        if (item.ref.kind !== 'reading_insight' || item.sources?.length)
             return item;
         const s = await getInsightCardSource(item.ref.recordId);
         const sources: SourceLink[] = s?.sourceNoteId && item.bookId ? [{ kind: 'reading_note', id: `${item.bookId}:${s.sourceNoteId}`, snapshot: s.sourceText, version: null }] : item.bookId ? [{ kind: 'book', id: item.bookId, snapshot: s?.sourceText ?? '', version: null }] : [];

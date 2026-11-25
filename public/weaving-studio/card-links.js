@@ -82,7 +82,7 @@ function pickShuttleCards(sid) {
       (direct?'':'<div class="link-choice-detail"><blockquote>'+esc(c.quote)+'</blockquote>'+
         '<label>與本杼的關係（選填）<input id="'+esc(noteId)+'"></label></div>')+'</div>';
   }).join('');
-  const kinds=[['','全部'],...['觀點','洞察','訪談重點','待追問'].map(type=>[type,type])];
+  const kinds=[['','全部'],...['觀點','洞察','手法觀察','訪談重點','野採採集','待追問'].map(type=>[type,type])];
   modal('連結既有卡片','<p class="link-subject">'+esc(s.title)+'</p><div class="card-link-picker">'+
     '<div class="card-filters">'+field('搜尋卡片或來源','linkQuery','',false,'type="search" placeholder="原話、書名或想法"')+
     shuttleSelect('linkKind','類型',kinds,'')+'</div>'+

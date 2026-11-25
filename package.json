@@ -11,6 +11,7 @@
     "start": "node scripts/setup-line-rich-menu.mjs --allow-failure && next start",
     "line:rich-menu": "node scripts/setup-line-rich-menu.mjs",
     "test:english-images": "node scripts/test-english-image-completion.mjs && node scripts/test-line-image-storage.mjs && node scripts/test-line-image-webhook.mjs && node scripts/test-game-screen-analysis.mjs && node scripts/test-game-source-handoff.mjs && node scripts/test-line-game-learning.mjs",
+    "test:insight-use": "node --experimental-strip-types --test tests/insight-use.test.mjs",
     "test:emotion-awareness": "node --experimental-strip-types --test tests/emotion-awareness.test.mjs",
     "test:auto-unit": "node --experimental-strip-types --test tests/english-image-auto-unit.test.mjs",
     "test:unit-arrangement": "node scripts/test-unit-arrangement.mjs && node scripts/test-unit-arrangement-contract.mjs && node scripts/test-unit-arrangement-completed-retry.mjs",

@@ -1,4 +1,5 @@
 import { sourcePolicies } from '../creativeSources/store';
+import { insightMark, insightSourceText, insightUsable } from '@/lib/reading/insightUse';
 import 'server-only';
 import { createKnowledgeEntry, updateKnowledgeEntry } from '@/lib/notion/mutations';
 import { getKnowledgeEntry, listInsightCards, listPlurkDrafts, listReadingBooks } from '@/lib/notion/queries';
@@ -85,13 +86,13 @@ async function initialSource(body: Body) {
             throw new WeavingError('閱讀洞察識別不正確');
         const [cards, books] = await Promise.all([listInsightCards(), listReadingBooks()]);
         const selected = ids.map(id => cards.find(c => c.id === id));
-        if (selected.some(c => !c || !['已驗證', '不成立'].includes(c.status)))
-            throw new WeavingError('只能使用已驗證或不成立的閱讀洞察', 409);
+        if (selected.some(c => !c || !insightUsable(c)))
+            throw new WeavingError('已放棄的閱讀洞察不能用於作品', 409);
         const resolver = productionSources();
         const requests = await Promise.all(ids.map(async (id) => { const c = await resolver.get('reading_insight', id); if (!c)
             throw new WeavingError('閱讀洞察無法選摘', 409); return { sourceType: 'reading_insight' as const, sourceId: id, sourceVersion: c.version, start: 0, end: c.text.length, contentKind: c.contentKind }; }));
         const sourceSelections = await resolveSelections(requests);
-        return { sourceSelections, sourceType: 'reading_insights', sourceId: ids[0], sourceRefs: ids.map(sourceId => ({ sourceType: 'reading_insight', sourceId })), sourceSnapshot: selected.map(c => `${c!.insight}\n行動：${c!.action}\n來源：${books.find(b => b.id === c!.sourceBookId)?.title ?? '閱讀洞察'}`).join('\n\n'), title: selected[0]!.insight.slice(0, 80) };
+        return { sourceSelections, sourceType: 'reading_insights', sourceId: ids[0], sourceRefs: ids.map(sourceId => ({ sourceType: 'reading_insight', sourceId })), sourceSnapshot: selected.map(c => c!.refine ? `${insightSourceText(c!)}\n標記：${insightMark(c!)}` : `${c!.insight}\n行動：${c!.action}\n來源：${books.find(b => b.id === c!.sourceBookId)?.title ?? '閱讀洞察'}\n標記：${insightMark(c!)}`).join('\n\n'), title: selected[0]!.insight.slice(0, 80) };
     }
     if (body.sourceType !== undefined && body.sourceType !== 'manual')
         throw new WeavingError('來源種類不正確');
