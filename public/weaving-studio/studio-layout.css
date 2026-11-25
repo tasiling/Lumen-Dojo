@@ -231,3 +231,25 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .tool-pick pre{margin:0;padding:12px;border-radius:10px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:.85rem;line-height:1.7;max-height:340px;overflow-y:auto}
 @media(min-width:700px){.tool-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tray-type[data-type="覺察"]{background:#e8eef9}
+
+/* 織光杼的工具 */
+.shuttle-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.shuttle-tool{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:64px;padding:10px 12px;border-radius:12px;text-align:left;background:var(--soft);border:1px solid var(--line)}
+.shuttle-tool b{font-size:.95rem}
+.shuttle-tool small{font-size:.75rem;color:var(--muted);line-height:1.4}
+.rel-kind{display:inline-block;padding:1px 9px;border-radius:7px;font-size:.78rem;background:#faf0da}
+.rel-kind[data-kind="互補"]{background:#e6f3ee;color:#2c6b55}
+.rel-kind[data-kind="分歧"]{background:#fff4ef;color:#8a302c}
+.brain-text{margin:0;padding:12px;border-radius:10px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:.88rem;line-height:1.7;max-height:320px;overflow-y:auto}
+#dialog fieldset{border:0;padding:0;margin:10px 0;display:grid;gap:6px}
+#dialog fieldset legend{font-weight:700;margin-bottom:6px}
+#dialog label.check{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+#dialog label.check input{margin-top:4px;width:18px;height:18px;flex:none}
+#dialog label.check span{display:grid;gap:2px;min-width:0}
+#dialog label.check small{color:var(--muted);font-size:.8rem}
+.tool-pick-row p{margin:2px 0 0;font-size:.88rem}
+#dialog textarea#shuttleToolPrompt{width:100%;font-size:.85rem}
+.mindmap-tree{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;max-height:50vh;overflow:auto}
+.mindmap-tree ul{margin:4px 0 6px;padding-left:18px}
+.mindmap-tree summary{font-weight:600}
+.mindmap-tree li{margin:3px 0;overflow-wrap:anywhere}
