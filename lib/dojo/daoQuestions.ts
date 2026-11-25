@@ -159,14 +159,16 @@ export function parseDaoReturn(raw: string): DaoReturn {
     if (mark) { section = mark[1].replace(/\s+/g, ""); continue; }
     const body = line.trim();
     if (!body || body === "無") continue;
-    const id = body.match(/^問題編號\s*[：:]\s*(\S+)/);
-    if (id) { out.id = id[1]; continue; }
+    const id = body.match(/^問題編號\s*[：:]\s*(.*)$/);
+    // Left unfilled when GPT never received the package (待補 and the like); it then belongs where it is pasted.
+    if (id) { out.id = /^[\w-]+$/.test(id[1].trim()) && !/待補|未取得/.test(id[1]) ? id[1].trim() : ""; continue; }
+    if (/^〔[^〕]+〕$/.test(body)) { section = ""; continue; }
     if (section === "我說過的話") {
       const m = body.match(/^T(\d+)\s*[｜|]\s*(.+)$/);
       if (m) out.said.push({ n: Number(m[1]), text: m[2].trim() });
     } else if (section === "候選理解") {
-      const m = body.match(/^#\s*(\d+)\s*[｜|]\s*(?:用到\s*([^｜|]*)[｜|])?\s*(.+)$/);
-      if (m) out.candidates.push({ n: Number(m[1]), uses: (m[2] ?? "").trim(), text: m[3].trim() });
+      const m = body.match(/^#\s*([A-Za-z]{0,3})(\d+)\s*[｜|]\s*(?:用到\s*([^｜|]*)[｜|])?\s*(.+)$/);
+      if (m) out.candidates.push({ n: m[1] ? out.candidates.length + 1 : Number(m[2]), uses: (m[3] ?? "").trim(), text: m[4].trim() });
     } else if (section === "這次為什麼改變") out.why.push(body.replace(/^[-・•]\s*/, ""));
     else if (section === "GPT的推論") out.gpt.push(body.replace(/^[-・•]\s*/, ""));
   }

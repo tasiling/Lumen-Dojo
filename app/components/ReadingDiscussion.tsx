@@ -172,7 +172,8 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
     void act<Change>({ action: "prepare", noteId: selected.id, scope: selectedScope, starter, question, method, compareNoteId: compare?.id ?? "", compareBookId: compare ? compareBookId : "" }, receive);
   };
 
-  const checkCard = () => void act<ReturnPreview>({ action: "preview", raw }, setPreview);
+  // A card discussed without a package from here is stored on the note selected above.
+  const checkCard = () => void act<ReturnPreview>({ action: "preview", raw, noteId: selected?.id ?? "", scope: selectedScope }, setPreview);
   function saveCard() {
     if (!preview) return;
     const target = preview.ref.bookId;
@@ -185,7 +186,7 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
       }
       return;
     }
-    void act<Change>({ action: "save", raw }, change => {
+    void act<Change>({ action: "save", raw, noteId: selected?.id ?? "", scope: selectedScope }, change => {
       changeRaw("");
       if (change.ref && change.ref.bookId !== bookId) window.location.assign(discussionHref(change.ref, preview.source.noteId));
       else receive(change);
@@ -292,6 +293,7 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
     }}>{data?.pinnedRoundId === shown.id ? "從首頁收起" : "下次接著談"}</button>}
     <details className="reading-discussion-fold" open={hasActivePacket || !!raw}>
       <summary>貼回問答</summary>
+      <p className="reading-method-hint">直接和 GPT 討論完、回傳卡裡沒有討論識別的，會存到上方選擇的閱讀筆記。</p>
       <label>GPT 回傳卡<textarea className="field" rows={5} value={raw} onChange={event => changeRaw(event.target.value)} /></label>
       <button type="button" disabled={busy || !raw.trim()} onClick={checkCard}>核對回傳卡</button>
       {preview && <div className="reading-discussion-block">
