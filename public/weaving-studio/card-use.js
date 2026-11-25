@@ -33,7 +33,6 @@ function stageCardUse(kind,id,fid,sid) {
     f.cardDrafts.push(prior?{...prior,supportsCore:false}:{...ref,entryId:r?r.cardIds[0]:id,note:'',supportsCore:false});
   }
   if(sid&&f.baseCore===undefined)f.baseCore=findS(sid).core;
-  if(f.scope==='只帶我的想法')f.scope='帶上這次的卡片整理';
   f.cardMode='topic';f.touched=true;save();
   if(!storageOK){shuttleForges()[f.id]=before;return;}
   go('forge/'+f.id);
@@ -123,15 +122,6 @@ function shuttleCardsPanel(s) {
     '<p>這把杼還沒有連結卡片。</p>')+
     (pairs?more('查看已連結的並讀整理',pairs):'')+
     btn('從並讀整理選用','cardsForShuttle',[s.id],'link'));
-}
-function forgeCardSources(f) {
-  return (f.cardDrafts||[]).map(use=>{
-    const cards=cardsInUse(use).map(id=>sourceCards.get(id));
-    const r=getReading(use.readingId);
-    return [...cards.map(c=>[c.source+' '+c.location+'｜'+c.author,c.quote].join('\n')),
-      r?.saved?.reason&&'已保存的連結理由｜'+r.saved.reason,r?.saved?.question&&'待釐清｜'+r.saved.question,
-      use.note&&'我在這把杼想談的事｜'+use.note].filter(Boolean).join('\n');
-  }).join('\n\n');
 }
 function shuttleCardIds(s) {
   return [...new Set((s?.cardUses||[]).flatMap(cardsInUse))].filter(id=>sourceCards.has(id));

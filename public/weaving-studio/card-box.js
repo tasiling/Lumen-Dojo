@@ -87,14 +87,14 @@ function materialReadingEntry(fid) {
 function cardIndexPage(fid,anchorId) {
   const anchor=sourceCards.get(anchorId);
   if(anchorId&&!anchor) return missing();
-  const parent=anchor?readingPath('card',anchor.id,fid):fid?'forge/'+fid:'home';
-  return page(anchor?'選另一張卡':'觀點與洞察',anchor?'和「'+anchor.title+'」一起讀':'',
-    (anchor?'':'<div class="rel-index-action">'+btn('替織光杼找相關卡片','chooseRelatedShuttle',[fid],'light')+'</div>'+
-      recentReadings(fid)+materialReadingEntry(fid))+
-    panel(anchor?'可以接哪一張？':'從一張卡開始','<div class="card-filters">'+
+  if(anchor) return pairFinderPage(fid,anchor);
+  return page('觀點與洞察','',
+    '<div class="rel-index-action">'+btn('替織光杼找相關卡片','chooseRelatedShuttle',[fid],'light')+'</div>'+
+      recentReadings(fid)+materialReadingEntry(fid)+
+    panel('從一張卡開始','<div class="card-filters">'+
       field('找卡片或來源','cardQuery','',false,'type="search" placeholder="輸入原話、書名或想法"')+
-      shuttleSelect('cardKind','類型',[['','全部'],...['觀點','洞察','訪談重點','待追問'].map(t=>[t,t])],'')+
-      '</div><div id="sourceCardList">'+cardListRows(fid,anchorId)+'</div>'),parent,anchor?'回到第一張卡':fid?'打造織光杼':'織光堂');
+      shuttleSelect('cardKind','類型',cardTypeOptions(),'')+
+      '</div><div id="sourceCardList">'+cardListRows(fid,'')+'</div>'),fid?'forge/'+fid:'home',fid?'打造織光杼':'織光堂');
 }
 function cardDetail(id,fid) {
   const card=sourceCards.get(id);
@@ -143,8 +143,10 @@ function pairPage(r,fid,editing) {
   const pair='<div class="reading-pair">'+cards.map(c=>cardPaper(c)).join('')+'</div>';
   if(editing) {
     const tools=btn(r.round?.candidate?'核對 GPT 的建議':r.round?'繼續與 GPT 並讀':'請 GPT 協助並讀','pairGPT',[r.id],'light');
-    return page('並讀兩張卡',label,pair+panel('你看見什麼關係？',
+    const hint=r.suggestion?'<p class="note pair-suggest"><b>'+esc(r.suggestion.method==='GPT 建議'?'GPT 的候選':'系統比對')+'：'+esc(r.suggestion.relation)+'</b>　'+esc(r.suggestion.detail)+'<br><small>這只是候選，兩張是什麼關係由你判斷。</small></p>':'';
+    return page('並讀兩張卡',label,pair+panel('你看見什麼關係？',hint+
       '<p class="pair-instruction">留下連結理由或一個待釐清的問題，就能保存。</p>'+
+      shuttleSelect('pairRelation','這兩張是什麼關係？（選填）',[['','還沒判斷'],...PAIR_RELATION_NAMES.map(n=>[n,n])],r.relation||'','data-pair-field="relation"')+
       field('為什麼把這兩張卡放在一起？','pairReason',r.reason,true,'data-pair-field="reason"')+
       field('還想釐清什麼？','pairQuestion',r.question,true,'data-pair-field="question"')+
       '<div class="actions">'+btn('保存這段整理','saveReading',[r.id,fid],'primary')+tools+'</div>')+readingManage(r,fid),
@@ -158,6 +160,7 @@ function pairPage(r,fid,editing) {
     'layers','go',['shuttle/'+s.id])).join('');
   const sources=cards.map(c=>row(c.title,c.source+' '+c.location,'book','go',[readingPath('card',c.id,fid)])).join('');
   return page('已保存的整理',label,panel('這兩張為什麼放在一起',
+    (r.saved.relation?'<p><span class="pair-method">'+esc(r.saved.relation)+'</span></p>':'')+
     (r.saved.reason?'<p class="reading-reason">'+esc(r.saved.reason)+'</p>':'')+
     (r.saved.question?'<p class="reading-open"><b>待釐清</b> '+esc(r.saved.question)+'</p>':'')+
     (r.saved.evidence?.length?more('當時核對的兩段引文',r.saved.evidence.map(e=>
@@ -188,7 +191,7 @@ function filterCardList() {
 document.addEventListener('input',e=>{
   if(e.target.id==='cardQuery')filterCardList();
   const prop=e.target.dataset.pairField;
-  if(route==='compare'&&['reason','question'].includes(prop)) {
+  if(route==='compare'&&['reason','question','relation'].includes(prop)) {
     const r=getReading(args[0]);
     if(r)updateReading(r,{[prop]:e.target.value});
   }
@@ -218,9 +221,9 @@ Object.assign(handlers,{
   saveReading:(id,fid)=>{
     const r=getReading(id);
     if(!r)return;
-    const reason=val('pairReason'),question=val('pairQuestion');
+    const reason=val('pairReason'),question=val('pairQuestion'),relation=PAIR_RELATION_NAMES.includes(val('pairRelation'))?val('pairRelation'):'';
     if(!reason&&!question){toast('請留下一句連結理由，或記下哪裡還想不通');$('pairReason')?.focus();return;}
-    if(updateReading(r,{reason,question,saved:{reason,question,time:Date.now(),evidence:r.reviewedEvidence||[]}})){
+    if(updateReading(r,{reason,question,relation,saved:{reason,question,relation,time:Date.now(),evidence:r.reviewedEvidence||[]}})){
       go(readingPath('reading',id,fid));toast('已保存這段整理');
     }
   }

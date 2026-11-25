@@ -202,11 +202,12 @@ function sfDiscussion(f, expanded=false) {
     (r.source?'<p>來源 · '+esc(r.sourceName)+'<br>'+esc(r.source)+'</p>':'')+
     '<div data-round-review="'+esc(r.id)+'">'+sfReviewRound(f,r)+'</div>')).join(''):'';
   return panel('與 GPT 討論',history+'<details'+(expanded?' open':'')+'><summary>準備新一輪討論</summary>'+
-    '<div id="forgeMaterials">'+materialPicker('forge',availableMaterials,'從已有素材挑選')+'</div>'+
+    '<div id="forgeMaterials">'+forgeMaterialsHtml(f)+'</div>'+
     pick('這輪想釐清什麼','sfTask',Object.keys(sfDiscussionGoals),f.task,'data-sf="task"')+
     '<p class="note" aria-live="polite"><strong>這輪談到哪裡就夠了？</strong><br><span id="sfGoal">'+esc(sfDiscussionGoals[f.task]||'')+'</span></p>'+
+    '<div id="sfMethod" aria-live="polite">'+forgeMethodHtml(f)+'</div>'+
     field('我目前的想法','sfNote',f.note,true,'data-sf="note"')+
-    pick('這次想帶哪一部分？','sfScope',['只帶我的想法','加上選定的來源','加上目前經線與方向',...(f.cardDrafts?.length?['帶上這次的卡片整理']:[])],f.scope,'data-sf="scope"')+
+    shuttleSelect('sfScope','除了帶入的卡片，還想附上什麼？',[['只帶我的想法','不另外附上'],['加上選定的來源','加上一段來源（書摘、野採摘錄或作品片段）'],['加上目前經線與方向','加上目前經線與方向']],f.scope==='帶上這次的卡片整理'?'只帶我的想法':f.scope,'data-sf="scope"')+
     '<div id="sfSourceBox"'+(f.scope==='加上選定的來源'?'':' hidden')+'>'+
     field('來源（閱讀筆記、野採摘錄或作品）','sfSourceName',f.sourceName,false,'data-sf="sourceName"')+
     field('我選定的片段','sfSource',f.source,true,'data-sf="source"')+'</div>'+
@@ -277,6 +278,10 @@ const sfShuttleRules = [
   '立杼、作品歸杼、作品採用某方向的某版理解，分別由本人決定。從五種成品形式開始時先匹配杼；作品可以只歸杼，暫不採用方向。理解更新保留舊版；已定稿作品採用哪一版，看它當時保存的快照。衍生作品另記來源作品與版本。',
   '只用與本輪目標有關的判準。說清候選內容該放在哪裡及理由；已有題目就能收尾，毋須逐項訪問或填滿整張杼。'
 ];
+function sfScopeLabel(r) {
+  const cards=forgeCardIds(shuttleForges()[r.forgeId]).length?'帶入的卡片、':'';
+  return {只帶我的想法:cards+'我的想法',帶上這次的卡片整理:cards+'我的想法',加上選定的來源:cards+'我的想法與選定的來源',加上目前經線與方向:cards+'我的想法與目前經線、方向'}[r.scope]||r.scope;
+}
 function sfPrompt(r) {
   return [
     '這是一輪織光杼討論。這輪的目標：'+r.task+'。開始方式：'+r.start+'。',
@@ -288,7 +293,7 @@ function sfPrompt(r) {
     '保留我本人語氣；把我的話、引用來源和你的候選分開。資料不足時留空。我的問題：'+(r.question||r.task),
     ...(r.draftTitle?['暫定杼名：'+r.draftTitle]:[]),
     '我的想法：'+(r.note||'尚未填寫'),
-    '我這輪選擇的範圍：'+r.scope,
+    '我這輪選擇的範圍：'+sfScopeLabel(r),
     ...(r.source?['來源：'+r.sourceName,r.source]:[]),
     '討論過程自然對話。我確認要整理回織光堂時，只回傳以下 JSON 結構；kind、forgeId、roundId 請照抄。authorQuotes 是本人說過的原句；directions 是問題字串陣列。我的採用決定會在織光堂另行確認。',
     JSON.stringify(sfRoundFormat(r),null,2)
@@ -296,7 +301,9 @@ function sfPrompt(r) {
 }
 
 function sfOpenRound(f,r) {
+  const method=forgeMethod(r.task,forgeReadingContext(f));
   modal('本輪 GPT 討論包',
+    (method?'<p class="note"><b>這輪的讀法：'+esc(method.skill)+'</b><br>'+esc(method.summary)+'</p>':'')+
     more('查看織光杼規範',sfShuttleRules.slice(1).map(line=>'<p>'+esc(line)+'</p>').join(''))+
     packetControls('複製後貼到 GPT','sfPacket',sfPrompt(r),'複製討論包','sfCopyRound')+
     field('貼回本輪結束時的 JSON 回覆','sfRaw',r.raw||'',true,'data-sf-round="'+esc(r.id)+'"')+
@@ -417,6 +424,7 @@ document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='sfDirectionSelect')sfChooseDirection(el.dataset.match,el.dataset.shuttle,el.value);
   if(el.id==='sfTask'&&$('sfGoal'))$('sfGoal').textContent=sfDiscussionGoals[el.value]||'';
+  if(el.id==='sfTask'&&$('sfMethod')){const f=shuttleForges()[args[0]];if(f)$('sfMethod').innerHTML=forgeMethodHtml({...f,task:el.value});}
   if(el.id==='sfScope'&&$('sfSourceBox'))$('sfSourceBox').hidden=el.value!=='加上選定的來源';
 });
 
@@ -452,7 +460,7 @@ Object.assign(handlers,{
   sfGenerate:id=>{
     const f=shuttleForges()[id],s=findS(f.target);
     if(!f || f.done)return;
-    if(![f.note,f.title,f.question,f.scope==='加上選定的來源'&&f.source,f.scope==='加上目前經線與方向'&&f.core,f.scope==='帶上這次的卡片整理'&&forgeCardSources(f)].some(x=>typeof x==='string'&&x.trim())){
+    if(![f.note,f.title,f.question,f.scope==='加上選定的來源'&&f.source,f.scope==='加上目前經線與方向'&&f.core,forgeCardIds(f).length?'卡片':''].some(x=>typeof x==='string'&&x.trim())){
       toast('請留下一句自己的想法、問題或選定的來源');return;
     }
     let source='',sourceName='';
@@ -464,7 +472,7 @@ Object.assign(handlers,{
       source=[f.core,...(s?.dirs||[]).map(d=>d.name+(d.vs.length?' · '+d.vs.at(-1):'')),...f.directions.map(sfDirectionLabel)].filter(Boolean).join('\n');
       sourceName='目前整理的織光經線與方向';
     }
-    if(f.scope==='帶上這次的卡片整理'){source=forgeCardSources(f);sourceName='這次選定的卡片、連結與待釐清處';}
+    // 帶入的卡片與連結說明一律放進討論包（見 shuttle-tools.js），這裡不再重複附上。
     const r={id:uid(),forgeId:id,task:f.task,question:f.question,note:f.note,draftTitle:f.title,start:f.start,scope:f.scope,source,sourceName,time:Date.now(),raw:'',applied:''};
     f.rounds.push(r);f.touched=true;save();render();sfOpenRound(f,r);
   },
