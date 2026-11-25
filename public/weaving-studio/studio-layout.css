@@ -230,3 +230,4 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .tool-pick select,.tool-pick input{width:100%}
 .tool-pick pre{margin:0;padding:12px;border-radius:10px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:.85rem;line-height:1.7;max-height:340px;overflow-y:auto}
 @media(min-width:700px){.tool-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tray-type[data-type="覺察"]{background:#e8eef9}

@@ -6217,3 +6217,6 @@
 .dojo .awareness-filter { display:grid;gap:10px; }
 .dojo .awareness-filter label { display:grid;gap:4px;font-size:13px;min-width:0; }
 .dojo .awareness-dates { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+/* 從閱讀卡與覺察紀錄帶去織光堂 */
+.dojo .awareness-weave,.dojo .reading-weave-link { display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface,#fff);color:inherit;font-size:.875rem;text-decoration:none;font-weight:600 }
+.dojo .awareness-block.is-saved li { display:grid;gap:6px;margin-bottom:10px }

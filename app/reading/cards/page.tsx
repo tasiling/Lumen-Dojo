@@ -317,6 +317,7 @@ function LibraryCard({
       {selectable && <button className={selected ? "reading-select-card on" : "reading-select-card"} onClick={() => onSelect?.(card.id)}>{selected ? "已選入企劃" : "選入內容企劃"}</button>}
       <button disabled={sourceLoading} onClick={() => void toggleSource()}>{sourceLoading ? "讀取來源…" : sourceOpen ? "收起來源" : "查看來源"}</button>
       <button onClick={() => setOrganizing((value) => !value)}>整理標籤</button>
+      <a className="reading-weave-link" href={`/weaving/studio#card/insight:${card.id}`}>帶去織光堂，做成織光杼</a>
       {stuck && <button className="danger" onClick={() => setStuckPanel((value) => !value)}>處理卡住狀態</button>}
     </div>
 
