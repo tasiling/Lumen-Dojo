@@ -6,7 +6,8 @@ import { mapReadingBook, mapInsightCard, mapKnowledge } from '@/lib/notion/queri
 import { parseStoredReadingNote } from '@/lib/reading/notes';
 import { readingNoteContent } from '@/lib/reading/content';
 import { normalizeKnowledgeClaim, currentClaimVersion, KNOWLEDGE_CLAIM_TITLE_PREFIX } from '../knowledgeClaims';
-import { WEAVING_WORK_TITLE_PREFIX, COMPLETION_TITLE_PREFIX } from '../formal';
+import { WEAVING_WORK_TITLE_PREFIX, COMPLETION_TITLE_PREFIX, CAPTURE_TITLE_PREFIX, normalizeCaptureEntry } from '../formal';
+import { insightMark, insightSourceText } from '@/lib/reading/insightUse';
 import { parseRef, contentHref, contentKey, sameId, type ContentItem, type ContentKind, type ContentRef, type SourceLink } from './model';
 export type SourceBatch = {
     items: ContentItem[];
@@ -21,7 +22,7 @@ type Options = {
     includeHistory?: boolean;
     bookId?: string;
 };
-const prefixes: Partial<Record<ContentKind, string>> = { knowledge_claim: KNOWLEDGE_CLAIM_TITLE_PREFIX, weaving_work: WEAVING_WORK_TITLE_PREFIX, completion: COMPLETION_TITLE_PREFIX };
+const prefixes: Partial<Record<ContentKind, string>> = { knowledge_claim: KNOWLEDGE_CLAIM_TITLE_PREFIX, weaving_work: WEAVING_WORK_TITLE_PREFIX, completion: COMPLETION_TITLE_PREFIX, forage_capture: CAPTURE_TITLE_PREFIX };
 const version = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const listQuery = (data_source_id: string, start_cursor?: string, filter?: Parameters<ReturnType<typeof notion>['dataSources']['query']>[0]['filter']) => withNotionRateLimit(() => notion().dataSources.query({ data_source_id, start_cursor, page_size: 20, filter, sorts: [{ timestamp: 'created_time', direction: 'ascending' }] }));
 function item(ref: ContentRef, title: string, text: string, status: string, locator = '', extra: Partial<ContentItem> = {}): ContentItem { return { ref, title, text, status, locator, href: contentHref(ref), sourceVersion: version([text, locator, status]), originalTopics: [], ...extra }; }
@@ -36,6 +37,12 @@ function pageItems(raw: unknown, kind: ContentKind, options: Options = {}): Cont
     }
     if (kind === 'reading_insight') {
         const c = mapInsightCard(p);
+        // A 野採淬鍊 card shows the owner's words and the line they answer, and points back to its captures.
+        if (c.refine)
+            return [item({ kind, recordId: c.id }, c.insight, insightSourceText(c), c.status, insightMark(c), {
+                    originalTopics: c.topics,
+                    sources: c.refine.captureIds.map(id => ({ kind: 'forage_capture', id, snapshot: c.refine!.quote, version: null, label: '來源採集', context: c.refine!.discussion.split('\n')[0]?.slice(0, 80) || '野採淬鍊' })),
+                })];
         return [item({ kind, recordId: c.id }, c.insight, `${c.insight}\n行動：${c.action}\n結果：${c.result}`, c.status, '閱讀洞察', { bookId: c.sourceBookId ?? undefined, originalTopics: c.topics })];
     }
     const row = mapKnowledge(p);
@@ -47,6 +54,13 @@ function pageItems(raw: unknown, kind: ContentKind, options: Options = {}): Cont
     }
     catch {
         return [];
+    }
+    if (kind === 'forage_capture') {
+        const c = normalizeCaptureEntry(v, { id: row.id });
+        if (!c)
+            return [];
+        const text = [c.forageSummary, c.excerpt, c.note].filter(Boolean).join('\n\n');
+        return [item({ kind, recordId: c.id }, c.title, text, c.status, c.clip.platform || c.sourceLocator || '野採', {})];
     }
     if (kind === 'knowledge_claim') {
         const c = normalizeKnowledgeClaim(v, { id: row.id });
@@ -213,5 +227,5 @@ export function productionAdapters(options: Options = {}): Record<ContentKind, S
             const complete = !s.books.length && s.booksDone;
             return { items, next: complete ? null : JSON.stringify(s), complete, readAt: new Date().toISOString() };
         } };
-    return { book: regular('book'), reading_note: notes, reading_insight: regular('reading_insight'), knowledge_claim: regular('knowledge_claim'), weaving_work: regular('weaving_work'), completion: regular('completion') };
+    return { book: regular('book'), reading_note: notes, reading_insight: regular('reading_insight'), knowledge_claim: regular('knowledge_claim'), weaving_work: regular('weaving_work'), completion: regular('completion'), forage_capture: regular('forage_capture') };
 }

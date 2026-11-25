@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { insightMark, insightUsable } from "@/lib/reading/insightUse";
 import { CAPTURE_TITLE_PREFIX, WEAVING_PROJECT_TITLE_PREFIX, normalizeCaptureEntry, parseJson } from "@/lib/dojo/formal";
 import { normalizeWeavingProject, weavingProjectContent, weavingProjectRecordTitle, type WeavingSourceRef } from "@/lib/dojo/weavingProjects";
 import { archiveJsonRecordById, listJsonRecords, updateJsonRecordById } from "@/lib/dojo/notionStore";
@@ -35,8 +36,8 @@ async function readingSource(ids: string[]) {
   const cardMap = new Map(cards.map((card) => [card.id, card]));
   const bookMap = new Map(books.map((book) => [book.id, book.title]));
   const selected = ids.map((id) => cardMap.get(id));
-  if (!ids.length || selected.some((card) => !card || (card.status !== "已驗證" && card.status !== "不成立"))) {
-    throw new Error("只能使用已驗證或不成立的閱讀洞察");
+  if (!ids.length || selected.some((card) => !card || !insightUsable(card))) {
+    throw new Error("已放棄的閱讀洞察不能用於作品");
   }
   return {
     sourceType: "reading_insights",
@@ -45,7 +46,7 @@ async function readingSource(ids: string[]) {
     sourceSnapshot: selected.map((card, index) => {
       if (!card) return "";
       const book = card.sourceBookId ? bookMap.get(card.sourceBookId) : null;
-      return `${index + 1}. ${card.insight}\n行動化：${card.action || "未填"}${book ? `\n來源書籍：${book}` : ""}`;
+      return `${index + 1}. ${card.insight}\n行動化：${card.action || "未填"}${book ? `\n來源書籍：${book}` : ""}\n標記：${insightMark(card)}`;
     }).filter(Boolean).join("\n\n"),
     fallbackTitle: selected[0]?.insight.slice(0, 80) || "閱讀洞察企劃",
   };

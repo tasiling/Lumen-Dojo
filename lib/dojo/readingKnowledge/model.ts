@@ -1,5 +1,5 @@
 import { LearningError, uuidPattern } from '../learningFoundation/model';
-export const CONTENT_KINDS = ['book', 'reading_note', 'reading_insight', 'knowledge_claim', 'weaving_work', 'completion'] as const;
+export const CONTENT_KINDS = ['book', 'reading_note', 'reading_insight', 'knowledge_claim', 'weaving_work', 'completion', 'forage_capture'] as const;
 export type ContentKind = typeof CONTENT_KINDS[number];
 export type ContentRef = {
     kind: ContentKind;
@@ -51,10 +51,12 @@ export function contentHref(ref: ContentRef): string {
         return `/reading/cards?card=${id}`;
     if (r.kind === 'knowledge_claim')
         return `/dao/knowledge?claim=${id}`;
+    if (r.kind === 'forage_capture')
+        return `/forage/captures?captureId=${id}`;
     return '/weaving';
 }
-export const KIND_LABELS: Record<ContentKind, string> = { book: '書籍讀次', reading_note: '閱讀筆記', reading_insight: '閱讀洞察', knowledge_claim: '知識主張', weaving_work: '作品', completion: '成品版本' };
+export const KIND_LABELS: Record<ContentKind, string> = { book: '書籍讀次', reading_note: '閱讀筆記', reading_insight: '閱讀洞察', knowledge_claim: '知識主張', weaving_work: '作品', completion: '成品版本', forage_capture: '野採採集' };
 export function normalizeId(id: string): string { return id.replaceAll('-', '').toLowerCase(); }
 export function sameId(a: string, b: string): boolean { return normalizeId(a) === normalizeId(b); }
 
-export function contentStatusLabel(status:string):string {return ({excerpt:"原文摘錄",thought:"我的想法",free:"自由筆記",preview:"讀前提問",review:"讀後回顧",understanding:"個人理解",candidate:"候選",active:"目前採用",partial:"部分支持",disputed:"仍有爭議",refuted:"已反證",superseded:"已被取代",archived:"已封存"} as Record<string,string>)[status]??status;}
+export function contentStatusLabel(status:string):string {return ({pending:"待整理",adopted:"已採用",faded:"已淡去",excerpt:"原文摘錄",thought:"我的想法",free:"自由筆記",preview:"讀前提問",review:"讀後回顧",understanding:"個人理解",candidate:"候選",active:"目前採用",partial:"部分支持",disputed:"仍有爭議",refuted:"已反證",superseded:"已被取代",archived:"已封存"} as Record<string,string>)[status]??status;}

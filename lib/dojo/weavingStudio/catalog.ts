@@ -1,4 +1,5 @@
 import "server-only";
+import { insightMark, insightUsable } from "@/lib/reading/insightUse";
 import { listReadingBooks, listInsightCards } from "@/lib/notion/queries";
 import { listManualCards, listStudioDiscussions } from "@/lib/reading/discussionStore";
 import { discussionHref, evidenceFor } from "@/lib/reading/discussion";
@@ -53,27 +54,29 @@ export async function studioCards() {
   }
   const bookNames=new Map(books.map(b=>[b.id,b.title]));
   for(const c of insights){
-    if(handled.has(c.id) || blocked("reading_insight",c.id) || !c.insight)continue;
+    if(handled.has(c.id) || blocked("reading_insight",c.id) || !c.insight || !insightUsable(c))continue;
     if(c.refine){
       // A 野採淬鍊 card: its own type, the owner's verbatim words, and the original line it answers.
       const words=c.refine.words||c.insight;
       cards.push({id:"insight:"+c.id,title:shortTitle(c.insight),type:c.refine.cardType||"洞察",idea:c.insight,quote:words,
-        source:"野採淬鍊",location:c.refine.discussion,author:"本人原話",quoteLabel:"我的原話",
+        source:"野採淬鍊",location:c.refine.discussion,author:insightMark(c),quoteLabel:"我的原話",
         sourceKey:"insight:"+c.id,context:[words,c.refine.quote].filter(Boolean).join("\n"),url:sourceHref({sourceType:"reading_insight",sourceId:c.id}),
         ...(c.refine.quote?{basis:c.refine.quote}:{})});
       continue;
     }
     cards.push({id:"insight:"+c.id,title:shortTitle(c.insight),type:"洞察",idea:c.insight,quote:c.insight,
-      source:bookNames.get(c.sourceBookId??"")||"心知洞察卡",location:c.status,author:"已留存的洞察卡",quoteLabel:"卡片原文",
+      source:bookNames.get(c.sourceBookId??"")||"心知洞察卡",location:c.status,author:insightMark(c),quoteLabel:"卡片原文",
       sourceKey:"insight:"+c.id,context:[c.insight,c.action].filter(Boolean).join("\n"),url:sourceHref({sourceType:"reading_insight",sourceId:c.id})});
   }
   for(const row of captures){
     const c=normalizeCaptureEntry(row.value,{id:row.id});
     if(!c || c.status!=="adopted" || !c.destinations.includes("weaving") || !["C2","C3"].includes(c.creativeMaturity||"") ||
-        blocked("forage_capture",c.id) || !/訪談|訪問/.test(c.title))continue;
-    const quote=c.excerpt||c.forageSummary||c.note;
-    if(quote)cards.push({id:"interview:"+c.id,title:c.title,type:"訪談重點",idea:c.forageSummary||quote,quote,source:"野採",location:c.title,
-      author:"已送往織光堂的訪談素材",quoteLabel:c.excerpt?"原摘錄":"採集紀錄",sourceKey:"capture:"+c.id,context:c.note||quote,url:"/forage"});
+        blocked("forage_capture",c.id))continue;
+    // Same three gates as work selection (adopted, C2 or C3, sent to 織光堂); interviews keep their own type.
+    const interview=/訪談|訪問/.test(c.title), quote=c.excerpt||c.forageSummary||c.note;
+    if(quote)cards.push({id:(interview?"interview:":"capture:")+c.id,title:c.title,type:interview?"訪談重點":"野採採集",idea:c.forageSummary||quote,quote,source:"野採",location:c.title,
+      author:interview?"已送往織光堂的訪談素材":`已送往織光堂的野採・${c.creativeMaturity}`,quoteLabel:c.excerpt?"原摘錄":"採集紀錄",sourceKey:"capture:"+c.id,context:c.note||quote,
+      url:"/forage/captures?captureId="+encodeURIComponent(c.id)});
   }
   return {cards};
 }

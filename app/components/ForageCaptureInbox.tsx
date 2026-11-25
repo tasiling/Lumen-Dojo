@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ForageTabs from "./ForageTabs";
+import RelationsPanel from "./readingKnowledge/RelationsPanel";
 import ForageIcon from "./ForageIcon";
 import ForageDouyin, { isDouyinCapture } from "./ForageDouyin";
 import {CAPTURE_DETAIL_TABS} from "@/lib/dojo/forageUi";
@@ -383,7 +384,7 @@ function ForageCard({ detail,hidden,activeTab,onTab,onView,capture, learningItem
       {capture.forageReason && !editing && <div className="capture-initial-reflection"><b>最初想記錄的原因</b><p>{capture.forageReason}</p></div>}
       {capture.note && capture.note !== capture.forageReason && <div className="weaving-original-note"><b>擷取時的其他補充</b><p>{capture.note}</p></div>}
       {capture.sourceUrl && <a className="weaving-source" href={capture.sourceUrl} target="_blank" rel="noreferrer">↗ {sourceHost(capture.sourceUrl)}</a>}
-      </div><div hidden={!detail||activeTab!=="explore"}><CaptureRefineEntry capture={capture} active={detail&&activeTab==="explore"} /></div>
+      </div><div hidden={!detail||activeTab!=="explore"}><CaptureRefineEntry capture={capture} active={detail&&activeTab==="explore"} />{detail&&activeTab==="explore"&&<RelationsPanel target={{kind:"forage_capture",recordId:capture.id}} />}</div>
       {!editing && capture.status === "adopted" && <div className="forage-result"><div><span>{capture.creativeMaturity}</span><span>{capture.sourceKnowledgeMaturity}</span>{capture.destinations.map((key) => <span key={key}>{DESTINATIONS.find((item) => item.key === key)?.label}</span>)}</div>{capture.forageSummary && <p>{capture.forageSummary}</p>}</div>}
 
       {!editing || !detail ? (

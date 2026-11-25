@@ -1,4 +1,5 @@
 import 'server-only';
+import { insightMark, insightSourceText, insightUsable } from '@/lib/reading/insightUse';
 import {resolvePolicySource} from '../creativeSources/resolver';
 import {parseSourceRef} from '../creativeSources/model';
 import {fingerprint} from '../creativeProposals/model';
@@ -85,7 +86,14 @@ export function productionSources(bookId?: string, use: KnowledgeUse = 'perspect
         }
         if (kind === 'reading_insight') {
             const [cards, books] = await Promise.all([listInsightCards(), listReadingBooks()]);
-            return cards.filter(c => ['已驗證', '不成立'].includes(c.status)).map(c => candidate(kind, c.id, books.find(b => b.id === c.sourceBookId)?.title ?? '閱讀洞察', '閱讀洞察', 'insight', `${c.insight}\n行動：${c.action}${c.result ? `\n結果：${c.result}` : ''}`));
+            return cards.filter(insightUsable).map(c => {
+                const text = insightSourceText(c);
+                if (c.refine) return candidate(kind, c.id, c.insight.slice(0, 80) || '野採淬鍊', insightMark(c), 'insight', text);
+                const label = books.find(b => b.id === c.sourceBookId)?.title ?? '閱讀洞察';
+                // The version keeps the wording reading cards always had, so works that selected a card before
+                // the status mark existed stay valid, and a card that becomes 已驗證 later is not reported as changed.
+                return candidate(kind, c.id, label, insightMark(c), 'insight', text, `snapshot:${digest([label, '閱讀洞察', 'insight', text])}`);
+            });
         }
         if (kind === 'forage_capture') {
             const rows = await listJsonRecords(CAPTURE_TITLE_PREFIX);

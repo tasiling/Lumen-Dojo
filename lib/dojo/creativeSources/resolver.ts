@@ -23,7 +23,8 @@ export async function resolvePolicySource(value:SourceRef):Promise<PolicySource|
     }
     const item=await createResolver().resolve(ref.sourceType==='reading_note'?{kind:'reading_note',recordId:note,parentBookId:book,...(fragment?{fragment:'reflection' as const}:{})}:{kind:ref.sourceType,recordId:ref.sourceId});
     if(!item)return null;
-    if(ref.sourceType==='reading_insight'&&!['已驗證','不成立'].includes(item.status))return null;
+    // Same rule as work selection (lib/reading/insightUse.ts): only a reading card the owner gave up on is excluded.
+    if(ref.sourceType==='reading_insight'&&item.status==='放棄')return null;
     if(ref.sourceType==='knowledge_claim'){
       const {claim}=await getKnowledgeClaim(ref.sourceId);if(!knowledgeClaimCanUse(claim,'perspective'))return null;
       const active=activeClaimVersion(claim)!;return {ref,label:item.title,text:active.statement,version:active.id,href:sourceHref(ref),contentKind:claim.type==='experience'?'experience':active.claimant==='external_author'?'quote':'understanding'};
