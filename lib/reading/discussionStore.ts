@@ -156,9 +156,15 @@ export async function updateDiscussion(body: Record<string, unknown>) {
     const method = body.method == null || body.method === "" ? "open" : body.method;
     if (!isReadingMethod(method)) throw new LearningError("請重新選擇這輪的讀法。");
     const wantsCompare = READING_METHODS[method].compare !== "none" && typeof body.compareNoteId === "string" && body.compareNoteId !== "";
-    const other = wantsCompare ? notes.find(item => item.id.toLowerCase() === id(body.compareNoteId)) : undefined;
+    // 對照的筆記可以來自另一本書：兩本書談同一件事時，把兩邊的摘錄放在一起。
+    const compareBookId = wantsCompare && typeof body.compareBookId === "string" && body.compareBookId ? id(body.compareBookId) : bookId;
+    const otherBook = compareBookId === bookId ? undefined : (await listReadingBooks()).find(book => book.id.toLowerCase() === compareBookId);
+    if (compareBookId !== bookId && !otherBook) throw new LearningError("找不到對照的那本書。", 404);
+    const pool = otherBook ? await listReadingNotes(compareBookId) : notes;
+    const other = wantsCompare ? pool.find(item => item.id.toLowerCase() === id(body.compareNoteId)) : undefined;
     if (wantsCompare && (!other || other.id.toLowerCase() === noteId)) throw new LearningError("請選另一則已保存的筆記來對照。");
     const compare = other && {
+      ...(otherBook ? { bookId: compareBookId, bookTitle: otherBook.title, readCount: otherBook.readCount } : {}),
       noteId: other.id.toLowerCase(),
       label: (other.text || readingNoteContent(other)).trim().replace(/\s+/g, " ").slice(0, 38) || "閱讀筆記",
       locator: [other.metadata.source, other.metadata.chapter, other.metadata.location].filter(Boolean).join(" · "),

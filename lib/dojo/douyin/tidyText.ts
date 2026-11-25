@@ -179,3 +179,61 @@ export function tidyBatches(paragraphs: string[], size = 2400): { start: number;
   }
   return batches;
 }
+
+/* ---------- 本人貼回的校正版（在 GPT 等處完整校正後放回來） ---------- */
+
+/** `tidy.model` of a corrected copy the owner pasted back, as opposed to one made by the built-in correction. */
+export const TIDY_MANUAL = "本人貼回";
+
+/** Removes the code fence GPT often wraps a transcript in; the words themselves are left untouched. */
+export function cleanPastedTidy(raw: string): string {
+  const text = raw.replace(/\r\n?/g, "\n").trim();
+  const fenced = text.match(/^```[^\n]*\n([\s\S]*?)\n```$/);
+  return joinTidyParagraphs(tidyParagraphs(fenced ? fenced[1] : text));
+}
+
+/** Sentences; a stretch without punctuation (raw recognition) is cut every 40 characters so it can still be matched. */
+function spans(text: string): string[] {
+  return text.split(/(?<=[。！？!?；;…\n])/u).flatMap((part) => {
+    const chars = [...part.trim()];
+    if (chars.length <= 60) return [chars.join("")];
+    const out: string[] = [];
+    for (let i = 0; i < chars.length; i += 40) out.push(chars.slice(i, i + 40).join(""));
+    return out;
+  }).filter(Boolean);
+}
+
+function unmatched(from: string, inText: string): string[] {
+  const known = bigrams(inText);
+  return spans(from).filter((span) => {
+    const pairs = bigrams(span);
+    if (pairs.size < 5) return false;
+    let shared = 0;
+    for (const pair of pairs) if (known.has(pair)) shared++;
+    return shared / pairs.size < 0.5;
+  });
+}
+
+export type ManualTidyCheck = {
+  baseChars: number; tidyChars: number;
+  /** Share by which the word count differs from the Traditional original. */
+  drift: number;
+  /** Sentences of the pasted copy with no counterpart in the original (a preface, a summary, a rewrite). */
+  added: string[];
+  /** Stretches of the original with no counterpart in the pasted copy (something was dropped or rewritten). */
+  missing: string[];
+  /** True when nothing looks added, dropped or rewritten, so the copy can be taken without asking again. */
+  ok: boolean;
+};
+
+/**
+ * Compares a pasted corrected transcript with the Traditional original as a whole. The pasted copy may be
+ * re-paragraphed freely, so nothing here depends on paragraph numbers. It never blocks: the owner decides,
+ * seeing exactly what differs.
+ */
+export function checkManualTidy(base: string, pasted: string): ManualTidyCheck {
+  const baseChars = [...tidyWords(base)].length, tidyChars = [...tidyWords(pasted)].length;
+  const drift = lengthDrift(base, pasted);
+  const added = unmatched(pasted, base), missing = unmatched(base, pasted);
+  return { baseChars, tidyChars, drift, added, missing, ok: drift <= TIDY_MAX_LENGTH_DRIFT && !added.length && !missing.length };
+}

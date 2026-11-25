@@ -11,6 +11,11 @@ test("閱讀筆記的讀法、對照筆記與心智圖", () => {
   const p=d.discussionPrompt(disc,round);
   for(const k of ["【S2｜對照的作者原文】","書籍深度蒸餾","這是 GPT 的推論，尚未確認","S2（對照的作者原文）"])assert.ok(p.includes(k),k);
   assert.ok(!p.includes("【N2"));
+  // 跨書對照：討論包寫明兩段各出自哪一本書
+  const cross={...round,source:{...round.source,compare:{...round.source.compare,bookId:"b2",bookTitle:"目標的力量",readCount:1}}};
+  const pc=d.discussionPrompt({...disc,rounds:[cross]},cross);
+  assert.ok(pc.includes("另一本書《目標的力量》")&&pc.includes("S2、N2 出自《目標的力量》"));
+  assert.ok(!p.includes("另一本書"));
   // old rounds unchanged
   const old={...round,method:undefined,source:src};
   const po=d.discussionPrompt({...disc,rounds:[old]},old);

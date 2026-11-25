@@ -12,7 +12,9 @@ export type DiscussionSource = {
   excerpt: string;
   reflection: string;
   /** 對照的另一則筆記：S2 是它的作者原文，N2 是我對它的想法。 */
-  compare?: { noteId: string; label: string; locator: string; excerpt: string; reflection: string };
+  compare?: { noteId: string; label: string; locator: string; excerpt: string; reflection: string;
+    /** 對照段來自另一本書時才有。 */
+    bookId?: string; bookTitle?: string; readCount?: number };
 };
 
 /** 這輪的讀法。每一種只改變 GPT 怎麼出題，觀點仍然只出自本人。 */
@@ -157,7 +159,9 @@ export function discussionPrompt(discussion: ReadingDiscussion, round: Discussio
     source.excerpt && "【S｜作者原文】\n" + source.excerpt,
     source.reflection && "【N｜我當時的想法】\n" + source.reflection,
     source.compare && [
-      "【對照的另一則筆記】" + [source.compare.locator, source.compare.label].filter(Boolean).join(" · "),
+      "【對照的另一則筆記】" + [source.compare.bookTitle && "另一本書《" + source.compare.bookTitle + "》", source.compare.bookTitle && source.compare.readCount && "第 " + source.compare.readCount + " 次閱讀",
+        source.compare.locator, source.compare.label].filter(Boolean).join(" · "),
+      source.compare.bookTitle && "S、N 出自《" + source.bookTitle + "》，S2、N2 出自《" + source.compare.bookTitle + "》。引用時寫明是哪一本書，兩位作者的說法不要混在一起。",
       source.compare.excerpt && "【S2｜對照的作者原文】\n" + source.compare.excerpt,
       source.compare.reflection && "【N2｜我對這段的想法】\n" + source.compare.reflection,
     ].filter(Boolean).join("\n\n"),

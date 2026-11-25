@@ -3432,6 +3432,20 @@
   font-weight: 800;
 }
 .dojo .forage-douyin-tidy-note p { color: var(--muted); }
+.dojo .forage-douyin-paste label { display: grid; gap: 6px; margin: 8px 0; font-weight: 700; }
+.dojo .forage-douyin-paste textarea { width: 100%; min-width: 0; font: inherit; }
+.dojo .forage-douyin-paste-check {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #e9b9a3;
+  border-radius: 12px;
+  background: #fcebe3;
+  overflow-wrap: anywhere;
+}
+.dojo .forage-douyin-paste-check p { margin: 0; }
+.dojo .forage-douyin-paste-check ul { display: grid; gap: 6px; margin: 6px 0 0; padding-left: 18px; }
 .dojo .forage-douyin-reverted,
 .dojo .forage-douyin-changes {
   display: grid;
