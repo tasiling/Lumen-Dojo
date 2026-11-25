@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useDojo } from "@/lib/dojo/store";
 import { RealmArt, PracticeIcon } from "../components/PracticeArt";
 import EntryCard from "../components/EntryCard";
+import { DaoHomeSections } from "../components/dao/DaoQuestions";
 
 export default function DaoPage() {
   const { entries, entriesLoading, entriesError, openQuickAdd } = useDojo();
@@ -16,8 +17,9 @@ export default function DaoPage() {
       <div className="hero da practice-realm-hero"><RealmArt dao />
         <span className="eyebrow">道藏</span>
         <h1>道藏</h1><h2>珍藏、回望</h2>
-        <p>主動選擇值得長久留下的作品、洞見與生活痕跡。</p>
+        <p>把想了很久的問題留在這裡，下次可以接著想；也主動選擇值得長久留下的作品、洞見與生活痕跡。</p>
       </div>
+      <DaoHomeSections />
       <Link href="/dao/explore" className="knowledge-entry-link dao-entry"><span className="practice-entry-icon"><PracticeIcon name="learning" /></span><span className="practice-entry-copy"><b>閱讀與知識總覽</b><small>跨筆記、洞察與知識查找內容</small></span><span aria-hidden="true">›</span></Link>
       <Link href="/dao/knowledge" className="knowledge-entry-link dao-entry"><span className="practice-entry-icon"><PracticeIcon name="default" /></span><span className="practice-entry-copy"><small>可重用的理解</small><b>打開知識庫</b><small>審閱知識候選、適用邊界與版本歷史</small></span><span aria-hidden="true">›</span></Link>
       <button className="primary" onClick={() => openQuickAdd({ presetSpace: "dao", presetKind: "入藏" })}>＋ 新增入藏紀錄</button>

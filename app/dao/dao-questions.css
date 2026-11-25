@@ -1,0 +1,62 @@
+/* 道藏：長期問題與知識心智圖。沿用道藏的紫杏配色與白卡。 */
+.dojo .dao-workspace{--dao-ink:#5e5190;--dao-tint:#f0ebf7;--dao-line:#e7e0ef;--dao-apricot:#fbf1dc;--dao-peach:#fcebe3;--dao-mint:#e3f2ed;--dao-ok:#2c6b55;--dao-bad:#8a302c}
+.dojo .dao-workspace .dao-section{display:grid;gap:12px}
+.dojo .dao-workspace .dao-section h1{font-size:1.5rem;margin:0}
+.dojo .dao-workspace .dao-section h2{font-size:1.25rem;margin:0}
+.dojo .dao-workspace .dao-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dojo .dao-workspace .dao-between{justify-content:space-between}
+.dojo .dao-workspace .dao-hint{color:#607488;font-size:.9375rem;margin:0}
+.dojo .dao-workspace .dao-meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.8125rem;color:#607488}
+.dojo .dao-workspace .dao-tag{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:7px;background:var(--dao-tint);color:#18384d;white-space:nowrap}
+.dojo .dao-workspace .dao-tag[data-k="覺察"]{background:#e8eef9}
+.dojo .dao-workspace .dao-tag[data-k="閱讀"]{background:var(--dao-apricot)}
+.dojo .dao-workspace .dao-tag[data-k="野採"]{background:var(--dao-peach)}
+.dojo .dao-workspace .dao-tag[data-k="織光杼"]{background:var(--dao-mint);color:var(--dao-ok)}
+.dojo .dao-workspace .dao-tag[data-k="知識"]{background:#f4dba9}
+.dojo .dao-workspace .dao-link{display:inline-flex;align-items:center;min-height:44px;padding:4px 0;border:0;background:none;color:var(--dao-ink);font-weight:600;text-decoration:none;font-size:.9375rem;cursor:pointer}
+.dojo .dao-workspace .dao-soft{min-height:44px;padding:10px 16px;border-radius:12px;border:1px solid #d8cdea;background:var(--dao-tint);color:var(--dao-ink);font-weight:600}
+.dojo .dao-workspace .dao-wide{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;padding:12px 16px;border-radius:12px;border:1px solid var(--dao-line);background:#fff;color:#18384d;font-weight:600;text-decoration:none;font-size:1rem}
+.dojo .dao-workspace .dao-done{display:block;padding:12px 14px;border-radius:12px;background:var(--dao-mint);color:var(--dao-ok);text-decoration:none;font-size:.9375rem;overflow-wrap:anywhere}
+.dojo .dao-workspace .dao-empty{border:1px dashed #d3c8e4;border-radius:16px;padding:16px;color:#607488;background:#fff;font-size:.9375rem}
+.dojo .dao-workspace .dao-question{display:grid;gap:6px;padding:16px;border-radius:16px;background:#fff;border:1px solid var(--dao-line);color:#18384d;text-decoration:none}
+.dojo .dao-workspace .dao-question b{font-size:1.0625rem;line-height:1.5}
+.dojo .dao-workspace .dao-question p{margin:0;font-size:.9375rem}
+.dojo .dao-workspace .dao-now{display:grid;gap:6px;padding:14px 16px;border-radius:14px;background:var(--dao-tint)}
+.dojo .dao-workspace .dao-now p{margin:0;font-size:1.0625rem;line-height:1.7}
+.dojo .dao-workspace .dao-now small{color:#607488}
+.dojo .dao-workspace .dao-ver{display:grid;gap:4px;padding:10px 0;border-top:1px dashed var(--dao-line)}
+.dojo .dao-workspace .dao-ver p{margin:0}
+.dojo .dao-workspace .dao-source{display:grid;gap:6px;padding:12px;border:1px solid var(--dao-line);border-radius:12px;background:#fff;min-width:0}
+.dojo .dao-workspace .dao-source b{overflow-wrap:anywhere}
+.dojo .dao-workspace :is(.dao-quote,.dao-mine){display:grid;gap:2px;padding:10px 12px;border-radius:12px;font-size:.9375rem;overflow-wrap:anywhere}
+.dojo .dao-workspace .dao-quote{background:var(--dao-apricot)}
+.dojo .dao-workspace .dao-mine{background:var(--dao-peach);border-left:4px solid #e9b9a3}
+.dojo .dao-workspace :is(.dao-quote,.dao-mine) small{color:#607488;font-size:.75rem}
+.dojo .dao-workspace .dao-compose{display:grid;gap:10px}
+.dojo .dao-workspace .dao-compose label{display:grid;gap:6px;font-size:.9375rem}
+.dojo .dao-workspace .dao-compose :is(textarea,input,select){width:100%;font:inherit;padding:11px 12px;border:1px solid #b9b1cc;border-radius:10px;background:#fff;color:#18384d}
+.dojo .dao-workspace .dao-code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.8125rem}
+.dojo .dao-workspace details{border:1px solid var(--dao-line);border-radius:14px;padding:4px 14px;background:#fff}
+.dojo .dao-workspace details[open]{padding-bottom:14px}
+.dojo .dao-workspace summary{min-height:44px;display:flex;align-items:center;font-weight:600;cursor:pointer}
+.dojo .dao-workspace .dao-picker,.dojo .dao-workspace .dao-picks{display:grid;gap:8px}
+.dojo .dao-workspace .dao-check{display:flex;flex-direction:row;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--dao-line);border-radius:12px;background:#fff}
+.dojo .dao-workspace .dao-check input{margin-top:4px;width:18px;height:18px;flex:none}
+.dojo .dao-workspace .dao-check>span{display:grid;gap:4px;min-width:0}
+.dojo .dao-workspace .dao-check b{overflow-wrap:anywhere}
+.dojo .dao-workspace .is-ok{color:var(--dao-ok)}
+.dojo .dao-workspace .is-bad{color:var(--dao-bad)}
+/* 心智圖：直立的樹，每一支都能收合 */
+.dojo .dao-workspace .dao-map{background:#fff;border:1px solid var(--dao-line);border-radius:18px;padding:16px 12px;overflow-x:auto}
+.dojo .dao-workspace .dao-map ul{list-style:none;margin:0;padding:0 0 0 18px;position:relative}
+.dojo .dao-workspace .dao-map ul::before{content:"";position:absolute;left:6px;top:0;bottom:18px;border-left:2px solid #ddd3ea}
+.dojo .dao-workspace .dao-map li{position:relative;padding:5px 0 5px 12px}
+.dojo .dao-workspace .dao-map li::before{content:"";position:absolute;left:-12px;top:24px;width:20px;border-top:2px solid #ddd3ea}
+.dojo .dao-workspace .dao-root{display:inline-block;padding:10px 18px;border-radius:12px;background:var(--dao-ink);color:#fff;font-weight:700;margin-bottom:6px}
+.dojo .dao-workspace .dao-node{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border-radius:10px;border:1px solid var(--dao-line);background:#fff;color:#18384d;font-size:.9375rem;text-align:left;max-width:100%;line-height:1.5;text-decoration:none;overflow-wrap:anywhere}
+.dojo .dao-workspace .dao-node.q{background:var(--dao-tint);border-color:#d8cdea;font-weight:700}
+.dojo .dao-workspace .dao-node.branch{background:#f6f3fa;font-weight:600}
+.dojo .dao-workspace .dao-node .tw{font-size:.75rem;color:#607488;flex:none}
+.dojo .dao-workspace .dao-node[aria-current="true"]{outline:2px solid var(--dao-ink)}
+.dojo .dao-workspace .dao-node:disabled{opacity:1;cursor:default}
+.dojo .dao-workspace .dao-detail{position:sticky;bottom:calc(96px + env(safe-area-inset-bottom));z-index:3;display:grid;gap:8px;box-shadow:0 8px 30px #18384d1a}
