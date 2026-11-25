@@ -313,9 +313,28 @@ function sfDisplayReview(f,r) {
   modal('核對本輪回填','<p>'+esc(r.task)+' · '+esc(r.question||r.note||'本輪討論')+'</p><div data-round-review="'+esc(r.id)+'">'+sfReviewRound(f,r)+'</div>');
 }
 
+/* 其他地方的回傳格式，貼錯時告訴本人該去哪裡（與 lib/dojo/returnPlaces.ts 同一份清單）。 */
+const STUDIO_OTHER_PLACES=[
+  [/===\s*野採討論/,'野採淬鍊的紀錄','野採素材的「開始淬鍊」頁面'],
+  [/心知閱讀討論\/v/,'閱讀討論的回傳卡','那本書的閱讀書頁「GPT 討論」'],
+  [/===\s*心情覺察/,'心・情覺察的紀錄','修習所「心・情覺察」的那一則紀錄'],
+  [/===\s*道藏理解/,'道藏的討論結果','道藏那個長期問題的「接著和 GPT 想」']
+];
+function studioWrongPlace(raw) {
+  const hit=STUDIO_OTHER_PLACES.find(([test])=>test.test(String(raw||'')));
+  return hit?'這是'+hit[1]+'，不是織光堂的格式。請到'+hit[2]+'貼回。':'';
+}
+/* 識別碼沒有填（GPT 沒拿到討論包時會留空或寫「待補」）。 */
+const studioUnfilled=v=>typeof v!=='string'||!v.trim()||/待補|未取得|請換成|[〔〕（）()]/.test(v);
+
 function sfValidateReturn(text,r) {
+  const other=studioWrongPlace(text);
+  if(other) throw Error(other);
   const x=JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/gi,''));
-  if(x?.kind!=='織光杼討論回傳'||x?.forgeId!==r.forgeId||x?.roundId!==r.id) throw Error('這份回覆的討論識別不符，請貼回原本那一輪。');
+  // 沒有先複製這一輪的討論包、直接和 GPT 討論完的回覆沒有識別碼，貼在哪一輪就屬於哪一輪。
+  const unfilled=studioUnfilled(x?.forgeId)&&studioUnfilled(x?.roundId);
+  if(x?.kind!=='織光杼討論回傳'&&!(unfilled&&x&&typeof x==='object'&&('coreCandidate' in x||'authorQuotes' in x))) throw Error('這不是織光杼的討論回覆，請使用討論包所附的 JSON 結構。');
+  if(!unfilled&&(x.forgeId!==r.forgeId||x.roundId!==r.id)) throw Error('這份回覆的討論識別不符，請貼回原本那一輪。');
   const str=(v,limit)=>{if(typeof v!=='string'||v.length>limit)throw Error('回覆欄位格式不符，請使用討論包所附的 JSON 結構。');return v.trim();};
   const list=(v,limit)=>{if(!Array.isArray(v)||v.length>12)throw Error('原話與方向請以文字陣列回傳。');return v.map(x=>str(x,limit)).filter(Boolean)};
   const out={title:str(x.shuttleTitle,160),core:str(x.coreCandidate,6000),directions:list(x.directions,900),quotes:list(x.authorQuotes,1800),openQuestion:str(x.openQuestion,1000)};

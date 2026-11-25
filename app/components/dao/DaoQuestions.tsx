@@ -6,6 +6,7 @@ import {
   DAO_FORMAT, DAO_METHODS, buildDaoPackage, daoCandidateIsOwn, daoMindmapMarkdown, daoSourceKind, latestUnderstanding, parseDaoReturn,
   type DaoMethod, type DaoQuestion, type DaoReturn, type DaoSource,
 } from "@/lib/dojo/daoQuestions";
+import { wrongPlace } from "@/lib/dojo/returnPlaces";
 import "@/app/dao/dao-questions.css";
 
 const API = "/api/dojo/dao-questions";
@@ -224,7 +225,7 @@ function ThinkWithGpt({ q, sources, busy, onSave }: { q: DaoQuestion; sources: D
     <details><summary>查看指令全文</summary><textarea className="dao-code" readOnly rows={10} value={pkg} /></details>
     <label>貼回 GPT 的收尾結果<textarea className="dao-code" rows={6} value={raw} onChange={(e) => setRaw(e.target.value)} placeholder={`從 ===${DAO_FORMAT}=== 開始，到 ===結束=== 為止`} /></label>
     <button type="button" className="dao-soft" disabled={!raw.trim()} onClick={() => { setParsed(parseDaoReturn(raw)); setPick(""); }}>檢查並列出候選</button>
-    {parsed && (parsed.id && parsed.id !== q.id
+    {parsed && wrongPlace(raw, "dao") ? <p className="form-error">{wrongPlace(raw, "dao")}</p> : parsed && (parsed.id && parsed.id !== q.id
       ? <p className="form-error">這份結果屬於另一個問題（{parsed.id}），沒有列出候選。</p>
       : !parsed.candidates.length && !parsed.said.length
         ? <p className="form-error">找不到候選理解。請確認 GPT 有照回傳格式輸出，標記行要照抄。</p>

@@ -193,6 +193,7 @@ Object.assign(handlers,{
     const w=current(), text=val('draftReturn');
     if(!w||w.shelf)return;
     if(!text){toast('先貼入 GPT 的整理結果');return;}
+    if(studioWrongPlace(text)){toast(studioWrongPlace(text));return;}
     w.candidate=text;keep(w);
     modal('GPT 的整理結果',(w.body.trim()?'<h3>目前正文</h3><pre>'+esc(w.body)+'</pre>':'')+'<h3>GPT 排出的骨架</h3><pre>'+esc(text)+'</pre>'+
       '<div class="actions">'+btn(w.body.trim()?'接在正文後面':'放進正文','draftAppend',[],'primary')+

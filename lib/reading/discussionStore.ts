@@ -1,4 +1,5 @@
 import "server-only";
+import { unfilledId, wrongPlace } from "@/lib/dojo/returnPlaces";
 import { mkdir, open, readFile, readdir, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { withLearningWriteLock } from "@/lib/dojo/learningFoundation/fileLock";
@@ -10,7 +11,7 @@ import { createInsightCard } from "@/lib/notion/mutations";
 import { taipeiTodayISO } from "@/lib/dojo/formal";
 import { readingNoteContent } from "./content";
 import {
-  approvedResult, DISCUSSION_SCOPES, discussionCitation, evidenceFor, isReadingMethod, READING_METHODS, returnIdentity, validateReturn,
+  approvedResult, DISCUSSION_FORMAT, DISCUSSION_SCOPES, discussionCitation, parseReturnText, evidenceFor, isReadingMethod, READING_METHODS, returnIdentity, validateReturn,
   type DiscussionRound, type DiscussionScope, type DiscussionShortcut, type DiscussionSummary, type ReadingDiscussion,
 } from "./discussion";
 
@@ -134,83 +135,105 @@ export async function listBookDiscussions(bookId: string, archived?: ReadingDisc
   return { discussions: mergeArchivedDiscussions(book.discussions, recovered), pinnedRoundId };
 }
 
+/**
+ * A card discussed without this site's package has no 討論ID, 討論包ID or 選段ID. Pasted while a note is selected,
+ * it belongs to that note: its round is prepared (or the open one reused) and the card gets that round's IDs.
+ * A card whose IDs are filled in is returned unchanged and still has to match its own round.
+ */
+async function withRoundIds(bookId: string, body: Record<string, unknown>): Promise<string> {
+  const raw = typeof body.raw === "string" ? body.raw : "";
+  let card: Record<string, unknown>;
+  try { card = parseReturnText(raw); } catch { return raw; }
+  if (card.格式 !== DISCUSSION_FORMAT || ![card.討論ID, card.討論包ID, card.選段ID].every(unfilledId)) return raw;
+  if (typeof body.noteId !== "string" || !body.noteId) throw new LearningError("這張回傳卡沒有討論識別。請先在上方選擇要存回的閱讀筆記，再核對一次。");
+  const scope = Object.hasOwn(DISCUSSION_SCOPES, String(card.帶入範圍)) ? card.帶入範圍 : body.scope;
+  const { discussion, roundId } = await prepareRound(bookId, { noteId: body.noteId, scope, starter: "gpt", question: "" });
+  const round = discussion.rounds.find(item => item.id === roundId)!;
+  return JSON.stringify({ ...card, 討論ID: discussion.id, 討論包ID: round.id, 選段ID: round.source.noteId, 帶入範圍: discussion.scope });
+}
+
+/** Prepares a round for one note: the latest unreturned round of that note and scope, or a new one. */
+async function prepareRound(bookId: string, body: Record<string, unknown>) {
+  const noteId = id(body.noteId);
+  const scope = body.scope as DiscussionScope;
+  const starter = body.starter === "me" ? "me" : "gpt";
+  const question = typeof body.question === "string" ? body.question.trim() : "";
+  if (!Object.hasOwn(DISCUSSION_SCOPES, scope) || question.length > 4000 || (starter === "me" && !question))
+    throw new LearningError("請核對帶入內容與這輪想提的問題。");
+  const sourceBook = (await listReadingBooks()).find(book => book.id.toLowerCase() === bookId);
+  if (!sourceBook) throw new LearningError("找不到這輪閱讀。", 404);
+  const children: { id: string; title: string }[] = [];
+  const notes = await listReadingNotes(bookId, children);
+  const note = notes.find(item => item.id.toLowerCase() === noteId);
+  if (!note) throw new LearningError("請先保存選段，再開始討論。", 404);
+  const excerpt = note.kind === "excerpt" ? note.text : "";
+  const reflection = note.kind === "excerpt" ? note.metadata.reflection ?? "" : readingNoteContent(note);
+  if ((scope !== "reflection" && !excerpt) || (scope !== "excerpt" && !reflection))
+    throw new LearningError("選段裡沒有這次選取的原文或想法。");
+  const method = body.method == null || body.method === "" ? "open" : body.method;
+  if (!isReadingMethod(method)) throw new LearningError("請重新選擇這輪的讀法。");
+  const wantsCompare = READING_METHODS[method].compare !== "none" && typeof body.compareNoteId === "string" && body.compareNoteId !== "";
+  // 對照的筆記可以來自另一本書：兩本書談同一件事時，把兩邊的摘錄放在一起。
+  const compareBookId = wantsCompare && typeof body.compareBookId === "string" && body.compareBookId ? id(body.compareBookId) : bookId;
+  const otherBook = compareBookId === bookId ? undefined : (await listReadingBooks()).find(book => book.id.toLowerCase() === compareBookId);
+  if (compareBookId !== bookId && !otherBook) throw new LearningError("找不到對照的那本書。", 404);
+  const pool = otherBook ? await listReadingNotes(compareBookId) : notes;
+  const other = wantsCompare ? pool.find(item => item.id.toLowerCase() === id(body.compareNoteId)) : undefined;
+  if (wantsCompare && (!other || other.id.toLowerCase() === noteId)) throw new LearningError("請選另一則已保存的筆記來對照。");
+  const compare = other && {
+    ...(otherBook ? { bookId: compareBookId, bookTitle: otherBook.title, readCount: otherBook.readCount } : {}),
+    noteId: other.id.toLowerCase(),
+    label: (other.text || readingNoteContent(other)).trim().replace(/\s+/g, " ").slice(0, 38) || "閱讀筆記",
+    locator: [other.metadata.source, other.metadata.chapter, other.metadata.location].filter(Boolean).join(" · "),
+    excerpt: other.kind === "excerpt" ? other.text : "",
+    reflection: other.kind === "excerpt" ? other.metadata.reflection ?? "" : readingNoteContent(other),
+  };
+  if (READING_METHODS[method].compare === "required" && !compare?.excerpt)
+    throw new LearningError("這個讀法需要再選一則有作者原文的摘錄來對照。");
+  const { recovered } = await bookArchives(bookId, { book: sourceBook, notes, children });
+  return withLearningWriteLock(async () => {
+    const book = await notebook(bookId);
+    book.discussions = mergeArchivedDiscussions(book.discussions, recovered);
+    let discussion = book.discussions.find(item => item.scope === scope && item.rounds[0]?.source.noteId === noteId);
+    const last = discussion?.rounds.at(-1);
+    if (discussion && last && !last.result) return { discussion, roundId: last.id };
+    if (!discussion) {
+      discussion = { id: crypto.randomUUID(), scope, rounds: [] };
+      book.discussions.push(discussion);
+    }
+    const excerptLabel = note.text.trim().replace(/\s+/g, " ").slice(0, 38);
+    const round: DiscussionRound = {
+      id: crypto.randomUUID(),
+      starter,
+      ...(method === "open" ? {} : { method }),
+      question,
+      createdAt: new Date().toISOString(),
+      source: {
+        bookId, noteId, bookTitle: sourceBook.title, readCount: sourceBook.readCount,
+        label: excerptLabel || "閱讀筆記",
+        locator: [note.metadata.source, note.metadata.chapter, note.metadata.location].filter(Boolean).join(" · "),
+        readingQuestion: sourceBook.question,
+        excerpt: scope === "reflection" ? "" : excerpt,
+        reflection: scope === "excerpt" ? "" : reflection,
+        ...(compare ? { compare } : {}),
+      },
+    };
+    const pinned = last && pointsAt(await resumePointer(), roundRef(book, discussion, last));
+    discussion.rounds.push(round);
+    await saveNotebook(book);
+    if (pinned && last?.result?.status === "暫存") await write("resume.json", roundRef(book, discussion, round));
+    return { discussion, roundId: round.id, ...(pinned ? { pinnedRoundId: round.id } : {}) };
+  });
+}
+
 export async function updateDiscussion(body: Record<string, unknown>) {
   const bookId = id(body.bookId);
-  if (body.action === "prepare") {
-    const noteId = id(body.noteId);
-    const scope = body.scope as DiscussionScope;
-    const starter = body.starter === "me" ? "me" : "gpt";
-    const question = typeof body.question === "string" ? body.question.trim() : "";
-    if (!Object.hasOwn(DISCUSSION_SCOPES, scope) || question.length > 4000 || (starter === "me" && !question))
-      throw new LearningError("請核對帶入內容與這輪想提的問題。");
-    const sourceBook = (await listReadingBooks()).find(book => book.id.toLowerCase() === bookId);
-    if (!sourceBook) throw new LearningError("找不到這輪閱讀。", 404);
-    const children: { id: string; title: string }[] = [];
-    const notes = await listReadingNotes(bookId, children);
-    const note = notes.find(item => item.id.toLowerCase() === noteId);
-    if (!note) throw new LearningError("請先保存選段，再開始討論。", 404);
-    const excerpt = note.kind === "excerpt" ? note.text : "";
-    const reflection = note.kind === "excerpt" ? note.metadata.reflection ?? "" : readingNoteContent(note);
-    if ((scope !== "reflection" && !excerpt) || (scope !== "excerpt" && !reflection))
-      throw new LearningError("選段裡沒有這次選取的原文或想法。");
-    const method = body.method == null || body.method === "" ? "open" : body.method;
-    if (!isReadingMethod(method)) throw new LearningError("請重新選擇這輪的讀法。");
-    const wantsCompare = READING_METHODS[method].compare !== "none" && typeof body.compareNoteId === "string" && body.compareNoteId !== "";
-    // 對照的筆記可以來自另一本書：兩本書談同一件事時，把兩邊的摘錄放在一起。
-    const compareBookId = wantsCompare && typeof body.compareBookId === "string" && body.compareBookId ? id(body.compareBookId) : bookId;
-    const otherBook = compareBookId === bookId ? undefined : (await listReadingBooks()).find(book => book.id.toLowerCase() === compareBookId);
-    if (compareBookId !== bookId && !otherBook) throw new LearningError("找不到對照的那本書。", 404);
-    const pool = otherBook ? await listReadingNotes(compareBookId) : notes;
-    const other = wantsCompare ? pool.find(item => item.id.toLowerCase() === id(body.compareNoteId)) : undefined;
-    if (wantsCompare && (!other || other.id.toLowerCase() === noteId)) throw new LearningError("請選另一則已保存的筆記來對照。");
-    const compare = other && {
-      ...(otherBook ? { bookId: compareBookId, bookTitle: otherBook.title, readCount: otherBook.readCount } : {}),
-      noteId: other.id.toLowerCase(),
-      label: (other.text || readingNoteContent(other)).trim().replace(/\s+/g, " ").slice(0, 38) || "閱讀筆記",
-      locator: [other.metadata.source, other.metadata.chapter, other.metadata.location].filter(Boolean).join(" · "),
-      excerpt: other.kind === "excerpt" ? other.text : "",
-      reflection: other.kind === "excerpt" ? other.metadata.reflection ?? "" : readingNoteContent(other),
-    };
-    if (READING_METHODS[method].compare === "required" && !compare?.excerpt)
-      throw new LearningError("這個讀法需要再選一則有作者原文的摘錄來對照。");
-    const { recovered } = await bookArchives(bookId, { book: sourceBook, notes, children });
-    return withLearningWriteLock(async () => {
-      const book = await notebook(bookId);
-      book.discussions = mergeArchivedDiscussions(book.discussions, recovered);
-      let discussion = book.discussions.find(item => item.scope === scope && item.rounds[0]?.source.noteId === noteId);
-      const last = discussion?.rounds.at(-1);
-      if (discussion && last && !last.result) return { discussion, roundId: last.id };
-      if (!discussion) {
-        discussion = { id: crypto.randomUUID(), scope, rounds: [] };
-        book.discussions.push(discussion);
-      }
-      const excerptLabel = note.text.trim().replace(/\s+/g, " ").slice(0, 38);
-      const round: DiscussionRound = {
-        id: crypto.randomUUID(),
-        starter,
-        ...(method === "open" ? {} : { method }),
-        question,
-        createdAt: new Date().toISOString(),
-        source: {
-          bookId, noteId, bookTitle: sourceBook.title, readCount: sourceBook.readCount,
-          label: excerptLabel || "閱讀筆記",
-          locator: [note.metadata.source, note.metadata.chapter, note.metadata.location].filter(Boolean).join(" · "),
-          readingQuestion: sourceBook.question,
-          excerpt: scope === "reflection" ? "" : excerpt,
-          reflection: scope === "excerpt" ? "" : reflection,
-          ...(compare ? { compare } : {}),
-        },
-      };
-      const pinned = last && pointsAt(await resumePointer(), roundRef(book, discussion, last));
-      discussion.rounds.push(round);
-      await saveNotebook(book);
-      if (pinned && last?.result?.status === "暫存") await write("resume.json", roundRef(book, discussion, round));
-      return { discussion, roundId: round.id, ...(pinned ? { pinnedRoundId: round.id } : {}) };
-    });
-  }
+  if (body.action === "prepare") return prepareRound(bookId, body);
 
   if (body.action === "preview" || body.action === "save") {
-    const raw = typeof body.raw === "string" ? body.raw : "";
+    const other = wrongPlace(typeof body.raw === "string" ? body.raw : "", "reading");
+    if (other) throw new LearningError(other);
+    const raw = await withRoundIds(bookId, body);
     const parse = async () => {
       const target = await locateReturn(raw, bookId);
       try { return { ...target, parsed: validateReturn(raw, target.discussion, target.round) }; }
