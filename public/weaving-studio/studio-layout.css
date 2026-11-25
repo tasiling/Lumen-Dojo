@@ -253,3 +253,38 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .mindmap-tree ul{margin:4px 0 6px;padding-left:18px}
 .mindmap-tree summary{font-weight:600}
 .mindmap-tree li{margin:3px 0;overflow-wrap:anywhere}
+
+/* 並讀選卡：相近／相反／不同切角 */
+.pair-intro{font-size:.9rem}
+.pair-group{margin:16px 0 4px;padding-top:12px;border-top:1px solid var(--line)}
+.pair-group h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:4px}
+.pair-group h3 small{font-weight:500}
+.pair-group[data-relation="相近"] h3::before,.pair-group[data-relation="相反"] h3::before,.pair-group[data-relation="不同切角"] h3::before{content:"";width:10px;height:10px;border-radius:50%;align-self:center}
+.pair-group[data-relation="相近"] h3::before{background:#7fb8a1}
+.pair-group[data-relation="相反"] h3::before{background:#d98a7e}
+.pair-group[data-relation="不同切角"] h3::before{background:#8fa7d6}
+.pair-candidate{border-bottom:1px solid var(--line);padding-bottom:6px}
+.pair-candidate:last-child{border-bottom:0}
+.pair-candidate .row{border-bottom:0;padding-bottom:4px}
+.pair-why{margin:0 0 4px 51px;font-size:.85rem;color:var(--ink)}
+.pair-method{display:inline-block;margin-right:6px;padding:0 7px;border-radius:7px;background:var(--soft);color:var(--accent);font-size:.75rem}
+.pair-candidate details{margin:6px 0 6px 51px}
+.pair-empty,.pair-progress{font-size:.85rem}
+.pair-suggest{border-left:3px solid var(--accent)}
+
+/* 織光杼討論：帶入的卡片與這輪的讀法 */
+.forge-cards{margin:12px 0;padding:12px 14px;border-radius:12px;background:var(--soft)}
+.forge-cards h3{font-size:.98rem;margin-bottom:6px}
+.forge-cards ul{margin:0 0 6px;padding-left:18px}
+.forge-cards li{margin:4px 0;overflow-wrap:anywhere}
+.forge-cards li small{display:block}
+.forge-cards p{font-size:.85rem;margin:0}
+.forge-method{margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.forge-method h3{font-size:.98rem;margin-bottom:4px}
+.forge-method p{font-size:.88rem;color:var(--ink)}
+.forge-method ul{margin:4px 0 0;padding-left:18px;font-size:.86rem;color:var(--ink)}
+.forge-method li{margin:3px 0}
+.forge-pick .row{min-height:56px}
+.forge-pick .pair-why{margin-left:51px}
+.forge-pick b,.forge-pick small{display:block}
+.forge-pick .pair-why{margin:4px 0 0}

@@ -6,35 +6,156 @@
    心智圖（mindmap）、沉澱成外腦（把好書變成 AI 外腦）。
    不論哪一個，只有本人說出的話能進經線；GPT 的判斷都是候選，由本人勾選才採用。 */
 
-/* ---------- 建杼的基本流程：兩個討論目標換上 Skill 的問法 ---------- */
-const FORGE_METHODS={
-  '釐清想持續探討的題目':{skill:'讀書搭子（Adler《如何閱讀一本書》）',lines:[
-    '先和我一起定出一個「共同問題」：這把杼想反覆回來追問的那一題。',
-    '帶入多張卡片時，逐張說出它各自怎麼回答這個共同問題，引用卡片原文並附上它的出處與由來；不同來源要並列，不要混成一個說法。',
-    '在我說出「我在意的是哪一點」之前，先求看懂，不評論、不下結論，也不替我判斷哪張卡比較對。',
-    '收尾時寫出共同問題的定稿，以及我說過「在意的那一點」的原話。']},
-  '整理我的經線':{skill:'拆書計畫（三層暗門）',lines:[
-    '依序往下三層問：表面論點（卡片說了什麼）、背後機制（為什麼會這樣）、更深一層（這對我意味著什麼）。每一層先引用一句卡片原文並附出處，再提問。',
-    '每一題要有摩擦力：拿我的說法和卡片之間的落差來追問，不要只請我補充。',
-    '最後一題必須是只有用我自己的經驗才能回答的問題。',
-    '只有我用自己的話說出理解，並給出理由、例子、區別或適用界線其中一項，才可以提出候選經線；候選經線只能用我說過的話組成。']}
-};
+/* ---------- 建杼的基本流程：兩個討論目標換上 Skill 的問法 ----------
+   問法依這次帶入的卡片而定：沒有卡、一張卡、兩張以上的問法不同；
+   卡片是本人原話時，「看懂」的對象是本人當時在意什麼，而不是作者想說什麼。
+   同一份內容同時顯示在討論頁（這輪的讀法）與討論包裡，讓本人看得見這輪會怎麼被問。 */
+function forgeCardIds(f) {
+  return [...new Set((f?.cardDrafts||[]).flatMap(cardsInUse))].filter(id=>sourceCards.has(id));
+}
+function forgeReadingContext(f) {
+  const cards=forgeCardIds(f).map(id=>sourceCards.get(id));
+  const own=cards.filter(ownWordsCard).length;
+  return {count:cards.length,own,others:cards.length-own};
+}
+const BUDDY_NOT_YET='先求看懂，再談同不同意：在我說出「我在意的是哪一點」之前，不評論、不下結論，也不替我判斷哪張卡比較對。';
+const OWN_WORDS_LINE='標示「我的原話」或「我的發言」的卡是我自己說過的話，不是作者的文字。對這些卡，「看懂」的對象是我當時在說什麼、在意什麼：用我的原話追問，不要替我詮釋動機或下心理判斷。';
+const BOOK_LINE='書摘或別人說法的卡，先看懂作者在談什麼、他是怎麼說的，再問這和我有什麼關係。';
+function forgeMethod(task,ctx) {
+  const adapt=(steps,lines)=>{
+    if(ctx.own){steps.push('你自己說過的話：看懂的是你當時在意什麼，不替你詮釋動機');lines.push(OWN_WORDS_LINE);}
+    if(ctx.others){steps.push('書摘或別人的說法：先看懂作者在談什麼、怎麼說');lines.push(BOOK_LINE);}
+  };
+  if(task==='釐清想持續探討的題目'){
+    const skill='讀書搭子（Adler《如何閱讀一本書》）';
+    let summary,steps,lines;
+    if(!ctx.count){
+      summary='這次沒有帶入卡片，讀的是你寫下的想法：先看懂你在談什麼，再定出想反覆追問的題目。';
+      steps=['先問你在談什麼、為什麼在意','在你說出在意的那一點之前，不評論也不下結論','用你說過的話定出題目'];
+      lines=['依序圍繞三件事提問：我在談什麼、我為什麼在意、這和我接下來想做的事有什麼關係。',BUDDY_NOT_YET,
+        '題目要用我說過的話來定，不要自己造題。','收尾時寫出題目的定稿，以及我說過「在意的那一點」的原話。'];
+    }else if(ctx.count===1){
+      summary='這次只帶了一張卡：先看懂這張卡在回答什麼問題，再用你的話定出題目。接上第二張卡之後，才會並列比較。';
+      steps=['先找出這張卡在回答什麼問題','在你說出在意的那一點之前，不評論也不下結論','用你說過的話定出這把杼的題目'];
+      lines=['這次只有一張卡。先和我一起找出這張卡在回答什麼問題：引用卡片原文並附上出處與由來，提出一到兩種可能的問法，讓我選用或改寫。',
+        BUDDY_NOT_YET,'題目要用我說過的話來定，不要自己造題。','收尾時寫出題目的定稿，以及我說過「在意的那一點」的原話。'];
+    }else{
+      summary='這次帶了 '+ctx.count+' 張卡：先定出一個每張卡都在回答的共同問題，再逐張看各自怎麼回答，並列比較、不混成一個說法。';
+      steps=['先定出每張卡都在回答的共同問題','逐張看各自怎麼回答，不同來源並列','在你說出在意的那一點之前，不評論也不下結論'];
+      lines=['先和我一起定出一個「共同問題」：這把杼想反覆回來追問、而且每張卡都在回答的那一題。',
+        '定出共同問題後，逐張說出它各自怎麼回答，引用卡片原文並附上出處與由來；不同來源要並列，不要混成一個說法。',
+        '卡片之間若標了我判斷的關係（相近、相反、不同切角），照我的判斷理解，不要改判；相反或不同切角的卡，正好用來看共同問題的不同答案。',
+        BUDDY_NOT_YET,'收尾時寫出共同問題的定稿，以及我說過「在意的那一點」的原話。'];
+    }
+    adapt(steps,lines);
+    return {skill,summary,steps,lines};
+  }
+  if(task==='整理我的經線'){
+    const from=ctx.count?'卡片':'我寫下的想法';
+    const steps=['表面論點：'+from+'說了什麼','背後機制：為什麼會這樣','更深一層：這對你意味著什麼','最後一題只有你的經驗能回答'];
+    const lines=['依序往下三層問：表面論點（'+from+'說了什麼）、背後機制（為什麼會這樣）、更深一層（這對我意味著什麼）。每一層先引用一句'+(ctx.count?'卡片原文並附出處':'我寫下的原話')+'，再提問。',
+      '每一題要有摩擦力：拿我的說法和'+(ctx.count?'卡片':'我先前的說法')+'之間的落差來追問，不要只請我補充。',
+      '最後一題必須是只有用我自己的經驗才能回答的問題。',
+      '只有我用自己的話說出理解，並給出理由、例子、區別或適用界線其中一項，才可以提出候選經線；候選經線只能用我說過的話組成。'];
+    adapt(steps,lines);
+    return {skill:'拆書計畫（三層暗門）',summary:'從表面論點往下問到背後機制，最後一題只有你的經驗能回答。',steps,lines};
+  }
+  return null;
+}
+function forgeMethodHtml(f) {
+  const m=f&&forgeMethod(f.task,forgeReadingContext(f));
+  if(!m)return '<div class="forge-method"><h3>這輪的讀法</h3><p>這個目標沒有指定讀法，依收尾條件自然討論。</p></div>';
+  return '<div class="forge-method"><h3>這輪的讀法：'+esc(m.skill)+'</h3><p>'+esc(m.summary)+'</p><ul>'+
+    m.steps.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>'+more('查看會放進討論包的問法','<ul>'+m.lines.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>')+'</div>';
+}
+/* 帶入的卡片在討論包裡的連結說明：並讀的關係與理由、本人寫下想用它談什麼。 */
+function forgeUseNotes(f) {
+  return (f?.cardDrafts||[]).map(use=>{
+    const titles=cardsInUse(use).map(id=>sourceCards.get(id)?.title).filter(Boolean);
+    if(!titles.length)return '';
+    const saved=getReading(use.readingId)?.saved;
+    const parts=[saved?.relation&&'我判斷的關係：'+saved.relation,saved?.reason&&'連結理由：'+saved.reason,
+      saved?.question&&'待釐清：'+saved.question,use.note&&'我想用它來談：'+use.note].filter(Boolean);
+    return parts.length?titles.join(' × ')+'｜'+parts.join('｜'):'';
+  }).filter(Boolean);
+}
 const baseSfPrompt=sfPrompt;
 sfPrompt=function(r){
-  const text=baseSfPrompt(r), m=FORGE_METHODS[r.task];
-  const f=shuttleForges()[r.forgeId], ids=(f?.cardDrafts||[]).flatMap(cardsInUse).filter(id=>sourceCards.has(id));
+  const text=baseSfPrompt(r), f=shuttleForges()[r.forgeId], ids=forgeCardIds(f);
+  const m=forgeMethod(r.task,forgeReadingContext(f));
   const add=[];
   if(m)add.push('【本輪使用的方法：'+m.skill+'】',...m.lines.map(l=>'- '+l));
   if(ids.length){
     add.push('','【這次帶入的卡片】引用時一律寫出編號、出處與由來，照記載抄寫，不得省略或改寫。');
     ids.forEach((id,i)=>{add.push('');add.push(...cardRecordLines(id,i,findS(f.target)));});
+    const notes=forgeUseNotes(f);
+    if(notes.length)add.push('','【我替這些卡留下的連結】',...notes);
   }
   if(!add.length)return text;
   const at=text.indexOf('討論過程自然對話。');
   return at<0?text+'\n\n'+add.join('\n'):text.slice(0,at)+add.join('\n')+'\n\n'+text.slice(at);
 };
 const baseGoals={...sfDiscussionGoals};
-for(const [task,m] of Object.entries(FORGE_METHODS))sfDiscussionGoals[task]=baseGoals[task]+' 方法：'+m.skill+'。';
+sfDiscussionGoals['釐清想持續探討的題目']=baseGoals['釐清想持續探討的題目']+' 方法：讀書搭子。';
+sfDiscussionGoals['整理我的經線']=baseGoals['整理我的經線']+' 方法：拆書計畫。';
+
+/* ---------- 討論頁：這把杼帶入的卡片放最上面，其他卡片依和這些卡的關聯排序 ---------- */
+function forgeCardMeta(c) {
+  return [c.type,ownWordsCard(c)?'本人原話':c.author.startsWith('GPT')?c.author:'',[c.source,c.location].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+}
+function forgeStagedCards(f) {
+  const uses=(f.cardDrafts||[]).map((use,i)=>({use,i,cards:cardsInUse(use).map(id=>sourceCards.get(id)).filter(Boolean)})).filter(x=>x.cards.length);
+  if(!uses.length)return (f.cardDrafts||[]).length&&catalogs.cards!=='ready'?collectionNote('cards'):
+    '<section class="forge-cards"><h3>還沒有帶入卡片</h3><p>可以只用你寫下的想法討論，也可以從下面挑卡帶進這把杼。</p></section>';
+  const n=forgeCardIds(f).length;
+  return '<section class="forge-cards"><h3>這把杼帶入的卡片（'+n+' 張）</h3><ul>'+uses.map(({use,i,cards})=>{
+    const saved=getReading(use.readingId)?.saved;
+    return '<li><b>'+esc(cards.map(c=>c.title).join(' × '))+'</b>'+
+      (cards.length===1?'<small>'+esc(forgeCardMeta(cards[0]))+'</small>':'<small>並讀'+(saved?.relation?' · '+esc(saved.relation):'')+(saved?.reason?' · '+esc(saved.reason):'')+'</small>')+
+      (cards.length===1?btn('找可以並讀的卡','go',[cardIndexPath(f.id,cards[0].id)],'link'):'')+btn('移出','dropCardUse',[f.id,i],'link')+'</li>';
+  }).join('')+'</ul><p>這些卡一律放進討論包，GPT 引用時會附上出處與由來。</p>'+
+    '<div class="actions">'+btn('去挑卡或並讀','go',[cardIndexPath(f.id)],'tiny')+'</div></section>';
+}
+function forgePickRow(f,c,evidence) {
+  return '<div class="entry forge-pick"><b>'+esc(c.title)+'</b><small>'+esc(forgeCardMeta(c))+'</small>'+
+    (evidence?'<p class="pair-why"><span class="pair-method">用字相近</span>'+esc(evidence.detail)+'</p>':'')+
+    '<div class="actions">'+btn('帶進這把杼','forgeAddCard',[f.id,c.id],'tiny')+'</div></div>';
+}
+function forgeCardPicker(f) {
+  if(catalogs.cards!=='ready')return collectionNote('cards');
+  const staged=new Set(forgeCardIds(f)), pool=[...sourceCards.values()].filter(c=>!staged.has(c.id));
+  if(!pool.length)return '';
+  const bases=[...staged].map(id=>sourceCards.get(id)).map(c=>['帶入的〈'+c.title+'〉',[c.title,c.idea,c.quote].join(' ')]);
+  bases.push(['杼名',f.title],['我的想法',f.note]);
+  const near=cardAffinity(bases,pool);
+  const related=pool.filter(c=>near.has(c.id)).sort((a,b)=>near.get(b.id).score-near.get(a.id).score);
+  const rest=pool.filter(c=>!near.has(c.id));
+  const hasBase=staged.size||f.title?.trim()||f.note?.trim();
+  if(!hasBase)return more('從已有卡片挑選（'+pool.length+' 張）',rest.map(c=>forgePickRow(f,c)).join(''));
+  const gptHint=staged.size?'意思相近但說法不同、立場相反或不同切角的卡，用字比對找不到，可以按上面卡片的「找可以並讀的卡」，請 GPT 依三類找。':'';
+  return more('從其他卡片挑選',
+    (related.length?'<p>和這把杼用字相近的 '+related.length+' 張排在前面。'+gptHint+'</p>'+related.map(c=>forgePickRow(f,c,near.get(c.id))).join(''):
+      '<p>目前沒有和這把杼用字相近的卡。'+gptHint+'</p>')+
+    (rest.length?more('其他卡片（看不出關聯，'+rest.length+' 張）',rest.map(c=>forgePickRow(f,c)).join('')):''));
+}
+function forgeMaterialsHtml(f) {
+  return f?forgeStagedCards(f)+forgeCardPicker(f):'';
+}
+handlers.forgeAddCard=(fid,id)=>{
+  const f=shuttleForges()[fid];
+  if(!f||f.done||!sourceCards.has(id))return;
+  const before=structuredClone(f);
+  f.cardDrafts||=[];
+  if(f.cardDrafts.some(u=>cardsInUse(u).includes(id))){toast('這張卡已經在這把杼裡');return;}
+  f.cardDrafts.push({cardId:id,entryId:id,note:'',supportsCore:false});
+  f.touched=true;save();
+  if(!storageOK){shuttleForges()[fid]=before;toast('未能帶入，請重試');return;}
+  render();
+  const host=$('forgeMaterials');
+  host?.closest('details')?.setAttribute('open','');
+  host?.scrollIntoView({block:'start'});
+  toast('已帶進這把杼');
+};
 
 /* ---------- 杼頁面的四個工具 ---------- */
 const ANGLE_PURPOSES={
