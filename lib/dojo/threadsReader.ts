@@ -1,4 +1,5 @@
 import { extractThreadBody, fullCaption, samePost, sourceMeta, threadAddress, threadCanonical, type ThreadAddress } from './threadsPage';
+import { probeThreadsVideo } from "./threadsVideoProbe";
 
 /** Extract only the public post identified by its permalink, before replies and recommendations. */
 export function threadsPostUrl(value: string): string | null {
@@ -151,6 +152,9 @@ async function readOfficial(start: ThreadAddress): Promise<ThreadsPost> {
   let embed: string;
   try { embed = (await threadsPage(`https://www.threads.com/t/${point.code}/embed/?utm_source=th_embed&utm_campaign=threads_api`, deadline)).html; }
   catch (error) { throw new ReadStop('embed', reasonOf(error)); }
+  // Feasibility check for link-only video transcription; logs only, never blocks or changes the reply.
+  const probeTarget = point;
+  probeThreadsVideo(probeTarget.code, embed, async () => (await threadsPage(probeTarget.url, AbortSignal.timeout(15000))).html);
   const rendered = extractThreadBody(embed, point);
   const source = rendered.address || point;
   if (rendered.text && rendered.address) return post(rendered.text, rendered.address.url, false);
