@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { readingNoteContent } from "@/lib/reading/content";
 import {
   CONVERGENCE_GUIDE, DISCUSSION_SCOPES, discussionCitation, discussionHref, discussionProductText, discussionPrompt,
-  evidenceFor, returnInstructions,
+  evidenceFor, methodLabel, READING_METHODS, returnInstructions,
   type DiscussionCandidate, type DiscussionResult, type DiscussionReturn, type DiscussionRound, type DiscussionScope,
-  type DiscussionShortcut, type ReadingDiscussion,
+  type DiscussionShortcut, type ReadingDiscussion, type ReadingMethodKey,
 } from "@/lib/reading/discussion";
 import type { ReadingNote } from "@/lib/reading/types";
 
@@ -59,6 +59,12 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
   const [selection, setSelection] = useState({ discussionId: initialDiscussionId, roundId: initialRoundId });
   const [scope, setScope] = useState<DiscussionScope>("both");
   const [starter, setStarter] = useState<"me" | "gpt">("gpt");
+  const [method, setMethod] = useState<ReadingMethodKey>("open");
+  const [compareId, setCompareId] = useState("");
+  // 對照的筆記可以從另一本書選：空字串代表這本書。
+  const [compareBookId, setCompareBookId] = useState("");
+  const [books, setBooks] = useState<{ id: string; title: string; readCount: number }[] | null>(null);
+  const [otherNotes, setOtherNotes] = useState<{ bookId: string; notes: ReadingNote[] } | null>(null);
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -79,6 +85,24 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
     return () => { active = false; };
   }, [bookId]);
 
+  const wantsBooks = READING_METHODS[method].compare !== "none";
+  useEffect(() => {
+    if (!wantsBooks || books) return;
+    let active = true;
+    fetch("/api/dojo/reading/books", { cache: "no-store" }).then(response => response.json())
+      .then(value => { if (active) setBooks(Array.isArray(value.books) ? value.books : []); })
+      .catch(() => { if (active) setBooks([]); });
+    return () => { active = false; };
+  }, [wantsBooks, books]);
+  useEffect(() => {
+    if (!compareBookId) return;
+    let active = true;
+    fetch("/api/dojo/reading/books/" + encodeURIComponent(compareBookId), { cache: "no-store" }).then(response => response.json())
+      .then(value => { if (active) setOtherNotes({ bookId: compareBookId, notes: Array.isArray(value.notes) ? value.notes : [] }); })
+      .catch(() => { if (active) setOtherNotes({ bookId: compareBookId, notes: [] }); });
+    return () => { active = false; };
+  }, [compareBookId]);
+
   const selectedDiscussion = data?.discussions.find(value => value.id === selection.discussionId);
   const selected = available.find(note => note.id === (selectedDiscussion?.rounds[0]?.source.noteId || noteId)) ?? available[0];
   const selectedScopes = scopesFor(selected);
@@ -87,6 +111,14 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
   const current = selectedDiscussion ?? discussions.find(value => value.scope === selectedScope);
   const latest = current?.rounds.at(-1);
   const shown = current?.rounds.find(round => round.id === selection.roundId) ?? latest;
+  const reading = READING_METHODS[method];
+  // 對照的筆記只從同一本書裡選；需要對照的讀法只列有作者原文的摘錄。
+  const otherLoaded = compareBookId ? otherNotes?.bookId === compareBookId : true;
+  const pool = compareBookId ? (otherLoaded ? otherNotes!.notes.filter(note => note.id && (note.kind === "excerpt" || note.kind === "thought") && readingNoteContent(note).trim()) : []) : available;
+  const others = pool.filter(note => note.id !== selected?.id && (reading.compare !== "required" || (note.kind === "excerpt" && note.text.trim())));
+  const otherBooks = (books ?? []).filter(book => book.id !== bookId);
+  const compare = reading.compare === "none" ? undefined : others.find(note => note.id === compareId);
+  const needsCompare = reading.compare === "required" && !compare;
 
   async function copy(value: string, name: string) {
     setManual("");
@@ -137,7 +169,7 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
 
   const begin = () => {
     if (!selected || !selectedScope) return;
-    void act<Change>({ action: "prepare", noteId: selected.id, scope: selectedScope, starter, question }, receive);
+    void act<Change>({ action: "prepare", noteId: selected.id, scope: selectedScope, starter, question, method, compareNoteId: compare?.id ?? "", compareBookId: compare ? compareBookId : "" }, receive);
   };
 
   const checkCard = () => void act<ReturnPreview>({ action: "preview", raw }, setPreview);
@@ -180,6 +212,7 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
         setNoteId(event.target.value);
         setSelection({ discussionId: "", roundId: "" });
         setQuestion("");
+        setCompareId("");
       }}>
         {available.map(note => <option key={note.id} value={note.id}>{noteLabel(note)}</option>)}
       </select>
@@ -190,7 +223,7 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
       {discussions.map(value => <div className="reading-discussion-history" key={value.id}>
         <b>{DISCUSSION_SCOPES[value.scope]}</b>
         {value.rounds.map((round, index) => <button key={round.id} type="button" onClick={() => show(value, round.id)}>
-          第 {index + 1} 輪 · {round.result?.status ?? "已準備"}
+          第 {index + 1} 輪 · {round.result?.status ?? "已準備"}{round.method ? " · " + READING_METHODS[round.method].from : ""}
         </button>)}
       </div>)}
     </details>}
@@ -203,6 +236,28 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
           setSelection({ discussionId: "", roundId: "" });
         }}>{selectedScopes.map(key => <option value={key} key={key}>{DISCUSSION_SCOPES[key]}</option>)}</select>
       </label>
+      <fieldset className="reading-method-picker">
+        <legend>這輪的讀法</legend>
+        {(Object.keys(READING_METHODS) as ReadingMethodKey[]).map(key => <label key={key} className={"reading-method" + (method === key ? " on" : "")} data-method={key}>
+          <input type="radio" name="reading-method" value={key} checked={method === key} onChange={() => setMethod(key)} />
+          <span><b>{READING_METHODS[key].name}</b>{READING_METHODS[key].from && <small>{READING_METHODS[key].from}</small>}</span>
+        </label>)}
+        <p className="reading-method-hint">{reading.hint}</p>
+      </fieldset>
+      {reading.compare !== "none" && otherBooks.length > 0 && <label>對照的筆記出自哪一本書
+        <select className="field" value={compareBookId} onChange={event => { setCompareBookId(event.target.value); setCompareId(""); }}>
+          <option value="">這本書</option>
+          {otherBooks.map(book => <option key={book.id} value={book.id}>{book.title}{book.readCount > 1 ? "（第 " + book.readCount + " 次閱讀）" : ""}</option>)}
+        </select>
+      </label>}
+      {reading.compare !== "none" && <label>{reading.compare === "required" ? "對照的另一則摘錄" : "對照的另一則筆記（選填）"}
+        <select className="field" value={compare?.id ?? ""} onChange={event => setCompareId(event.target.value)}>
+          <option value="">{reading.compare === "required" ? "請選擇" : "不對照，只談這一則"}</option>
+          {others.map(note => <option key={note.id} value={note.id}>{noteLabel(note)}</option>)}
+        </select>
+        {!otherLoaded && <small>正在讀取那本書的筆記…</small>}
+        {otherLoaded && !others.length && (reading.compare === "required" || compareBookId) && <small>{compareBookId ? "那本書還沒有可以對照的" + (reading.compare === "required" ? "摘錄" : "筆記") + "。" : "這本書還需要另一則有作者原文的摘錄；也可以改選另一本書。"}</small>}
+      </label>}
       <label>怎麼開始？
         <select className="field" value={starter} onChange={event => setStarter(event.target.value === "me" ? "me" : "gpt")}>
           <option value="gpt">讓 GPT 先問我</option><option value="me">我想先提問</option>
@@ -211,13 +266,14 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
       <label>{starter === "me" ? "我這次的問題" : "我想談的方向（選填）"}
         <textarea className="field" rows={2} maxLength={4000} value={question} onChange={event => setQuestion(event.target.value)} />
       </label>
-      <button className="primary" type="button" disabled={busy || (starter === "me" && !question.trim())} onClick={begin}>
+      <button className="primary" type="button" disabled={busy || needsCompare || (starter === "me" && !question.trim())} onClick={begin}>
         {latest?.result?.status === "暫存" ? "產生續談包" : "產生討論包"}
       </button>
     </details>}
     {hasActivePacket && <div className="reading-discussion-block">
       <h3>把這輪帶到 ChatGPT</h3>
       <p>{discussionCitation(shown, current.rounds.indexOf(shown) + 1)}</p>
+      <p className="reading-method-used"><b>這輪的讀法</b>{methodLabel(shown.method)}{shown.source.compare && "　對照　" + (shown.source.compare.bookTitle ? "《" + shown.source.compare.bookTitle + "》" : "") + shown.source.compare.label}</p>
       <div className="reading-discussion-actions">
         <button className="primary" onClick={() => void copy(discussionPrompt(current, shown), "討論包")}>複製討論包</button>
         <a href="https://chatgpt.com/" target="_blank" rel="noreferrer">開啟 ChatGPT ↗</a>
@@ -255,6 +311,9 @@ export default function ReadingDiscussionWorkspace({ bookId, notes, initialNoteI
       <details className="reading-discussion-fold"><summary>回看本輪問答與來源</summary>
         {shown.source.excerpt && <div><b>作者原文</b><blockquote>{shown.source.excerpt}</blockquote></div>}
         {shown.source.reflection && <div><b>我當時的想法</b><p>{shown.source.reflection}</p></div>}
+        {shown.source.compare?.excerpt && <div><b>對照的作者原文{shown.source.compare.bookTitle ? "（《" + shown.source.compare.bookTitle + "》）" : ""}</b><blockquote>{shown.source.compare.excerpt}</blockquote></div>}
+        {shown.source.compare?.reflection && <div><b>我對對照段的想法</b><p>{shown.source.compare.reflection}</p></div>}
+        {shown.method && <p className="reading-method-used"><b>這輪的讀法</b>{methodLabel(shown.method)}</p>}
         <Turns result={shown.result} />
       </details>
       {shown.result.next && shown.result.status === "暫存" && <p>下次從這裡　{shown.result.next}</p>}

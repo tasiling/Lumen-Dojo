@@ -10,7 +10,7 @@ import { createInsightCard } from "@/lib/notion/mutations";
 import { taipeiTodayISO } from "@/lib/dojo/formal";
 import { readingNoteContent } from "./content";
 import {
-  approvedResult, DISCUSSION_SCOPES, discussionCitation, evidenceFor, returnIdentity, validateReturn,
+  approvedResult, DISCUSSION_SCOPES, discussionCitation, evidenceFor, isReadingMethod, READING_METHODS, returnIdentity, validateReturn,
   type DiscussionRound, type DiscussionScope, type DiscussionShortcut, type DiscussionSummary, type ReadingDiscussion,
 } from "./discussion";
 
@@ -153,6 +153,26 @@ export async function updateDiscussion(body: Record<string, unknown>) {
     const reflection = note.kind === "excerpt" ? note.metadata.reflection ?? "" : readingNoteContent(note);
     if ((scope !== "reflection" && !excerpt) || (scope !== "excerpt" && !reflection))
       throw new LearningError("選段裡沒有這次選取的原文或想法。");
+    const method = body.method == null || body.method === "" ? "open" : body.method;
+    if (!isReadingMethod(method)) throw new LearningError("請重新選擇這輪的讀法。");
+    const wantsCompare = READING_METHODS[method].compare !== "none" && typeof body.compareNoteId === "string" && body.compareNoteId !== "";
+    // 對照的筆記可以來自另一本書：兩本書談同一件事時，把兩邊的摘錄放在一起。
+    const compareBookId = wantsCompare && typeof body.compareBookId === "string" && body.compareBookId ? id(body.compareBookId) : bookId;
+    const otherBook = compareBookId === bookId ? undefined : (await listReadingBooks()).find(book => book.id.toLowerCase() === compareBookId);
+    if (compareBookId !== bookId && !otherBook) throw new LearningError("找不到對照的那本書。", 404);
+    const pool = otherBook ? await listReadingNotes(compareBookId) : notes;
+    const other = wantsCompare ? pool.find(item => item.id.toLowerCase() === id(body.compareNoteId)) : undefined;
+    if (wantsCompare && (!other || other.id.toLowerCase() === noteId)) throw new LearningError("請選另一則已保存的筆記來對照。");
+    const compare = other && {
+      ...(otherBook ? { bookId: compareBookId, bookTitle: otherBook.title, readCount: otherBook.readCount } : {}),
+      noteId: other.id.toLowerCase(),
+      label: (other.text || readingNoteContent(other)).trim().replace(/\s+/g, " ").slice(0, 38) || "閱讀筆記",
+      locator: [other.metadata.source, other.metadata.chapter, other.metadata.location].filter(Boolean).join(" · "),
+      excerpt: other.kind === "excerpt" ? other.text : "",
+      reflection: other.kind === "excerpt" ? other.metadata.reflection ?? "" : readingNoteContent(other),
+    };
+    if (READING_METHODS[method].compare === "required" && !compare?.excerpt)
+      throw new LearningError("這個讀法需要再選一則有作者原文的摘錄來對照。");
     const { recovered } = await bookArchives(bookId, { book: sourceBook, notes, children });
     return withLearningWriteLock(async () => {
       const book = await notebook(bookId);
@@ -168,6 +188,7 @@ export async function updateDiscussion(body: Record<string, unknown>) {
       const round: DiscussionRound = {
         id: crypto.randomUUID(),
         starter,
+        ...(method === "open" ? {} : { method }),
         question,
         createdAt: new Date().toISOString(),
         source: {
@@ -177,6 +198,7 @@ export async function updateDiscussion(body: Record<string, unknown>) {
           readingQuestion: sourceBook.question,
           excerpt: scope === "reflection" ? "" : excerpt,
           reflection: scope === "excerpt" ? "" : reflection,
+          ...(compare ? { compare } : {}),
         },
       };
       const pinned = last && pointsAt(await resumePointer(), roundRef(book, discussion, last));

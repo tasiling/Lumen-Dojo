@@ -65,3 +65,20 @@ assert.ok([...batches[1].context].length <= 80);
 assert.deepEqual(batches.map(b => b.start), batches.map((_, i) => batches.slice(0, i).reduce((sum, b) => sum + b.paragraphs.length, 0)));
 
 console.log("PASS transcript tidy: char-only 簡轉繁, comparisons, per-paragraph and whole-text checks, hunks, batches");
+
+// 貼回校正版：整份比對，不靠段落編號。只修錯字、標點、重新分段 → 直接可用；加了開場白、刪句或改寫 → 列出來給本人決定。
+const rawTalk = "那個就是說我們今天要講的是陶藝然後拉胚的時候手要穩不然就會歪掉我們先把土放在轉盤中間然後雙手沾水慢慢往下壓讓土置中這個步驟大概要做三到五分鐘不要急著拉高因為土很軟你一急它就會偏掉偏掉之後就很難救回來";
+const fixed = "那個，就是說，我們今天要講的是陶藝。\n\n然後拉坯的時候手要穩，不然就會歪掉。我們先把土放在轉盤中間，然後雙手沾水，慢慢往下壓，讓土置中。\n\n這個步驟大概要做三到五分鐘，不要急著拉高，因為土很軟，你一急它就會偏掉。偏掉之後就很難救回來。";
+let manual = t.checkManualTidy(rawTalk, fixed);
+assert.equal(manual.ok, true);
+assert.deepEqual([manual.added, manual.missing], [[], []]);
+manual = t.checkManualTidy(rawTalk, "以下是我幫你完整校正後的逐字稿內容：\n\n" + fixed);
+assert.equal(manual.ok, false);
+assert.deepEqual(manual.added, ["以下是我幫你完整校正後的逐字稿內容："]);
+manual = t.checkManualTidy(rawTalk, fixed.split("\n\n").slice(0, 2).join("\n\n"));
+assert.equal(manual.ok, false);
+assert.ok(manual.missing.length > 0 && manual.drift > 0.03);
+manual = t.checkManualTidy(rawTalk, "今天的主題是陶藝，重點在於拉坯時雙手必須保持穩定。首先將陶土置於轉盤中央並沾水下壓，整個過程約需三至五分鐘。");
+assert.equal(manual.ok, false);
+assert.equal(t.cleanPastedTidy("```text\n第一段。\n\n\n第二段。\n```"), "第一段。\n\n第二段。");
+assert.equal(t.cleanPastedTidy("  只有一段  "), "只有一段");

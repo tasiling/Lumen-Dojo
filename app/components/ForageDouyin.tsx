@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CaptureTranscript } from "@/lib/dojo/formal";
 import { transcriptReadingText } from "@/lib/dojo/douyin/transcriptText";
-import { tidyComparison, tidyParagraphs, tidyWords, type TranscriptTidy } from "@/lib/dojo/douyin/tidyText";
+import { TIDY_MANUAL, tidyComparison, tidyParagraphs, tidyWords, type ManualTidyCheck, type TranscriptTidy } from "@/lib/dojo/douyin/tidyText";
 
 const API = "/api/dojo/douyin";
 const INSTALL_FILENAME = "YeCai-Connect-Mac-Production.command";
@@ -109,6 +109,10 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
   const [version, setVersion] = useState<"tidy" | "raw">("tidy");
+  // 貼回校正版：the text being pasted, what the check found, and the copy just saved (shown before the page reloads).
+  const [paste, setPaste] = useState("");
+  const [pasteCheck, setPasteCheck] = useState<ManualTidyCheck | null>(null);
+  const [pasted, setPasted] = useState<TranscriptTidy | null>(null);
   const job = data?.job;
   const visible = Boolean(captureId) || connectionOpen;
   // Captures without a transcript keep polling slowly so a file that reaches the Mac shows up here.
@@ -181,6 +185,26 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
     }
   }
 
+  async function submitPaste(confirm: boolean) {
+    setBusy(true); setActionError(""); setNotice("");
+    try {
+      const response = await checked(await fetch(API, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "tidyPaste", captureId, text: paste, confirm }),
+      }));
+      const result = await response.json() as State & { check: ManualTidyCheck; saved: boolean; tidy?: TranscriptTidy };
+      setPasteCheck(result.saved ? null : result.check);
+      if (result.saved && result.tidy) {
+        setData(result); setPasted(result.tidy); setPaste(""); setVersion("tidy");
+        setNotice("已放回校正版。原始辨識仍然保留，可以隨時切換對照。");
+      }
+    } catch (caught) {
+      setActionError(caught instanceof Error ? caught.message : "這次操作沒有完成。");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function copyTranscript(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -197,18 +221,21 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
   const inNotion = stored && (!done || (done.synced !== false && stored.finishedAt === done.finishedAt)) ? stored : null;
   const fullText = inNotion && !(inNotion.truncated && done) ? inNotion.text : done ? transcriptReadingText(done) : "";
   // The corrected copy is shown by default; the raw recognition stays one tap away and is never replaced.
-  const tidy = (inNotion && !(inNotion.truncated && done) ? inNotion.tidy : done?.tidy ?? inNotion?.tidy) ?? null;
+  const tidy = pasted ?? (inNotion && !(inNotion.truncated && done) ? inNotion.tidy : done?.tidy ?? inNotion?.tidy) ?? null;
+  const manual = tidy?.model === TIDY_MANUAL;
   const showTidy = Boolean(tidy) && version === "tidy";
   const shownText = showTidy ? tidy!.text : fullText;
   const transcript = shownText ? transcriptPreview(shownText) : null;
-  const comparison = tidy && done?.tidyBase ? tidyComparison(done.tidyBase, tidy.text) : null;
+  // A pasted copy may be re-paragraphed, so it has no paragraph-by-paragraph comparison; both versions stay readable.
+  const comparison = tidy && !manual && done?.tidyBase ? tidyComparison(done.tidyBase, tidy.text) : null;
   // Word fixes are listed one by one; punctuation, breaks and 〔？〕 marks are only counted, so the fixes stay visible.
   const wordFixes = comparison?.map((item) => ({ ...item, hunks: item.hunks.filter((h) => tidyWords(h.before) !== tidyWords(h.after)) }))
     .filter((item) => item.hunks.length) ?? [];
   const markOnly = (comparison?.reduce((sum, item) => sum + item.hunks.length, 0) ?? 0) - wordFixes.reduce((sum, item) => sum + item.hunks.length, 0);
   const unsure = tidy ? tidy.text.split("〔？〕").length - 1 : 0;
   const tidyPending = done?.tidyState === "pending";
-  const canTidy = Boolean(done) && !tidyPending && (!tidy || tidy.state !== "done");
+  const canTidy = Boolean(done) && !tidyPending && (!tidy || tidy.state !== "done" || manual);
+  const canPaste = Boolean(captureId) && !tidyPending && Boolean(fullText);
   const revertedPreview = tidy ? tidyParagraphs(tidy.text) : [];
   const pending = Boolean(done && done.synced === false);
   const status = job && !(inNotion && job.status === "failed") ? statuses[job.status]
@@ -259,7 +286,8 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
           <button type="button" role="radio" aria-checked={!showTidy} className={!showTidy ? "on" : ""} onClick={() => setVersion("raw")}>原始辨識</button>
         </div>}
         {tidy && showTidy && <div className="forage-douyin-tidy-note" role="note">
-          {tidy.state === "done" && <p>已校正：簡體轉為繁體，修正辨識錯字、標點與分段，共改了 {tidy.changes} 處；沒有刪句、增句或改寫。</p>}
+          {manual && <p>這是你貼回的校正版{tidy.at ? `（${new Date(tidy.at).toLocaleDateString("zh-TW")}）` : ""}。討論與淬鍊會使用這一版；原始辨識仍然保留。</p>}
+          {!manual && tidy.state === "done" && <p>已校正：簡體轉為繁體，修正辨識錯字、標點與分段，共改了 {tidy.changes} 處；沒有刪句、增句或改寫。</p>}
           {tidy.state === "skipped" && <p>{done?.tidyReason || "只轉成繁體，沒有做辨識修正。"}</p>}
           {tidy.state === "failed" && <p>{done?.tidyReason || "辨識修正沒有完成。"}這裡顯示的是只轉成繁體的原始辨識。</p>}
           {tidy.state === "done" && tidy.reverted.length > 0 && <details className="forage-douyin-fold">
@@ -277,7 +305,31 @@ export default function ForageDouyin({ captureId, captureTitle, douyin = true, s
             {(markOnly > 0 || unsure > 0) && <p>{markOnly > 0 ? `其餘 ${markOnly} 處只加了標點、換行或〔？〕。` : ""}{unsure > 0 ? `〔？〕表示聽不出來的地方，共 ${unsure} 處。` : ""}</p>}
           </details>}
         </div>}
-        {canTidy && <button type="button" disabled={busy} onClick={() => void submit("tidy")}>{tidy ? "重新校正" : "補做校正"}</button>}
+        {canTidy && <button type="button" disabled={busy} onClick={() => void submit("tidy")}>{manual ? "改用自動校正" : tidy ? "重新校正" : "補做校正"}</button>}
+        {canPaste && <details className="forage-douyin-fold forage-douyin-paste" open={Boolean(paste) || undefined}>
+          <summary>貼回校正版（在 GPT 完整校正後放回來）</summary>
+          <p>把校正後的整份逐字稿貼在這裡，它會成為這筆素材的校正版。原始辨識不會被取代。</p>
+          <label>校正後的逐字稿
+            <textarea className="field" rows={6} value={paste} onChange={(event) => { setPaste(event.target.value); setPasteCheck(null); }} />
+          </label>
+          <button type="button" className="primary" disabled={busy || !paste.trim()} onClick={() => void submitPaste(false)}>核對並放回</button>
+          {pasteCheck && <div className="forage-douyin-paste-check" role="alert">
+            <b>這一版和原始辨識有出入，請先看過再決定</b>
+            <p>原始辨識 {pasteCheck.baseChars.toLocaleString()} 字，貼回的版本 {pasteCheck.tidyChars.toLocaleString()} 字，相差 {Math.round(pasteCheck.drift * 100)}%。</p>
+            {pasteCheck.added.length > 0 && <details className="forage-douyin-fold" open>
+              <summary>原始辨識裡找不到的句子（{pasteCheck.added.length} 句）</summary>
+              <p>可能是 GPT 加的開場白、小結，或改寫過的句子。</p>
+              <ul>{pasteCheck.added.slice(0, 30).map((line, index) => <li key={index}>{line}</li>)}</ul>
+            </details>}
+            {pasteCheck.missing.length > 0 && <details className="forage-douyin-fold" open>
+              <summary>貼回的版本裡找不到的段落（{pasteCheck.missing.length} 處）</summary>
+              <p>可能是被刪掉或改寫的地方，以下是原始辨識的文字。</p>
+              <ul>{pasteCheck.missing.slice(0, 30).map((line, index) => <li key={index}>{line}</li>)}</ul>
+            </details>}
+            <p>可以回到上方修改貼上的文字再核對一次，或直接採用。</p>
+            <button type="button" disabled={busy} onClick={() => void submitPaste(true)}>我看過了，仍要採用這一版</button>
+          </div>}
+        </details>}
         {transcript && <>
           <p className="forage-douyin-text">{transcript.lead}</p>
           {transcript.rest && <details className="forage-douyin-fold">
