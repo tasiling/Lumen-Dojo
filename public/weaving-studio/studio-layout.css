@@ -224,3 +224,9 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .production-meta .is-wait{background:#faf0da}
 .production-unit pre{margin:0;padding:12px;border-radius:10px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:.88rem;line-height:1.7;max-height:260px;overflow-y:auto}
 .production-unit .actions,.next-forms .chips{display:flex;flex-wrap:wrap;gap:8px}
+.tool-pick{display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--accent);border-radius:12px;background:var(--soft)}
+.tool-pick h3{margin:6px 0 0;font-size:1rem}
+.tool-settings{display:grid;gap:10px}
+.tool-pick select,.tool-pick input{width:100%}
+.tool-pick pre{margin:0;padding:12px;border-radius:10px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:.85rem;line-height:1.7;max-height:340px;overflow-y:auto}
+@media(min-width:700px){.tool-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
