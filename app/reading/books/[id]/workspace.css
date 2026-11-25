@@ -39,4 +39,6 @@
 .dojo.reading-shell .reading-session-screen .reading-source-note-actions>.reading-manual-more>summary {color:#20594d;font-weight:500}
 .dojo.reading-shell .reading-session-screen .reading-stage-panel {border:0;border-radius:0;box-shadow:none;background:transparent;padding:12px 0}
 .dojo.reading-shell .reading-session-screen .reading-stage-intro>span {display:none}
+/* The number badge is hidden here, so the heading takes the whole row instead of the badge's 34px column. */
+.dojo.reading-shell .reading-session-screen .reading-stage-intro {grid-template-columns:minmax(0,1fr)}
 .dojo.reading-shell .reading-session-screen .reading-soft-empty {background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:14px 0;text-align:start}
