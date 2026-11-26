@@ -36,19 +36,43 @@ function diamondMessage(message){
   else toast(message);
 }
 const diamondLive='<p id="diamondMessage" role="status" aria-live="polite" class="note"></p>';
-/* A 階段留下的痕跡：最近一輪 A 的草稿、GPT 的診斷與本人確認的意圖。B 與重新開啟 A 時接著用。 */
+/* A 階段留下的痕跡：最近一輪 A 的草稿、GPT 的診斷、本人確認的意圖，以及 A 結尾的「A → B 正式交接」。
+   B 與重新開啟 A 時接著用。交接裡由 GPT 整理的方向不是本人原話，帶入時保留這個區分。 */
 function diamondLatestA(w) {
   const runs=(w?.diamondRuns||[]).filter(r=>r.mode==='A'&&!r.n);
   return runs.filter(r=>r.locked&&r.answer).at(-1)||runs.at(-1)||null;
 }
-function diamondADate(r){return r.time?new Date(r.time).toLocaleDateString('zh-TW'):'';}
+function diamondADate(r){return r?.time?new Date(r.time).toLocaleDateString('zh-TW'):'';}
+/* 從一段文字裡找出「知識鑽石 A → B｜正式交接」，並取出原始草稿、本人意圖確認、核心創作意圖。 */
+function parseAHandoff(text) {
+  const raw=String(text||'');
+  const start=raw.search(/^[=＝\s]*知識鑽石\s*A\s*(?:→|->|＞|>|to)\s*B/m);
+  if(start<0)return null;
+  const tail=raw.slice(start), done=/^[=＝ \t]*A\s*模組完成[^\n]*$/m.exec(tail);
+  const body=(done?tail.slice(0,done.index+done[0].length):tail).trim();
+  const section=name=>{
+    const m=new RegExp('【'+name+'】[^\\n]*\\n([\\s\\S]*?)(?=\\n\\s*【[^】]+】|\\n[=＝]{3,}|$)').exec(body);
+    return m?m[1].trim():'';
+  };
+  const title=(/^\s*作品題名\s*[:：]\s*(.+)$/m.exec(body)?.[1]||'').trim();
+  return {text:body,title,draft:section('原始草稿'),intentConfirm:section('本人意圖確認'),
+    core:section('核心創作意圖').replace(/\n*以上為依照本人選擇[^\n]*$/,'').trim()};
+}
+function diamondHandoff(w,a) {
+  return w?.aHandoff||a?.handoff||'';
+}
 function diamondATrace(w,a) {
-  if(!a)return '';
+  const handoff=diamondHandoff(w,a);
+  if(!a&&!handoff)return '<section class="diamond-trace"><h3>A 階段的交接</h3>'+
+    field('如果 A 是在別處做的，可以把 A 結尾的「A → B 正式交接」貼在這裡（選填）','diaHandoff','',true,'spellcheck="false"')+'</section>';
   return '<section class="diamond-trace"><h3>A 階段留下的</h3>'+
-    (a.answer?'<p><b>本人確認的意圖</b></p><p class="fixed-preview">'+esc(a.answer)+'</p>':tip('A 這輪還沒有確認意圖。'))+
-    (a.source?more('A 分析的草稿',field('A 分析的草稿','diaASource',a.source,true,'readonly')):'')+
-    (a.raw?more('GPT 在 A 的診斷',field('A 的診斷全文','diaARaw',a.raw,true,'readonly'))+
-      '<label class="checkline"><input id="diaWithA" type="checkbox" checked>把 A 的診斷與我的回答附在這輪指令後面</label>':'')+
+    (a?.answer?'<p><b>本人確認的意圖</b></p><p class="fixed-preview">'+esc(a.answer)+'</p>':a?tip('A 這輪還沒有確認意圖。'):'')+
+    (a?.source?more('A 分析的草稿',field('A 分析的草稿','diaASource',a.source,true,'readonly')):'')+
+    (a?.raw&&!handoff?more('GPT 在 A 的回覆',field('A 的回覆全文','diaARaw',a.raw,true,'readonly')):'')+
+    more(handoff?'A → B 正式交接（已帶入）':'貼上 A → B 正式交接（選填）',
+      field('A 結尾的正式交接，可以修改或重貼','diaHandoff',handoff,true,'spellcheck="false"')+
+      tip('交接裡的「核心創作意圖」「語氣與立場」等是 GPT 依你的選擇整理的方向，不是你的原話；B 的指令會照這個區分帶入。'))+
+    '<label class="checkline"><input id="diaWithA" type="checkbox" checked>把 A 的'+(handoff?'正式交接':'回覆')+'與我的回答附在這輪指令後面</label>'+
     '</section>';
 }
 function openDiamond(w,mod,n) {
@@ -86,14 +110,17 @@ function openDiamond(w,mod,n) {
     if(mod==='B')body+=diamondATrace(w,a);
     if(mod==='B'||mod==='A')body+=workMaterialPicker(w);
     // 正文還是空的時候，接著用 A 上一輪分析的草稿，不讓寫過的內容消失。
-    const fromA=w.type==='text'&&!w.body?.trim()&&a?.source?a.source:'';
+    const handoffDraft=parseAHandoff(diamondHandoff(w,a))?.draft||'';
+    const fromA=w.type==='text'&&!w.body?.trim()?(a?.source||handoffDraft):'';
     body+=field(w.type==='text'?'這次分析的草稿':'這次要診斷的敘事、口白或作者草稿','diaScratch',
       w.type==='text'?(w.body||fromA):(w.diamondNarrative||''),true)+
       (fromA?tip('正文還是空的，這裡先帶入 A 階段'+(diamondADate(a)?'（'+diamondADate(a)+'）':'')+'分析的草稿。'):'');
     if(mod==='B'){
-      const intent=w.intent||a?.answer||'';
-      body+=field('本件作品的創作意圖','diaIntent',intent,true)+
-        '<label class="checkline"><input id="diaIntentOK" type="checkbox"'+(intent?' checked':'')+'>我確認這是本件作品的意圖</label>'+
+      const confirmed=w.intent||a?.answer||'';
+      const fromHandoff=confirmed?'':parseAHandoff(diamondHandoff(w,a))?.core||'';
+      body+=field('本件作品的創作意圖','diaIntent',confirmed||fromHandoff,true)+
+        (fromHandoff?tip('這段取自交接的「核心創作意圖」，是 GPT 依你的選擇整理的，不是你的原話。請改成你認同的說法再勾選確認。'):'')+
+        '<label class="checkline"><input id="diaIntentOK" type="checkbox"'+(confirmed?' checked':'')+'>我確認這是本件作品的意圖</label>'+
         '<div class="inline-fields">'+diamondSelect('調整幅度','diaBmode',diamondOriginalChoices.bModes,'standard')+
         diamondSelect('主文框架','diaFramework',{auto:'依確認的意圖選框架',...diamondOriginalChoices.frameworks},'auto')+'</div>'+
         field('指定理論（選填）','diaTheory','',true);
@@ -119,13 +146,23 @@ function diaGenerate(id,requested,n){
     cLevel:val('diaLevel')||'standard',cFramework:val('diaFramework')||'diamond',systems:val('diaSystems')};
   let prompt=diamondOriginalPrompt(mode,input);
   if(!prompt){diamondMessage('請核對本輪的輸入。');return;}
-  const a=mode==='B'&&$('diaWithA')?.checked?diamondLatestA(w):null;
-  if(a?.raw)prompt+='\n\n【A 階段的診斷與本人回答（供參考；主文仍以本人確認的意圖與原話為準）】\n'+a.raw+(a.answer?'\n\n本人看過診斷後的回答：'+a.answer:'');
+  const a=mode==='B'?diamondLatestA(w):null;
+  if(mode==='B'&&$('diaHandoff')){
+    const pasted=val('diaHandoff'), parsed=parseAHandoff(pasted);
+    if(pasted&&!parsed){diamondMessage('貼上的交接找不到「知識鑽石 A → B｜正式交接」的開頭，請貼上 A 結尾的完整交接。');return;}
+    if((parsed?.text||'')!==(w.aHandoff||'')&&(parsed?.text||'')!==(a?.handoff||''))w.aHandoff=parsed?.text||'';
+  }
+  const handoff=mode==='B'?diamondHandoff(w,a):'';
+  if(mode==='B'&&$('diaWithA')?.checked){
+    if(handoff)prompt+='\n\n【A 模組的正式交接（照下文接續 B；交接中標明為編輯整理或建議的內容，不是本人原話，不得當成本人已確認的立場）】\n'+handoff+
+      (a?.answer?'\n\n本人在 A 確認的回答：'+a.answer:'');
+    else if(a?.raw)prompt+='\n\n【A 階段的診斷與本人回答（供參考；主文仍以本人確認的意圖與原話為準）】\n'+a.raw+(a.answer?'\n\n本人看過診斷後的回答：'+a.answer:'');
+  }
   if(mode==='B')w.intent=input.intent;
   if(mode==='A'&&w.type!=='text')w.diamondNarrative=source;
   if(mode==='D'&&w.type!=='text'){w.diamondTranscripts ||= {};w.diamondTranscripts[n]=source;}
   const run={id:uid(),mode,n:n||0,workId:id,title:v?.data.title||nameW(w),shuttleId:w.shuttle,
-    source,baseBody:w.body,intent:input.intent,prompt,stage:'指令已備妥',raw:'',time:Date.now(),...(a?{fromA:a.id}:{})};
+    source,baseBody:w.body,intent:input.intent,prompt,stage:'指令已備妥',raw:'',time:Date.now(),...(a&&mode==='B'?{fromA:a.id}:{})};
   w.diamondRuns ||= [];w.diamondRuns.push(run);keep(w);diamondRun(id,run.id);
 }
 function diamondFind(id,rid){const w=findW(id);return [w,w?.diamondRuns?.find(r=>r.id===rid)];}
@@ -143,7 +180,7 @@ function diamondRun(id,rid){
 function diaResult(w,r){
   if(r.locked&&r.mode==='A')return '<h3>本人已確認的意圖</h3><p class="fixed-preview">'+esc(r.answer)+'</p>';
   if(r.locked&&(r.mode==='B'||r.mode==='C-expand'))return '<h3>本輪採用的工作稿</h3><p class="fixed-preview">'+esc(r.candidate)+'</p>';
-  if(r.mode==='A')return '<div class="entry"><h3>本人確認的意圖</h3>'+
+  if(r.mode==='A')return '<div class="entry">'+(r.handoff?tip('已辨認出「A → B 正式交接」，進入 B 時會帶入這份交接。下面先帶入交接裡你的意圖選擇，請改成你自己的話再保存。'):'')+'<h3>本人確認的意圖</h3>'+
     field('看過診斷與問題後，我的回答','diaAnswer',r.answer||'',true)+
     btn('保存為本件創作意圖','diaAdoptA',[w.id,r.id],'primary')+'</div>';
   if(r.mode==='D'){
@@ -202,6 +239,10 @@ function diaCheck(id,rid){
       r.candidate=match?.[1]?.trim()||'';
       r.research=(raw.split(/^[^\n]*(?:角色二|第二角色)[：:\s\S]*?主文調整師[^\n]*$/m)[0]||'').trim();
       if(r.research===raw)r.research='';
+    } else if(r.mode==='A'){
+      const handoff=parseAHandoff(raw);
+      if(handoff){r.handoff=handoff.text;if(!r.answer&&handoff.intentConfirm)r.answer=handoff.intentConfirm;}
+      else delete r.handoff;
     } else if(r.mode==='C-expand')r.candidate=raw;
     else if(r.mode.startsWith('C-'))r.stories=diaStories(raw);
   }
@@ -292,6 +333,17 @@ function diaAdoptNodes(id,rid){
   r.locked=true;r.stage='已存入待寫池';keep(w);diamondRun(id,rid);
   diamondMessage(added?'已保存 '+added+' 個節點，可從所屬織光杼查看。':'勾選的節點已在待寫池。');
 }
+/* 在 B 貼上交接後，草稿與意圖都還空著時，重新開啟 B 讓交接裡的草稿與意圖帶進來。 */
+document.addEventListener('change',e=>{
+  if(e.target.id!=='diaHandoff'||route!=='edit')return;
+  const w=current();if(!w)return;
+  const parsed=parseAHandoff(e.target.value);
+  if(!parsed){if(e.target.value.trim())diamondMessage('找不到「知識鑽石 A → B｜正式交接」的開頭，請貼上 A 結尾的完整交接。');return;}
+  if(parsed.text===diamondHandoff(w,diamondLatestA(w)))return;
+  w.aHandoff=parsed.text;keep(w);
+  if(!val('diaScratch')&&!val('diaIntent')){openDiamond(w,'B');diamondMessage('已帶入 A 的交接，請確認草稿與意圖。');}
+  else diamondMessage('已保存 A 的交接，產生指令時會一起帶入。');
+});
 Object.assign(handlers,{
   diamondOpen:(id,mod,n)=>openDiamond(findW(id),mod,n),diaGenerate,diamondRun,diaCheck,diaCompare,diaAdoptText,
   diaStory,diaStorySave,diaAdoptNodes,
