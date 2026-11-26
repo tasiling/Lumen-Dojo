@@ -476,3 +476,94 @@ def api(route):
     if not isinstance(value, dict) or value.get('code') != 0 or not isinstance(value.get('data'), dict):
         raise TrialError('Mac BiliNote 的回應格式與採集匣版本不符。')
     return value['data']
+
+
+# ---- 畫面與節奏分析 ----
+# Only cut times and small JPEG thumbnails leave this Mac; the video itself stays here.
+SCENE_THRESHOLD = 0.3
+SAMPLE_FPS = 4
+MAX_FRAMES = 48
+
+
+def _ffmpeg_frames(clip, folder):
+    """Run scene detection and 4-per-second sampling. Returns the scene log; thumbnails land in folder/f."""
+    detect = ['-nostdin', '-v', 'info', '-protocol_whitelist', 'file', '-format_whitelist', VIDEO_FORMATS]
+    sample = ['-nostdin', '-v', 'error', '-protocol_whitelist', 'file', '-format_whitelist', VIDEO_FORMATS]
+    scene = "select='gt(scene,%s)',showinfo" % SCENE_THRESHOLD
+    thumbs = 'fps=%d,scale=480:-2' % SAMPLE_FPS
+    out = Path(folder) / 'f'
+    out.mkdir(parents=True, exist_ok=True)
+    binary = shutil.which('ffmpeg')
+    if binary:
+        found = subprocess.run([binary] + detect + ['-i', str(clip), '-an', '-vf', scene, '-f', 'null', '-'],
+                               stdin=subprocess.DEVNULL, capture_output=True, timeout=300)
+        made = subprocess.run([binary] + sample + ['-i', str(clip), '-an', '-vf', thumbs, '-q:v', '5', str(out / 's_%04d.jpg')],
+                              stdin=subprocess.DEVNULL, capture_output=True, timeout=300)
+        if made.returncode:
+            raise TrialError('Mac 已取得影片，但 FFmpeg 無法抽出畫面。')
+        return found.stderr.decode('utf-8', 'replace')
+    docker, container = local_engine()
+    script = ('d=$(mktemp -d); trap \'rm -rf "$d"\' EXIT; cat > "$d/clip"; mkdir "$d/f"; '
+              'ffmpeg ' + ' '.join(detect) + ' -i "$d/clip" -an -vf "' + scene + '" -f null - 2> "$d/scenes.txt" || true; '
+              'ffmpeg ' + ' '.join(sample) + ' -i "$d/clip" -an -vf "' + thumbs + '" -q:v 5 "$d/f/s_%04d.jpg"; '
+              'tar -C "$d" -cf - scenes.txt f')
+    archive = Path(folder) / 'frames.tar'
+    with Path(clip).open('rb') as src, archive.open('wb') as dst:
+        result = subprocess.run([docker, 'exec', '-i', container, 'sh', '-ec', script], stdin=src, stdout=dst,
+                                stderr=subprocess.PIPE, timeout=600)
+    if result.returncode:
+        raise TrialError('Mac 已取得影片，但 FFmpeg 無法抽出畫面。')
+    import tarfile
+    with tarfile.open(str(archive)) as tar:
+        for member in tar.getmembers():
+            name = member.name
+            if not (name == 'scenes.txt' or re.fullmatch(r'f/s_\d{4}\.jpg', name)) or not member.isfile():
+                continue
+            target = Path(folder) / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with tar.extractfile(member) as src, target.open('wb') as dst:
+                shutil.copyfileobj(src, dst)
+    log = Path(folder) / 'scenes.txt'
+    return log.read_text('utf-8', 'replace') if log.exists() else ''
+
+
+def pick_frames(duration, cuts, samples):
+    """Choose up to MAX_FRAMES (time, shot, path): each shot's start, then its middle and end while room remains.
+    Every frame is taken from inside its own shot, so a frame never shows the shot before a cut."""
+    edges = [0.0] + [t for t in cuts if 0.05 < t < duration - 0.05] + [duration]
+    shots = list(zip(edges, edges[1:]))
+    last = len(samples) - 1
+
+    def inside(start, end, where):
+        first = min(last, math.ceil(start * SAMPLE_FPS + 1e-6) if start > 0 else 0)
+        # FFmpeg reports a cut a frame or two after it happens, so the last frame keeps 0.1 s clear of the next shot.
+        final = max(first, min(last, math.floor((end - 0.1) * SAMPLE_FPS)))
+        index = {0: first, 1: round((first + final) / 2), 2: final}[where]
+        return index / SAMPLE_FPS, samples[index]
+
+    chosen, seen = [], set()
+    for rank in range(3):
+        for number, (start, end) in enumerate(shots, 1):
+            if len(chosen) >= MAX_FRAMES:
+                break
+            if (rank == 1 and end - start < 1.0) or (rank == 2 and end - start < 2.0):
+                continue
+            t, path = inside(start, end, rank)
+            if path in seen:
+                continue
+            seen.add(path)
+            chosen.append((t, number, path))
+    return sorted(chosen)
+
+
+def analysis_frames(clip, folder):
+    """Duration, cut times and chosen thumbnails for one video."""
+    log = _ffmpeg_frames(clip, folder)
+    samples = sorted((Path(folder) / 'f').glob('s_*.jpg'))
+    if not samples:
+        raise TrialError('沒有抽出任何畫面。')
+    match = re.search(r'Duration: (\d+):(\d+):(\d+(?:\.\d+)?)', log)
+    duration = (int(match.group(1)) * 3600 + int(match.group(2)) * 60 + float(match.group(3))) if match else len(samples) / SAMPLE_FPS
+    cuts = sorted({round(float(t), 2) for t in re.findall(r'pts_time:(\d+(?:\.\d+)?)', log)})
+    return duration, cuts, pick_frames(duration, cuts, samples)
+

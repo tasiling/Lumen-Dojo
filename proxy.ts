@@ -10,7 +10,7 @@ export const config = {
 
 export default function proxy(request: NextRequest) {
   // These routes authenticate a Mac using the pairing ticket or its own bearer token.
-  if (/^\/api\/integrations\/douyin\/worker\/(pair|claim|update|offer)\/?$/.test(request.nextUrl.pathname)) {
+  if (/^\/api\/integrations\/douyin\/worker\/(pair|claim|update|offer|analysis)\/?$/.test(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
   const accessKey = process.env.ACCESS_KEY;

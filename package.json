@@ -19,6 +19,7 @@
     "test:auto-unit": "node --experimental-strip-types --test tests/english-image-auto-unit.test.mjs",
     "test:unit-arrangement": "node scripts/test-unit-arrangement.mjs && node scripts/test-unit-arrangement-contract.mjs && node scripts/test-unit-arrangement-completed-retry.mjs",
     "test:transcription": "node scripts/test-line-douyin.mjs && node scripts/test-file-transcription.mjs && python3 -B scripts/test-douyin-mac-worker.py",
+    "test:video-analysis": "node --experimental-strip-types --test tests/video-analysis.test.mjs tests/video-analysis-queue.test.mjs && python3 -B scripts/test-video-analysis-worker.py",
     "test:transcript-notion": "node scripts/test-transcript-notion.mjs",
     "test:threads": "node --test tests/threads-reader.test.mjs && node --experimental-strip-types --test tests/threads-video-probe.test.mjs",
     "test:transcript-tidy": "node scripts/test-transcript-tidy-unit.mjs && node scripts/test-transcript-tidy.mjs",
