@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ForageTabs from "./ForageTabs";
+import { unreadImages } from "@/lib/dojo/captureImageText";
 import RelationsPanel from "./readingKnowledge/RelationsPanel";
 import ForageIcon from "./ForageIcon";
 import ForageDouyin, { isDouyinCapture } from "./ForageDouyin";
@@ -252,6 +253,59 @@ function CaptureRefineEntry({ capture, active }: { capture: CaptureEntry; active
   );
 }
 
+/**
+ * 圖片文字：只在擁有者按下時請 AI 讀圖。讀出的文字逐張可改，按「確認為原文」後才會帶進淬鍊。
+ */
+function CaptureImageTextPanel({ capture, onUpdated }: { capture: CaptureEntry; onUpdated: (capture: CaptureEntry) => void }) {
+  const result = capture.clip.imageText;
+  const ids = capture.clip.attachments.map((attachment) => attachment.id);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const unread = unreadImages(result, ids);
+  async function call(body: Record<string, unknown>) {
+    setBusy(true); setError("");
+    try {
+      const next = await responseJson<{ capture: CaptureEntry }>(await fetch(`/api/dojo/captures/${encodeURIComponent(capture.id)}/image-text`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      }));
+      onUpdated(next.capture); setDrafts({});
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setBusy(false); }
+  }
+  const pages = result?.pages ?? [];
+  const edited = pages.map((page) => ({ attachmentId: page.attachmentId, text: drafts[page.attachmentId] ?? page.text }));
+  const dirty = pages.some((page) => drafts[page.attachmentId] !== undefined && drafts[page.attachmentId] !== page.text);
+  return <section className="capture-image-text" aria-label="圖片文字">
+    <div className="capture-exploration-heading">
+      <div><b>圖片文字</b><span>{result?.confirmed ? "已核對，淬鍊時會接在原文後面。" : "圖裡有重要文字時，可以請 AI 讀出來；核對確認後才會帶進淬鍊。"}</span></div>
+      <button type="button" disabled={busy || result?.state === "reading"} onClick={() => {
+        if (result?.confirmed && !window.confirm("重新讀取會取代目前核對過的文字，需要再確認一次。要繼續嗎？")) return;
+        void call({ action: "read" });
+      }}>{busy && !pages.length ? "讀取中…" : result?.state === "reading" ? "讀取中…" : pages.length ? "重新讀取" : `讀取 ${ids.length} 張圖的文字`}</button>
+    </div>
+    {result?.state === "failed" && <p className="form-error">{result.error || "AI 讀圖沒有完成，請稍後重試。"}</p>}
+    {unread > 0 && pages.length > 0 && <p className="refine-note">有 {unread} 張圖是讀取之後才補進來的，按「重新讀取」才會一起讀。</p>}
+    {error && <p className="form-error">{error}</p>}
+    {pages.length > 0 && <>
+      {pages.map((page) => {
+        const position = ids.indexOf(page.attachmentId) + 1;
+        return <label key={page.attachmentId} className="capture-image-text-page">
+          <span>圖 {position}{page.unclear ? <small>　需要核對：{page.unclear}</small> : null}</span>
+          <textarea className="field" rows={Math.min(12, Math.max(3, (drafts[page.attachmentId] ?? page.text).split("\n").length + 1))} value={drafts[page.attachmentId] ?? page.text}
+            disabled={busy} onChange={(event) => setDrafts((current) => ({ ...current, [page.attachmentId]: event.target.value }))} placeholder="這張圖沒有讀到文字" />
+        </label>;
+      })}
+      <div className="forage-actions">
+        {!result?.confirmed && <button type="button" className="primary" disabled={busy} onClick={() => void call({ action: "save", pages: edited, confirm: true })}>確認為原文</button>}
+        {result?.confirmed && dirty && <button type="button" className="primary" disabled={busy} onClick={() => void call({ action: "save", pages: edited, confirm: true })}>儲存修改</button>}
+        {!result?.confirmed && dirty && <button type="button" disabled={busy} onClick={() => void call({ action: "save", pages: edited, confirm: false })}>先存修改</button>}
+        {result?.confirmed && <button type="button" disabled={busy} onClick={() => void call({ action: "unconfirm" })}>取消確認</button>}
+      </div>
+    </>}
+  </section>;
+}
+
 function ForageCard({ detail,hidden,activeTab,onTab,onView,capture, learningItems, claims, claimsLoading, editing, targeted, onEdit, onCancel, onSaved, onClaimCreated, onCaptureUpdated, selecting = false, selected = false, selectionFull = false, onSelect }: {
   selecting?: boolean; selected?: boolean; selectionFull?: boolean; onSelect?: () => void;
   detail:boolean;hidden:boolean;activeTab:string;onTab:(tab:string)=>void;onView:()=>void;capture: CaptureEntry; learningItems: LearningEntity[]; claims: KnowledgeClaim[]; claimsLoading: boolean; editing: boolean; targeted: boolean; onEdit: () => void; onCancel: () => void; onSaved: (next: CaptureEntry) => void; onClaimCreated: (claim: KnowledgeClaim) => void; onCaptureUpdated: (capture: CaptureEntry) => void;
@@ -378,6 +432,7 @@ function ForageCard({ detail,hidden,activeTab,onTab,onView,capture, learningItem
       {detail?<h1>{displayTitle}</h1>:<h3>{displayTitle}</h3>}{detail&&<ForageTabs items={CAPTURE_DETAIL_TABS} value={activeTab} label="一般素材分區" onChange={key=>{onTab(key);if(key==="organize"||key==="claims")onEdit();}} />}<div hidden={detail&&activeTab!=="content"}>
       {capture.clip.origin === "line" && <div className="forage-clip-source"><span>{capture.clip.sourceKind === "screenshot" ? "截圖" : douyin ? "影片" : "網頁"}</span><span>{capture.clip.platform || "LINE"}</span>{!douyin && capture.clip.webPreview.status === "unavailable" && <span>僅保存網址</span>}</div>}
       {capture.clip.attachments.length > 0 && <div className="forage-clip-images">{capture.clip.attachments.map((attachment) => <a key={attachment.id} href={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} target="_blank" rel="noreferrer"><Image src={`/api/dojo/captures/${capture.id}/images/${attachment.blockId}`} alt="LINE 剪藏原始截圖" width={720} height={480} unoptimized /></a>)}</div>}
+      {detail && capture.clip.attachments.length > 0 && <CaptureImageTextPanel capture={capture} onUpdated={onCaptureUpdated} />}
       {capture.clip.threadsPost && <details open><summary>{capture.clip.threadsPost.partial ? "已擷取的部分原文" : "Threads 貼文原文"}</summary><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{capture.clip.threadsPost.text}</p></details>}
       {displayExcerpt && capture.excerpt !== capture.clip.threadsPost?.text && <p className="weaving-excerpt">{displayExcerpt}</p>}
       {detail && <ForageDouyin captureId={capture.id} captureTitle={capture.title} douyin={douyin} stored={capture.clip.transcript} />}

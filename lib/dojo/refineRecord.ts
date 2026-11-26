@@ -3,6 +3,7 @@
  * 規格見 docs/schema/野採淬鍊升級.md。
  */
 import type { CaptureEntry } from "./formal";
+import { imageTextForOriginal } from "./captureImageText";
 import {
   REFINE_ANGLES, REFINE_MAX_SOURCES, refineParagraphs,
   type RefineAngleKey, type RefineCardType, type RefineCandidate, type RefineChecks, type RefineQuote, type RefineReturn, type RefineTurn,
@@ -62,6 +63,12 @@ export function captureOriginal(capture: Pick<CaptureEntry, "excerpt" | "clip">)
     parts.push((parts.length ? "〔影片逐字稿〕\n" : "") + (tidy?.text.trim() || transcript.text.trim()));
     kinds.push(!tidy ? "逐字稿" : tidy.state === "done" ? "逐字稿，經校正" : "逐字稿，已轉繁體");
     partial ||= transcript.truncated;
+  }
+  // Text read from the images counts only after the owner confirmed it.
+  const imageText = imageTextForOriginal(capture.clip.imageText, capture.clip.attachments.map((attachment) => attachment.id));
+  if (imageText) {
+    parts.push((parts.length ? "〔圖片文字〕\n" : "") + imageText);
+    kinds.push("圖片文字，已核對");
   }
   const excerpt = capture.excerpt.trim();
   if (!parts.length && excerpt) {

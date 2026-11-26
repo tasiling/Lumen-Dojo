@@ -394,6 +394,15 @@ export function contextRoomQuickReply(entryId: string, url: string) {
   ] };
 }
 
+/** Buttons while screenshots are being added to a capture: finish adding, or have AI read the images' text. */
+export function captureScreenshotQuickReply(captureId: string) {
+  return { items: [
+    quickReplyItem("補完了", new URLSearchParams({ action: "captureScreenshotDone", captureId }).toString()),
+    quickReplyItem("讀取圖片文字", new URLSearchParams({ action: "captureImageText", captureId }).toString()),
+    ...clipQuickReply(captureId, false).items.slice(0, 3),
+  ] };
+}
+
 export function clipQuickReply(captureId: string, includeScreenshot: boolean, retryThreads = false, viewLabel = "繼續探索") {
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://lumen-dojo.up.railway.app";
   let explorationUrl = `${base.replace(/\/$/, "")}/forage/captures?captureId=${encodeURIComponent(captureId)}`;

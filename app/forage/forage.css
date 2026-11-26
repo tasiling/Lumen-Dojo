@@ -255,3 +255,9 @@
 .dojo.forage-shell .forage-ui .capture-refine-rounds li{display:grid;gap:2px}
 .dojo.forage-shell .forage-ui .capture-refine-rounds small{color:var(--muted);font-size:.75rem}
 @media(min-width:760px){.dojo.forage-shell .forage-ui .refine-angles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.dojo.forage-shell .forage-ui .capture-image-text{display:grid;gap:10px;margin-top:12px;padding:14px;border-radius:14px;background:var(--forage-yellow, #fbf3dc)}
+.dojo.forage-shell .forage-ui .capture-image-text-page{display:grid;gap:6px;min-width:0}
+.dojo.forage-shell .forage-ui .capture-image-text-page>span{font-weight:600}
+.dojo.forage-shell .forage-ui .capture-image-text-page small{font-weight:400;color:var(--refine-bad, #8a5039)}
+.dojo.forage-shell .forage-ui .capture-image-text textarea{width:100%;font-size:16px;line-height:1.7}

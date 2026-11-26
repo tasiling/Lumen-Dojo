@@ -1,4 +1,5 @@
 import {normalizeCaptureContext,type CaptureContext} from "./captureContext";
+import { IMAGE_TEXT_MAX_IMAGES, normalizeImageText, type CaptureImageText } from "./captureImageText";
 import {
   GUANGFA,
   GUANGXING,
@@ -312,6 +313,8 @@ export type CaptureTranscript = { text: string; finishedAt: string; truncated: b
 export type CaptureClipMeta = {
   threadsPost?: import("./threadsReader").ThreadsPost;
   transcript?: CaptureTranscript;
+  /** Text the owner asked AI to read from the attached images; joins the original only once confirmed. */
+  imageText?: CaptureImageText;
   origin: CaptureOrigin;
   purpose: CaptureClipPurpose;
   sourceKind: CaptureSourceKind;
@@ -1018,7 +1021,7 @@ export function normalizeCaptureEntry(
           sourceMessageId: stringValue(attachment.sourceMessageId).trim().slice(0, 200),
           createdAt: isoDateTime(attachment.createdAt, now),
         }];
-      }).slice(0, 12)
+      }).slice(0, IMAGE_TEXT_MAX_IMAGES)
     : [];
   const explorationRecords: CaptureExplorationRecord[] = Array.isArray(source.explorationRecords)
     ? source.explorationRecords.flatMap((item) => {
@@ -1147,6 +1150,7 @@ export function normalizeCaptureEntry(
             truncated: sourceClip.transcript.truncated === true || sourceClip.transcript.text.length > 100000,
             ...((tidy) => tidy ? { tidy } : {})(normalizedTidy(sourceClip.transcript.tidy)),
           } } : {}),
+      ...((imageText) => imageText ? { imageText } : {})(normalizeImageText(sourceClip.imageText, attachments.map((attachment) => attachment.id))),
       platform: stringValue(sourceClip.platform).trim().slice(0, 100),
       externalEventId: stringValue(sourceClip.externalEventId).trim().slice(0, 200),
       externalMessageId: stringValue(sourceClip.externalMessageId).trim().slice(0, 200),
