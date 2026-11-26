@@ -19,6 +19,7 @@ import { receiveLinePages } from "@/lib/reading/clipStore";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
 import { autoBuildContextUnit } from "@/lib/dojo/englishImageAutoUnit";
 import { readCaptureImageText } from "@/lib/dojo/captureImageReader";
+import { saveThreadsImages } from "@/lib/dojo/threadsImageSaver";
 import { autoUnitLineReport, autoUnitStatusLabel, type AutoUnitProject } from "@/lib/dojo/englishImageAutoUnitPlan";
 import {
   appendEnglishImageAttachment,
@@ -500,6 +501,12 @@ async function replyWithThreadsPost(capture: Awaited<ReturnType<typeof createCap
   }
   const status = threadsReplyStatus({ post, failed, invalid, repeated, reason, viaFallback });
   await replyLineMessage(token, `已剪藏｜Threads\n${status}${post ? "\n\n" + post.text.slice(0, 320) : ""}`, clipQuickReply(saved.id, !saved.clip.attachments.length, true));
+  // The post's own pictures are saved after the reply (this already runs after LINE's webhook was answered).
+  // Done once per post (a retry tries again only when nothing was saved). Text-only posts end quietly.
+  if (post) {
+    try { await saveThreadsImages(saved.id); }
+    catch (error) { console.error("threads images failed", saved.id, error instanceof Error ? error.name : "unknown"); }
+  }
 }
 
 function replyImage(event: LineWebhookEvent, text: string, quickReply?: Parameters<typeof replyLineMessage>[2]) {

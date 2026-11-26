@@ -21,7 +21,7 @@
     "test:transcription": "node scripts/test-line-douyin.mjs && node scripts/test-file-transcription.mjs && python3 -B scripts/test-douyin-mac-worker.py",
     "test:video-analysis": "node --experimental-strip-types --test tests/video-analysis.test.mjs tests/video-analysis-queue.test.mjs && python3 -B scripts/test-video-analysis-worker.py",
     "test:transcript-notion": "node scripts/test-transcript-notion.mjs",
-    "test:threads": "node --test tests/threads-reader.test.mjs && node --experimental-strip-types --test tests/threads-video-probe.test.mjs",
+    "test:threads": "node --test tests/threads-reader.test.mjs && node --experimental-strip-types --test tests/threads-video-probe.test.mjs tests/threads-images.test.mjs",
     "test:transcript-tidy": "node scripts/test-transcript-tidy-unit.mjs && node scripts/test-transcript-tidy.mjs",
     "test:capture-exploration": "node scripts/test-capture-exploration.mjs",
     "test:capture-refine": "node --test tests/capture-refine.test.mjs && node scripts/test-capture-refine-api.mjs",
