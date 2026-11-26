@@ -36,6 +36,21 @@ function diamondMessage(message){
   else toast(message);
 }
 const diamondLive='<p id="diamondMessage" role="status" aria-live="polite" class="note"></p>';
+/* A 階段留下的痕跡：最近一輪 A 的草稿、GPT 的診斷與本人確認的意圖。B 與重新開啟 A 時接著用。 */
+function diamondLatestA(w) {
+  const runs=(w?.diamondRuns||[]).filter(r=>r.mode==='A'&&!r.n);
+  return runs.filter(r=>r.locked&&r.answer).at(-1)||runs.at(-1)||null;
+}
+function diamondADate(r){return r.time?new Date(r.time).toLocaleDateString('zh-TW'):'';}
+function diamondATrace(w,a) {
+  if(!a)return '';
+  return '<section class="diamond-trace"><h3>A 階段留下的</h3>'+
+    (a.answer?'<p><b>本人確認的意圖</b></p><p class="fixed-preview">'+esc(a.answer)+'</p>':tip('A 這輪還沒有確認意圖。'))+
+    (a.source?more('A 分析的草稿',field('A 分析的草稿','diaASource',a.source,true,'readonly')):'')+
+    (a.raw?more('GPT 在 A 的診斷',field('A 的診斷全文','diaARaw',a.raw,true,'readonly'))+
+      '<label class="checkline"><input id="diaWithA" type="checkbox" checked>把 A 的診斷與我的回答附在這輪指令後面</label>':'')+
+    '</section>';
+}
 function openDiamond(w,mod,n) {
   if(!w||!diamondNames[mod])return;
   let body='';
@@ -67,12 +82,18 @@ function openDiamond(w,mod,n) {
       tip('請保留定位。僅分析你核對過的文字，聲音或畫面可加本人描述。');
     body+=field('要比對的其他系統或專案（選填）','diaSystems','',true);
   } else {
+    const a=diamondLatestA(w);
+    if(mod==='B')body+=diamondATrace(w,a);
     if(mod==='B'||mod==='A')body+=workMaterialPicker(w);
+    // 正文還是空的時候，接著用 A 上一輪分析的草稿，不讓寫過的內容消失。
+    const fromA=w.type==='text'&&!w.body?.trim()&&a?.source?a.source:'';
     body+=field(w.type==='text'?'這次分析的草稿':'這次要診斷的敘事、口白或作者草稿','diaScratch',
-      w.type==='text'?w.body:(w.diamondNarrative||''),true);
+      w.type==='text'?(w.body||fromA):(w.diamondNarrative||''),true)+
+      (fromA?tip('正文還是空的，這裡先帶入 A 階段'+(diamondADate(a)?'（'+diamondADate(a)+'）':'')+'分析的草稿。'):'');
     if(mod==='B'){
-      body+=field('本件作品的創作意圖','diaIntent',w.intent||'',true)+
-        '<label class="checkline"><input id="diaIntentOK" type="checkbox"'+(w.intent?' checked':'')+'>我確認這是本件作品的意圖</label>'+
+      const intent=w.intent||a?.answer||'';
+      body+=field('本件作品的創作意圖','diaIntent',intent,true)+
+        '<label class="checkline"><input id="diaIntentOK" type="checkbox"'+(intent?' checked':'')+'>我確認這是本件作品的意圖</label>'+
         '<div class="inline-fields">'+diamondSelect('調整幅度','diaBmode',diamondOriginalChoices.bModes,'standard')+
         diamondSelect('主文框架','diaFramework',{auto:'依確認的意圖選框架',...diamondOriginalChoices.frameworks},'auto')+'</div>'+
         field('指定理論（選填）','diaTheory','',true);
@@ -96,13 +117,15 @@ function diaGenerate(id,requested,n){
   const input={scratch:source,body:source,intent:val('diaIntent')||w.intent||'',theory:val('diaTheory'),
     framework:val('diaFramework')||'auto',bMode:val('diaBmode')||'standard',
     cLevel:val('diaLevel')||'standard',cFramework:val('diaFramework')||'diamond',systems:val('diaSystems')};
-  const prompt=diamondOriginalPrompt(mode,input);
+  let prompt=diamondOriginalPrompt(mode,input);
   if(!prompt){diamondMessage('請核對本輪的輸入。');return;}
+  const a=mode==='B'&&$('diaWithA')?.checked?diamondLatestA(w):null;
+  if(a?.raw)prompt+='\n\n【A 階段的診斷與本人回答（供參考；主文仍以本人確認的意圖與原話為準）】\n'+a.raw+(a.answer?'\n\n本人看過診斷後的回答：'+a.answer:'');
   if(mode==='B')w.intent=input.intent;
   if(mode==='A'&&w.type!=='text')w.diamondNarrative=source;
   if(mode==='D'&&w.type!=='text'){w.diamondTranscripts ||= {};w.diamondTranscripts[n]=source;}
   const run={id:uid(),mode,n:n||0,workId:id,title:v?.data.title||nameW(w),shuttleId:w.shuttle,
-    source,baseBody:w.body,intent:input.intent,prompt,stage:'指令已備妥',raw:''};
+    source,baseBody:w.body,intent:input.intent,prompt,stage:'指令已備妥',raw:'',time:Date.now(),...(a?{fromA:a.id}:{})};
   w.diamondRuns ||= [];w.diamondRuns.push(run);keep(w);diamondRun(id,run.id);
 }
 function diamondFind(id,rid){const w=findW(id);return [w,w?.diamondRuns?.find(r=>r.id===rid)];}

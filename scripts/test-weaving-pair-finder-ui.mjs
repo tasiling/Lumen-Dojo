@@ -219,11 +219,31 @@ try {
   assert.match(await run("return document.getElementById('diaScratch').value"), /分享自己的成果時/);
   await shot("work-materials");
 
+  // A 完成後開 B：A 的草稿、診斷與確認的意圖都要接著出現，診斷可附進 B 的指令。
+  await run("document.getElementById('dialog').close();const w=newWork('text');keep(w);go('edit/'+w.id);openDiamond(w,'A');document.getElementById('diaScratch').value='炫耀和分享的差別在起心動念';");
+  await click("產生本輪 GPT 指令", "document.getElementById('dialog')");
+  await run("document.getElementById('diaRaw').value=['角色一｜結構診斷','讀者需要先知道你在分辨什麼。','','角色二｜請本人回答','你最想讓讀者帶走什麼？'].join(String.fromCharCode(10));");
+  await click("核對回覆", "document.getElementById('dialog')");
+  await run("document.getElementById('diaAnswer').value='讓讀者分得出分享與炫耀';");
+  await click("保存為本件創作意圖", "document.getElementById('dialog')");
+  await run("openDiamond(current(),'A')");
+  assert.equal(await run("return document.getElementById('diaScratch').value"), "炫耀和分享的差別在起心動念", "重新開 A 時草稿不能消失");
+  await run("document.getElementById('dialog').close();openDiamond(current(),'B')");
+  const b = await run("return {scratch:document.getElementById('diaScratch').value,intent:document.getElementById('diaIntent').value,ok:document.getElementById('diaIntentOK').checked,trace:document.querySelector('.diamond-trace')?.textContent||''}");
+  assert.equal(b.scratch, "炫耀和分享的差別在起心動念");
+  assert.equal(b.intent, "讓讀者分得出分享與炫耀");
+  assert.equal(b.ok, true);
+  await shot("diamond-b");
+  assert.match(b.trace, /A 階段留下的/); assert.match(b.trace, /讀者需要先知道你在分辨什麼/);
+  await click("產生本輪 GPT 指令", "document.getElementById('dialog')");
+  const bPrompt = await run("return document.getElementById('diaPrompt').value");
+  assert.match(bPrompt, /【A 階段的診斷與本人回答/); assert.match(bPrompt, /本人看過診斷後的回答：讓讀者分得出分享與炫耀/);
+
   await run("document.getElementById('dialog').close();location.hash='cards'");
   await wait("document.getElementById('sourceCardList')", "觀點與洞察");
   assert.match(await text(), /從一張卡開始/);
   assert.deepEqual(errors, [], "頁面不得有未處理的錯誤");
-  console.log("PASS 作品 A／B 素材依關聯排序、並讀選卡三類（用字相近、GPT 候選核對與保存、關係由本人選定）、討論頁帶入的卡片置頂與排序、讀書搭子依卡片數與本人原話調整並寫進討論包");
+  console.log("PASS A 的草稿與診斷接到 B、作品 A／B 素材依關聯排序、並讀選卡三類（用字相近、GPT 候選核對與保存、關係由本人選定）、討論頁帶入的卡片置頂與排序、讀書搭子依卡片數與本人原話調整並寫進討論包");
 } finally {
   ws.close(); chrome.kill(); server.close();
   await rm(profile, { recursive: true, force: true }).catch(() => {});
