@@ -290,3 +290,6 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .forge-pick .pair-why{margin:4px 0 0}
 .entry > b + .material-meta{display:block;margin-bottom:4px}
 .entry > .pair-why{margin:4px 0}
+.diamond-trace{margin:10px 0;padding:12px 14px;border-radius:12px;background:var(--soft)}
+.diamond-trace h3{font-size:.98rem;margin-bottom:6px}
+.diamond-trace details{background:#fff}

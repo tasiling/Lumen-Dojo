@@ -219,11 +219,65 @@ try {
   assert.match(await run("return document.getElementById('diaScratch').value"), /分享自己的成果時/);
   await shot("work-materials");
 
+  // A 完成後開 B：A 的草稿、診斷與確認的意圖都要接著出現，診斷可附進 B 的指令。
+  await run("document.getElementById('dialog').close();const w=newWork('text');keep(w);go('edit/'+w.id);openDiamond(w,'A');document.getElementById('diaScratch').value='炫耀和分享的差別在起心動念';");
+  await click("產生本輪 GPT 指令", "document.getElementById('dialog')");
+  await run("document.getElementById('diaRaw').value=['角色一｜結構診斷','讀者需要先知道你在分辨什麼。','','角色二｜請本人回答','你最想讓讀者帶走什麼？'].join(String.fromCharCode(10));");
+  await click("核對回覆", "document.getElementById('dialog')");
+  await run("document.getElementById('diaAnswer').value='讓讀者分得出分享與炫耀';");
+  await click("保存為本件創作意圖", "document.getElementById('dialog')");
+  await run("openDiamond(current(),'A')");
+  assert.equal(await run("return document.getElementById('diaScratch').value"), "炫耀和分享的差別在起心動念", "重新開 A 時草稿不能消失");
+  await run("document.getElementById('dialog').close();openDiamond(current(),'B')");
+  const b = await run("return {scratch:document.getElementById('diaScratch').value,intent:document.getElementById('diaIntent').value,ok:document.getElementById('diaIntentOK').checked,trace:document.querySelector('.diamond-trace')?.textContent||''}");
+  assert.equal(b.scratch, "炫耀和分享的差別在起心動念");
+  assert.equal(b.intent, "讓讀者分得出分享與炫耀");
+  assert.equal(b.ok, true);
+  await shot("diamond-b");
+  assert.match(b.trace, /A 階段留下的/); assert.match(b.trace, /讀者需要先知道你在分辨什麼/);
+  await click("產生本輪 GPT 指令", "document.getElementById('dialog')");
+  const bPrompt = await run("return document.getElementById('diaPrompt').value");
+  assert.match(bPrompt, /【A 階段的診斷與本人回答/); assert.match(bPrompt, /本人看過診斷後的回答：讓讀者分得出分享與炫耀/);
+
+  // A 在別處做完：在 B 貼上 A 結尾的正式交接，草稿與意圖帶進來，意圖要本人確認，指令附上交接。
+  const handoff = ["===== 知識鑽石 A → B｜正式交接 =====", "", "【基本資訊】", "作品題名：如何辨認自己真正的起心動念（暫名）", "",
+    "【原始草稿】", "我在分享的時候，起心動念其實是想要告訴別人，我都可以了，你為什麼不行。", "",
+    "【本人意圖確認】", "問題一：C", "如何辨認看似善意的行為背後，自己真正的起心動念？", "",
+    "【核心創作意圖】", "以自己對於炫耀的覺察作為文章入口。", "", "以上為依照本人選擇所整理的編輯方向，並非本人逐字原話。", "",
+    "【B 模組協作交接指令】", "依照觀點深度型長文框架進行。", "", "===== A 模組完成／可進入 B 模組 ====="].join("\n");
+  const w2 = await run("document.getElementById('dialog').close();const w=newWork('text');keep(w);go('edit/'+w.id);return w.id;");
+  await wait(`route==='edit'&&args[0]===${JSON.stringify(w2)}`, "切到新作品");
+  await run(`openDiamond(current(),'B');
+    const h=document.getElementById('diaHandoff');h.value=${JSON.stringify("GPT：好的，以下是交接。\n\n" + handoff)};h.dispatchEvent(new Event('change',{bubbles:true}));`);
+  const pasted = await run("return {scratch:document.getElementById('diaScratch').value,intent:document.getElementById('diaIntent').value,ok:document.getElementById('diaIntentOK').checked,summary:[...document.querySelectorAll('.diamond-trace summary')].map(s=>s.textContent).join('|'),dialog:document.getElementById('dialog').textContent}");
+  assert.equal(pasted.scratch, "我在分享的時候，起心動念其實是想要告訴別人，我都可以了，你為什麼不行。");
+  assert.equal(pasted.intent, "以自己對於炫耀的覺察作為文章入口。");
+  assert.equal(pasted.ok, false, "交接裡 GPT 整理的意圖不能預設為本人已確認");
+  assert.match(pasted.dialog, /不是你的原話/); assert.match(pasted.summary, /正式交接（已帶入）/);
+  await click("產生本輪 GPT 指令", "document.getElementById('dialog')");
+  assert.match(await run("return document.getElementById('diamondMessage').textContent"), /請先確認本件的創作意圖/);
+  await run("document.getElementById('diaIntent').value='我想讓讀者學會辨認自己分享時的起心動念';document.getElementById('diaIntentOK').checked=true;");
+  await click("產生本輪 GPT 指令", "document.getElementById('dialog')");
+  const handoffPrompt = await run("return document.getElementById('diaPrompt').value");
+  assert.match(handoffPrompt, /【A 模組的正式交接/); assert.match(handoffPrompt, /不得當成本人已確認的立場/);
+  assert.match(handoffPrompt, /依照觀點深度型長文框架進行/); assert.ok(!handoffPrompt.includes("GPT：好的"), "交接以外的對話不帶入");
+  await settle();
+  assert.ok(Object.values(records).some(r => r?.aHandoff?.startsWith("===== 知識鑽石 A → B")), "交接要保存在作品上");
+
+  // A 的回覆裡含正式交接：核對時辨認出來，意圖欄先帶入本人的選擇。
+  await run("document.getElementById('dialog').close();openDiamond(current(),'A');document.getElementById('diaScratch').value='草稿';");
+  await click("產生本輪 GPT 指令", "document.getElementById('dialog')");
+  await run(`document.getElementById('diaRaw').value=${JSON.stringify(handoff)};`);
+  await click("核對回覆", "document.getElementById('dialog')");
+  const aCheck = await run("return {answer:document.getElementById('diaAnswer').value,text:document.getElementById('dialog').textContent}");
+  assert.match(aCheck.text, /已辨認出「A → B 正式交接」/);
+  assert.match(aCheck.answer, /^問題一：C/);
+
   await run("document.getElementById('dialog').close();location.hash='cards'");
   await wait("document.getElementById('sourceCardList')", "觀點與洞察");
   assert.match(await text(), /從一張卡開始/);
   assert.deepEqual(errors, [], "頁面不得有未處理的錯誤");
-  console.log("PASS 作品 A／B 素材依關聯排序、並讀選卡三類（用字相近、GPT 候選核對與保存、關係由本人選定）、討論頁帶入的卡片置頂與排序、讀書搭子依卡片數與本人原話調整並寫進討論包");
+  console.log("PASS A 的草稿、診斷與正式交接接到 B、作品 A／B 素材依關聯排序、並讀選卡三類（用字相近、GPT 候選核對與保存、關係由本人選定）、討論頁帶入的卡片置頂與排序、讀書搭子依卡片數與本人原話調整並寫進討論包");
 } finally {
   ws.close(); chrome.kill(); server.close();
   await rm(profile, { recursive: true, force: true }).catch(() => {});
