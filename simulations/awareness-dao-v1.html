@@ -1,0 +1,1729 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="試用行光道場的覺察日記、GPT 討論和道藏長期問題。">
+<title>覺察日記與道藏｜行光道場</title>
+<style>:root {
+  color-scheme: light;
+  --canvas: #f7f3ec;
+  --paper: #fffdf8;
+  --soft-paper: #f1ebe2;
+  --ink: #2b2635;
+  --muted: #625a69;
+  --line: #d8cfd2;
+  --control-line: #938491;
+  --plum: #514168;
+  --plum-dark: #453458;
+  --plum-wash: #ebe4f0;
+  --gold: #80591f;
+  --gold-wash: #f3e7c9;
+  --error: #912f36;
+  --error-wash: #fbebeb;
+  --sans: "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --serif: "Songti TC", "Noto Serif TC", "Noto Serif CJK TC", "PMingLiU", Georgia, serif;
+  --edge: clamp(1rem, 4vw, 4rem);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { margin: 0; scroll-padding-block: 2rem calc(6rem + env(safe-area-inset-bottom, 0px)); }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 400 1rem/1.65 var(--sans);
+  -webkit-text-size-adjust: 100%;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2 { font-family: var(--serif); font-weight: 700; }
+h1 { font-size: clamp(2.125rem, 5.2vw, 3.75rem); line-height: 1.18; letter-spacing: .025em; overflow-wrap: anywhere; }
+h2 { font-size: clamp(1.375rem, 3vw, 1.75rem); line-height: 1.34; }
+h3 { font-size: 1rem; line-height: 1.4; }
+a { color: var(--plum); text-underline-offset: .2em; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button, [role="button"], summary { cursor: pointer; touch-action: manipulation; }
+button { border: 0; background: transparent; padding: 0; }
+:where(button, a, summary, input, textarea, select, [tabindex]):focus-visible { outline: 2px solid var(--plum); outline-offset: 3px; }
+button:disabled { opacity: .56; cursor: default; }
+button, .entry-row, .topic-row, .quiet-link { transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease; }
+svg { width: 1.25rem; height: 1.25rem; flex: none; vertical-align: middle; }
+[hidden] { display: none !important; }
+::selection { background: var(--plum-wash); color: var(--ink); }
+
+.app-head {
+  background: var(--paper);
+  border-block-end: 1px solid var(--line);
+  padding-block-start: env(safe-area-inset-top, 0px);
+}
+.head-inner {
+  max-inline-size: 88rem;
+  min-block-size: 3.75rem;
+  margin-inline: auto;
+  padding-inline: var(--edge);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.brand {
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: .09em;
+  display: inline-flex;
+  align-items: center;
+  gap: .625rem;
+  min-block-size: 2.75rem;
+}
+.brand :is(svg, img) { color: var(--gold); width: 1.75rem; height: 1.75rem; object-fit: contain; }
+.test-label {
+  color: var(--muted);
+  font-size: .8125rem;
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+.test-label::before { content: ""; inline-size: .35rem; block-size: .35rem; border: 1px solid var(--gold); border-radius: 50%; }
+.workspace { max-inline-size: 88rem; margin-inline: auto; }
+.main { min-inline-size: 0; padding: 1.5rem var(--edge) calc(6rem + env(safe-area-inset-bottom, 0px)); }
+.view { min-inline-size: 0; }
+
+.sidebar {
+  position: fixed;
+  z-index: 5;
+  inset-inline: 0;
+  inset-block-end: 0;
+  padding: .25rem var(--edge) calc(.25rem + env(safe-area-inset-bottom, 0px));
+  background: var(--paper);
+  border-block-start: 1px solid var(--line);
+}
+.side-brand, .side-footer, .desktop-only { display: none; }
+.side-nav, .side-nav nav {
+  display: grid;
+  gap: .5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-inline-size: 32rem;
+  margin-inline: auto;
+}
+.side-nav nav { grid-column: 1 / -1; inline-size: 100%; }
+.nav-button {
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: .45rem .625rem;
+  border-radius: .4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  text-align: start;
+  color: var(--muted);
+  font-weight: 600;
+}
+.nav-button:is(.active, .is-active, .selected, [aria-current="page"], [aria-current="true"], [aria-pressed="true"], [data-active="true"]) {
+  background: var(--plum-wash);
+  color: var(--plum-dark);
+}
+@media (hover: hover) { .nav-button:hover { color: var(--plum-dark); background: var(--plum-wash); } }
+.nav-button:active { background: var(--soft-paper); }
+
+.page-heading {
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: .65rem;
+  margin-block-end: 1.25rem;
+}
+.heading-copy { min-inline-size: 0; }
+.heading-copy p { font-size: .9375rem; color: var(--muted); margin-block-start: .55rem; }
+.page-art {
+  display: block;
+  inline-size: clamp(4.375rem, 18vw, 8.375rem);
+  block-size: auto;
+  max-block-size: 9rem;
+  object-fit: contain;
+  pointer-events: none;
+  justify-self: end;
+}
+.page-art :is(svg, img) { inline-size: 100%; block-size: auto; object-fit: contain; }
+.journal-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 2rem; }
+.journal-main, .lookup-aside { min-inline-size: 0; }
+.search-panel { display: grid; gap: .625rem; }
+.search-box {
+  min-inline-size: 0;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  background: var(--paper);
+  color: var(--plum);
+  border: 1px solid var(--control-line);
+  border-radius: .375rem;
+  padding-inline: .875rem .25rem;
+  min-block-size: 3rem;
+}
+.search-box:focus-within { border-color: var(--plum); outline: 2px solid var(--plum); outline-offset: 2px; }
+.search-box label { display: contents; }
+.search-box input {
+  min-inline-size: 0;
+  flex: 1;
+  padding: .7rem 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  border-radius: .25rem;
+  color: var(--ink);
+}
+.search-box input:focus-visible { outline: 0; }
+.search-box input::placeholder, .field::placeholder, .field :is(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+.search-box input[type="search"]::-webkit-search-cancel-button { display: none; }
+.clear-search, .icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  border-radius: .35rem;
+  color: var(--plum);
+}
+.clear-search:hover, .icon-button:hover, .clear-search:active, .icon-button:active { background: var(--plum-wash); }
+.filter-row, .kind-filter, .toolbar, .action-row, .sheet-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.filter-row { justify-content: space-between; }
+.filter-row > .kind-filter { min-inline-size: 0; }
+.kind-filter button, button.kind-filter, .filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  justify-content: center;
+  color: var(--plum-dark);
+  border: 1px solid transparent;
+  min-block-size: 2.75rem;
+  border-radius: .35rem;
+  padding: .325rem .55rem;
+  font-size: .875rem;
+  white-space: normal;
+  text-align: center;
+}
+.kind-filter button:is(.active, .is-active, .selected, [aria-pressed="true"], [data-active="true"]),
+button.kind-filter:is(.active, .is-active, .selected, [aria-pressed="true"], [data-active="true"]),
+.filter-toggle:is(.active, [aria-expanded="true"], [aria-pressed="true"]) {
+  background: var(--plum-wash);
+  border-color: #bfb0ca;
+  font-weight: 650;
+}
+.kind-filter button:hover, button.kind-filter:hover, .filter-toggle:hover, .filter-toggle:active { background: var(--plum-wash); }
+.filter-toggle { color: var(--muted); border-color: var(--line); }
+.date-fields, .form-grid, .columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.date-fields { padding: .625rem .75rem .75rem; background: var(--soft-paper); border-radius: .4rem; }
+.date-fields :is(label, input) { min-inline-size: 0; inline-size: 100%; }
+.date-fields label { font-size: .875rem; color: var(--muted); }
+.date-fields input { margin-block-start: .25rem; }
+.date-fields > button { grid-column: 1 / -1; justify-self: start; }
+
+.results-header, .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; flex-wrap: wrap; }
+.results-header { margin-block: 1.125rem .3rem; border-block-end: 1px solid var(--line); padding-block-end: .55rem; color: var(--muted); font-size: .875rem; }
+.results-header h2 { color: var(--ink); font-size: 1.2rem; }
+.result-list { min-inline-size: 0; }
+.date-group { margin-block-start: .7rem; }
+.date-group :is(h2, h3, .date-label) {
+  color: var(--gold);
+  font-weight: 650;
+  font-size: .875rem;
+  letter-spacing: .04em;
+  font-family: var(--sans);
+  padding-block: .5rem .3rem;
+}
+.entry-row {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  min-block-size: 5.5rem;
+  padding: .625rem 1.75rem .85rem .35rem;
+  border-block-end: 1px solid var(--line);
+  color: var(--ink);
+  text-align: start;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.entry-row :is(h2, h3, strong) { color: var(--ink); font-family: var(--serif); font-size: 1.1rem; line-height: 1.5; letter-spacing: .02em; padding: 0; }
+.entry-row :is(h2, h3) { margin-block: .125rem .2rem; }
+.entry-meta, .date-small, .meta, .caption, .section-kicker { color: var(--muted); font-size: .8125rem; line-height: 1.55; }
+.entry-meta { display: flex; flex-wrap: wrap; gap: .25rem .55rem; }
+.excerpt { color: var(--muted); font-size: .9375rem; line-height: 1.65; }
+.entry-row .chevron { position: absolute; inset-inline-end: .275rem; inset-block-start: 50%; translate: 0 -50%; color: var(--plum); }
+.chevron { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.entry-row:hover, .entry-row:active { background: var(--soft-paper); }
+mark { color: var(--ink); background: var(--gold-wash); padding-inline: .06em; border-radius: .15em; }
+.lookup-aside { display: grid; gap: 1.25rem; }
+.aside-section { background: var(--paper); border: 1px solid var(--line); padding: .9rem 1rem; border-radius: .4rem; }
+.aside-section h2 { font-size: 1.2rem; }
+.aside-section p { color: var(--muted); }
+.mini-link {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  text-align: start;
+  padding-block: .75rem .6rem;
+  color: var(--plum-dark);
+  text-decoration: none;
+}
+.mini-link + .mini-link { border-block-start: 1px solid var(--line); }
+.mini-link :is(small, .date-small) { display: block; }
+.mini-link:hover, .mini-link:active { text-decoration: underline; text-underline-offset: .2em; }
+
+.subpage, .narrow { max-inline-size: 50rem; margin-inline: auto; }
+.narrow { max-inline-size: 45rem; }
+.section { margin-block-start: 1.625rem; min-inline-size: 0; }
+.section-title { color: var(--ink); margin-block-end: .75rem; }
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--plum);
+  min-block-size: 2.75rem;
+  font-size: .9375rem;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+}
+.breadcrumb:hover, .breadcrumb:active { text-decoration: underline; }
+.doc-header { margin-block: .65rem 1.25rem; }
+.doc-header h1 { font-size: clamp(1.8rem, 5vw, 3rem); margin-block: .45rem; max-inline-size: 22em; }
+.original { margin: 0; }
+.doc-copy, .original {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.doc-copy {
+  font: 400 clamp(1rem, 2.5vw, 1.125rem)/1.85 var(--serif);
+  white-space: pre-wrap;
+}
+.original {
+  padding: 1rem clamp(.875rem, 4vw, 1.75rem);
+  background: var(--paper);
+  border-inline-start: 2px solid #ac853e;
+  border-radius: 0 .375rem .375rem 0;
+}
+.original + .toolbar { margin-block-start: .9rem; }
+.topic-list { display: grid; gap: .625rem; }
+.topic-row {
+  display: block;
+  inline-size: 100%;
+  text-align: start;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  min-block-size: 3.25rem;
+  padding: .75rem .9rem;
+  overflow-wrap: anywhere;
+}
+.topic-row:hover, .topic-row:active { background: var(--soft-paper); }
+.timeline { margin-block-start: .75rem; padding-inline-start: .8rem; border-inline-start: 1px solid #bfb1c8; }
+.timeline-item { position: relative; padding: .325rem .2rem 1rem .75rem; min-inline-size: 0; overflow-wrap: anywhere; }
+.timeline-item::before { content: ""; position: absolute; block-size: .45rem; inline-size: .45rem; background: var(--plum); border: 2px solid var(--canvas); border-radius: 50%; box-sizing: content-box; inset-inline-start: -1.18rem; inset-block-start: .6rem; }
+.timeline-item + .timeline-item { margin-block-start: .325rem; }
+.timeline-item :is(h3, p) + :is(h3, p) { margin-block-start: .25rem; }
+.round-block {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  padding: .95rem clamp(.85rem, 3vw, 1.25rem);
+  margin-block: .65rem;
+  overflow-wrap: anywhere;
+}
+.fold { margin-block: .5rem; padding-block: .2rem; border-block-end: 1px solid var(--line); }
+.fold summary { min-block-size: 2.75rem; padding-block: .5rem; color: var(--plum-dark); font-weight: 650; }
+.fold[open] summary { margin-block-end: .5rem; }
+.turn-list { display: grid; gap: .65rem; }
+.turn { padding: .625rem .75rem; background: var(--soft-paper); border-radius: .4rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+.turn:has(+ .turn) { margin-block-end: .05rem; }
+
+.form-row, .stack { display: grid; gap: .5rem; }
+.form-row { margin-block: .75rem; min-inline-size: 0; }
+.form-row > label, label.field { color: var(--ink); font-size: .9rem; font-weight: 600; }
+.field:not(label), label.field :is(input, textarea, select), input[type="date"], textarea {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  border: 1px solid var(--control-line);
+  border-radius: .35rem;
+  padding: .55rem .65rem;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 1rem;
+}
+label.field { display: grid; gap: .35rem; min-inline-size: 0; }
+textarea, textarea.field { min-block-size: 6.5rem; resize: vertical; }
+.choice-list { display: grid; gap: .5rem; margin-block: .55rem; }
+.choice-row { display: flex; align-items: start; gap: .625rem; min-block-size: 2.75rem; padding: .625rem .75rem; border: 1px solid var(--line); border-radius: .35rem; cursor: pointer; }
+.choice-row input { flex: none; margin: .3em 0 0; inline-size: 1.125rem; block-size: 1.125rem; accent-color: var(--plum); }
+.choice-row:has(input:checked) { background: var(--plum-wash); border-color: #bfb0ca; }
+.choice-row :is(p, span, div) { min-inline-size: 0; overflow-wrap: anywhere; }
+.choice-row small { display: block; color: var(--muted); }
+.notice, .error, .empty { border-radius: .35rem; padding: .625rem .75rem; margin-block: .625rem; color: var(--muted); font-size: .9375rem; overflow-wrap: anywhere; }
+.notice { background: var(--plum-wash); border-inline-start: 2px solid var(--plum); }
+.error { background: var(--error-wash); color: var(--error); border-inline-start: 2px solid var(--error); }
+.empty { padding-block: 1.25rem; border: 1px dashed var(--line); text-align: center; background: var(--paper); }
+.toast {
+  position: fixed;
+  inset-inline: max(var(--edge), env(safe-area-inset-left, 0px));
+  inset-block-end: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  max-inline-size: 27rem;
+  margin-inline: auto;
+  padding: .65rem .95rem;
+  background: var(--plum-dark);
+  color: #fff;
+  border-radius: .4rem;
+  font-size: .9375rem;
+  overflow-wrap: anywhere;
+}
+.toast:empty { display: none; }
+dialog.sheet {
+  padding: 0;
+  max-inline-size: 39rem;
+  inline-size: min(calc(100% - 1.5rem), 39rem);
+  max-block-size: min(85vh, 45rem);
+  max-block-size: min(85dvh, 45rem);
+  border: 1px solid var(--line);
+  border-radius: .625rem;
+  color: var(--ink);
+  background: var(--paper);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.sheet::backdrop { background: rgba(37, 29, 43, .55); }
+.sheet-body { padding: 1rem; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-block-end: .5rem; }
+.sheet-head h2 { overflow-wrap: anywhere; }
+.sheet-actions { justify-content: end; padding-block: .75rem .15rem; }
+
+.button, .text-button, .quiet-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  text-align: center;
+  text-decoration: none;
+  min-block-size: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: .35rem;
+  color: var(--plum-dark);
+  padding: .425rem .75rem;
+  font-size: .9375rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.primary { background: var(--plum); border-color: var(--plum); color: #fff; }
+.primary:not(:disabled):is(:hover, :active) { background: var(--plum-dark); }
+.secondary { background: var(--paper); border-color: var(--control-line); }
+.secondary:not(:disabled):is(:hover, :active), .text-button:not(:disabled):is(:hover, :active), .quiet-link:is(:hover, :active), .button:not(.primary):not(:disabled):is(:hover, :active) { background: var(--plum-wash); }
+.text-button, .quiet-link { padding-inline: .45rem; }
+.badge, .source-tag {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  background: var(--soft-paper);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: .25rem;
+  font-size: .8125rem;
+  padding: .1rem .375rem;
+  line-height: 1.4;
+}
+.spacer { flex: 1 1 auto; }
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 25rem) {
+  .filter-row, .kind-filter { gap: .25rem; }
+  .kind-filter button, button.kind-filter, .filter-toggle { padding-inline: .425rem; }
+  .form-grid, .columns { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 43.75rem) {
+  dialog.sheet { margin-block-end: max(.5rem, env(safe-area-inset-bottom, 0px)); }
+}
+@media (min-width: 47rem) {
+  html { scroll-padding-block-end: 2rem; }
+  .workspace { display: grid; grid-template-columns: 10.875rem minmax(0, 1fr); align-items: stretch; }
+  .main { padding: clamp(2rem, 4vw, 3.5rem) var(--edge) 3.25rem clamp(1.6rem, 3.75vw, 4rem); min-block-size: calc(100vh - 3.75rem); }
+  .sidebar {
+    position: sticky;
+    align-self: start;
+    inset-block-start: 0;
+    inset-block-end: auto;
+    min-block-size: calc(100vh - 3.75rem);
+    padding: 2.25rem .85rem 1.125rem 1.05rem;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    border-block-start: 0;
+    border-inline-end: 1px solid var(--line);
+  }
+  .side-brand, .side-footer, .desktop-only { display: block; }
+  .side-brand { font-family: var(--serif); color: var(--gold); padding: 0 .625rem .65rem; font-size: .875rem; }
+  .side-footer { margin-block-start: auto; padding-inline: .625rem; color: var(--muted); font-size: .8125rem; }
+  .side-nav, .side-nav nav { grid-template-columns: minmax(0, 1fr); inline-size: 100%; max-inline-size: none; gap: .45rem; }
+  .nav-button { justify-content: start; padding-inline: .75rem; }
+  .page-heading { margin-block: 0 1.5rem; }
+  .page-art { inline-size: 8.25rem; }
+  .heading-copy p { font-size: 1rem; }
+  .sheet-body { padding: 1.4rem; }
+  .toast { inset-block-end: 1.25rem; }
+}
+@media (min-width: 64rem) {
+  .journal-grid { grid-template-columns: minmax(0, 1fr) minmax(14rem, .37fr); gap: clamp(1.25rem, 3vw, 3rem); }
+  .lookup-aside { border-inline-start: 1px solid var(--line); padding-inline-start: clamp(1rem, 2.1vw, 2.1rem); }
+  .aside-section { border: 0; border-block-start: 2px solid #b68b4b; border-radius: 0; padding: .75rem 0; background: transparent; }
+  .entry-row { padding-inline-start: .65rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+.page-art { display: grid; place-items: center; }
+.folio {
+  position: relative; width: 63%; aspect-ratio: 1 / 1.14;
+  margin-left: 7%; border: 1px solid #9e876b; border-radius: 3px 12px 9px 3px;
+  color: #87694e; background: #f0e4d3; transform: rotate(-10deg);
+  box-shadow: 6px 7px 0 #e4d9e1; display: grid; align-content: center; gap: 10%;
+  padding: 21% 15% 21% 21%;
+}
+.folio::before { content: ""; position: absolute; inset: 0 auto 0 12%; width: 1px; background: #c9a890; }
+.folio i { height: 1px; width: 100%; background: currentColor; opacity: .66; }
+.folio i:nth-child(3) { width: 70%; }
+.folio b { position: absolute; right: 12%; top: 6%; width: 10%; height: 22%; background: #745774; clip-path: polygon(0 0,100% 0,100% 100%,50% 82%,0 100%); }
+.nav-button, .entry-row, .mini-link, .topic-row, .breadcrumb, a.button { text-decoration: none; }
+.entry-row h4 { color: var(--ink); font-family: var(--serif); font-size: 1.1rem; line-height: 1.5; margin: .125rem 0 .2rem; }
+.kind-filters { min-width: 0; display: flex; flex-wrap: wrap; gap: .24rem; align-items: center; }
+.date-heading { display: flex; align-items: baseline; gap: .75rem; }
+.date-heading h3 { margin: 0; font-family: var(--serif); font-weight: 700; }
+.date-heading time { font-size: .81rem; }
+.mini-link, .topic-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.mini-link svg, .topic-row svg, .breadcrumb svg { flex: none; }
+.section > h2 { margin-block-end: .65rem; }
+.source-line { padding-block: .8rem; border-bottom: 1px solid var(--line); }
+.source-line p { margin: 0; }
+.source-line .quiet-link { padding-inline-start: 0; }
+.source-quote { margin: 0; padding: .75rem .9rem; background: var(--soft-paper); border-inline-start: 2px solid var(--plum); white-space: pre-wrap; }
+.prose { white-space: pre-wrap; overflow-wrap: anywhere; }
+.selected-part { border-inline-start: 3px solid var(--plum); padding-inline-start: .65rem; }
+.next-note { background: var(--plum-wash); padding: .9rem 1.1rem; border: 1px solid var(--line); border-radius: 8px; }
+.prompt-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: .94rem; max-height: 24rem; overflow: auto; background: var(--soft-paper); padding: 1rem; }
+.return-check { margin-top: 1.1rem; padding: 1rem; background: var(--plum-wash); border-radius: 8px; }
+.return-check h3 { margin-block: 0 .65rem; }
+.return-check .form-row { margin-block: .65rem; }
+.round-block .unit { margin: .7rem 0; }
+.kept-list { padding-inline-start: 1.4rem; }
+.field-label { font-weight: 650; }
+.sheet-close { flex: none; }
+.date-indicator { width: .4rem; height: .4rem; border-radius: 50%; background: currentColor; }
+.mobile-note { display: none; }
+@media (max-width: 46.99rem) { .mobile-note { display: block; } }
+@media (max-width: 25rem) {
+  .folio { width: 65%; }
+  .filter-row { gap: .12rem; }
+  .filter-toggle { margin-inline-start: auto; }
+}
+
+.timeline { list-style: none; }
+</style>
+</head>
+<body>
+<header class="app-head">
+  <div class="head-inner">
+    <a class="brand" href="#journal" aria-label="行光道場，回日記">
+      <span class="brand-mark" aria-hidden="true"><svg width="29" height="29" viewBox="0 0 32 32" fill="none"><path d="M5 25h22M8 24v-9a8 8 0 0 1 16 0v9M12 25v-9a4 4 0 0 1 8 0v9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M16 2v3M5 6l2 2M27 6l-2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+      <span>行光道場</span>
+    </a>
+    <span class="test-label">模擬版</span>
+  </div>
+</header>
+<div class="workspace">
+  <aside class="sidebar">
+    <nav class="side-nav" aria-label="模擬版主選單">
+      <a class="nav-button" href="#journal" data-nav="journal" id="nav-journal">覺察日記</a>
+      <a class="nav-button" href="#dao" data-nav="dao" id="nav-dao">道藏</a>
+    </nav>
+    <p class="side-footer">這裡是示例日記。<br>你的試用紀錄存在這個瀏覽器。</p>
+  </aside>
+  <main class="main" id="main">
+    <div class="view" id="view"></div>
+  </main>
+</div>
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title"></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<script>
+const Model = (() => {
+  const storageKey = "lumen-dojo-awareness-preview-v1";
+  const packetFormat = "道藏討論/v1";
+  const kinds = {
+    morning: "晨間",
+    note: "日間札記",
+    evening: "晚間復盤",
+    legacy: "舊版日記"
+  };
+  const kindOrder = ["evening", "note", "morning", "legacy"];
+
+  function fresh() {
+    const originalEvening = "寫到一半我開始急，覺得今天怎樣都得寫完。後來我先把剩下的事排了一次，決定今晚只寫完開頭。";
+    const entries = [
+      {
+        id: "e-evening", date: "2026-11-19", kind: "evening", title: "今天的實踐回望",
+        body: "寫到一半我有點焦慮，覺得今天怎樣都得寫完。我站起來喝了口水，把剩下的事排了一次，決定今晚只寫完開頭。壓力還在，我倒是鬆了一口氣。",
+        revisions: [{ body: originalEvening, savedAt: "2026-11-19T19:40:00+11:00" }]
+      },
+      {
+        id: "e-note", date: "2026-11-19", kind: "note", title: "午休先寫一段",
+        body: "午休時把想寫的段落抄到紙上。雖然今天只剩二十分鐘，先寫一小段也有用。等下再回來看那個一直改不好的開頭。",
+        revisions: []
+      },
+      {
+        id: "e-morning", date: "2026-11-19", kind: "morning", title: "此刻的我",
+        body: "起床時肩頸有點緊。想到今天要完成的事就焦慮，原本想立刻打開電腦，後來先好好吃完早餐。",
+        revisions: []
+      },
+      {
+        id: "e-discovery", date: "2026-11-18", kind: "evening", title: "今天的發現",
+        body: "晚上重看今天的筆記，發現我最在意的是把一個想法說清楚。把事情都做完，反而沒有原來以為的那麼要緊。",
+        revisions: []
+      },
+      {
+        id: "e-late-note", date: "2026-11-18", kind: "note", title: "白天追蹤",
+        body: "下午本來在等自己有心情才開始。坐下來寫了兩句之後，第三句比較容易出現。",
+        revisions: []
+      },
+      {
+        id: "e-earlier", date: "2026-11-17", kind: "note", title: "只留下兩個例子",
+        body: "開著草稿時一直在看時間。問了自己一句「現在一定要做完嗎？」才發現我可以改成先把兩個例子留下來。",
+        revisions: []
+      },
+      {
+        id: "e-reply", date: "2026-11-16", kind: "morning", title: "我想對他說",
+        body: "有時候我把催促聽成提醒。今天想看看自己是因為真的想做，還是怕慢下來就趕不上。",
+        revisions: []
+      },
+      {
+        id: "e-legacy", date: "2026-11-12", kind: "legacy", title: "今天想記得什麼",
+        body: "下班後繞路去買麵包。走到車站那段時間，終於想起自己其實有一整個晚上可以休息。",
+        revisions: []
+      }
+    ];
+
+    return {
+      entries,
+      questions: [{
+        id: "q-effort",
+        title: "努力什麼時候會變成逼迫自己？",
+        links: [
+          { entryId: "e-evening", excerpt: entries[0].body, linkedAt: "2026-11-19T21:10:00+11:00" },
+          { entryId: "e-earlier", excerpt: entries[5].body, linkedAt: "2026-11-17T18:40:00+11:00" }
+        ],
+        updates: [{
+          id: "u-effort",
+          text: "我可以先留意自己是不是覺得事情非做完不可。當我還能停一下、決定今天做到哪裡，就比較像是我自己在選。",
+          reason: "原本只感覺到自己很急，寫下來才發現，我當時其實還有調整做法的餘地。",
+          entryId: "e-earlier",
+          excerpt: entries[5].body,
+          savedAt: "2026-11-17T18:45:00+11:00"
+        }]
+      }],
+      rounds: []
+    };
+  }
+
+  function load() {
+    try {
+      const value = JSON.parse(localStorage.getItem(storageKey));
+      if (value && [value.entries, value.questions, value.rounds].every(Array.isArray)) {
+        return value;
+      }
+    } catch {
+      // A blocked or empty store still lets the reader test every action for this visit.
+    }
+    return fresh();
+  }
+
+  function save(state) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function uid(prefix = "item") {
+    if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`;
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  function getText(entry) {
+    return typeof entry?.body === "string" ? entry.body : "";
+  }
+
+  function search(state, { query = "", kind = "", from = "", to = "" } = {}) {
+    const words = query.trim().toLocaleLowerCase("zh-TW").split(/\s+/).filter(Boolean);
+    return (state.entries ?? []).filter((entry) => {
+      if (kind && kind !== "all" && entry.kind !== kind) return false;
+      if ((from && entry.date < from) || (to && entry.date > to)) return false;
+      const content = [entry.title, kinds[entry.kind], entry.date, getText(entry)].join("\n")
+        .toLocaleLowerCase("zh-TW");
+      return words.every((word) => content.includes(word));
+    }).sort((left, right) =>
+      right.date.localeCompare(left.date) || kindOrder.indexOf(left.kind) - kindOrder.indexOf(right.kind)
+    );
+  }
+
+  function entryQuestion(state, round) {
+    return round.question?.trim() ||
+      state.questions.find(({ id }) => id === round.questionId)?.title ||
+      "我想釐清這一段日記在說什麼。";
+  }
+
+  function prompt(state, round) {
+    const topic = state.questions.find(item => item.id === round.questionId)?.title;
+    const sources = (round.sources ?? []).map((source, index) =>
+      `【選段 ${index + 1}｜${source.date ?? ""} ${source.title ?? ""}】\n${source.excerpt ?? ""}`
+    );
+    const paused = round.result?.狀態 === "暫存" ? round.result : null;
+    const recentTurns = paused?.問答 ?? round.previousTurns ?? [];
+    const history = recentTurns.slice(-12).map((turn) => `${turn.角色}　${turn.內容}`);
+    const next = paused?.下次從這裡 || round.next;
+    const template = JSON.stringify({
+      格式: packetFormat,
+      討論ID: round.id,
+      狀態: "完成",
+      問答: [
+        { 角色: "GPT", 內容: "你的提問原句" },
+        { 角色: "我", 內容: "我的回答原句" }
+      ],
+      下次從這裡: "",
+      候選: [{ 內容: "依我這輪的話整理的一句理解", 依據: "T2", 依據原句: "我的回答原句" }]
+    }, null, 2);
+
+    return [
+      topic && topic !== round.question && "【長期問題】\n" + topic,
+      "【這一輪想談的事】",
+      entryQuestion(state, round),
+      round.prior && `【上次我確認的理解】\n${round.prior}`,
+      next && `【上次停在這裡】\n${next}`,
+      history.length > 0 && `【前一輪的問答｜供接續】\n${history.join("\n")}\n回傳卡的問答只收這一輪新增的發言。`,
+      ...sources,
+      "請用繁體中文，每次只談一個和原問題有關的點。從我這一輪實際說的話判斷，分清我寫的、我現在說的，以及你提出的想法。",
+      "當我已用自己的話回答，並說清一個理由、例子、區別、適用界線或尚待查證之處，就主動小結並問我是否可以整理。若還有直接影響原問題的一個疑問，先接住它。重複追問或另開新題時就停下來。",
+      "等我說可以整理時，只回傳下列格式的 JSON，保留討論 ID。問答只收本輪的原句，照實際順序排列為 T1、T2……。每項候選要指向角色「我」的發言，依據原句要能逐字在該發言中找到。若我還沒形成這輪的理解，候選可以留空。",
+      "若我說「先暫存」，沿用同一格式，把狀態改成「暫存」，候選留空，並在「下次從這裡」留下具體的續談點。",
+      "看完這份資料，先接住我的問題。如果還需要知道我的想法，問我一個能讓我往下想的問題。",
+      template
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function example(state, round, status = "完成") {
+    const paused = status === "暫存";
+    const effort = round.questionId === "q-effort" ||
+      /(焦慮|努力|逼迫)/.test(entryQuestion(state, round));
+    const opening = effort
+      ? "那個時候，你在哪一步發現自己還有選擇？"
+      : "重看這一段時，你最想弄清楚哪個當下？";
+    const ownWords = effort
+      ? "我停下來重新排了進度。雖然還是會焦慮，但我可以決定今天做到哪裡。"
+      : "現在回頭看，我最在意的是那一刻怎麼做了選擇。我想先把當時的心情和後來的想法各自記下來。";
+    return JSON.stringify({
+      格式: packetFormat,
+      討論ID: round.id,
+      狀態: paused ? "暫存" : "完成",
+      問答: [{ 角色: "GPT", 內容: opening }, { 角色: "我", 內容: ownWords }],
+      下次從這裡: paused
+        ? effort ? "下次想談：時間真的很緊的時候，我還能怎麼為自己保留選擇？" : "下次想談：當時有哪些做法是我可以選的？"
+        : "",
+      候選: paused ? [] : [{
+        內容: effort ? "有壓力時，我也可以重新決定自己要做到哪裡。" : "回看這件事時，我想分開記下當時的心情和後來的想法。",
+        依據: "T2",
+        依據原句: ownWords
+      }]
+    }, null, 2);
+  }
+
+  function validate(_state, round, input) {
+    let payload;
+    try {
+      if (typeof input !== "string" || input.length > 180000) {
+        throw new Error("length");
+      }
+      const text = input.trim().replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i, "$1");
+      payload = JSON.parse(text);
+    } catch {
+      throw new Error("這段回覆讀不出來。請複製完整的回傳卡，再貼一次。");
+    }
+
+    if (!payload || payload.格式 !== packetFormat) {
+      throw new Error("找不到「道藏討論/v1」的回傳格式。請用這輪的討論包整理一次。");
+    }
+    if (payload.討論ID !== round.id) {
+      throw new Error("這是另一輪的回傳。請打開對應的討論，或貼上這一輪的回傳。");
+    }
+    if (!["暫存", "完成"].includes(payload.狀態)) {
+      throw new Error("請在回傳卡中把狀態填成「暫存」或「完成」。");
+    }
+    if (!Array.isArray(payload.問答) || payload.問答.length === 0 || payload.問答.length > 100) {
+      throw new Error("回傳卡需要有這輪的問答，最多可放 100 則。");
+    }
+
+    const turns = payload.問答.map((turn, index) => {
+      if (!turn || !["我", "GPT"].includes(turn.角色) || typeof turn.內容 !== "string" ||
+          !turn.內容.trim() || turn.內容.length > 20000) {
+        throw new Error(`請核對第 ${index + 1} 則問答的角色和文字。`);
+      }
+      return { 角色: turn.角色, 內容: turn.內容.trim() };
+    });
+    const next = typeof payload.下次從這裡 === "string" ? payload.下次從這裡.trim() : "";
+    const paused = payload.狀態 === "暫存";
+    if (next.length > 3000 || (paused && !next)) {
+      throw new Error("暫存時請用一小段文字說明下次從哪裡接續。");
+    }
+    if (!Array.isArray(payload.候選) || payload.候選.length > 12 ||
+        (paused && payload.候選.length > 0)) {
+      throw new Error(paused ? "暫存時請把候選留空。" : "請把想留下的理解放在候選清單，最多可放 12 筆。");
+    }
+
+    const candidates = payload.候選.map((candidate, index) => {
+      const content = typeof candidate?.內容 === "string" ? candidate.內容.trim() : "";
+      const anchor = typeof candidate?.依據 === "string" ? candidate.依據.trim().toUpperCase() : "";
+      const quote = typeof candidate?.依據原句 === "string" ? candidate.依據原句.trim() : "";
+      const turn = /^T[1-9]\d*$/.test(anchor) ? turns[Number(anchor.slice(1)) - 1] : null;
+      if (!content || content.length > 3000 || !quote || quote.length > 5000 ||
+          turn?.角色 !== "我" || !turn.內容.includes(quote)) {
+        throw new Error(`第 ${index + 1} 筆候選需要引用你在這輪親口說的原句。請核對依據的位置和文字。`);
+      }
+      return { 內容: content, 依據: anchor, 依據原句: quote };
+    });
+
+    return {
+      格式: packetFormat,
+      討論ID: round.id,
+      狀態: payload.狀態,
+      問答: turns,
+      下次從這裡: next,
+      候選: candidates
+    };
+  }
+
+  return { fresh, load, save, uid, search, prompt, example, validate, getText, kinds };
+})();
+
+"use strict";
+
+const view = document.getElementById("view");
+const sheet = document.getElementById("sheet");
+const toast = document.getElementById("toast");
+const state = Model.load();
+const filters = { query: "", kind: "", from: "", to: "" };
+const readingSource = {
+  entryId: "r-magic", kind: "reading", date: "2026-11-18",
+  title: "《Magic Shop》· 焦慮與努力",
+  excerpt: "讀到這裡，我想再分清楚，有壓力的時候，我是不是還能選擇稍微停一下，再決定怎麼做。"
+};
+const icons = {
+  journal: '<path d="M5 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm2 0v16m4-11h4m-4 4h4"/>',
+  dao: '<path d="M4 20h16M6 20v-8a6 6 0 0 1 12 0v8m-8 0v-7a2 2 0 0 1 4 0v7M12 2v2"/>',
+  search: '<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/>',
+  calendar: '<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 4v4m8-4v4M4 10h16"/>',
+  right: '<path d="m10 6 6 6-6 6"/>',
+  left: '<path d="m14 6-6 6 6 6"/>',
+  x: '<path d="m6 6 12 12M18 6 6 18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  pen: '<path d="m14 6 4 4M4 20l4-1 12-12a2.2 2.2 0 0 0-3-3L5 16z"/>'
+};
+
+let route;
+let modal;
+let matchQuery = "";
+let promptPreview = null;
+let toastTimer;
+let scrollBack = 0;
+
+function icon(name) {
+  return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icons[name] + '</svg>';
+}
+
+document.querySelector("#nav-journal").insertAdjacentHTML("afterbegin", icon("journal"));
+document.querySelector("#nav-dao").insertAdjacentHTML("afterbegin", icon("dao"));
+
+function h(value = "") {
+  return String(value ?? "").replace(/[&<>"']/g, character =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+}
+
+function day(value, year = false) {
+  const [y, m, d] = String(value ?? "").slice(0, 10).split("-").map(Number);
+  if (!m || !d) return "";
+  return (year ? y + " 年 " : "") + m + " 月 " + d + " 日";
+}
+
+function moments(value) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value ?? "")) return day(value);
+  const at = new Date(value);
+  if (Number.isNaN(at.valueOf())) return day(value);
+  return new Intl.DateTimeFormat("zh-TW", { timeZone: "Australia/Melbourne", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(at);
+}
+
+function entryById(id) { return state.entries.find(item => item.id === id); }
+function questionById(id) { return state.questions.find(item => item.id === id); }
+function roundById(id) { return state.rounds.find(item => item.id === id); }
+function saved() { return Model.save(state); }
+function timestamp() { return new Date().toISOString(); }
+function label(entry) { return Model.kinds[entry.kind] ?? "日記"; }
+function paragraphs(text) { return String(text ?? "").trim().split(/\n\s*\n|\n/).map(piece => piece.trim()).filter(Boolean); }
+function same(a, b) { return a.normalize("NFKC").toLocaleLowerCase("zh-TW") === b.normalize("NFKC").toLocaleLowerCase("zh-TW"); }
+function newest(list, field) { return [...list].reverse().sort((a, b) => (Date.parse(b[field] ?? "") || 0) - (Date.parse(a[field] ?? "") || 0)); }
+
+function say(message) {
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.hidden = false;
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 4300);
+}
+
+function button(text, action, attrs = "", style = "secondary", symbol) {
+  return `<button type="button" class="button ${style}" data-action="${action}" ${attrs}>${symbol ? icon(symbol) : ""}<span>${h(text)}</span></button>`;
+}
+
+function backLink(href, text) {
+  return `<a class="breadcrumb" href="#${h(href)}">${icon("left")}${h(text)}</a>`;
+}
+
+function routeForRound(round) {
+  if (round.questionId && questionById(round.questionId)) return "question/" + round.questionId;
+  return round.entryId ? "entry/" + round.entryId : "dao";
+}
+
+function go(next, focus = true) {
+  const old = location.hash.slice(1);
+  if (old !== next) {
+    if (route?.name === "journal") scrollBack = window.scrollY;
+    history.pushState({}, "", "#" + next);
+  }
+  render(focus);
+}
+
+function render(focus = false) {
+  const hash = location.hash.slice(1).split("/");
+  route = { name: hash[0] || "journal", id: hash[1] || "" };
+  if (!["journal", "entry", "dao", "question", "round"].includes(route.name)) route.name = "journal";
+  const currentRound = route.name === "round" ? roundById(route.id) : null;
+  const active = ["dao", "question"].includes(route.name) || currentRound?.questionId ? "dao" : "journal";
+  for (const nav of document.querySelectorAll("[data-nav]")) {
+    if (nav.dataset.nav === active) nav.setAttribute("aria-current", "page");
+    else nav.removeAttribute("aria-current");
+  }
+  if (route.name === "journal") journal();
+  if (route.name === "entry") entryView();
+  if (route.name === "dao") daoView();
+  if (route.name === "question") questionView();
+  if (route.name === "round") roundView();
+  if (focus) {
+    const target = view.querySelector("h1");
+    if (target) { target.tabIndex = -1; target.focus({ preventScroll: true }); }
+    window.scrollTo(0, route.name === "journal" ? scrollBack : 0);
+  }
+  if (route.name === "entry" && hash[2]) {
+    requestAnimationFrame(() => {
+      const target = document.getElementById(hash[2].startsWith("version-") ? hash[2] : "part-" + hash[2]);
+      target?.scrollIntoView({ block: "nearest" });
+    });
+  }
+}
+
+function queryWords(query) {
+  return [...new Set(query.trim().split(/\s+/).filter(Boolean))];
+}
+
+function firstHit(text, words, since = 0) {
+  const lower = text.toLocaleLowerCase("zh-TW");
+  const hits = words.map(word => [lower.indexOf(word.toLocaleLowerCase("zh-TW"), since), word.length]);
+  return hits.filter(([at]) => at >= 0).sort(([a, aLength], [b, bLength]) => a - b || bLength - aLength)[0];
+}
+
+function mark(text, query) {
+  const words = queryWords(query);
+  let cursor = 0;
+  let output = "";
+  while (cursor < text.length) {
+    const hit = firstHit(text, words, cursor);
+    if (!hit) return output + h(text.slice(cursor));
+    const [at, length] = hit;
+    output += h(text.slice(cursor, at)) + "<mark>" + h(text.slice(at, at + length)) + "</mark>";
+    cursor = at + length;
+  }
+  return output;
+}
+
+function matchPart(entry, query = "") {
+  const pieces = paragraphs(Model.getText(entry));
+  const words = queryWords(query);
+  const at = pieces.findIndex(piece => firstHit(piece, words));
+  return { index: Math.max(0, at), text: pieces[Math.max(0, at)] ?? "" };
+}
+
+function snippet(text, query) {
+  const hit = firstHit(text, queryWords(query));
+  const start = Math.max(0, (hit?.[0] ?? 0) - 18);
+  const end = Math.min(text.length, start + Math.max(79, (hit?.[1] ?? 0) + 30));
+  return (start ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
+}
+
+const legend = [
+  ["", "全部"],
+  ["morning", "晨間"],
+  ["note", "札記"],
+  ["evening", "復盤"],
+  ["legacy", "舊日記"]
+];
+
+function lastPending(predicate) {
+  const resumed = new Set(state.rounds.map(round => round.previousId).filter(Boolean));
+  return newest(state.rounds.filter(round =>
+    predicate(round) && round.result?.狀態 !== "完成" && !resumed.has(round.id)), "startedAt")[0];
+}
+
+function journal() {
+  view.innerHTML = `
+    <section class="page-heading">
+      <div class="heading-copy">
+        <h1>覺察日記</h1>
+        <p>翻回以前寫過的那一句。</p>
+        ${button("寫一筆", "new-entry", "", "primary", "plus")}
+      </div>
+      <div class="page-art" aria-hidden="true"><div class="folio"><i></i><i></i><i></i><b></b></div></div>
+    </section>
+    <div class="journal-grid">
+      <section class="journal-main" aria-label="日記回看">
+        <form class="search-panel" id="search-form" role="search">
+          <label class="sr-only" for="journal-query">搜尋日記</label>
+          <div class="search-box">
+            ${icon("search")}
+            <input id="journal-query" type="search" autocomplete="off" maxlength="120" placeholder="搜尋日記，例如「焦慮」" value="${h(filters.query)}">
+            <button class="clear-search icon-button" type="button" data-action="clear-query" aria-label="清除搜尋" ${filters.query ? "" : "hidden"}>${icon("x")}</button>
+          </div>
+          <div class="filter-row">
+            <div class="kind-filters" aria-label="日記類別">${legend.map(([key, text]) => `<button type="button" class="kind-filter" aria-pressed="${filters.kind === key}" data-action="kind" data-kind="${key}">${text}</button>`).join("")}</div>
+            <button class="filter-toggle" type="button" data-action="date-toggle" aria-controls="date-fields" aria-expanded="${Boolean(filters.from || filters.to)}">${icon("calendar")}日期<span class="date-indicator" ${filters.from || filters.to ? "" : "hidden"}></span></button>
+          </div>
+          <div id="date-fields" class="date-fields" ${filters.from || filters.to ? "" : "hidden"}>
+            <label>開始日期<input id="date-from" type="date" value="${h(filters.from)}"></label>
+            <label>結束日期<input id="date-to" type="date" value="${h(filters.to)}"></label>
+            ${button("清除日期", "clear-dates", "", "text-button")}
+          </div>
+        </form>
+        <div class="results-header"><h2 id="result-title">最近寫下的日記</h2><span id="result-count" role="status" aria-live="polite"></span></div>
+        <div class="result-list" id="journal-results"></div>
+      </section>
+      <aside class="lookup-aside" aria-label="待續的討論與問題">
+        ${journalAside()}
+      </aside>
+    </div>`;
+  journalResults();
+}
+
+function journalAside() {
+  const pending = lastPending(round => !round.questionId);
+  const activeQuestion = state.questions.find(item => item.id === "q-effort") ?? state.questions[0];
+  return [
+    pending && `<section class="aside-section"><div class="section-head"><h2>下次接著談</h2></div>
+      <a class="mini-link" href="#round/${h(pending.id)}"><span><b>${h(pending.question)}</b><small>${h(pending.result?.下次從這裡 || "接著完成這輪討論")}</small></span>${icon("right")}</a>
+    </section>`,
+    activeQuestion && `<section class="aside-section"><div class="section-head"><h2>在道藏接著想</h2></div>
+      <a class="mini-link" href="#question/${h(activeQuestion.id)}"><span><b>${h(activeQuestion.title)}</b><small>${activeQuestion.links.length} 筆日記</small></span>${icon("right")}</a>
+    </section>`,
+    `<p class="caption mobile-note">示例日記 · 試用內容存於這個瀏覽器</p>`
+  ].filter(Boolean).join("");
+}
+
+function journalResults() {
+  const query = filters.query.trim();
+  const rows = Model.search(state, { ...filters, query });
+  const result = document.getElementById("journal-results");
+  document.getElementById("result-title").textContent = query ? "搜尋結果" : "日記";
+  document.getElementById("result-count").textContent = rows.length + " 段";
+  view.querySelector(".clear-search").hidden = !filters.query;
+  view.querySelector(".date-indicator").hidden = !(filters.from || filters.to);
+  if (filters.from && filters.to && filters.from > filters.to) {
+    result.innerHTML = '<p class="empty" role="alert">結束日期要在開始日期之後。</p>';
+    return;
+  }
+  if (!rows.length) {
+    result.innerHTML = `<p class="empty">${query ? "這個關鍵字沒有找到日記。" : "這段日期還沒有符合的日記。"}</p>`;
+    return;
+  }
+  const days = new Map();
+  for (const entry of rows) {
+    if (!days.has(entry.date)) days.set(entry.date, []);
+    days.get(entry.date).push(entry);
+  }
+  result.innerHTML = [...days].map(([date, entries]) => `<section class="date-group">
+    <div class="date-heading"><h3>${day(date)}</h3><time class="date-small" datetime="${h(date)}">${new Intl.DateTimeFormat("zh-TW", { weekday: "long", timeZone: "UTC" }).format(new Date(date + "T12:00:00Z"))}</time></div>
+    ${entries.map(entry => {
+      const hit = matchPart(entry, query);
+      return `<a class="entry-row" href="#entry/${h(entry.id)}/${hit.index}" data-action="open-hit" data-id="${h(entry.id)}" data-part="${hit.index}">
+        <div><small class="entry-meta">${h(label(entry))}${entry.draft ? " · 有草稿" : ""}</small><h4>${mark(entry.title, query)}</h4><p class="excerpt">${mark(snippet(hit.text, query), query)}</p></div>
+        <span class="chevron">${icon("right")}</span></a>`;
+    }).join("")}</section>`).join("");
+}
+
+function selectedExcerpt(entry) {
+  const select = getSelection();
+  const nativeText = select?.toString().trim();
+  if (nativeText && [...view.querySelectorAll(".doc-copy p")].some(element =>
+      element.contains(select.anchorNode) && element.contains(select.focusNode) && element.textContent.includes(nativeText))) {
+    return nativeText;
+  }
+  const raw = location.hash.slice(1).split("/")[2];
+  return paragraphs(Model.getText(entry))[Number(raw) || 0] ?? Model.getText(entry);
+}
+
+function linkedQuestionList(entry) {
+  const questions = state.questions.filter(item => item.links.some(link => link.entryId === entry.id));
+  return questions.map(item => `<a class="mini-link" href="#question/${h(item.id)}"><span><b>${h(item.title)}</b></span>${icon("right")}</a>`).join("");
+}
+
+function entryView() {
+  const entry = entryById(route.id);
+  if (!entry) return missing("journal", "回日記");
+  const partKey = location.hash.split("/")[2] || "0";
+  const index = parseInt(partKey, 10);
+  const rounds = newest(state.rounds.filter(round => round.entryId === entry.id), "startedAt");
+  const links = linkedQuestionList(entry);
+  const edited = entry.revisions.length;
+  view.innerHTML = `<div class="subpage">
+    ${backLink("journal", "回日記")}
+    <header class="doc-header"><p class="meta"><time datetime="${h(entry.date)}">${day(entry.date, true)}</time><span>${h(label(entry))}</span></p><h1>${h(entry.title)}</h1></header>
+    <article class="original">
+      <div class="section-head"><h2>日記原文</h2><span class="caption">第 ${edited + 1} 版</span></div>
+      <div class="doc-copy">${paragraphs(Model.getText(entry)).map((part, n) =>
+        `<p id="part-${n}" class="${n === index && matchQuery ? "selected-part" : ""}">${mark(part, matchQuery)}</p>`).join("")}</div>
+      <div class="toolbar">
+        ${button("和 GPT 談談", "start-entry", "", "primary")}
+        ${button("連到長期問題", "link-entry")}
+        ${button(entry.draft ? "續寫草稿" : "修改日記", "edit-entry", "", "text-button")}
+      </div>
+    </article>
+    ${links ? `<section class="section"><h2>連到的問題</h2>${links}</section>` : ""}
+    ${rounds.length ? `<section class="section"><h2>這段日記的討論</h2>${rounds.map(shortRound).join("")}</section>` : ""}
+    ${edited ? `<section class="section"><h2>以前的版本</h2>
+      ${entry.revisions.map((revision, n) => ({ revision, n })).reverse().map(({ revision, n }) => `<details class="fold" id="version-${n}" ${partKey === "version-" + n ? "open" : ""}><summary>第 ${n + 1} 版 <span>${revision.savedAt ? h(moments(revision.savedAt)) : day(entry.date)}</span></summary><p class="prose">${h(revision.body)}</p>${button("帶回編輯", "restore-version", `data-version="${n}"`, "text-button")}</details>`).join("")}
+    </section>` : ""}
+  </div>`;
+}
+
+function shortRound(round) {
+  const status = round.result?.狀態 === "完成" ? "已完成" : round.result?.狀態 === "暫存" ? "已暫存" : "待討論";
+  return `<a class="mini-link" href="#round/${h(round.id)}">
+    <span><small>${h(moments(round.startedAt))} · ${status}</small><b>${h(round.question)}</b>
+    ${round.result?.下次從這裡 || round.kept?.length ? `<small>${h(round.result?.下次從這裡 || round.kept[0])}</small>` : ""}
+    </span>${icon("right")}</a>`;
+}
+
+function sourceRoute(source) {
+  const entry = entryById(source.entryId);
+  if (!entry) return "";
+  const address = "entry/" + encodeURIComponent(entry.id);
+  const at = paragraphs(Model.getText(entry)).findIndex(part => part.includes(source.excerpt));
+  if (at >= 0) return address + "/" + at;
+  const previous = entry.revisions.findIndex(revision => revision.body.includes(source.excerpt));
+  return previous >= 0 ? address + "/version-" + previous : address;
+}
+
+function sourceLink(source, proposalLabel) {
+  if (source.entryId === readingSource.entryId) {
+    return button(proposalLabel || "回看閱讀片段", "read-source", "", "text-button");
+  }
+  const entry = entryById(source.entryId);
+  const address = sourceRoute(source);
+  const location = address.includes("/version-") ? "看當時的日記版本" : proposalLabel;
+  return address ? `<a class="quiet-link" href="#${h(address)}">${h(location || (day(entry.date) + " · " + entry.title))}</a>` : "";
+}
+
+function daoView() {
+  view.innerHTML = `<div class="subpage">
+    <header class="page-heading"><div class="heading-copy"><h1>道藏</h1>
+    <p>把想了很久的問題留在這裡，下次可以接著想。</p>
+    ${button("留下一個問題", "new-question", "", "primary", "plus")}</div></header>
+    <section class="section">
+      <h2>長期問題</h2>
+      <div class="topic-list">${state.questions.length ? state.questions.map(question => {
+        const pending = lastPending(round => round.questionId === question.id);
+        const latest = newest(question.updates, "savedAt")[0];
+        return `<a class="topic-row" href="#question/${h(question.id)}"><div>
+          <h3>${h(question.title)}</h3><p>${h(pending?.result?.下次從這裡 || latest?.text || "還沒有留下理解")}</p>
+          <small>${question.links.length} 段來源 · ${question.updates.length} 次理解${pending ? " · 有待續談" : ""}</small>
+          </div>${icon("right")}</a>`;
+      }).join("") : '<p class="empty">想反覆回來思考的事，可以先存成一句問題。</p>'}</div>
+    </section>
+  </div>`;
+}
+
+function questionView() {
+  const question = questionById(route.id);
+  if (!question) return missing("dao", "回道藏");
+  const rounds = newest(state.rounds.filter(round => round.questionId === question.id), "startedAt");
+  const pending = lastPending(round => round.questionId === question.id);
+  const changes = newest(question.updates, "savedAt");
+  const latest = changes[0];
+  view.innerHTML = `<div class="subpage">
+    ${backLink("dao", "回道藏")}
+    <header class="doc-header"><p class="meta">長期問題</p><h1>${h(question.title)}</h1>
+      <div class="toolbar">${button("接著和 GPT 想", "start-question", "", "primary")}${button("記下新理解", "add-understanding")}${button("加一段日記", "add-source", "", "text-button")}</div>
+    </header>
+    ${latest ? `<article class="original"><div class="section-head"><h2>我現在怎麼看</h2><span class="caption">${h(moments(latest.savedAt))}</span></div>
+      <div class="doc-copy"><p>${h(latest.text)}</p></div>
+      ${latest.reason ? `<p class="caption">${h(latest.reason)}</p>` : ""}
+      ${latest.excerpt ? `<details class="fold"><summary>看當時選的片段</summary><p class="prose">${h(latest.excerpt)}</p>${sourceLink(latest, "打開原文")}</details>` : ""}
+      ${latest.roundId ? `<a class="quiet-link" href="#round/${h(latest.roundId)}">回看這輪討論</a>` : ""}
+    </article>` : ""}
+    ${pending?.result?.狀態 === "暫存" ? `<section class="section next-note"><h2>下次從這裡</h2><p>${h(pending.result.下次從這裡)}</p>${button("續談這輪", "continue-round", `data-id="${h(pending.id)}"`)}</section>` : ""}
+    ${changes.length > 1 ? `<section class="section"><h2>先前的理解</h2>
+      <ol class="timeline">${changes.slice(1).map(change => `<li class="timeline-item"><small class="meta">${h(moments(change.savedAt))}</small><p>${h(change.text)}</p>${change.reason ? `<p class="caption">${h(change.reason)}</p>` : ""}${sourceLink(change, "回到當時的來源")}${change.roundId ? `<a class="quiet-link" href="#round/${h(change.roundId)}">回看這輪討論</a>` : ""}</li>`).join("")}</ol></section>` : ""}
+    <section class="section"><h2>有關的日記與閱讀</h2>
+      ${question.links.length ? question.links.map(link => `<article class="source-line"><p>${h(link.excerpt)}</p>${sourceLink(link)}</article>`).join("") : '<p class="empty">有幫你想清楚的日記，可以加進來。</p>'}
+    </section>
+    ${rounds.length ? `<section class="section"><h2>以前的討論</h2>${rounds.map(shortRound).join("")}</section>` : ""}
+  </div>`;
+}
+
+function missing(back, labelText) {
+  view.innerHTML = `<div class="subpage">${backLink(back, labelText)}<h1>找不到這筆紀錄</h1></div>`;
+}
+
+
+function roundView() {
+  const round = roundById(route.id);
+  if (!round) return missing("journal", "回日記");
+  const parent = routeForRound(round);
+  const complete = round.result?.狀態 === "完成";
+  const pending = round.result?.狀態 === "暫存";
+  const didContinue = state.rounds.some(item => item.previousId === round.id);
+  view.innerHTML = `<div class="subpage narrow">
+    ${backLink(parent, round.questionId ? "回問題" : "回日記原文")}
+    <header class="doc-header"><p class="meta">${complete ? "已完成" : pending ? "已暫存" : "和 GPT 討論"}</p><h1>${h(round.question)}</h1></header>
+    <section class="section round-block" aria-label="帶進這次討論的內容">
+      <h2>這次帶去談的內容</h2>
+      ${round.prior ? `<p class="unit"><b>上次留下的理解</b><br>${h(round.prior)}</p>` : ""}
+      ${round.next ? `<p class="unit"><b>接著想</b><br>${h(round.next)}</p>` : ""}
+      ${round.sources.length ? round.sources.map(item => `<details class="fold"><summary>${day(item.date)} · ${h(item.title)}</summary><p class="prose">${h(item.excerpt)}</p>${sourceLink(item, "回到原文")}</details>`).join("") : '<p class="caption">這輪只帶問題和已保留的理解。</p>'}
+    </section>
+    ${round.result ? storedRound(round, didContinue) : `
+    <section class="section round-block"><h2>帶到 ChatGPT</h2>
+      <p>複製討論包，到 ChatGPT 貼上。談完或想先停時，把回覆貼回來。</p>
+      <div class="action-row">
+        ${button("複製討論包", "copy-prompt", "", "primary")}
+        <a class="button secondary" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">開啟 ChatGPT</a>
+      </div>
+      <details class="fold"><summary>看要帶去的文字</summary><pre class="prompt-text">${h(Model.prompt(state, round))}</pre></details>
+    </section>
+    <section class="section round-block">
+      <h2>貼回這輪的回覆</h2>
+      <form id="return-form" class="stack">
+        <label class="field-label" for="return-input">ChatGPT 回覆</label>
+        <textarea id="return-input" class="field" name="raw" rows="6" placeholder="把暫存或完成的回覆貼在這裡" aria-describedby="return-error">${h(round.input ?? "")}</textarea>
+        <p class="error" id="return-error" role="alert" hidden></p>
+        <div class="action-row"><button type="submit" class="button primary">預覽回覆</button></div>
+      </form>
+      <details class="fold">
+        <summary>用範例試貼回</summary>
+        <div class="action-row">
+          ${button("帶入暫存範例", "example", 'data-status="暫存"')}
+          ${button("帶入完成範例", "example", 'data-status="完成"')}
+        </div>
+      </details>
+      <div id="return-preview"></div>
+    </section>`}
+  </div>`;
+}
+
+function turns(result) {
+  return `<ol class="turn-list">${result.問答.map(turn => `<li class="turn"><b>${h(turn.角色)}</b><p>${h(turn.內容)}</p></li>`).join("")}</ol>`;
+}
+
+function storedRound(round, didContinue) {
+  const result = round.result;
+  const question = questionById(round.questionId || round.linkedQuestionId);
+  return `<section class="section round-block">
+    <h2>${result.狀態 === "暫存" ? "下次從這裡" : "留下的理解"}</h2>
+    ${result.狀態 === "暫存"
+      ? `<p>${h(result.下次從這裡)}</p>${didContinue ? '<p class="caption">這輪已有接續紀錄。</p>' : button("續談這輪", "continue-round", `data-id="${h(round.id)}"`, "primary")}`
+      : round.kept?.length
+        ? `<ul class="kept-list">${round.kept.map(item => `<li>${h(item)}</li>`).join("")}</ul>
+          ${question ? `<a class="quiet-link" href="#question/${h(question.id)}">去道藏回看</a>` : round.entryId ? button("把理解連到長期問題", "link-round") : ""}`
+        : '<p class="caption">這輪保留了問答。</p>'}
+    <details class="fold"><summary>回看這輪問答</summary>${turns(result)}</details>
+  </section>`;
+}
+
+function returnPreview(round, result) {
+  const mount = document.getElementById("return-preview");
+  mount.innerHTML = `<div class="return-check" tabindex="-1">
+    <h3>${result.狀態 === "暫存" ? "這輪先停在這裡" : "確認這輪留下什麼"}</h3>
+    ${result.狀態 === "暫存" ? `<p><b>下次從這裡</b><br>${h(result.下次從這裡)}</p>` : ""}
+    <details class="fold"><summary>看這輪問答（${result.問答.length} 則）</summary>${turns(result)}</details>
+    ${result.候選.length ? `<fieldset class="choice-list"><legend>勾你想留下的句子</legend>
+      ${result.候選.map((candidate, index) => `<label class="choice-row">
+        <input type="checkbox" name="keep" value="${index}"><span><b>${h(candidate.內容)}</b><small>我的原話　${h(candidate.依據原句)}</small></span></label>`).join("")}</fieldset>` : ""}
+    ${result.候選.length && round.sources.length ? `<label class="form-row">連回一段來源 <span class="caption">選填</span><select class="field" id="return-source">${selectOptions(round.sources.map((source,index) => [index, day(source.date) + " · " + source.title]), "只保留這輪問答")}</select></label>` : ""}
+    ${button(result.狀態 === "暫存" ? "保存暫存" : "保存這輪", "keep-return", "", "primary")} 
+  </div>`;
+  mount.firstElementChild.focus();
+  mount.firstElementChild.scrollIntoView({ block: "nearest" });
+}
+
+function selectOptions(values, empty) {
+  return `${empty ? `<option value="">${h(empty)}</option>` : ""}${values.map(([value, text]) => `<option value="${h(value)}">${h(text)}</option>`).join("")}`;
+}
+
+function questionChoices(selected) {
+  return `${state.questions.map(question => `<option value="${h(question.id)}" ${selected === question.id ? "selected" : ""}>${h(question.title)}</option>`).join("")}<option value="new" ${!state.questions.length || selected === "new" ? "selected" : ""}>新增一個問題</option>`;
+}
+
+function show(title, body, actions, kind, data = {}) {
+  modal = { kind, data };
+  sheet.innerHTML = `
+    <div class="sheet-head"><h2 id="sheet-title">${h(title)}</h2>
+      <button class="icon-button sheet-close" aria-label="關閉" type="button" data-action="close-sheet">${icon("x")}</button>
+    </div>
+    <form id="sheet-form">
+      <div class="sheet-body">${body}<p class="error" id="sheet-error" role="alert" hidden></p></div>
+      <div class="sheet-actions">${actions}</div>
+    </form>`;
+  if (!sheet.open) sheet.showModal();
+  sheet.scrollTop = 0;
+}
+
+function actionSubmit(label, value = "save", mode = "primary") {
+  return `<button class="button ${mode}" type="submit" value="${h(value)}">${h(label)}</button>`;
+}
+
+function fail(id, message) {
+  const error = document.getElementById(id);
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = !message;
+  if (message) error.scrollIntoView({ block: "nearest" });
+}
+
+function showEdit(entry, replacement) {
+  const draft = entry ? {} : state.newDraft ?? {};
+  const date = entry?.date ?? draft.date ?? "2026-11-19";
+  const entryKind = entry?.kind ?? draft.kind ?? "note";
+  show(entry ? "修改日記" : "寫一筆日記", `
+    ${entry ? `<p class="caption">${day(entry.date, true)} · ${h(entry.title)}</p>` :
+    `<div class="form-grid">
+      <label class="form-row">日期<input class="field" type="date" name="date" value="${h(date)}" required></label>
+      <label class="form-row">類別<select class="field" name="kind">
+        ${Object.entries(Model.kinds).filter(([kind]) => kind !== "legacy").map(([kind,text]) => `<option value="${kind}" ${kind === entryKind ? "selected" : ""}>${text}</option>`).join("")}
+      </select></label>
+    </div>
+    <label class="form-row">標題<input class="field" name="title" maxlength="72" placeholder="例如：下班路上" value="${h(draft.title || "")}"></label>`}
+    <label class="form-row">日記原文<textarea class="field" name="body" rows="9" maxlength="12000" required>${h(replacement ?? entry?.draft ?? entry?.body ?? draft.body ?? "")}</textarea></label>
+    ${entry ? '<p class="caption">保存修訂後，可以從日記下方打開之前的版本。</p>' : ""}
+  `, actionSubmit("先存草稿", "draft", "secondary") + actionSubmit(entry ? "保存修訂" : "保存日記"), "edit", { id: entry?.id });
+}
+
+function showLink(entry, round, excerpt = selectedExcerpt(entry)) {
+  const preferred = state.questions.find(question => question.links.some(link => link.entryId === entry.id))?.id;
+  show(round ? "把理解連到長期問題" : "連到長期問題", `
+    <p class="source-quote">${h(excerpt)}</p>
+    <label class="form-row">連到哪一題<select id="target-question" class="field" name="question">${questionChoices(preferred)}</select></label>
+    <label class="form-row" id="target-new" ${state.questions.length ? "hidden" : ""}>新問題<input class="field" name="newTitle" maxlength="110" placeholder="你想繼續追問什麼？"></label>
+    ${round?.kept?.length ? `<p class="caption">一起帶入你從這輪已勾選的 ${round.kept.length} 句理解。</p>` : ""}
+  `, actionSubmit("確認連結"), "link", { id: entry.id, excerpt, roundId: round?.id });
+}
+
+function getOrCreateQuestion(title) {
+  const old = state.questions.find(question => same(question.title, title));
+  if (old) return old;
+  const created = { id: Model.uid("q"), title, links: [], updates: [] };
+  state.questions.push(created);
+  return created;
+}
+
+function addLink(question, source) {
+  if (!source?.entryId || !source.excerpt) return;
+  if (question.links.some(link => link.entryId === source.entryId && link.excerpt === source.excerpt)) return;
+  question.links.push({ entryId: source.entryId, excerpt: source.excerpt, linkedAt: timestamp() });
+}
+
+function putUnderstanding(question, { text, reason, source, roundId }) {
+  if (roundId && question.updates.some(update => update.roundId === roundId && update.text === text)) return;
+  addLink(question, source);
+  question.updates.push({
+    id: Model.uid("u"), text, reason, entryId: source?.entryId || "", excerpt: source?.excerpt || "",
+    savedAt: timestamp(), ...(roundId ? { roundId } : {})
+  });
+}
+
+function showNewQuestion() {
+  show("留下一個問題", `<label class="form-row">想繼續追問的事<input class="field" name="title" maxlength="110" required placeholder="先寫一句問題"></label>`,
+    actionSubmit("保存問題"), "new-question");
+}
+
+function entryList() {
+  return Model.search(state, { query: "", kind: "", from: "", to: "" });
+}
+
+function showAddSource(question) {
+  show("加一段日記", `<label class="form-row">從日記挑選<select class="field" name="entry" required>${selectOptions(entryList().map(entry => [entry.id, day(entry.date) + " · " + entry.title]), "選一筆日記")}</select></label><div id="entry-parts"></div>`, actionSubmit("加進這個問題"), "choose-source", { questionId: question.id });
+}
+
+function showUnderstanding(question) {
+  show("記下新理解", `
+    <label class="form-row">我現在怎麼看<textarea class="field" rows="4" name="text" maxlength="3000" required></textarea></label>
+    <label class="form-row">哪裡改變了 <span class="caption">選填</span><textarea class="field" rows="2" name="reason" maxlength="500"></textarea></label>
+    <label class="form-row">哪段日記讓我這樣想 <span class="caption">選填</span><select class="field" name="entry">${selectOptions(entryList().map(entry => [entry.id, day(entry.date) + " · " + entry.title]), "稍後再連結")}</select></label>
+    <div id="entry-parts"></div>
+  `, actionSubmit("保存這次理解"), "understanding", { questionId: question.id });
+}
+
+function showEntryParts(entry) {
+  const mount = document.getElementById("entry-parts");
+  if (!mount) return;
+  mount.innerHTML = entry ? `<fieldset class="choice-list"><legend>要連到哪一段</legend>${paragraphs(Model.getText(entry)).map((part, i) => `<label class="choice-row"><input type="radio" name="part" value="${i}" ${i === 0 ? "checked" : ""}><span>${h(part)}</span></label>`).join("")}</fieldset>` : "";
+}
+
+function describeSource(entry, excerpt) {
+  return { entryId: entry.id, excerpt, title: entry.title, date: entry.date };
+}
+
+function showStart({ entry, question, previous, excerpt }) {
+  if (entry && !excerpt) excerpt = selectedExcerpt(entry);
+  const rows = [];
+  const put = (entryId, text, chosen, known = null) => {
+    const item = entryById(entryId);
+    if (!item && !known) return;
+    const data = known ?? describeSource(item, text);
+    const duplicate = rows.find(row => row.data.entryId === entryId && row.data.excerpt === text);
+    if (duplicate) duplicate.chosen ||= chosen;
+    else rows.push({ data, chosen });
+  };
+  for (const source of previous?.sources ?? []) put(source.entryId, source.excerpt, true, source);
+  if (entry) {
+    put(entry.id, excerpt, true);
+    for (const part of paragraphs(Model.getText(entry))) put(entry.id, part, false);
+  }
+  for (const link of question?.links ?? []) put(link.entryId, link.excerpt, false, link.entryId === readingSource.entryId ? readingSource : null);
+  const recentChoices = entryList().flatMap(item => paragraphs(Model.getText(item)).map(part => [item.id,part]));
+  for (const [id,part] of recentChoices) put(id,part,false);
+  const choices = item => {
+    const index = rows.indexOf(item);
+    return `<label class="choice-row"><input type="checkbox" name="source" value="${index}" ${item.chosen ? "checked" : ""}>
+      <span><b>${day(item.data.date)} · ${h(item.data.title)}</b><small>${h(item.data.excerpt)}</small></span></label>`;
+  };
+  const latest = newest(question?.updates ?? [], "savedAt")[0]?.text ?? previous?.prior ?? "";
+  const next = previous?.result?.下次從這裡 || previous?.next || "";
+  const suggested = next || previous?.question || question?.title || "";
+  const firstGroup = rows.filter(row => row.chosen || row.data.entryId === entry?.id || question?.links.some(item => item.entryId === row.data.entryId && item.excerpt === row.data.excerpt));
+  const other = rows.filter(row => !firstGroup.includes(row) && row.data.entryId !== readingSource.entryId);
+  if (!rows.some(row => row.data.entryId === readingSource.entryId)) put(readingSource.entryId, readingSource.excerpt, false, readingSource);
+  const read = rows.find(row => row.data.entryId === readingSource.entryId);
+  show(previous ? "續談這輪" : question ? "接著和 GPT 想" : "和 GPT 談談", `
+    <label class="form-row">這次想釐清什麼？<input class="field" name="question" value="${h(suggested)}" maxlength="500" required placeholder="例如：我今天為什麼覺得非做完不可？"></label>
+    ${latest ? `<p class="caption">上次的理解會一起帶入。</p>` : ""}
+    <fieldset class="choice-list"><legend>想帶去談的片段</legend>
+      ${firstGroup.map(choices).join("")}
+      ${other.length ? `<details class="fold"><summary>再挑別的日記</summary>${other.map(choices).join("")}</details>` : ""}
+      ${!firstGroup.includes(read) ? `<details class="fold"><summary>選一段閱讀筆記</summary>${choices(read)}</details>` : ""}
+    </fieldset>
+  `, actionSubmit("準備討論包"), "start", { entryId: entry?.id, questionId: question?.id, previous, latest, next, rows });
+}
+
+function activeEntry() { return entryById(route.id); }
+function activeQuestion() { return questionById(route.id); }
+function activeRound() { return roundById(route.id); }
+
+async function copyPrompt(round) {
+  const content = Model.prompt(state, round);
+  try {
+    await navigator.clipboard.writeText(content);
+    say("討論包已複製");
+  } catch {
+    show("複製討論包", `<label class="form-row">長按選取並複製<textarea class="field" rows="12" readonly>${h(content)}</textarea></label>`, button("完成", "close-sheet"), "copy");
+    sheet.querySelector("textarea").select();
+  }
+}
+
+function closeAndGo(address, message) {
+  if (sheet.open) sheet.close();
+  if (address) go(address);
+  else render();
+  if (message) say(message);
+}
+
+function persistMessage(message) {
+  return saved() ? message : "已保留在目前頁面。這個瀏覽器暫時無法保存，重開前請先複製需要的文字。";
+}
+
+function invalid(message) { throw new Error(message); }
+
+function submitModal(event) {
+  const { kind, data } = modal;
+  const fields = new FormData(event.target);
+  const get = key => String(fields.get(key) ?? "").trim();
+  const entry = entryById(data.id);
+  if (kind === "edit") {
+    const body = get("body");
+    if (!body) invalid("先寫下這段日記。");
+    if (entry) {
+      if (event.submitter?.value === "draft") {
+        entry.draft = body;
+        return closeAndGo(null, persistMessage("草稿已存好"));
+      }
+      if (entry.body !== body) {
+        entry.revisions.push({ body: entry.body, savedAt: entry.savedAt ?? entry.date });
+        entry.body = body;
+        entry.savedAt = timestamp();
+      }
+      delete entry.draft;
+      matchQuery = "";
+      return closeAndGo("entry/" + entry.id, persistMessage("日記已保存"));
+    }
+    const date = get("date");
+    const category = get("kind");
+    const title = get("title") || Model.kinds[category] || "日記";
+    if (!date || !Model.kinds[category]) invalid("請選日期和類別。");
+    if (event.submitter?.value === "draft") {
+      state.newDraft = { body, date, kind: category, title };
+      return closeAndGo(null, persistMessage("草稿已存好，下次從「寫一筆」接著寫"));
+    }
+    const created = { id: Model.uid("entry"), date, kind: category, title, body, revisions: [], savedAt: timestamp() };
+    state.entries.push(created);
+    delete state.newDraft;
+    matchQuery = "";
+    return closeAndGo("entry/" + created.id, persistMessage("日記已保存"));
+  }
+  if (kind === "new-question") {
+    const title = get("title");
+    if (!title) invalid("請先寫一句問題。");
+    const question = getOrCreateQuestion(title);
+    return closeAndGo("question/" + question.id, persistMessage("已存到道藏"));
+  }
+  if (kind === "link") {
+    const questionId = get("question");
+    const title = get("newTitle");
+    if (questionId === "new" && !title) invalid("請先寫一句想繼續追問的話。");
+    const question = questionId === "new" ? getOrCreateQuestion(title) : questionById(questionId);
+    if (!question || !data.excerpt || !entry) invalid("請先選好日記段落和問題。");
+    const source = describeSource(entry, data.excerpt);
+    addLink(question, source);
+    const round = roundById(data.roundId);
+    if (round?.kept?.length) {
+      round.linkedQuestionId = question.id;
+      for (const text of round.kept) putUnderstanding(question, { text, reason: "", source: round.interpretationSource, roundId: round.id });
+    }
+    return closeAndGo("question/" + question.id, persistMessage("已連到長期問題"));
+  }
+  if (kind === "choose-source" || kind === "understanding") {
+    const question = questionById(data.questionId);
+    if (!question) invalid("找不到原先的問題。");
+    const candidate = entryById(get("entry"));
+    const excerpt = candidate ? paragraphs(Model.getText(candidate))[Number(get("part"))] : "";
+    const source = excerpt && candidate ? describeSource(candidate, excerpt) : null;
+    if (kind === "choose-source") {
+      if (!source) invalid("請先選一筆日記和段落。");
+      addLink(question, source);
+    } else {
+      if (!get("text")) invalid("先寫一句你現在怎麼看。");
+      putUnderstanding(question, { text: get("text"), reason: get("reason"), source });
+    }
+    return closeAndGo("question/" + question.id, persistMessage(kind === "choose-source" ? "日記段落已加進來" : "已留下這次理解"));
+  }
+  if (kind === "start") {
+    const question = get("question");
+    if (!question) invalid("寫下這次想釐清的問題。");
+    const sources = fields.getAll("source").map(index => data.rows[Number(index)]?.data).filter(Boolean);
+    if (sources.length > 4) invalid("這一輪最多帶四段。");
+    const round = {
+      id: Model.uid("talk"), entryId: data.entryId, questionId: data.questionId, sources,
+      question, prior: data.latest, next: data.next, startedAt: timestamp(),
+      ...(data.previous ? { previousId: data.previous.id, previousTurns: data.previous.result?.問答 ?? [] } : {})
+    };
+    state.rounds.push(round);
+    return closeAndGo("round/" + round.id, persistMessage("討論包準備好了"));
+  }
+}
+
+function saveReturn() {
+  const round = activeRound();
+  const field = document.getElementById("return-input");
+  const errorId = "return-error";
+  if (!round || !promptPreview || promptPreview.id !== round.id || promptPreview.raw !== field.value) {
+    return fail(errorId, "回覆有更新，請再預覽一次。");
+  }
+  const actual = promptPreview.result;
+  const chosen = [...view.querySelectorAll('input[name="keep"]:checked')]
+    .map(input => actual.候選[Number(input.value)]).filter(Boolean);
+  round.result = actual;
+  round.kept = chosen.map(item => item.內容);
+  round.keptDetails = chosen;
+  const sourceIndex = document.getElementById("return-source")?.value;
+  if (sourceIndex !== undefined && sourceIndex !== "") round.interpretationSource = round.sources[Number(sourceIndex)];
+  delete round.input;
+  promptPreview = null;
+  const question = questionById(round.questionId);
+  if (question && actual.狀態 === "完成") {
+    for (const text of round.kept) putUnderstanding(question, { text, reason: "", source: round.interpretationSource, roundId: round.id });
+  }
+  say(persistMessage(actual.狀態 === "暫存" ? "這輪已暫存" : "這輪已保存"));
+  render(true);
+}
+
+let capturedText = "";
+document.addEventListener("pointerdown", event => {
+  if (event.target.closest('[data-action="start-entry"],[data-action="link-entry"]')) {
+    const entry = activeEntry();
+    if (entry) capturedText = selectedExcerpt(entry);
+  }
+});
+
+document.addEventListener("click", event => {
+  const target = event.target.closest("[data-action]");
+  if (!target) return;
+  const action = target.dataset.action;
+  if (action === "open-hit") {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    matchQuery = filters.query.trim();
+    go("entry/" + encodeURIComponent(target.dataset.id) + "/" + target.dataset.part);
+    return;
+  }
+  if (action === "clear-query") {
+    filters.query = "";
+    const input = document.getElementById("journal-query");
+    input.value = "";
+    journalResults();
+    input.focus();
+  }
+  if (action === "kind") {
+    filters.kind = target.dataset.kind;
+    for (const item of view.querySelectorAll(".kind-filter")) item.setAttribute("aria-pressed", String(item === target));
+    journalResults();
+  }
+  if (action === "date-toggle") {
+    const dates = document.getElementById("date-fields");
+    dates.hidden = !dates.hidden;
+    target.setAttribute("aria-expanded", String(!dates.hidden));
+  }
+  if (action === "clear-dates") {
+    filters.from = "";
+    filters.to = "";
+    view.querySelector("#date-from").value = "";
+    view.querySelector("#date-to").value = "";
+    journalResults();
+  }
+  if (action === "new-entry") showEdit();
+  if (action === "edit-entry") showEdit(activeEntry());
+  if (action === "restore-version") {
+    const entry = activeEntry();
+    showEdit(entry, entry.revisions[Number(target.dataset.version)]?.body);
+  }
+  if (action === "link-entry") { showLink(activeEntry(), null, capturedText || selectedExcerpt(activeEntry())); capturedText = ""; }
+  if (action === "link-round") showLink(entryById(activeRound().entryId), activeRound(), activeRound().sources[0]?.excerpt);
+  if (action === "start-entry") { showStart({ entry: activeEntry(), excerpt: capturedText }); capturedText = ""; }
+  if (action === "start-question") showStart({ question: activeQuestion() });
+  if (action === "new-question") showNewQuestion();
+  if (action === "add-source") showAddSource(activeQuestion());
+  if (action === "add-understanding") showUnderstanding(activeQuestion());
+  if (action === "continue-round") {
+    const previous = roundById(target.dataset.id);
+    showStart({ entry: entryById(previous.entryId), question: questionById(previous.questionId), previous });
+  }
+  if (action === "read-source") show("閱讀片段", `<p class="caption">示例閱讀筆記 · ${h(readingSource.title)}</p><p class="prose">${h(readingSource.excerpt)}</p>`, button("關閉", "close-sheet"), "reading");
+  if (action === "copy-prompt") void copyPrompt(activeRound());
+  if (action === "example") {
+    const input = document.getElementById("return-input");
+    input.value = Model.example(state, activeRound(), target.dataset.status);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+    say("已帶入範例回覆，可以按「預覽回覆」");
+  }
+  if (action === "keep-return") saveReturn();
+  if (action === "close-sheet") sheet.close();
+});
+
+document.addEventListener("input", event => {
+  if (event.target.id === "journal-query") {
+    filters.query = event.target.value;
+    journalResults();
+  }
+  if (event.target.id === "return-input") {
+    const round = activeRound();
+    if (!round) return;
+    round.input = event.target.value;
+    saved();
+    document.getElementById("return-preview").replaceChildren();
+    fail("return-error", "");
+    promptPreview = null;
+  }
+});
+
+document.addEventListener("change", event => {
+  if (event.target.id === "date-from" || event.target.id === "date-to") {
+    filters[event.target.id.slice(5)] = event.target.value;
+    journalResults();
+  }
+  if (event.target.id === "target-question") {
+    const row = document.getElementById("target-new");
+    row.hidden = event.target.value !== "new";
+    if (!row.hidden) row.querySelector("input").focus();
+  }
+  if (event.target.closest("#sheet-form") && event.target.name === "entry") showEntryParts(entryById(event.target.value));
+});
+
+document.addEventListener("submit", event => {
+  if (event.target.id === "sheet-form") {
+    event.preventDefault();
+    try { submitModal(event); }
+    catch (error) { fail("sheet-error", error.message); }
+  }
+  if (event.target.id === "search-form") event.preventDefault();
+  if (event.target.id === "return-form") {
+    event.preventDefault();
+    const input = document.getElementById("return-input");
+    try {
+      const round = activeRound();
+      const result = Model.validate(state, round, input.value);
+      promptPreview = { id: round.id, raw: input.value, result };
+      fail("return-error", "");
+      returnPreview(round, result);
+    } catch (error) {
+      fail("return-error", error.message);
+    }
+  }
+});
+
+sheet.addEventListener("close", () => { modal = null; });
+window.addEventListener("hashchange", () => {
+  matchQuery = "";
+  render(true);
+});
+render();
+
+
+</script>
+</body>
+</html>
+
