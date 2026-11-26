@@ -147,8 +147,10 @@ export async function appendCaptureImage(params: {
   mimeType: string;
   filename: string;
   sourceMessageId: string;
+  /** Pictures taken from the source post itself keep the capture's LINE message id and get their own caption. */
+  fromSource?: boolean;
 }): Promise<CaptureEntry> {
-  if (!params.mimeType.startsWith("image/")) throw new Error("LINE 傳入的檔案不是圖片");
+  if (!params.mimeType.startsWith("image/")) throw new Error(params.fromSource ? "取得的檔案不是圖片" : "LINE 傳入的檔案不是圖片");
   if (params.bytes.byteLength > 20 * 1024 * 1024) throw new Error("截圖超過 20 MB，暫時無法保存");
 
   const upload = await withNotionRateLimit(() => notion().fileUploads.create({
@@ -172,7 +174,7 @@ export async function appendCaptureImage(params: {
       image: {
         type: "file_upload",
         file_upload: { id: upload.id },
-        caption: [{ type: "text", text: { content: "LINE 剪藏原始截圖" } }],
+        caption: [{ type: "text", text: { content: params.fromSource ? "Threads 貼文原圖" : "LINE 剪藏原始截圖" } }],
       },
     }],
   }));
@@ -194,7 +196,7 @@ export async function appendCaptureImage(params: {
     clip: {
       ...params.capture.clip,
       sourceKind: params.capture.sourceUrl ? "webpage" : "screenshot",
-      externalMessageId: params.sourceMessageId,
+      externalMessageId: params.fromSource ? params.capture.clip.externalMessageId : params.sourceMessageId,
       // The window stays open until it expires or the owner taps 「補完了」, so a whole carousel lands on one capture.
       awaitingScreenshotUntil: params.capture.clip.attachments.length + 1 >= 20 ? null : params.capture.clip.awaitingScreenshotUntil,
       attachments: [...params.capture.clip.attachments, attachment],
