@@ -201,11 +201,29 @@ try {
   assert.equal((forgePacket.match(/我會形容自己炫耀的話/g) || []).length, 1, "卡片原句只放一次");
   assert.match(await run("return document.getElementById('dialog').innerText"), /這輪的讀法：讀書搭子/);
 
+  // 作品的 A／B 對話框：已選用的卡、這把杼的卡在前，其他卡片依關聯排序，看不出關聯的收起來。
+  await run(`document.getElementById('dialog').close();
+    const s={id:'sh-test',title:'自我覺察－內在的炫耀感',core:'',dirs:[],notes:[],coreVersions:[],cardUses:[{cardId:${JSON.stringify(anchor.id)},entryId:${JSON.stringify(anchor.id)},note:''}]};
+    state.shuttles.unshift(s);
+    const w=newWork('text');w.shuttle=s.id;w.title='炫耀與分享';keep(w);go('edit/'+w.id);openDiamond(w,'A');`);
+  await wait("document.getElementById('dialog').open", "診斷草稿對話框");
+  const dialog = await run("return document.getElementById('dialog').textContent");
+  assert.match(dialog, /這把杼的其他卡片（1 張）/);
+  assert.ok(dialog.indexOf("這把杼的其他卡片") < dialog.indexOf("從其他卡片挑選"), "這把杼的卡要排在其他卡片前面");
+  const others = await run("return [...document.querySelectorAll('#dialog details')].find(d=>d.querySelector(':scope>summary').textContent==='從其他卡片挑選').textContent");
+  assert.ok(others.indexOf("分享的起心動念值得被看見") < others.indexOf("看不出關聯"), "用字相近的卡排在前面");
+  assert.match(others, /其他卡片（看不出關聯，2 張）/);
+  assert.ok(others.indexOf("看不出關聯") < others.indexOf("成果好壞不能只歸因"), "沒有共同用字的卡收在後面");
+  await run(`document.querySelectorAll('#dialog details').forEach(d=>d.open=true);
+    [...document.querySelectorAll('#dialog .entry')].find(e=>e.querySelector('b')?.textContent==='分享的起心動念值得被看見').querySelector('button').click();`);
+  assert.match(await run("return document.getElementById('diaScratch').value"), /分享自己的成果時/);
+  await shot("work-materials");
+
   await run("document.getElementById('dialog').close();location.hash='cards'");
   await wait("document.getElementById('sourceCardList')", "觀點與洞察");
   assert.match(await text(), /從一張卡開始/);
   assert.deepEqual(errors, [], "頁面不得有未處理的錯誤");
-  console.log("PASS 並讀選卡三類（用字相近、GPT 候選核對與保存、關係由本人選定）、討論頁帶入的卡片置頂與排序、讀書搭子依卡片數與本人原話調整並寫進討論包");
+  console.log("PASS 作品 A／B 素材依關聯排序、並讀選卡三類（用字相近、GPT 候選核對與保存、關係由本人選定）、討論頁帶入的卡片置頂與排序、讀書搭子依卡片數與本人原話調整並寫進討論包");
 } finally {
   ws.close(); chrome.kill(); server.close();
   await rm(profile, { recursive: true, force: true }).catch(() => {});
