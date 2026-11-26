@@ -4,6 +4,7 @@
  */
 import type { CaptureEntry } from "./formal";
 import { imageTextForOriginal } from "./captureImageText";
+import { analysisForOriginal } from "./videoAnalysis";
 import {
   REFINE_ANGLES, REFINE_MAX_SOURCES, refineParagraphs,
   type RefineAngleKey, type RefineCardType, type RefineCandidate, type RefineChecks, type RefineQuote, type RefineReturn, type RefineTurn,
@@ -69,6 +70,12 @@ export function captureOriginal(capture: Pick<CaptureEntry, "excerpt" | "clip">)
   if (imageText) {
     parts.push((parts.length ? "〔圖片文字〕\n" : "") + imageText);
     kinds.push("圖片文字，已核對");
+  }
+  // The storyboard counts only after the owner confirmed it.
+  const storyboard = analysisForOriginal(capture.clip.videoAnalysis);
+  if (storyboard) {
+    parts.push((parts.length ? "〔畫面與節奏〕\n" : "") + storyboard);
+    kinds.push("畫面與節奏，已核對");
   }
   const excerpt = capture.excerpt.trim();
   if (!parts.length && excerpt) {

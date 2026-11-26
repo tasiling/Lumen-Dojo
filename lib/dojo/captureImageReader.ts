@@ -11,7 +11,7 @@ const INPUT_USD_PER_MILLION = 0.2;
 const OUTPUT_USD_PER_MILLION = 1.2;
 const CHUNK = 10;
 
-function budgetUsd(): number {
+export function budgetUsd(): number {
   const value = Number(process.env.OPENAI_ENGLISH_IMAGE_MONTHLY_BUDGET_USD ?? "2");
   return Number.isFinite(value) && value >= 0 ? value : 2;
 }
@@ -21,14 +21,16 @@ function monthOf(date: string | null) {
   return date && !Number.isNaN(Date.parse(date)) ? formatter.format(new Date(date)) : "";
 }
 
-async function spentThisMonth(): Promise<number> {
+/** English image analysis, image text and video analysis all count toward one monthly estimate. */
+export async function spentThisMonth(): Promise<number> {
   const month = monthOf(new Date().toISOString());
   const [english, captures] = await Promise.all([listEnglishImageEntries(), listCaptureEntries()]);
   return currentMonthEstimatedSpend(english) + captures.reduce((sum, capture) =>
-    sum + (monthOf(capture.clip.imageText?.readAt ?? null) === month ? capture.clip.imageText?.estimatedCostUsd ?? 0 : 0), 0);
+    sum + (monthOf(capture.clip.imageText?.readAt ?? null) === month ? capture.clip.imageText?.estimatedCostUsd ?? 0 : 0)
+      + (monthOf(capture.clip.videoAnalysis?.readAt ?? null) === month ? capture.clip.videoAnalysis?.estimatedCostUsd ?? 0 : 0), 0);
 }
 
-function outputText(payload: Record<string, unknown>): string {
+export function outputText(payload: Record<string, unknown>): string {
   if (typeof payload.output_text === "string") return payload.output_text;
   for (const item of Array.isArray(payload.output) ? payload.output : []) {
     for (const part of item && typeof item === "object" && Array.isArray((item as { content?: unknown[] }).content) ? (item as { content: unknown[] }).content : []) {

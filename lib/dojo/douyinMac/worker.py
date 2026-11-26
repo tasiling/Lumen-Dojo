@@ -3,6 +3,7 @@
 Video and audio files saved to the iCloud Drive inbox folder are transcribed here. The production site is told
 each file's name, size and SHA-256 so the owner can say which capture it belongs to; the media itself stays on
 this Mac and is moved to the archive folder, named after the capture, once its transcript is stored."""
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -40,12 +41,12 @@ class Client:
             raise ValueError('行光道場需使用 HTTPS 網址。')
         self.http = request.build_opener(NoRedirect())
 
-    def post(self, route, payload):
+    def post(self, route, payload, timeout=18):
         req = request.Request(self.origin + '/api/integrations/douyin/worker/' + route,
                               data=json.dumps(payload, ensure_ascii=False).encode(),
                               headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token})
         try:
-            with self.http.open(req, timeout=18) as result:
+            with self.http.open(req, timeout=timeout) as result:
                 return json.load(result)
         except error.HTTPError as exc:
             if exc.code == 409:
@@ -263,6 +264,88 @@ def wait_for_result(task, lost):
     raise media.TrialError('本機辨識逾時，可從原卡重試。')
 
 
+def find_archived(digest, cache={}):
+    """A transcribed file moved to the archive folder, found by its content hash."""
+    try:
+        paths = [p for p in ARCHIVE.iterdir() if p.is_file() and p.suffix.lower() in MEDIA_SUFFIXES]
+    except OSError:
+        return None
+    for path in paths:
+        info = path.stat()
+        key = (str(path), info.st_size, info.st_mtime)
+        if key not in cache:
+            cache[key] = sha256(path)
+        if cache[key] == digest:
+            return path
+    return None
+
+
+class AnalysisWork:
+    """畫面與節奏分析：取得影片、抽出切點與關鍵畫面，只把縮圖與時間傳回行光道場。"""
+
+    def __init__(self, client, job, inbox=None):
+        self.client = client
+        self.job = job
+        self.inbox = inbox
+        self.phase = 'fetch'
+        self.lost = threading.Event()
+        self.stop = threading.Event()
+
+    def update(self, action, timeout=18, **data):
+        if self.lost.is_set():
+            raise ExpiredLease()
+        return self.client.post('analysis', dict(data, action=action, id=self.job['id'], lease=self.job['lease']), timeout)
+
+    def tick(self):
+        while not self.stop.wait(24):
+            try:
+                self.update('heartbeat', phase=self.phase)
+            except ExpiredLease:
+                self.lost.set()
+                return
+            except (ConnectionLost, media.TrialError):
+                continue
+
+    def enter(self, phase):
+        self.phase = phase
+        self.update('heartbeat', phase=phase)
+
+    def fetch(self, folder):
+        video = self.job['video']
+        if self.job.get('source') == 'file':
+            digest = video.split(':', 1)[1]
+            found = (self.inbox.find(digest) if self.inbox else None) or find_archived(digest)
+            if found is None:
+                raise media.TrialError('Mac 的「行光轉錄」資料夾與「行光轉錄封存」裡都找不到這支影片。')
+            return found
+        player, _ = media.official_embed(video)
+        clip = Path(folder) / 'clip.mp4'
+        media.public_video(clip, video, player)
+        return clip
+
+    def process(self):
+        thread = threading.Thread(target=self.tick, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory(prefix='yecai-frames-') as folder:
+                clip = self.fetch(folder)
+                self.enter('frames')
+                duration, cuts, frames = media.analysis_frames(clip, folder)
+                self.enter('upload')
+                payload = [{'t': round(t, 2), 'shot': shot, 'data': base64.b64encode(path.read_bytes()).decode()}
+                           for t, shot, path in frames]
+                self.update('frames', timeout=120, duration=round(duration, 2), cuts=cuts, frames=payload)
+        except (media.TrialError, OSError, subprocess.TimeoutExpired, ValueError) as exc:
+            msg = str(exc) if isinstance(exc, media.TrialError) else 'Mac 未能取得影片或抽出畫面。'
+            try:
+                self.update('fail', message=msg)
+            except (ConnectionLost, ExpiredLease, media.TrialError):
+                pass
+        finally:
+            self.stop.set()
+            thread.join(timeout=20)
+
+
 def report_inbox(client, inbox):
     """Tell the production site which files are waiting, and archive the ones whose transcript it has stored."""
     try:
@@ -292,7 +375,11 @@ def run():
                 ready = bool(media.api('health').get('ready'))
             except media.TrialError:
                 ready = False
-            job = client.post('claim', {'ready': ready, 'files': True, 'inbox': report_inbox(client, inbox)}).get('job')
+            job = client.post('claim', {'ready': ready, 'files': True, 'analysis': True,
+                                        'inbox': report_inbox(client, inbox)}).get('job')
+            if job and job.get('kind') == 'analysis':
+                AnalysisWork(client, job, inbox).process()
+                continue
             if job:
                 Work(client, job, inbox).process()
                 continue

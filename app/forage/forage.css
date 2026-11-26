@@ -261,3 +261,15 @@
 .dojo.forage-shell .forage-ui .capture-image-text-page>span{font-weight:600}
 .dojo.forage-shell .forage-ui .capture-image-text-page small{font-weight:400;color:var(--refine-bad, #8a5039)}
 .dojo.forage-shell .forage-ui .capture-image-text textarea{width:100%;font-size:16px;line-height:1.7}
+.dojo.forage-shell .forage-ui .capture-video-analysis input.field{width:100%;font-size:16px}
+.dojo.forage-shell .forage-ui .video-analysis-timeline{display:flex;gap:2px;min-width:0;height:28px}
+.dojo.forage-shell .forage-ui .video-analysis-timeline>span{display:flex;align-items:center;justify-content:center;flex-basis:0;min-width:4px;overflow:hidden;border-radius:4px;background:var(--forage-ink, #4a4033);color:#fff;font-size:12px}
+.dojo.forage-shell .forage-ui .video-analysis-timeline>span:nth-child(even){opacity:.7}
+.dojo.forage-shell .forage-ui .video-analysis-facts{margin:0;font-size:14px}
+.dojo.forage-shell .forage-ui .video-analysis-shots{display:grid;gap:10px;margin:8px 0 0;padding-left:0;list-style:none}
+.dojo.forage-shell .forage-ui .video-analysis-shots li{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.dojo.forage-shell .forage-ui .video-analysis-shots p,.dojo.forage-shell .forage-ui .video-analysis-technique p{margin:0}
+.dojo.forage-shell .forage-ui .video-analysis-shots small,.dojo.forage-shell .forage-ui .video-analysis-technique small{font-weight:400;opacity:.75}
+.dojo.forage-shell .forage-ui .video-analysis-rhythm{display:grid;gap:4px;margin:0;overflow-wrap:anywhere}
+.dojo.forage-shell .forage-ui .video-analysis-techniques{display:grid;gap:12px}
+.dojo.forage-shell .forage-ui .video-analysis-technique{display:grid;gap:6px;padding:10px;border-radius:10px;background:rgba(255,255,255,.6);overflow-wrap:anywhere}
