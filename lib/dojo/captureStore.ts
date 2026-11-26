@@ -195,7 +195,8 @@ export async function appendCaptureImage(params: {
       ...params.capture.clip,
       sourceKind: params.capture.sourceUrl ? "webpage" : "screenshot",
       externalMessageId: params.sourceMessageId,
-      awaitingScreenshotUntil: null,
+      // The window stays open until it expires or the owner taps 「補完了」, so a whole carousel lands on one capture.
+      awaitingScreenshotUntil: params.capture.clip.attachments.length + 1 >= 20 ? null : params.capture.clip.awaitingScreenshotUntil,
       attachments: [...params.capture.clip.attachments, attachment],
     },
   });

@@ -18,6 +18,7 @@ import { randomUUID } from "node:crypto";
 import { receiveLinePages } from "@/lib/reading/clipStore";
 import { analyzeEnglishImage } from "@/lib/dojo/englishImageAnalysis";
 import { autoBuildContextUnit } from "@/lib/dojo/englishImageAutoUnit";
+import { readCaptureImageText } from "@/lib/dojo/captureImageReader";
 import { autoUnitLineReport, autoUnitStatusLabel, type AutoUnitProject } from "@/lib/dojo/englishImageAutoUnitPlan";
 import {
   appendEnglishImageAttachment,
@@ -35,6 +36,7 @@ import { englishImageVocabCandidates, exportEnglishImageVocabs, listVocabForgeBo
 import {
   basicLineMenuQuickReply,
   captureImageQuickReply,
+  captureScreenshotQuickReply,
   clipQuickReply,
   contextRoomQuickReply,
   englishImageBookQuickReply,
@@ -542,7 +544,8 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
   const image = await fetchLineImage(messageId);
   if (capture) {
     capture = await appendCaptureImage({ capture, bytes: image.bytes, mimeType: image.mimeType, filename: imageFilename(messageId, image.mimeType), sourceMessageId: messageId });
-    await replyImage(event, `截圖已補到「${capture.title}」，網址與原圖保存在同一筆素材。`, clipQuickReply(capture.id, false));
+    const open = capture.clip.awaitingScreenshotUntil !== null;
+    await replyImage(event, `截圖已補到「${capture.title}」，目前共 ${capture.clip.attachments.length} 張。${open ? "補圖時間內可以繼續傳；傳完請按「補完了」。" : "已達 20 張上限。"}\n圖裡有重要文字時，可以按「讀取圖片文字」請 AI 讀出來，核對後才會帶進淬鍊。`, captureScreenshotQuickReply(capture.id));
     return;
   }
 
@@ -1024,6 +1027,29 @@ async function handlePostback(event: LineWebhookEvent, userId: string): Promise<
       await saveCaptureEntry({ ...capture, clip: { ...capture.clip, awaitingReflectionUntil: null } });
     }
     await replyLineMessage(event.replyToken ?? "", "已先收下。原始素材、來源、圖片與目前留下的感觸都會保留；不會自動建立其他紀錄。", forageQuickReply(forageUrl()));
+    return;
+  }
+  if (action === "captureScreenshotDone") {
+    if (capture.clip.awaitingScreenshotUntil) await updateCaptureEntry(capture.id, (current) => ({ clip: { ...current.clip, awaitingScreenshotUntil: null } }));
+    await replyLineMessage(event.replyToken ?? "", `補圖完成，「${capture.title}」共 ${capture.clip.attachments.length} 張圖。之後傳的圖片不會再補到這一筆。`, clipQuickReply(capture.id, false));
+    return;
+  }
+  if (action === "captureImageText") {
+    if (!capture.clip.attachments.length) {
+      await replyLineMessage(event.replyToken ?? "", "這筆採集還沒有圖片。可以先按「補截圖」再傳圖。", clipQuickReply(capture.id, true));
+      return;
+    }
+    let read;
+    try { read = await readCaptureImageText(capture.id); }
+    catch (error) {
+      await replyImage(event, `圖片文字沒有讀取：${error instanceof Error ? error.message : "請稍後再試"}`, clipQuickReply(capture.id, false));
+      return;
+    }
+    const result = read.clip.imageText;
+    const lines = result?.state === "ready"
+      ? [`已讀出「${read.title}」${result.pages.length} 張圖的文字。`, ...result.pages.slice(0, 3).map((page, index) => `圖 ${index + 1}｜${page.text.split("\n")[0]?.slice(0, 40) || "（沒有文字）"}`), result.pages.length > 3 ? "……" : "", "請到網頁的採集頁核對並按「確認為原文」，確認後淬鍊才會帶入。"]
+      : [`圖片文字沒有讀完：${result?.error || "請稍後重試"}`];
+    await replyImage(event, lines.filter(Boolean).join("\n"), clipQuickReply(capture.id, false, false, "到網頁核對"));
     return;
   }
   if (action === "awaitScreenshot") {
