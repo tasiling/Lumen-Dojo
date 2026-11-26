@@ -288,3 +288,5 @@ body:not(.blue) #dialog textarea[readonly] { background: #faf8fa; font-weight: 4
 .forge-pick .pair-why{margin-left:51px}
 .forge-pick b,.forge-pick small{display:block}
 .forge-pick .pair-why{margin:4px 0 0}
+.entry > b + .material-meta{display:block;margin-bottom:4px}
+.entry > .pair-why{margin:4px 0}
