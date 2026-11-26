@@ -155,3 +155,45 @@
 .dojo.dojo-ui.forage-shell .forage-ui .refine-import {display:grid;gap:8px;margin-top:16px;padding:4px 14px 14px;border:1px dashed var(--v2-border);border-radius:14px;background:var(--v2-surface)}
 .dojo.dojo-ui.forage-shell .forage-ui .refine-import summary {min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
 .dojo.dojo-ui.forage-shell .forage-ui .refine-import p {margin:0}
+
+/* 回看所拾：雙欄瀑布式卡片牆。有圖的卡片以原圖為封面，沒有圖的卡片用原文開頭當便條。 */
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed {display:grid;gap:12px;min-width:0}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-bar {display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:10px 0;background:var(--v2-background)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-bar input {width:100%;min-width:0;min-height:44px;padding:10px 14px;border:1px solid var(--v2-border);border-radius:999px;background:var(--v2-surface);font:inherit;color:var(--v2-ink)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-modes {display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-modes button {min-height:40px;padding:6px 12px;border-radius:999px;font-size:.875rem}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-modes button[aria-pressed="true"] {background:var(--forage-honey);border-color:var(--forage-honey-border);color:var(--v2-ink);font-weight:700}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-filter {border:1px solid var(--v2-border);border-radius:14px;padding:2px 14px;background:var(--v2-surface)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-filter summary {min-height:44px;display:flex;align-items:center;font-weight:600;cursor:pointer}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-filter p {font-size:.8125rem;color:var(--v2-muted)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-filter-row {display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-filter-row label {display:grid;gap:4px;font-size:.8125rem;min-width:0}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-filter-row select {min-height:40px;min-width:0;width:100%}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-count {margin:0;font-size:.8125rem;color:var(--v2-muted)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-masonry {display:grid;gap:10px;align-items:start}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-masonry-col {display:grid;gap:10px;min-width:0}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin {display:grid;min-width:0;overflow:hidden;border:1px solid var(--v2-border);border-radius:16px;background:var(--v2-surface);color:var(--v2-ink);text-decoration:none;box-shadow:0 4px 18px #BD93750A;transition:transform .15s ease}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin:active {transform:scale(.98)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-pic {position:relative;display:block;background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-pic img {display:block;width:100%;height:auto;max-height:420px;object-fit:cover}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-count {position:absolute;right:8px;top:8px;padding:2px 8px;border-radius:999px;background:#253C5CCC;color:#fff;font-size:.6875rem}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-body {display:grid;gap:6px;padding:10px 12px 12px;min-width:0}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-tags {display:flex;flex-wrap:wrap;gap:4px}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-tags:empty {display:none}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-tags span {padding:1px 7px;border-radius:6px;background:#FFFFFFB3;border:1px solid #253C5C14;font-size:.6875rem;color:var(--v2-muted)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-title {font-size:.875rem;line-height:1.5;font-weight:700;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede {font-size:.9375rem;line-height:1.7;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede::before {content:"「"}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede::after {content:"」"}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede.is-summary::before,
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede.is-summary::after {content:none}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note .forage-pin-title {font-size:.8125rem;font-weight:600;color:var(--v2-muted)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin-meta {font-size:.6875rem;color:var(--v2-muted);overflow-wrap:anywhere}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note[data-tint="peach"] {background:var(--forage-peach)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note[data-tint="honey"] {background:var(--forage-yellow)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note[data-tint="mint"] {background:var(--forage-mint)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note[data-tint="sky"] {background:#E8EEF9}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note[data-tint="lilac"] {background:#F0EBF7}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-more {justify-self:center;min-width:180px}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-end {text-align:center;font-size:.8125rem;color:var(--v2-muted)}
+@media(min-width:760px){.dojo.dojo-ui.forage-shell .forage-ui .forage-feed-bar {grid-template-columns:minmax(0,1fr) auto} .dojo.dojo-ui.forage-shell .forage-ui .forage-masonry,.dojo.dojo-ui.forage-shell .forage-ui .forage-masonry-col {gap:14px}}

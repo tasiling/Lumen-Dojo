@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import ForageIcon, {ForageMotif} from "./ForageIcon";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ForageOverview } from "@/lib/dojo/forageOverview";
 
 async function responseJson<T>(response: Response): Promise<T> {
@@ -24,9 +25,68 @@ function CountItem({ value, label, tone = "" }: { value: number; label: string; 
 type CollectionItem = ForageOverview["recent"][number] & {
   topic: string; purpose: string; original: string; note: string;
   c?: "C0" | "C1" | "C2" | "C3"; k?: "K0" | "K1";
+  /** First original picture, the card's cover; "" when there is none. */
+  cover?: string; images?: number; platform?: string; lede?: string; form?: string;
 };
+
+const TINTS = ["peach", "honey", "mint", "sky", "lilac"] as const;
+function tintOf(key: string): string {
+  let h = 0;
+  for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return TINTS[h % TINTS.length];
+}
+
+/** A fixed shuffle for one seed, so the feed stays put while scrolling and changes only on 再洗一次. */
+function shuffled<T>(rows: T[], seed: number): T[] {
+  const out = [...rows];
+  let x = seed || 1;
+  for (let i = out.length - 1; i > 0; i--) {
+    x = (x * 1103515245 + 12345) & 0x7fffffff;
+    const j = x % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Rough card height, used only to keep the columns even: a picture is tall, text grows with its length. */
+function weight(item: CollectionItem, failed: Set<string>): number {
+  const pic = item.cover && !failed.has(item.cover) ? 230 : 0;
+  const words = pic ? 0 : Math.min(item.lede?.length || item.summary.length, 90);
+  return 96 + pic + Math.ceil(item.title.length / 11) * 22 + Math.ceil(words / 12) * 22;
+}
+
+/** Each card goes to the column that is shortest so far, in feed order, so the feed reads left, right, left… */
+function columnsOf(items: CollectionItem[], count: number, failed: Set<string>): CollectionItem[][] {
+  const cols = Array.from({ length: count }, () => [] as CollectionItem[]);
+  const height = new Array(count).fill(0);
+  for (const item of items) {
+    const at = height.indexOf(Math.min(...height));
+    cols[at].push(item);
+    height[at] += weight(item, failed);
+  }
+  return cols;
+}
+
+function FeedCard({ item, failed, onFail }: { item: CollectionItem; failed: boolean; onFail: () => void }) {
+  const pic = item.cover && !failed;
+  return <Link href={item.href} className={"forage-pin" + (pic ? " has-pic" : " is-note")} data-tint={tintOf(item.topic || item.kind)}>
+    {pic && <span className="forage-pin-pic">
+      <Image src={item.cover!} alt="" width={600} height={760} unoptimized loading="lazy" onError={onFail} />
+      {(item.images ?? 0) > 1 && <span className="forage-pin-count">{item.images} 張</span>}
+    </span>}
+    <span className="forage-pin-body">
+      <span className="forage-pin-tags">
+        {item.form && <span>{item.form}</span>}
+        {item.platform && <span>{item.platform}</span>}
+      </span>
+      {!pic && item.lede && <span className="forage-pin-lede">{item.lede}</span>}
+      <b className="forage-pin-title">{item.title}</b>
+      {!pic && !item.lede && item.summary && <span className="forage-pin-lede is-summary">{item.summary}</span>}
+      <small className="forage-pin-meta">{item.topic} · {capturedDate(item.capturedAt)}{item.c ? ` · ${item.c}` : ""}</small>
+    </span>
+  </Link>;
+}
 type CollectionOverview = Omit<ForageOverview, "recent"> & { recent: CollectionItem[] };
-const creativity = { C0: "原始採集", C1: "有感素材", C2: "有方向", C3: "創作就緒" };
 
 export default function ForageHome() {
   const [overview, setOverview] = useState<CollectionOverview | null>(null);
@@ -48,21 +108,38 @@ export default function ForageHome() {
   const [topic, setTopic] = useState("");
   const [purpose, setPurpose] = useState("");
   const [rediscover, setRediscover] = useState(true);
+  const [seed, setSeed] = useState(() => Math.floor(Date.now() / 86_400_000));
   const [limit, setLimit] = useState(24);
+  const [failed, setFailed] = useState<Set<string>>(() => new Set());
+  const [columns, setColumns] = useState(2);
+  const more = useRef<HTMLDivElement | null>(null);
   const results = useMemo(() => {
     const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const rows = (overview?.recent || []).filter(item => {
       const body = [item.title, item.original, item.note, item.summary, item.topic, item.purpose].join(" ").toLowerCase();
       return (!topic || item.topic === topic) && (!purpose || item.purpose === purpose) && words.every(word => body.includes(word));
     });
-    if (!rediscover) return rows;
-    const mixed: CollectionItem[] = [];
-    for (let i = 0; i < Math.ceil(rows.length / 2); i++) {
-      mixed.push(rows[rows.length - 1 - i]);
-      if (i < rows.length - 1 - i) mixed.push(rows[i]);
-    }
-    return mixed;
-  }, [overview, query, topic, purpose, rediscover]);
+    return rediscover ? shuffled(rows, seed) : rows;
+  }, [overview, query, topic, purpose, rediscover, seed]);
+  const shown = results.slice(0, limit);
+  const feed = useMemo(() => columnsOf(shown, columns, failed), [shown, columns, failed]);
+
+  // Two columns on a phone or tablet, three on a wide screen.
+  useEffect(() => {
+    const wide = window.matchMedia("(min-width: 1000px)");
+    const apply = () => setColumns(wide.matches ? 3 : 2);
+    apply();
+    wide.addEventListener("change", apply);
+    return () => wide.removeEventListener("change", apply);
+  }, []);
+  // More cards load on their own as the end of the feed comes near.
+  useEffect(() => {
+    const end = more.current;
+    if (!end || results.length <= limit) return;
+    const watch = new IntersectionObserver((seen) => { if (seen.some((entry) => entry.isIntersecting)) setLimit((n) => n + 20); }, { rootMargin: "600px 0px" });
+    watch.observe(end);
+    return () => watch.disconnect();
+  }, [results.length, limit]);
   const english = overview?.english ?? { pending: 0, classification: 0, dispatch: 0, errors: 0 };
   const captures = overview?.captures ?? { pending: 0, adopted: 0, faded: 0 };
 
@@ -79,25 +156,31 @@ export default function ForageHome() {
         <div className="forage-alert" role="status"><ForageIcon name="alert" /><div><b>有 {english.errors} 筆英文素材需要確認</b><p>分析或同步發生異常，紀錄仍完整保留。</p></div><Link href="/forage/english?stage=error">前往確認</Link></div>
       )}
 
-      <section className="forage-recent" aria-label="收藏素材">
-        <div style={{display:"flex", flexWrap:"wrap", gap:8, alignItems:"center"}}>
-          <label>搜尋收藏 <input type="search" placeholder="標題、節錄或筆記" value={query} onChange={e=>{setQuery(e.target.value);setLimit(24)}} /></label>
-          <label>主題 <select value={topic} onChange={e=>{setTopic(e.target.value);setLimit(24)}}><option value="">全部主題</option>{Array.from(new Set(overview?.recent.map(i=>i.topic))).sort().map(t=><option key={t}>{t}</option>)}</select></label>
-          <label>用途 <select value={purpose} onChange={e=>{setPurpose(e.target.value);setLimit(24)}}><option value="">所有用途</option>{Array.from(new Set(overview?.recent.map(i=>i.purpose))).sort().map(t=><option key={t}>{t}</option>)}</select></label>
-          <button aria-pressed={rediscover} onClick={()=>setRediscover(true)}>重新發現</button>
-          <button aria-pressed={!rediscover} onClick={()=>setRediscover(false)}>最近收錄</button>
+      <section className="forage-recent forage-feed" aria-label="收藏素材">
+        <div className="forage-feed-bar">
+          <input type="search" aria-label="搜尋收藏" placeholder="搜尋標題、原文或筆記" value={query} onChange={e=>{setQuery(e.target.value);setLimit(24)}} />
+          <div className="forage-feed-modes" role="group" aria-label="排序">
+            <button type="button" aria-pressed={rediscover} onClick={()=>{if(rediscover)setSeed(n=>n+1);setRediscover(true);setLimit(24);window.scrollTo({top:0,behavior:"smooth"});}}>{rediscover ? "再洗一次" : "重新發現"}</button>
+            <button type="button" aria-pressed={!rediscover} onClick={()=>{setRediscover(false);setLimit(24)}}>最近收錄</button>
+          </div>
         </div>
-        <details><summary>C 值與 K 值怎麼看？</summary><p>C 值看創作成熟度。C0 剛收下，C1 知道為何想留，C2 已有切角，C3 已準備好創作。</p><p>K 值看來源處理進度。K0 待整理出處，K1 可回查來源。引用前請核對原文是否支持你的說法。</p></details>
-        {overview && <p role="status">{results.length} 筆收藏</p>}
-        <div className="forage-entry-grid">{results.slice(0,limit).map(item=><article className="forage-entry-card" key={item.kind+item.id} style={{minWidth:0,overflowWrap:"anywhere"}}>
-          <small>{item.topic} · {item.purpose} · {capturedDate(item.capturedAt)}</small>
-          <h2><Link href={item.href}>{item.title}</Link></h2>
-          {item.c && item.k && <small>{item.c} {creativity[item.c]}　{item.k} {item.k === "K1" ? "可追溯來源" : "未處理來源"}</small>}
-          <p>{item.summary}</p>
-          {item.original && <details><summary>查看原文節錄</summary><p style={{whiteSpace:"pre-wrap"}}>{item.original}</p></details>}
-          <Link href={item.href}>查看素材與筆記 ↗</Link>
-        </article>)}</div>
-        {results.length>limit && <button onClick={()=>setLimit(limit+24)}>顯示更多收藏</button>}
+        <details className="forage-feed-filter"><summary>篩選{topic || purpose ? `：${[topic, purpose].filter(Boolean).join("、")}` : ""}</summary>
+          <div className="forage-feed-filter-row">
+            <label>主題 <select value={topic} onChange={e=>{setTopic(e.target.value);setLimit(24)}}><option value="">全部主題</option>{Array.from(new Set(overview?.recent.map(i=>i.topic))).sort().map(t=><option key={t}>{t}</option>)}</select></label>
+            <label>用途 <select value={purpose} onChange={e=>{setPurpose(e.target.value);setLimit(24)}}><option value="">所有用途</option>{Array.from(new Set(overview?.recent.map(i=>i.purpose))).sort().map(t=><option key={t}>{t}</option>)}</select></label>
+          </div>
+          <p>C 值看創作成熟度：C0 剛收下，C1 知道為何想留，C2 已有切角，C3 已準備好創作。K 值看來源處理進度：K0 待整理出處，K1 可回查來源。</p>
+        </details>
+        {overview && <p className="forage-feed-count" role="status">{results.length} 筆收藏{rediscover ? "，隨機排列" : "，由新到舊"}</p>}
+        <div className="forage-masonry" style={{gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`}}>
+          {feed.map((col, index) => <div className="forage-masonry-col" key={index}>
+            {col.map(item => <FeedCard key={item.kind+item.id} item={item} failed={Boolean(item.cover && failed.has(item.cover))}
+              onFail={() => item.cover && setFailed(prev => new Set(prev).add(item.cover!))} />)}
+          </div>)}
+        </div>
+        <div ref={more} aria-hidden="true" />
+        {results.length>limit && <button type="button" className="forage-feed-more" onClick={()=>setLimit(limit+20)}>再看更多</button>}
+        {overview && results.length > 0 && results.length <= limit && <p className="forage-feed-end">都看完了。{rediscover ? "按「再洗一次」換個順序重新遇見。" : ""}</p>}
         {overview && !results.length && <p>目前沒有符合的收藏。</p>}
       </section>
       <details><summary>整理採集匣</summary>
