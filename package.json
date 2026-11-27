@@ -33,6 +33,8 @@
     "test:learning-foundation": "node scripts/test-learning-foundation.mjs",
     "test:learning-foundation-api": "node scripts/test-learning-foundation-api.mjs",
     "test:learning-foundation-ui": "node scripts/test-learning-foundation-ui.mjs",
+    "test:muscle-cards": "node scripts/test-muscle-cards.mjs",
+    "test:muscle-cards-ui": "node scripts/test-muscle-cards-ui.mjs",
     "test:practice-workspaces": "node scripts/test-practice-workspaces.mjs",
     "test:learning-records": "node scripts/test-learning-records.mjs",
     "test:practice-events": "node scripts/test-practice-events.mjs",

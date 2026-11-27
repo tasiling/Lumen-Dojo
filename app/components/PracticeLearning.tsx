@@ -1,6 +1,7 @@
 "use client";
 import { LearningItemIcon } from "./PracticeArt";
 import PracticeLearningPath from "./PracticeLearningPath";
+import MuscleLearning from "./muscles/MuscleLearning";
 import PracticeItemOverview from "./PracticeItemOverview";
 import LearningRecordWorkspace from "./LearningRecordWorkspace";
 import ReadingDiscussionQueue from "./ReadingDiscussionQueue";
@@ -209,6 +210,9 @@ export default function PracticeLearning() {
                 <>
                   {item.legacyKey === "english" && !stages.length && !topics.length
                     ? <p>近期以 B2 為目標，長期達到 C1。<Link href={toolsReturn}>開啟英文修習工具</Link></p>
+                    : item.legacyKey === "massage"
+                    ? <MuscleLearning item={item} stages={stages} topics={topics}
+                      readingReturn={href(item.id, "path")} busy={changing} onChangeStatus={topic => void updateTopic(topic)} />
                     : <PracticeLearningPath key={item.id} stages={stages} topics={topics}
                       readingReturn={href(item.id, "path")} busy={changing} onChangeStatus={topic => void updateTopic(topic)} />}
                   <button onClick={record}>留下修習紀錄</button>

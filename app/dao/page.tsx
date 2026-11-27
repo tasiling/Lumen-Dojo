@@ -21,6 +21,7 @@ export default function DaoPage() {
       </div>
       <DaoHomeSections />
       <Link href="/dao/explore" className="knowledge-entry-link dao-entry"><span className="practice-entry-icon"><PracticeIcon name="learning" /></span><span className="practice-entry-copy"><b>閱讀與知識總覽</b><small>跨筆記、洞察與知識查找內容</small></span><span aria-hidden="true">›</span></Link>
+      <Link href="/dao/muscles" className="knowledge-entry-link dao-entry"><span className="practice-entry-icon"><PracticeIcon name="learning" /></span><span className="practice-entry-copy"><b>肌肉知識網絡</b><small>肌肉卡、姿勢型態卡與它們之間的連結</small></span><span aria-hidden="true">›</span></Link>
       <Link href="/dao/knowledge" className="knowledge-entry-link dao-entry"><span className="practice-entry-icon"><PracticeIcon name="default" /></span><span className="practice-entry-copy"><small>可重用的理解</small><b>打開知識庫</b><small>審閱知識候選、適用邊界與版本歷史</small></span><span aria-hidden="true">›</span></Link>
       <button className="primary" onClick={() => openQuickAdd({ presetSpace: "dao", presetKind: "入藏" })}>＋ 新增入藏紀錄</button>
       <h2 className="section-title dao-content-heading">已留下的內容</h2>

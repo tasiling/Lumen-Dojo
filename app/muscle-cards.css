@@ -1,0 +1,67 @@
+/* 修習所肌肉學習與道藏肌肉知識網絡：沿用修習所的卡片節奏與色票。 */
+.dojo .muscle-learning{display:grid;gap:16px;min-width:0}
+.dojo .muscle-path-nav{display:flex;flex-wrap:wrap;gap:8px}
+.dojo .muscle-path-nav a{display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border:1px solid #d6e4e0;border-radius:999px;background:white;font-size:15px;color:#18384d;text-decoration:none}
+.dojo .muscle-path-nav [aria-current=page]{background:var(--practice-tint);border-color:var(--practice-accent);font-weight:650}
+.dojo .muscle-path h2,.dojo .muscle-patterns h2,.dojo .muscle-legacy-topics>h2{margin:0 0 12px;font-size:18px}
+.dojo .muscle-path-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.dojo .muscle-path-list a{display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:10px 14px;border:1px solid #dfeae6;border-radius:12px;background:#fbfdfc;color:#18384d;text-decoration:none;overflow-wrap:anywhere}
+.dojo .muscle-path-list a:hover{border-color:var(--practice-accent)}
+.dojo .muscle-path-list small{color:#637286;font-size:13px}
+.dojo .muscle-back{display:inline-block;color:#246c5d;font-size:15px}
+.dojo .muscle-card{display:grid;gap:18px;min-width:0}
+.dojo .muscle-card-header h2{margin:0;font-size:24px;line-height:1.4}
+.dojo .muscle-kicker{margin:0 0 4px;font-size:13px;font-weight:650;letter-spacing:.12em;color:#397365}
+.dojo .muscle-status{list-style:none;display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 0;padding:0;font-size:14px;color:#637286}
+.dojo .muscle-status b{font-weight:650;color:#18384d}
+.dojo .muscle-layer{border-top:1px solid #e0eae8;padding-top:14px;min-width:0}
+.dojo .muscle-layer>h3,.dojo .muscle-local-window>h3,.dojo .muscle-discussion>h3,.dojo .muscle-legacy>h3{margin:0 0 10px;font-size:18px}
+.dojo .muscle-section-form{display:grid;gap:12px;min-width:0}
+.dojo .muscle-field{display:grid;gap:4px;min-width:0}
+.dojo .muscle-field label{font-size:14px;font-weight:600;color:#345366}
+.dojo .muscle-field :is(textarea,input),.dojo .muscle-form-grid :is(select,input){width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:10px 12px;border:1px solid #d6e4e0;border-radius:10px;background:white;color:#18384d}
+.dojo .muscle-fixed-field{display:grid;gap:4px;margin:0;padding:10px 12px;border-radius:10px;background:#f4f9f7;font-size:15px}
+.dojo .muscle-fixed-field span{font-size:14px;font-weight:600;color:#345366}
+.dojo .muscle-form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.dojo .muscle-inline-label{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
+.dojo .muscle-inline-label input{font:inherit;font-size:16px;padding:8px 10px;border:1px solid #d6e4e0;border-radius:10px;max-width:100%}
+.dojo .muscle-muted{color:#637286;font-size:14px;margin:0}
+.dojo .muscle-note{margin:0;padding:12px 14px;border-radius:12px;background:var(--practice-tint);color:#3d635d;font-size:15px}
+.dojo .muscle-test-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.dojo .muscle-test-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:8px;border:1px solid #d6e4e0;border-radius:12px;background:white;color:#18384d;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.dojo .muscle-test-tabs button small{font-size:12px;color:#637286}
+.dojo .muscle-test-tabs [aria-selected=true]{background:var(--practice-tint);border-color:var(--practice-accent);font-weight:650}
+.dojo .muscle-pattern-picker{display:grid;gap:8px;margin:0;padding:12px;border:1px solid #dfeae6;border-radius:12px;background:#f4f9f7;min-inline-size:0}
+.dojo .muscle-pattern-picker legend{font-size:14px;font-weight:600;color:#345366;padding:0 4px}
+.dojo .muscle-pattern-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.dojo .muscle-pattern-row label{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.dojo .muscle-pattern-row select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid #d6e4e0;border-radius:8px}
+.dojo :is(.muscle-text-link,.muscle-text-button){color:#246c5d;font-size:14px;background:none;border:0;padding:4px 0;min-height:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.dojo .muscle-answers{margin-top:10px}
+.dojo .muscle-answers>summary,.dojo .muscle-add-link>summary,.dojo .muscle-discussion details>summary{cursor:pointer;color:#246c5d;font-size:15px;min-height:44px;display:flex;align-items:center}
+.dojo .muscle-answer{border:1px solid #e0eae8;border-radius:12px;padding:12px;margin:8px 0;background:#fbfdfc}
+.dojo .muscle-answer dl{display:grid;gap:4px;margin:6px 0}
+.dojo .muscle-answer dt{font-size:13px;color:#637286;font-weight:600}
+.dojo .muscle-answer dd{margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
+.dojo .muscle-card pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.6;background:#f4f9f7;border-radius:10px;padding:10px;margin:6px 0;max-height:360px;overflow:auto}
+.dojo .muscle-local-window,.dojo .muscle-discussion,.dojo .muscle-legacy{border-top:1px solid #e0eae8;padding-top:14px;display:grid;gap:10px;min-width:0}
+.dojo .muscle-link-group h4{margin:0 0 6px;font-size:15px;color:#345366}
+.dojo .muscle-link-group ul,.dojo .muscle-legacy ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.dojo .muscle-link-group li,.dojo .muscle-legacy li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 10px;border-radius:10px;background:#f4f9f7}
+.dojo .muscle-link-group li a,.dojo .muscle-legacy li a{color:#18384d;font-weight:650;overflow-wrap:anywhere}
+.dojo .muscle-link-note{font-size:14px;color:#345366;overflow-wrap:anywhere}
+.dojo .muscle-form-grid{display:grid;gap:10px;margin-top:8px}
+.dojo .muscle-form-grid label{display:grid;gap:4px;font-size:14px;font-weight:600;color:#345366}
+.dojo .muscle-legacy-topics{display:grid;gap:12px;margin-top:8px}
+.dojo .muscle-learning :is(a,button,summary,select,input,textarea):focus-visible{outline:2px solid var(--practice-accent);outline-offset:2px}
+@media(max-width:430px){.dojo .muscle-test-tabs{grid-template-columns:minmax(0,1fr)}.dojo .muscle-path-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* 道藏肌肉知識網絡 */
+.dojo .muscle-network{display:grid;gap:16px;min-width:0}
+.dojo .muscle-network h2{margin:0 0 10px;font-size:18px}
+.dojo .muscle-network-filter{display:grid;gap:4px;font-size:14px;font-weight:600}
+.dojo .muscle-network-filter select{font:inherit;font-size:16px;padding:10px 12px;border:1px solid #ddd5ea;border-radius:10px;background:white;max-width:100%}
+.dojo .muscle-network .muscle-link-group li{background:#f7f4fb}
+.dojo .muscle-network-links li{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.dojo .muscle-network-links .muscle-link-type{font-size:13px;color:#6a5f8e;border:1px solid #ddd5ea;border-radius:999px;padding:1px 8px}
+.dojo .muscle-network a{color:#2f2a45;font-weight:650;overflow-wrap:anywhere}
+.dojo .muscle-network .muscle-path-list a{background:#fcfbfe;border-color:#e8e2f1;font-weight:400}
