@@ -29,6 +29,14 @@ type CollectionItem = ForageOverview["recent"][number] & {
   cover?: string; images?: number; platform?: string; lede?: string; form?: string;
 };
 
+/** 野採的四個主題色：蜜桃、蜂蜜、薄荷取自野採的漸層，奶茶是中性色。同一個主題永遠是同一色。 */
+const TINTS = ["peach", "honey", "mint", "milktea"] as const;
+function tintOf(key: string): string {
+  let h = 0;
+  for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return TINTS[h % TINTS.length];
+}
+
 /** A fixed shuffle for one seed, so the feed stays put while scrolling and changes only on 再洗一次. */
 function shuffled<T>(rows: T[], seed: number): T[] {
   const out = [...rows];
@@ -62,7 +70,7 @@ function columnsOf(items: CollectionItem[], count: number, failed: Set<string>):
 
 function FeedCard({ item, failed, onFail }: { item: CollectionItem; failed: boolean; onFail: () => void }) {
   const pic = item.cover && !failed;
-  return <Link href={item.href} className={"forage-pin" + (pic ? " has-pic" : " is-note")}>
+  return <Link href={item.href} className={"forage-pin" + (pic ? " has-pic" : " is-note")} data-tint={tintOf(item.topic || item.kind)}>
     {pic && <span className="forage-pin-pic">
       <Image src={item.cover!} alt="" width={600} height={760} unoptimized loading="lazy" onError={onFail} />
       {(item.images ?? 0) > 1 && <span className="forage-pin-count">{item.images} 張</span>}

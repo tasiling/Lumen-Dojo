@@ -156,7 +156,8 @@
 .dojo.dojo-ui.forage-shell .forage-ui .refine-import summary {min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
 .dojo.dojo-ui.forage-shell .forage-ui .refine-import p {margin:0}
 
-/* 回看所拾：雙欄瀑布式卡片牆。有圖的卡片以原圖為封面，沒有圖的卡片用原文開頭當便條，統一一種暖米色。 */
+/* 回看所拾：雙欄瀑布式卡片牆。有圖的卡片以原圖為封面，沒有圖的卡片用原文開頭當便條。
+   四個主題色依主題分配：文字卡整張上色，圖片卡在圖下方加一條同色的線。 */
 .dojo.dojo-ui.forage-shell .forage-ui .forage-feed {display:grid;gap:12px;min-width:0}
 .dojo.dojo-ui.forage-shell .forage-ui .forage-feed-bar {display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:10px 0;background:var(--v2-background)}
 .dojo.dojo-ui.forage-shell .forage-ui .forage-feed-bar input {width:100%;min-width:0;min-height:44px;padding:10px 14px;border:1px solid var(--v2-border);border-radius:999px;background:var(--v2-surface);font:inherit;color:var(--v2-ink)}
@@ -187,7 +188,13 @@
 .dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede::after {content:"」"}
 .dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede.is-summary::before,
 .dojo.dojo-ui.forage-shell .forage-ui .forage-pin-lede.is-summary::after {content:none}
-.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note {background:#FCF7EF}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin {--pin:#FCF7EF;--pin-edge:#F0E6DE}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin[data-tint="peach"] {--pin:#FCEBE3;--pin-edge:#F3CDBB}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin[data-tint="honey"] {--pin:#FAF0DA;--pin-edge:#EED9A8}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin[data-tint="mint"] {--pin:#E3F2ED;--pin-edge:#BFE0D6}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin[data-tint="milktea"] {--pin:#F3E9DF;--pin-edge:#DFCFBF}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note {background:var(--pin);border-color:var(--pin-edge)}
+.dojo.dojo-ui.forage-shell .forage-ui .forage-pin.has-pic .forage-pin-body {border-top:4px solid var(--pin-edge)}
 .dojo.dojo-ui.forage-shell .forage-ui .forage-pin.is-note .forage-pin-title {font-size:.8125rem;font-weight:600;color:var(--v2-muted)}
 .dojo.dojo-ui.forage-shell .forage-ui .forage-pin-meta {font-size:.6875rem;color:var(--v2-muted);overflow-wrap:anywhere}
 .dojo.dojo-ui.forage-shell .forage-ui .forage-feed-more {justify-self:center;min-width:180px}
