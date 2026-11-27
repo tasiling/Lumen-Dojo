@@ -13,6 +13,7 @@ import "./navigation.css";
 import "./calendar-theme.css";
 import "./map-theme.css";
 import "./practice-dao.css";
+import "./muscle-cards.css";
 import "./components/creative/creative-interface.css";
 
 const geistSans = Geist({

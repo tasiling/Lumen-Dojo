@@ -8,6 +8,7 @@ import { muscleService, type JsonRow } from "../lib/dojo/muscleCards/service";
 import { neighbors } from "../lib/dojo/daoLinks/model";
 import { MUSCLE_KIND, PATTERN_KIND } from "../lib/dojo/muscleCards/network";
 import { LearningError } from "../lib/dojo/learningFoundation/model";
+import { buildDiscussionPackage, parseAnswerReturn } from "../lib/dojo/muscleCards/discussion";
 
 function memoryRepo(owner = "isolated-owner") {
   const rows = new Map<string, JsonRow>();
@@ -184,9 +185,42 @@ async function cards() {
   await rejects(muscleService(foreign.repo).snapshot(), 409);
 }
 
+async function discussion() {
+  const memory = memoryRepo();
+  const service = muscleService(memory.repo);
+  // 非十四肌的空卡：沒有可以出題的欄位。
+  assert.equal(buildDiscussionPackage("masseter", null, []), null);
+  // 十四肌的空卡只有預填經絡。
+  const deltoidPack = buildDiscussionPackage("deltoid", null, [])!;
+  assert.match(deltoidPack, /對應經絡：膽經/);
+  assert.doesNotMatch(deltoidPack, /【認識】|【徒手肌力測試】|採用的分級/);
+  await service.saveSection("masseter", "know", 0, { fields: { origin: "甲", source: "教材第 3 頁" } });
+  await service.saveSection("masseter", "mmt", 0, { fields: { direction: "乙" } });
+  const snap = await service.snapshot();
+  const pack = buildDiscussionPackage("masseter", snap.cards[0], snap.patterns)!;
+  assert.match(pack, /起點：甲/);
+  assert.match(pack, /出處（教材與頁碼）：教材第 3 頁/);
+  assert.match(pack, /施力方向：乙/);
+  assert.match(pack, /採用的分級：英國醫學研究委員會/);
+  assert.match(pack, /一次只出一題/);
+  assert.match(pack, /不得自己補充任何解剖事實/);
+  assert.match(pack, /留空的，不要針對它們出題/);
+  for (const empty of ["止點", "主要動作", "怎麼摸到", "測試姿勢", "常見代償", "【運用】", "【姿勢評估】", "觸康健", "經絡"]) assert(!pack.includes(empty), empty);
+  const parsed = parseAnswerReturn([
+    "===肌肉卡答題/v1===", "卡片：咬肌", "層：認識", "題目：起點？", "我的答案：甲", "第二行", "不一致：無", "===題目結束===",
+    "===肌肉卡答題/v1===", "卡片：顳肌", "層：認識", "題目：x", "===題目結束===",
+    "===肌肉卡答題/v1===", "卡片：咬肌", "層：觸康健檢測", "題目：y", "===題目結束===",
+  ].join("\n"), "masseter");
+  assert.equal(parsed.entries.length, 1);
+  assert.deepEqual({ ...parsed.entries[0], raw: undefined }, { section: "know", question: "起點？", answer: "甲\n第二行", mismatch: "無", raw: undefined });
+  assert.equal(parsed.problems.length, 2);
+  assert.equal(parseAnswerReturn("隨便一段文字", "masseter").problems.length, 1);
+}
+
 async function main() {
   await catalog();
   await cards();
+  await discussion();
   console.log("muscle-cards tests passed");
 }
 main().catch((e) => {
