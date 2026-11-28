@@ -218,12 +218,21 @@ export function imageBatchCollectQuickReply(entryId?: string, sessionId?: string
   return { items };
 }
 
+/** 週薪 lookup: neighbouring weeks, then the basic menu. */
+export function weekPayQuickReply(weeks: { label: string; date: string }[]) {
+  return { items: [
+    ...weeks.map((week) => quickReplyItem(week.label, new URLSearchParams({ action: "weekPay", date: week.date }).toString())),
+    ...basicLineMenuQuickReply().items.filter((item) => item.action.label !== "週薪"),
+  ].slice(0, 13) };
+}
+
 export function basicLineMenuQuickReply() {
   return { items: [
     messageQuickReplyItem("銀行記帳", "銀行記帳"),
     messageQuickReplyItem("野採圖片", "野採圖片"),
     messageQuickReplyItem("剪藏網址", "剪藏網址"),
     messageQuickReplyItem("最近一筆", "最近一筆"),
+    messageQuickReplyItem("週薪", "週薪"),
     messageQuickReplyItem("待整理", "待整理"),
     messageQuickReplyItem("結束銀行記帳", "結束銀行記帳"),
   ] };

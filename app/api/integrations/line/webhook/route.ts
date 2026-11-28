@@ -36,6 +36,7 @@ import { routingEntryUrl, normalizeRoutingSelection } from "@/lib/dojo/englishIm
 import { englishImageVocabCandidates, exportEnglishImageVocabs, listVocabForgeBooks, recommendedFocusDecks, PERMANENT_FOCUS_DECKS } from "@/lib/dojo/englishImageDispatch";
 import {
   basicLineMenuQuickReply,
+  weekPayQuickReply,
   captureImageQuickReply,
   captureScreenshotQuickReply,
   clipQuickReply,
@@ -66,8 +67,9 @@ import {
   isEnglishImageLearningRoute,
   type EnglishImageEntry,
 } from "@/lib/dojo/englishImage";
-import { bankImageRoute,bankIntegrationEnabled,bankSummary,receivePerformance,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
+import { bankImageRoute,bankIntegrationEnabled,bankSummary,fetchWeekPay,receivePerformance,processBankImage,receiveBankImage,setBankMode,wealthInboxUrl,type BankIntake } from "@/lib/dojo/wealthBank";
 import {isPerformanceText,parsePerformanceText,performanceReply} from "@/lib/dojo/wealthPerformance";
+import { parseWeekPayCommand, weekPayNeighbours, weekPayReply } from "@/lib/dojo/wealthWeekPay";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -173,9 +175,33 @@ function forageUrl(englishImageId = ""): string {
   catch { return "https://lumen-dojo.up.railway.app/forage"; }
 }
 
+const melbourneToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Melbourne", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+
+/** 週薪：one work week's recorded days and estimated pay, read from 財富豐盛記錄本. */
+async function replyWeekPay(replyToken: string, userId: string, date: string, today: string): Promise<void> {
+  if (date === "invalid") {
+    await replyLineMessage(replyToken, "日期不正確。請傳「週薪」看本週，「上週薪水」看上週，或「週薪 11/17」看那天所在的一週。", basicLineMenuQuickReply());
+    return;
+  }
+  try {
+    const week = await fetchWeekPay(userId, date);
+    await replyLineMessage(replyToken, weekPayReply(week, today), weekPayQuickReply(weekPayNeighbours(week.week_start, today)));
+  } catch (error) {
+    const status = (error as { status?: number }).status;
+    const message = status === 404 ? "財富豐盛記錄本還沒有週薪查詢功能，需要先更新 Luminara。"
+      : `暫時查不到週薪：${error instanceof Error ? error.message : "請稍後再試。"}`;
+    await replyLineMessage(replyToken, message, basicLineMenuQuickReply());
+  }
+}
+
 async function handleLineCommand(event: LineWebhookEvent, command: string): Promise<boolean> {
   const replyToken = event.replyToken ?? "";
   const userId = event.source?.userId ?? "";
+  const payDate = parseWeekPayCommand(command, melbourneToday());
+  if (payDate) {
+    await replyWeekPay(replyToken, userId, payDate, melbourneToday());
+    return true;
+  }
   if (command === "銀行記帳") {
     if (!bankIntegrationEnabled()) {
       await replyLineMessage(replyToken, "銀行記帳目前尚未啟用。一般野採與英文圖片仍可照常使用。", basicLineMenuQuickReply());
@@ -672,6 +698,11 @@ async function handleImage(event: LineWebhookEvent, userId: string): Promise<voi
 async function handlePostback(event: LineWebhookEvent, userId: string): Promise<void> {
   const params = new URLSearchParams(event.postback?.data ?? "");
   const action = params.get("action");
+  if (action === "weekPay") {
+    const date = params.get("date") ?? "";
+    await replyWeekPay(event.replyToken ?? "", userId, /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "invalid", melbourneToday());
+    return;
+  }
   if (action === "fileAttach" || action === "fileNew") {
     await handleFileChoice(event, params.get("file") ?? "", action === "fileAttach" ? params.get("captureId") ?? "" : null);
     return;
