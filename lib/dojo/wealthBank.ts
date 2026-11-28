@@ -2,6 +2,7 @@ import "server-only";
 import { createHash,createHmac,randomBytes } from "node:crypto";
 import { BankRoutingState,bankIntegrationConfigured,type BankImageRoute } from "./wealthBankRouting";
 import type {BankSummaryResult} from "./wealthBankSummary";
+import type {WeekPay} from "./wealthWeekPay";
 export {bankSummary} from "./wealthBankSummary";
 export type BankIntake={batchId:string;status:string;counts:BankSummaryResult["counts"];totals?:BankSummaryResult["totals"];duplicateDelivery?:boolean;duplicateImage?:boolean};
 const routingState=new BankRoutingState();
@@ -25,4 +26,5 @@ export function wealthInboxUrl(){const app=process.env.LUMINARA_WEALTH_APP_URL?.
 
 
 export async function receivePerformance(userId:string,eventId:string,data:{date:string;amount:string;card_payment_count:number}){return request<{daily:{amount_minor:string;card_payment_count:number};weekly:{week_start:string;days:number;estimated_pay_minor:string|null}}>("/api/integrations/lumen/bank/performance",userId,{method:"POST",body:{...data,sourceEventId:eventId}})}
-
+/** One work week's recorded days, estimate and received pay, for the LINE 週薪 lookup. */
+export async function fetchWeekPay(userId:string,date:string){return (await request<{week:WeekPay}>("/api/integrations/lumen/bank/performance/week",userId,{method:"POST",body:{date}})).week}
